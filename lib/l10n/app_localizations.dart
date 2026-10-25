@@ -1011,6 +1011,270 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Inactive'**
   String get inactive;
+
+  /// No description provided for @editProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Profile'**
+  String get editProfile;
+
+  /// No description provided for @comDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Company details'**
+  String get comDetails;
+
+  /// No description provided for @addressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage your company address'**
+  String get addressHint;
+
+  /// No description provided for @socialMediaHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Social Profiles'**
+  String get socialMediaHint;
+
+  /// No description provided for @companyDetailsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage company details'**
+  String get companyDetailsHint;
+
+  /// No description provided for @companyLicence.
+  ///
+  /// In en, this message translates to:
+  /// **'Company Licence'**
+  String get companyLicence;
+
+  /// No description provided for @payableDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Payable due'**
+  String get payableDue;
+
+  /// No description provided for @receivableDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Receiveable due'**
+  String get receivableDue;
+
+  /// No description provided for @dueType.
+  ///
+  /// In en, this message translates to:
+  /// **'Due type'**
+  String get dueType;
+
+  /// No description provided for @filterByStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by status'**
+  String get filterByStatus;
+
+  /// No description provided for @reminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders'**
+  String get reminders;
+
+  /// No description provided for @dueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Due date'**
+  String get dueDate;
+
+  /// No description provided for @accounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts'**
+  String get accounts;
+
+  /// No description provided for @accNameOrNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Name or Number'**
+  String get accNameOrNumber;
+
+  /// No description provided for @amountGreaterZero.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount must greater than zero'**
+  String get amountGreaterZero;
+
+  /// No description provided for @account.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get account;
+
+  /// No description provided for @dueToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Due today'**
+  String get dueToday;
+
+  /// No description provided for @dueTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Due tomorrow'**
+  String get dueTomorrow;
+
+  /// No description provided for @day.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get day;
+
+  /// No description provided for @overdueBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue by'**
+  String get overdueBy;
+
+  /// No description provided for @overdueByOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue by one day'**
+  String get overdueByOne;
+
+  /// No description provided for @noReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'No reminder'**
+  String get noReminder;
+
+  /// No description provided for @done.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get done;
+
+  /// No description provided for @aboat.
+  ///
+  /// In en, this message translates to:
+  /// **'Aboat'**
+  String get aboat;
+
+  /// No description provided for @company.
+  ///
+  /// In en, this message translates to:
+  /// **'Company'**
+  String get company;
+
+  /// No description provided for @backup.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup'**
+  String get backup;
+
+  /// No description provided for @generalSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'General Settings'**
+  String get generalSettings;
+
+  /// No description provided for @fiscalYear.
+  ///
+  /// In en, this message translates to:
+  /// **'End of year'**
+  String get fiscalYear;
+
+  /// No description provided for @payroll.
+  ///
+  /// In en, this message translates to:
+  /// **'Payroll'**
+  String get payroll;
+
+  /// No description provided for @manageFinance.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Company Finances'**
+  String get manageFinance;
+
+  /// No description provided for @profitAndLoss.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit & Loss'**
+  String get profitAndLoss;
+
+  /// No description provided for @eoyClosing.
+  ///
+  /// In en, this message translates to:
+  /// **'Close Fiscal Year'**
+  String get eoyClosing;
+
+  /// No description provided for @summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Financial Summary'**
+  String get summary;
+
+  /// No description provided for @noPandLMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No Profit & Loss'**
+  String get noPandLMessage;
+
+  /// No description provided for @proceed.
+  ///
+  /// In en, this message translates to:
+  /// **'Proceed'**
+  String get proceed;
+
+  /// No description provided for @retainedEarnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Retained Earnings'**
+  String get retainedEarnings;
+
+  /// No description provided for @remark.
+  ///
+  /// In en, this message translates to:
+  /// **'Remark'**
+  String get remark;
+
+  /// No description provided for @debit.
+  ///
+  /// In en, this message translates to:
+  /// **'Debit'**
+  String get debit;
+
+  /// No description provided for @credit.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit'**
+  String get credit;
+
+  /// No description provided for @total.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get total;
+
+  /// No description provided for @attention.
+  ///
+  /// In en, this message translates to:
+  /// **'Attention'**
+  String get attention;
+
+  /// No description provided for @plMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Close Profit & Loss and transfer the balance to Retained Earnings?'**
+  String get plMessage;
+
+  /// No description provided for @goodMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Good Morning'**
+  String get goodMorning;
+
+  /// No description provided for @profileOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Overview'**
+  String get profileOverview;
 }
 
 class _AppLocalizationsDelegate

@@ -472,4 +472,137 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get inactive => 'Inactive';
+
+  @override
+  String get editProfile => 'Edit Profile';
+
+  @override
+  String get comDetails => 'Company details';
+
+  @override
+  String get addressHint => 'Manage your company address';
+
+  @override
+  String get socialMediaHint => 'Manage Social Profiles';
+
+  @override
+  String get companyDetailsHint => 'Manage company details';
+
+  @override
+  String get companyLicence => 'Company Licence';
+
+  @override
+  String get payableDue => 'Payable due';
+
+  @override
+  String get receivableDue => 'Receiveable due';
+
+  @override
+  String get dueType => 'Due type';
+
+  @override
+  String get filterByStatus => 'Filter by status';
+
+  @override
+  String get reminders => 'Reminders';
+
+  @override
+  String get dueDate => 'Due date';
+
+  @override
+  String get accounts => 'Accounts';
+
+  @override
+  String get accNameOrNumber => 'Account Name or Number';
+
+  @override
+  String get amountGreaterZero => 'Amount must greater than zero';
+
+  @override
+  String get account => 'Account';
+
+  @override
+  String get dueToday => 'Due today';
+
+  @override
+  String get dueTomorrow => 'Due tomorrow';
+
+  @override
+  String get day => 'Day';
+
+  @override
+  String get overdueBy => 'Overdue by';
+
+  @override
+  String get overdueByOne => 'Overdue by one day';
+
+  @override
+  String get noReminder => 'No reminder';
+
+  @override
+  String get done => 'Done';
+
+  @override
+  String get aboat => 'Aboat';
+
+  @override
+  String get company => 'Company';
+
+  @override
+  String get backup => 'Backup';
+
+  @override
+  String get generalSettings => 'General Settings';
+
+  @override
+  String get fiscalYear => 'End of year';
+
+  @override
+  String get payroll => 'Payroll';
+
+  @override
+  String get manageFinance => 'Manage Company Finances';
+
+  @override
+  String get profitAndLoss => 'Profit & Loss';
+
+  @override
+  String get eoyClosing => 'Close Fiscal Year';
+
+  @override
+  String get summary => 'Financial Summary';
+
+  @override
+  String get noPandLMessage => 'No Profit & Loss';
+
+  @override
+  String get proceed => 'Proceed';
+
+  @override
+  String get retainedEarnings => 'Retained Earnings';
+
+  @override
+  String get remark => 'Remark';
+
+  @override
+  String get debit => 'Debit';
+
+  @override
+  String get credit => 'Credit';
+
+  @override
+  String get total => 'Total';
+
+  @override
+  String get attention => 'Attention';
+
+  @override
+  String get plMessage =>
+      'Close Profit & Loss and transfer the balance to Retained Earnings?';
+
+  @override
+  String get goodMorning => 'Good Morning';
+
+  @override
+  String get profileOverview => 'Profile Overview';
 }

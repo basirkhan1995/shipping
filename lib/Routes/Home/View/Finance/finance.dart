@@ -6,6 +6,7 @@ import '../../../../Features/Other/responsive_widget.dart';
 import '../../../../Features/Widgets/tab_bar.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../Auth/bloc/auth_bloc.dart';
+import '../../../Auth/model/user_model.dart';
 import 'View/ExchangeRate/Ui/exchange_rate.dart';
 import 'View/GlAccounts/gl_accounts.dart';
 import 'View/Payroll/payroll.dart';
@@ -31,12 +32,13 @@ class _Desktop extends StatelessWidget {
     if (state is! AuthenticatedState) {
       return const SizedBox();
     }
+    final login = state.loginData;
     return Scaffold(
 
       body: BlocBuilder<FinanceTabBloc, FinanceTabState>(
         builder: (context, state) {
           final tabs = <ZTabItem<FinanceTabName>>[
-          //  if (login.hasPermission(11) ?? false)...[
+           if (login.hasPermission(11) ?? false)
               ZTabItem(
                 value: FinanceTabName.currencies,
                 label: AppLocalizations.of(context)!.currencyTitle,
@@ -48,33 +50,33 @@ class _Desktop extends StatelessWidget {
               label: AppLocalizations.of(context)!.fxRate,
               screen: ExchangeRateView(newRateButton: true),
             ),
-           // if (login.hasPermission(14) ?? false)...[
+           if (login.hasPermission(14) ?? false)
               ZTabItem(
                 value: FinanceTabName.glAccounts,
-                label: "GL Accounts",
+                label: AppLocalizations.of(context)!.glAccount,
                 screen: const GlAccountsView(),
               ),
 
 
-          //  if (login.hasPermission(15) ?? false)...[
+           if (login.hasPermission(15) ?? false)
               ZTabItem(
                 value: FinanceTabName.payroll,
-                label: "Payroll",
+                label: AppLocalizations.of(context)!.payroll,
                 screen: const PayrollView(),
               ),
 
 
-           // if (login.hasPermission(16) ?? false) ...[
+           if (login.hasPermission(16) ?? false)
               ZTabItem(
                 value: FinanceTabName.endOfYear,
-                label: "Fiscal Year",
-                screen: const EoyView(),
+                label: AppLocalizations.of(context)!.fiscalYear,
+                screen: const EndOfYearView(),
               ),
 
-           // if (login.hasPermission(17) ?? false) ...[
+            if (login.hasPermission(17) ?? false)
               ZTabItem(
                 value: FinanceTabName.reminder,
-                label: "reminders",
+                label: AppLocalizations.of(context)!.reminders,
                 screen: const ReminderView(),
               ),
             ];
@@ -112,7 +114,7 @@ class _Desktop extends StatelessWidget {
             tabs: tabs,
             selectedValue: selected,
             title: AppLocalizations.of(context)!.finance,
-            description: "Manage finance",
+            description: AppLocalizations.of(context)!.manageFinance,
 
             /// Bloc update
             onChanged: (val) => context.read<FinanceTabBloc>().add(
@@ -143,6 +145,7 @@ class _Mobile extends StatelessWidget {
     if (state is! AuthenticatedState) {
       return const SizedBox();
     }
+    final login = state.loginData;
     return Scaffold(
 
       body: Padding(
@@ -150,32 +153,31 @@ class _Mobile extends StatelessWidget {
         child: BlocBuilder<FinanceTabBloc, FinanceTabState>(
           builder: (context, state) {
             final tabs = <ZTabItem<FinanceTabName>>[
-           //   if (login.hasPermission(11) ?? false)...[
+              if (login.hasPermission(11) ?? false)
                 ZTabItem(
                   value: FinanceTabName.currencies,
-                  label: "Currency",
+                  label:  AppLocalizations.of(context)!.currencyTitle,
                   screen: const CurrenciesView(),
                 ),
 
+              if (login.hasPermission(11) ?? false)
               ZTabItem(
                 value: FinanceTabName.exchangeRate,
-                label: "Exchange Rate",
+                label:  AppLocalizations.of(context)!.fxRate,
                 screen: ExchangeRateView(newRateButton: true,settingButton: true),
               ),
 
-
-          //   if (login.hasPermission(14) ?? false)...[
+             if (login.hasPermission(14) ?? false)
                 ZTabItem(
                   value: FinanceTabName.glAccounts,
-                  label: "glAccounts",
+                  label: AppLocalizations.of(context)!.glAccount,
                   screen: const GlAccountsView(),
                 ),
 
-
-           //   if (login.hasPermission(17) ?? false) ...[
+             if (login.hasPermission(17) ?? false)
                 ZTabItem(
                   value: FinanceTabName.reminder,
-                  label: "reminders",
+                  label: AppLocalizations.of(context)!.reminders,
                   screen: const ReminderView(),
                 ),
               ];

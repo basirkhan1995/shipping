@@ -6,18 +6,21 @@ abstract class StkAccountsEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// The only event that carries [perId].
-/// It is the entry point of the bloc's lifecycle for one stakeholder.
+/// Load accounts.
+///   • [perId]  null  → all accounts
+///   • [query]  null  → no search
+/// Every combination is valid (all, by stakeholder, by search, both).
 class LoadStkAccountsEvent extends StkAccountsEvent {
-  final int perId;
-  const LoadStkAccountsEvent(this.perId);
+  final int? perId;
+  final String? query;
+
+  const LoadStkAccountsEvent({this.perId, this.query});
+
   @override
-  List<Object?> get props => [perId];
+  List<Object?> get props => [perId, query];
 }
 
-/// Optional: switch to a different stakeholder without recreating the bloc.
-/// Semantically equivalent to LoadStkAccountsEvent but clearer intent
-/// when the bloc is already showing another stakeholder's accounts.
+/// Switch to a different stakeholder without recreating the bloc.
 class SwitchStakeholderEvent extends StkAccountsEvent {
   final int perId;
   const SwitchStakeholderEvent(this.perId);
@@ -41,14 +44,14 @@ class AddStkAccountEvent extends StkAccountsEvent {
 }
 
 class EditStkAccountEvent extends StkAccountsEvent {
-  final int perId;                 // <-- required now
+  final int perId;
   final int accNumber;
   final String? accName;
   final String? actCurrency;
   final dynamic actCreditLimit;
   final int? actStatus;
   const EditStkAccountEvent({
-    required this.perId,           // <-- required now
+    required this.perId,
     required this.accNumber,
     this.accName,
     this.actCurrency,
@@ -61,7 +64,7 @@ class EditStkAccountEvent extends StkAccountsEvent {
 }
 
 class BlockStkAccountEvent extends StkAccountsEvent {
-  final int perId;                 // <-- required now
+  final int perId;
   final int accNumber;
   const BlockStkAccountEvent(this.perId, this.accNumber);
   @override
@@ -69,7 +72,7 @@ class BlockStkAccountEvent extends StkAccountsEvent {
 }
 
 class UnblockStkAccountEvent extends StkAccountsEvent {
-  final int perId;                 // <-- required now
+  final int perId;
   final int accNumber;
   const UnblockStkAccountEvent(this.perId, this.accNumber);
   @override
@@ -77,7 +80,7 @@ class UnblockStkAccountEvent extends StkAccountsEvent {
 }
 
 class DeleteStkAccountEvent extends StkAccountsEvent {
-  final int perId;                 // <-- required now
+  final int perId;
   final int accNumber;
   const DeleteStkAccountEvent(this.perId, this.accNumber);
   @override

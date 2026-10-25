@@ -33,7 +33,7 @@ class StkAccountsLoadingState extends StkAccountsState {
 
 class StkAccountsLoadedState extends StkAccountsState {
   const StkAccountsLoadedState({
-    required int super.perId,
+    super.perId,
     required super.accounts,
     super.successMessage,
     super.errorMessage,

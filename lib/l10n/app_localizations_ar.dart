@@ -458,7 +458,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get instagram => 'انستاگرام';
 
   @override
-  String get location => 'موقیعت';
+  String get location => 'موقعیت';
 
   @override
   String get details => 'جزئیات';
@@ -471,4 +471,136 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get inactive => 'غیرفعال';
+
+  @override
+  String get editProfile => 'د پروفایل سمون';
+
+  @override
+  String get comDetails => 'شرکت معلومات';
+
+  @override
+  String get addressHint => 'د شرکت د پتې مدیریت';
+
+  @override
+  String get socialMediaHint => 'د ټولنیزو رسنیو د پروفایل مدیریت';
+
+  @override
+  String get companyDetailsHint => 'د شرکت د معلوماتو مدیریت';
+
+  @override
+  String get companyLicence => 'د سوداګرۍ جواز';
+
+  @override
+  String get payableDue => 'رسېدلې ورکړه';
+
+  @override
+  String get receivableDue => 'رسېدونکی طلب';
+
+  @override
+  String get dueType => 'د سررسید ډول';
+
+  @override
+  String get filterByStatus => 'د حالت فلټر';
+
+  @override
+  String get reminders => 'یادونه';
+
+  @override
+  String get dueDate => 'سررسید نیته';
+
+  @override
+  String get accounts => 'حسابونه';
+
+  @override
+  String get accNameOrNumber => 'د حساب نوم یا شمېره';
+
+  @override
+  String get amountGreaterZero => 'مقدار باید له صفر څخه لوی وي';
+
+  @override
+  String get account => 'حساب';
+
+  @override
+  String get dueToday => 'د نن نېټې موعد';
+
+  @override
+  String get dueTomorrow => 'د سبا موعد';
+
+  @override
+  String get day => 'ورځ';
+
+  @override
+  String get overdueBy => 'په ځنډ';
+
+  @override
+  String get overdueByOne => '۱ ورځ په ځنډ';
+
+  @override
+  String get noReminder => 'هېڅ یادونه نشته';
+
+  @override
+  String get done => 'بشپړ شو';
+
+  @override
+  String get aboat => 'په اړه';
+
+  @override
+  String get company => 'شرکت';
+
+  @override
+  String get backup => 'بیک اپ';
+
+  @override
+  String get generalSettings => 'عمومی تنظیمات';
+
+  @override
+  String get fiscalYear => 'د مالي کال تړل';
+
+  @override
+  String get payroll => 'معاشات';
+
+  @override
+  String get manageFinance => 'د شرکت مالي مدیریت';
+
+  @override
+  String get profitAndLoss => 'ګټه او تاوان';
+
+  @override
+  String get eoyClosing => 'د مالي کال تړل';
+
+  @override
+  String get summary => 'مالي لنډیز';
+
+  @override
+  String get noPandLMessage => 'د ګټې او تاوان راپور لپاره معلومات نشته';
+
+  @override
+  String get proceed => 'اقدام کردن';
+
+  @override
+  String get retainedEarnings => 'انباشته ګټه';
+
+  @override
+  String get remark => 'څرګندونې';
+
+  @override
+  String get debit => 'بدهکار';
+
+  @override
+  String get credit => 'طلبکار';
+
+  @override
+  String get total => 'ټولټال';
+
+  @override
+  String get attention => 'توجه';
+
+  @override
+  String get plMessage => 'ګټه او تاوان وتړل شي او انباشته ګټې ته ولېږدول شي؟';
+
+  @override
+  String get goodMorning => 'سهار مو پخیر';
+
+  @override
+  String get profileOverview => 'د پروفایل عمومي کتنه';
 }

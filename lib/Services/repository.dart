@@ -3,9 +3,11 @@ import 'package:http/http.dart' hide MultipartFile;
 import 'package:flutter/services.dart';
 
 import '../Routes/Home/View/Finance/View/Currencies/model/ccy_model.dart';
+import '../Routes/Home/View/Finance/View/EOY/model/eoy_model.dart';
 import '../Routes/Home/View/Finance/View/ExchangeRate/model/ex_rate_model.dart';
 import '../Routes/Home/View/Finance/View/GlAccounts/GlCategories/model/cat_model.dart';
 import '../Routes/Home/View/Finance/View/GlAccounts/model/gl_model.dart';
+import '../Routes/Home/View/Finance/View/Reminder/model/reminder_model.dart';
 import '../Routes/Home/View/Settings/View/Company/Branch/Ui/BranchLimits/model/limit_model.dart';
 import '../Routes/Home/View/Settings/View/Company/Branches/model/branch_model.dart';
 import '../Routes/Home/View/Settings/View/Company/CompanyProfile/model/com_model.dart';
@@ -18,6 +20,60 @@ class Repositories {
   final ApiServices _api;
 
   const Repositories(this._api);
+
+  // ═════════════════════════════════════════════════════════════════
+// Reminders
+// ═════════════════════════════════════════════════════════════════
+
+  Future<List<ReminderModel>> getAlertReminders({
+    int? alert,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.get(
+      endpoint: '/finance/reminders.php',
+      queryParams: {
+        'alerts': ?alert,
+      },
+      cancelToken: cancelToken,
+    );
+
+    final body = response.data;
+
+    // Case 1: a plain array.
+    if (body is List) {
+      return body
+          .whereType<Map>()
+          .map((e) => ReminderModel.fromMap(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+
+    // Case 2: a single object → wrap in a one-element list.
+    if (body is Map<String, dynamic>) {
+      return [ReminderModel.fromMap(body)];
+    }
+    if (body is Map) {
+      return [ReminderModel.fromMap(Map<String, dynamic>.from(body))];
+    }
+
+    _fail(body, fallback: 'Failed to load reminders');
+  }
+
+  Future<void> addNewReminder({required ReminderModel newData}) async {
+    final response = await _api.post(
+      endpoint: '/finance/reminders.php',
+      data: newData.toMap(),
+    );
+    _requireSuccess(response.data, fallback: 'Failed to add reminder');
+  }
+
+  Future<void> updateReminder({required ReminderModel newData}) async {
+    final response = await _api.put(
+      endpoint: '/finance/reminders.php',
+      data: newData.toMap(),
+    );
+    _requireSuccess(response.data, fallback: 'Failed to update reminder');
+  }
+
 // ═════════════════════════════════════════════════════════════════
 // Exchange rates
 // ═════════════════════════════════════════════════════════════════
@@ -237,13 +293,21 @@ class Repositories {
   // ═════════════════════════════════════════════════════════════════
   // Accounts
   // ═════════════════════════════════════════════════════════════════
-  Future<List<StakeholderAccount>> getAccounts(int perId) async {
-    final res = await _api.get(
+  Future<List<StakeholderAccount>> getAccounts({
+    int? perId,
+    String? search,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.get(
       endpoint: '/stakeholder/account.php',
-      queryParams: {'perID': perId},
+      queryParams: {
+        'perID': ?perId,
+        if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+      },
+      cancelToken: cancelToken,
     );
     return _parseList(
-      res.data,
+      response.data,
       StakeholderAccount.fromMap,
       fallback: 'Failed to load accounts',
     );
@@ -652,11 +716,13 @@ class Repositories {
     );
     _requireSuccess(response.data, fallback: 'Failed to update company profile');
   }
-  Future<void> uploadCompanyProfile({required Uint8List image,}) async {
-    final String fileName =
-        'photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
-
+  Future<void> uploadCompanyProfile({
+    required Uint8List image,
+    int comID = 1,
+  }) async {
+    final fileName = 'photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
     final formData = FormData.fromMap({
+      'comID': comID,
       'image': MultipartFile.fromBytes(
         image,
         filename: fileName,
@@ -700,4 +766,40 @@ class Repositories {
     );
     _requireSuccess(response.data, fallback: 'Failed to update storage');
   }
+
+  // ═════════════════════════════════════════════════════════════════
+// Finance — EOY operation / P&L
+// ═════════════════════════════════════════════════════════════════
+
+  Future<void> eoyOperationProcess({
+    required String usrName,
+    required String remark,
+    required int branchCode,
+  }) async {
+    final response = await _api.post(
+      endpoint: '/finance/eoyOperation.php',
+      data: {
+        'usrName': usrName,
+        'remark': remark,
+        'parkingBranch': branchCode,
+      },
+    );
+    _requireSuccess(response.data, fallback: 'Failed to run EOY operation');
+  }
+
+  Future<List<PAndLModel>> getProfitAndLoss({
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.get(
+      endpoint: '/finance/eoyOperation.php',
+      cancelToken: cancelToken,
+    );
+    return _parseList(
+      response.data,
+      PAndLModel.fromMap,
+      fallback: 'Failed to load profit and loss',
+    );
+  }
+
+
 }

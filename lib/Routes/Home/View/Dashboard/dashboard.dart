@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/cover.dart';
 import 'package:shipping/Features/Widgets/digital_clock.dart';
 import 'package:shipping/Routes/Auth/bloc/auth_bloc.dart';
+import 'package:shipping/Routes/Home/View/Finance/View/Reminder/reminder_widget.dart';
 import 'package:shipping/Services/api_services.dart';
+import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../Features/Other/responsive_widget.dart';
 import '../Finance/View/ExchangeRate/Ui/exchange_rate.dart';
 
@@ -110,6 +112,10 @@ class _DesktopDashboard extends StatelessWidget {
                                 settingButton: true,
                                 newRateButton: true,
                             ),
+
+                            SizedBox(
+                                width: rightSideWidth,
+                                child: DashboardAlertReminder())
                           ],
                         )
                       ],
@@ -140,7 +146,14 @@ class _DesktopTopBar extends StatelessWidget {
 
     final fullName = user?.usrFullName ?? user?.usrName ?? 'Guest';
     final username = user?.usrName ?? '';
-    final photo = "${ApiServices.imageUrl}${user?.usrPhoto}";
+
+// Only build the URL if we actually have a filename.
+    final rawPhoto = user?.usrPhoto?.trim();
+    final hasPhoto = rawPhoto != null &&
+        rawPhoto.isNotEmpty &&
+        rawPhoto.toLowerCase() != 'null' &&
+        rawPhoto.toLowerCase() != 'undefined';
+    final photoUrl = hasPhoto ? "${ApiServices.imageUrl}$rawPhoto" : null;
 
     return Container(
       height: 64,
@@ -153,7 +166,7 @@ class _DesktopTopBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Dashboard',
+                AppLocalizations.of(context)!.dashboard,
                 style: textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w700,
                   height: 1.1,
@@ -252,8 +265,8 @@ class _DesktopTopBar extends StatelessWidget {
                     radius: 15,
                     backgroundColor: scheme.primaryContainer,
                     backgroundImage:
-                    photo.isNotEmpty ? NetworkImage(photo) : null,
-                    child: photo.isEmpty
+                    photoUrl!=null && photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
+                    child: photoUrl!=null && photoUrl.isEmpty
                         ? Text(
                       _initials(fullName),
                       style: TextStyle(

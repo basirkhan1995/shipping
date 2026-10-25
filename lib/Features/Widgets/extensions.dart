@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../l10n/app_localizations.dart';
+
 
 
 // Font Scaler based on screen size
@@ -190,28 +192,28 @@ extension TimeAgoString on String {
 
 extension ReminderDueExtension on DateTime {
 
-  // String toDueStatus(AppLocalizations tr) {
-  //   final now = DateTime.now();
-  //
-  //   final today = DateTime(now.year, now.month, now.day);
-  //   final due = DateTime(year, month, day);
-  //
-  //   final diff = due.difference(today).inDays;
-  //
-  //   if (diff == 0) return tr.dueToday;
-  //
-  //   if (diff == 1) return tr.dueTomorrow;
-  //
-  //   if (diff > 1) {
-  //     return "${tr.dueType} $diff ${diff == 1 ? tr.dayTitle : tr.daysTitle}";
-  //   }
-  //
-  //   final overdue = diff.abs();
-  //
-  //   if (overdue == 1) return tr.overdueByOne;
-  //
-  //   return "${tr.overdueBy} $overdue ${tr.daysTitle}";
-  // }
+  String toDueStatus(AppLocalizations tr) {
+    final now = DateTime.now();
+
+    final today = DateTime(now.year, now.month, now.day);
+    final due = DateTime(year, month, day);
+
+    final diff = due.difference(today).inDays;
+
+    if (diff == 0) return tr.dueToday;
+
+    if (diff == 1) return tr.dueTomorrow;
+
+    if (diff > 1) {
+      return "${tr.dueType} $diff ${diff == 1 ? tr.day : tr.days}";
+    }
+
+    final overdue = diff.abs();
+
+    if (overdue == 1) return tr.overdueByOne;
+
+    return "${tr.overdueBy} $overdue ${tr.days}";
+  }
 }
 
 

@@ -17,7 +17,6 @@ import 'bloc/company_profile_bloc.dart';
 import 'features/section.dart';
 import 'model/com_model.dart';
 
-
 class CompanySettingsView extends StatelessWidget {
   const CompanySettingsView({super.key});
 
@@ -45,7 +44,8 @@ class _BaseCompanyForm extends StatefulWidget {
   State<_BaseCompanyForm> createState() => _BaseCompanyFormState();
 }
 
-class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerProviderStateMixin {
+class _BaseCompanyFormState extends State<_BaseCompanyForm>
+    with SingleTickerProviderStateMixin {
   final TextEditingController businessName = TextEditingController();
   final TextEditingController phone = TextEditingController();
   final TextEditingController email = TextEditingController();
@@ -71,27 +71,7 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
   final ScrollController _scrollController = ScrollController();
   late AnimationController _animationController;
 
-  Future<void> _pickLogoImage() async {
-    final bloc = context.read<CompanyProfileBloc>();
-
-    final imageBytes = await Utils.pickImage();
-    if (imageBytes == null || imageBytes.isEmpty) return;
-
-    try {
-      if (!mounted) return;
-      final croppedBytes = await showImageCropper(
-        context: context,
-        imageBytes: imageBytes,
-      );
-
-      if (!mounted || croppedBytes == null || croppedBytes.isEmpty) return;
-
-      setState(() => _companyLogo = croppedBytes);
-      bloc.add(UploadCompanyLogoEvent(croppedBytes));
-    } catch (e) {
-      debugPrint('Image crop failed: $e');
-    }
-  }
+  // ── LIFECYCLE ─────────────────────────────────────────────────────
 
   @override
   void initState() {
@@ -132,12 +112,15 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
     super.dispose();
   }
 
+  // ── DATA INIT ─────────────────────────────────────────────────────
+
   void _initializeData() {
     final state = context.read<CompanyProfileBloc>().state;
     if (state is CompanyProfileLoadedState) {
       _updateControllers(state);
     }
   }
+
   void _loadCachedLogo() {
     final state = context.read<CompanyProfileBloc>().state;
     if (state is CompanyProfileLoadedState) {
@@ -151,6 +134,123 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
       }
     }
   }
+
+  // ── LOGO PICK / UPLOAD ────────────────────────────────────────────
+
+  Future<void> _pickLogoImage() async {
+    final bloc = context.read<CompanyProfileBloc>();
+
+    final imageBytes = await Utils.pickImage();
+    if (imageBytes == null || imageBytes.isEmpty) return;
+
+    try {
+      if (!mounted) return;
+      final croppedBytes = await showImageCropper(
+        context: context,
+        imageBytes: imageBytes,
+      );
+
+      if (!mounted || croppedBytes == null || croppedBytes.isEmpty) return;
+
+      // Log magic bytes so we can tell if the cropper returned a real image
+      debugPrint(
+        'CROP bytes=${croppedBytes.length}, '
+            'first8=${croppedBytes.take(8).map((b) => b.toRadixString(16).padLeft(2, '0')).join()}',
+      );
+
+      setState(() => _companyLogo = croppedBytes);
+      bloc.add(UploadCompanyLogoEvent(croppedBytes));
+    } catch (e) {
+      debugPrint('Image crop failed: $e');
+    }
+  }
+
+  // ── IMAGE HELPERS ─────────────────────────────────────────────────
+
+  /// Sniff common image magic numbers (JPEG / PNG / GIF / WebP / BMP).
+  bool _isValidImageBytes(Uint8List bytes) {
+    if (bytes.length < 12) return false;
+    // JPEG: FF D8 FF
+    if (bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) return true;
+    // PNG: 89 50 4E 47
+    if (bytes[0] == 0x89 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x4E &&
+        bytes[3] == 0x47) {
+      return true;
+    }
+    // GIF: 'GIF8'
+    if (bytes[0] == 0x47 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46 &&
+        bytes[3] == 0x38) {
+      return true;
+    }
+    // WebP: 'RIFF' ....'WEBP'
+    if (bytes[0] == 0x52 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46 &&
+        bytes[3] == 0x46 &&
+        bytes[8] == 0x57 &&
+        bytes[9] == 0x45 &&
+        bytes[10] == 0x42 &&
+        bytes[11] == 0x50) {
+      return true;
+    }
+    // BMP: 42 4D
+    if (bytes[0] == 0x42 && bytes[1] == 0x4D) return true;
+    return false;
+  }
+
+  /// Single guarded image widget used by BOTH mobile and desktop/tablet.
+  Widget _buildLogoImage({double? width, double? height}) {
+    // 1) No bytes → asset fallback
+    if (_companyLogo.isEmpty) {
+      return Image.asset(
+        "assets/images/zaitoonLogo.png",
+        fit: BoxFit.cover,
+        width: width,
+        height: height,
+      );
+    }
+
+    // 2) Bytes present but not a real image → asset fallback, no decode
+    if (!_isValidImageBytes(_companyLogo)) {
+      debugPrint(
+        '_buildLogoImage: rejected ${_companyLogo.length} non-image bytes '
+            '(first8=${_companyLogo.take(8).map((b) => b.toRadixString(16).padLeft(2, '0')).join()})',
+      );
+      return Image.asset(
+        "assets/images/zaitoonLogo.png",
+        fit: BoxFit.cover,
+        width: width,
+        height: height,
+      );
+    }
+
+    // 3) Valid image → render with errorBuilder as last line of defense
+    return Image.memory(
+      _companyLogo,
+      fit: BoxFit.cover,
+      width: width,
+      height: height,
+      gaplessPlayback: true,
+      errorBuilder: (context, error, stackTrace) {
+        debugPrint(
+          '_buildLogoImage: decode failed (${_companyLogo.length} bytes): $error',
+        );
+        return Image.asset(
+          "assets/images/zaitoonLogo.png",
+          fit: BoxFit.cover,
+          width: width,
+          height: height,
+        );
+      },
+    );
+  }
+
+  // ── CONTROLLER SYNC ───────────────────────────────────────────────
+
   void _updateControllers(CompanyProfileLoadedState state) {
     setState(() {
       businessName.text = state.company.comName ?? "";
@@ -170,13 +270,16 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
       loadedCompany = state.company;
       comLocalCcy.text = state.company.comLocalCcy ?? "";
 
+      // Reset or refresh the logo bytes based on what the server returned.
       final base64Logo = state.company.comLogo;
       if (base64Logo != null && base64Logo.isNotEmpty) {
         try {
           _companyLogo = base64Decode(base64Logo);
-        } catch (e) {
+        } catch (_) {
           _companyLogo = Uint8List(0);
         }
+      } else {
+        _companyLogo = Uint8List(0);
       }
     });
   }
@@ -215,14 +318,19 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
     ));
   }
 
-  Widget _buildHeader(LoginData login, AppLocalizations locale, CompanyProfileLoadedState state) {
+  // ── HEADER ────────────────────────────────────────────────────────
+
+  Widget _buildHeader(
+      LoginData login,
+      AppLocalizations locale,
+      CompanyProfileLoadedState state,
+      ) {
     if (widget.isMobile) {
-      // Mobile header - stacked layout
+      // ── MOBILE: stacked layout ──
       return Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Logo
           Center(
             child: Stack(
               children: [
@@ -239,9 +347,7 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
                           .withValues(alpha: .09),
                     ),
                   ),
-                  child: (_companyLogo.isEmpty)
-                      ? Image.asset("assets/images/zaitoonLogo.png", fit: BoxFit.cover)
-                      : Image.memory(_companyLogo, fit: BoxFit.cover),
+                  child: _buildLogoImage(),
                 ),
                 if (isUpdateMode)
                   Positioned(
@@ -251,10 +357,12 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
                       onPressed: _pickLogoImage,
                       icon: Container(
                         decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
-                            borderRadius: BorderRadius.circular(3),
-                            border: Border.all(
-                                color: Theme.of(context).colorScheme.primary)),
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(3),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
                         child: Icon(
                           Icons.camera_alt_rounded,
                           color: Theme.of(context).colorScheme.primary,
@@ -266,7 +374,6 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
             ),
           ),
           const SizedBox(height: 8),
-          // Company info
           Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -276,14 +383,15 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
                 style: Theme.of(context).textTheme.titleLarge,
                 textAlign: TextAlign.center,
               ),
-              if (state.company.comEmail != null && state.company.comEmail!.isNotEmpty)
+              if (state.company.comEmail != null &&
+                  state.company.comEmail!.isNotEmpty)
                 Text(state.company.comEmail ?? ""),
-              if (state.company.comPhone != null && state.company.comPhone!.isNotEmpty)
+              if (state.company.comPhone != null &&
+                  state.company.comPhone!.isNotEmpty)
                 Text(state.company.comPhone ?? ""),
             ],
           ),
           const SizedBox(height: 16),
-          // Action buttons
           if (login.hasPermission(108) ?? false)
             Row(
               mainAxisSize: MainAxisSize.min,
@@ -294,9 +402,7 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
                     icon: Icons.edit,
                     label: Text(locale.edit),
                     onPressed: () {
-                      setState(() {
-                        isUpdateMode = true;
-                      });
+                      setState(() => isUpdateMode = true);
                     },
                   ),
                 if (isUpdateMode) ...[
@@ -321,7 +427,7 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
         ],
       );
     } else {
-      // Desktop/Tablet header - row layout
+      // ── DESKTOP / TABLET: row layout ──
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -343,7 +449,8 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
                             .withValues(alpha: .09),
                       ),
                     ),
-                    child: Image.memory(_companyLogo, fit: BoxFit.cover),
+                    // ── FIX: was Image.memory(_companyLogo) ──
+                    child: _buildLogoImage(),
                   ),
                   if (isUpdateMode)
                     Positioned(
@@ -353,10 +460,12 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
                         onPressed: _pickLogoImage,
                         icon: Container(
                           decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surface,
-                              borderRadius: BorderRadius.circular(3),
-                              border: Border.all(
-                                  color: Theme.of(context).colorScheme.primary)),
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius: BorderRadius.circular(3),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
                           child: Icon(
                             Icons.camera_alt_rounded,
                             color: Theme.of(context).colorScheme.primary,
@@ -374,9 +483,11 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
                     state.company.comName ?? "",
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
-                  if (state.company.comEmail != null && state.company.comEmail!.isNotEmpty)
+                  if (state.company.comEmail != null &&
+                      state.company.comEmail!.isNotEmpty)
                     Text(state.company.comEmail ?? ""),
-                  if (state.company.comPhone != null && state.company.comPhone!.isNotEmpty)
+                  if (state.company.comPhone != null &&
+                      state.company.comPhone!.isNotEmpty)
                     Text(state.company.comPhone ?? ""),
                 ],
               ),
@@ -389,11 +500,9 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
                   ZOutlineButton(
                     icon: Icons.edit,
                     isActive: true,
-                    label: Text(locale.edit),
+                    label: Text(locale.editProfile),
                     onPressed: () {
-                      setState(() {
-                        isUpdateMode = true;
-                      });
+                      setState(() => isUpdateMode = true);
                     },
                   ),
                 if (isUpdateMode) ...[
@@ -407,6 +516,7 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
                   ZOutlineButton(
                     isActive: true,
                     label: Text(locale.save),
+                    icon: Icons.save,
                     onPressed: _updateCompanyProfile,
                   ),
                 ],
@@ -424,6 +534,8 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
     );
   }
 
+  // ── BUILD ─────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     final locale = AppLocalizations.of(context)!;
@@ -438,15 +550,17 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
       body: SafeArea(
         child: BlocConsumer<CompanyProfileBloc, CompanyProfileState>(
           listener: (context, state) {
-
             if (state is CompanyProfileLoadedState) {
               _updateControllers(state);
 
               if (isUpdateMode) {
-                setState(() {
-                  isUpdateMode = false;
-                });
-                ToastManager.show(context: context, message: locale.successMsg, title: locale.successTitle, type: ToastType.success);
+                setState(() => isUpdateMode = false);
+                ToastManager.show(
+                  context: context,
+                  message: locale.successMsg,
+                  title: locale.successTitle,
+                  type: ToastType.success,
+                );
               }
             }
           },
@@ -454,37 +568,26 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
             if (state is CompanyProfileErrorState) {
               return NoDataWidget(
                 message: state.message,
-                onRefresh: (){
-                  context.read<CompanyProfileBloc>().add(LoadCompanyProfileEvent());
+                onRefresh: () {
+                  context
+                      .read<CompanyProfileBloc>()
+                      .add(LoadCompanyProfileEvent());
                 },
               );
             }
             if (state is CompanyProfileLoadingState) {
               return UniversalShimmer.profileDetails(
-                 showImage: true,
+                showImage: true,
                 numberOfInfoSections: 9,
                 showName: true,
                 showInfoSections: true,
-                showContact: false
-              );
-            }
-
-            if (state is CompanyProfileErrorState) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 8),
-                    Text(state.message),
-                  ],
-                ),
+                showContact: false,
               );
             }
 
             if (state is CompanyProfileLoadedState) {
               loadedCompany = state.company;
 
-              // Determine responsive values
               final double leftPanelWidth = widget.isMobile
                   ? 0
                   : (widget.isTablet ? 180 : 250);
@@ -500,16 +603,21 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header Section
+                    // Header
                     _buildHeader(login, locale, state),
                     const SizedBox(height: 5),
-                    Divider(color: Theme.of(context).colorScheme.outline.withValues(alpha: .3)),
+                    Divider(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .outline
+                          .withValues(alpha: .3),
+                    ),
                     const SizedBox(height: 5),
 
                     // Address Section
                     SectionFormLayout(
-                      title: AppLocalizations.of(context)!.address,
-                      subtitle: "address hint",
+                      title: locale.address,
+                      subtitle: locale.addressHint,
                       leftPanelWidth: leftPanelWidth,
                       isStacked: isStacked,
                       formFields: [
@@ -620,16 +728,17 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
 
                     const SizedBox(height: 5),
                     Divider(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .outline
-                            .withValues(alpha: .3)),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .outline
+                          .withValues(alpha: .3),
+                    ),
                     const SizedBox(height: 5),
 
                     // Social Media Section
                     SectionFormLayout(
-                      title: AppLocalizations.of(context)!.socialMedia,
-                      subtitle: "profile hint",
+                      title: locale.socialMedia,
+                      subtitle: locale.socialMediaHint,
                       leftPanelWidth: leftPanelWidth,
                       isStacked: isStacked,
                       formFields: [
@@ -638,14 +747,14 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
                             ZTextFieldEntitled(
                               readOnly: !isUpdateMode,
                               controller: website,
-                              title: AppLocalizations.of(context)!.website,
+                              title: locale.website,
                             ),
                           ),
                           _buildFormField(
                             ZTextFieldEntitled(
                               readOnly: !isUpdateMode,
                               controller: email,
-                              title: AppLocalizations.of(context)!.email,
+                              title: locale.email,
                             ),
                           ),
                         ] else ...[
@@ -655,7 +764,7 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
                                 child: ZTextFieldEntitled(
                                   readOnly: !isUpdateMode,
                                   controller: website,
-                                  title: AppLocalizations.of(context)!.website,
+                                  title: locale.website,
                                 ),
                               ),
                               const SizedBox(width: 5),
@@ -663,7 +772,7 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
                                 child: ZTextFieldEntitled(
                                   readOnly: !isUpdateMode,
                                   controller: email,
-                                  title: AppLocalizations.of(context)!.email,
+                                  title: locale.email,
                                 ),
                               ),
                             ],
@@ -675,14 +784,14 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
                             ZTextFieldEntitled(
                               readOnly: !isUpdateMode,
                               controller: comFb,
-                              title: AppLocalizations.of(context)!.facebook,
+                              title: locale.facebook,
                             ),
                           ),
                           _buildFormField(
                             ZTextFieldEntitled(
                               readOnly: !isUpdateMode,
                               controller: comInsta,
-                              title: AppLocalizations.of(context)!.instagram,
+                              title: locale.instagram,
                             ),
                           ),
                         ] else ...[
@@ -692,7 +801,7 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
                                 child: ZTextFieldEntitled(
                                   readOnly: !isUpdateMode,
                                   controller: comFb,
-                                  title: AppLocalizations.of(context)!.facebook,
+                                  title: locale.facebook,
                                 ),
                               ),
                               const SizedBox(width: 5),
@@ -700,7 +809,7 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
                                 child: ZTextFieldEntitled(
                                   readOnly: !isUpdateMode,
                                   controller: comInsta,
-                                  title: AppLocalizations.of(context)!.instagram,
+                                  title: locale.instagram,
                                 ),
                               ),
                             ],
@@ -711,16 +820,17 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
 
                     const SizedBox(height: 5),
                     Divider(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .outline
-                            .withValues(alpha: .3)),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .outline
+                          .withValues(alpha: .3),
+                    ),
                     const SizedBox(height: 5),
 
                     // Company Details Section
                     SectionFormLayout(
-                      title: "comDetails",
-                      subtitle: "addressHint",
+                      title: locale.comDetails,
+                      subtitle: locale.companyDetailsHint,
                       leftPanelWidth: leftPanelWidth,
                       isStacked: isStacked,
                       formFields: [
@@ -730,7 +840,7 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
                               readOnly: true,
                               isEnabled: false,
                               controller: comLicense,
-                              title: "comLicense",
+                              title: locale.companyLicence,
                             ),
                           ),
                           _buildFormField(
@@ -756,7 +866,7 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
                                   readOnly: true,
                                   isEnabled: false,
                                   controller: comLicense,
-                                  title: "comLicense",
+                                  title: locale.companyLicence,
                                 ),
                               ),
                               const SizedBox(width: 5),
@@ -785,13 +895,12 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm> with SingleTickerPro
                             readOnly: !isUpdateMode,
                             controller: comDetails,
                             keyboardType: TextInputType.multiline,
-                            title: "Company details",
+                            title: AppLocalizations.of(context)!.comDetails,
                           ),
                         ),
                       ],
                     ),
 
-                    // Add bottom padding for better scrolling
                     const SizedBox(height: 20),
                   ],
                 ),

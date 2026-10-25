@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../../../../Services/api_exception.dart';
 import '../../../../../../../Services/repository.dart';
 import 'stk_accounts_event.dart';
 import 'stk_accounts_state.dart';
@@ -22,23 +23,53 @@ class StkAccountsBloc extends Bloc<StkAccountsEvent, StkAccountsState> {
   // LOAD / SWITCH
   // ════════════════════════════════════════════════════════════════
   Future<void> _onLoad(
-      LoadStkAccountsEvent e, Emitter<StkAccountsState> emit) async {
-    await _load(e.perId, emit);
+      LoadStkAccountsEvent e,
+      Emitter<StkAccountsState> emit,
+      ) async {
+    await _load(
+      perId: e.perId,
+      search: e.query,
+      emit: emit,
+    );
   }
 
   Future<void> _onSwitch(
-      SwitchStakeholderEvent e, Emitter<StkAccountsState> emit) async {
-    await _load(e.perId, emit);
+      SwitchStakeholderEvent e,
+      Emitter<StkAccountsState> emit,
+      ) async {
+    await _load(perId: e.perId, emit: emit);
   }
 
-  Future<void> _load(int perId, Emitter<StkAccountsState> emit) async {
-    emit(StkAccountsLoadingState(perId: perId, accounts: state.accounts));
+  /// [perId]  null  → all accounts
+  /// [search] null  → no search filter
+  Future<void> _load({
+    required int? perId,
+    String? search,
+    required Emitter<StkAccountsState> emit,
+  }) async {
+    emit(StkAccountsLoadingState(
+      perId: perId,
+      accounts: state.accounts,
+    ));
+
     try {
-      final accounts = await _repo.getAccounts(perId);
-      emit(StkAccountsLoadedState(perId: perId, accounts: accounts));
-    } catch (err) {
+      final accounts = await _repo.getAccounts(
+        perId: perId,
+        search: search,
+      );
+      emit(StkAccountsLoadedState(
+        perId: perId,
+        accounts: accounts,
+      ));
+    } on ApiException catch (e) {
       emit(StkAccountsFailureState(
-        err.toString(),
+        e.message,
+        perId: perId,
+        accounts: state.accounts,
+      ));
+    } catch (e) {
+      emit(StkAccountsFailureState(
+        e.toString(),
         perId: perId,
         accounts: state.accounts,
       ));
@@ -46,10 +77,12 @@ class StkAccountsBloc extends Bloc<StkAccountsEvent, StkAccountsState> {
   }
 
   // ════════════════════════════════════════════════════════════════
-  // ADD — perId comes from the event, falls back to state.perId
+  // ADD
   // ════════════════════════════════════════════════════════════════
   Future<void> _onAdd(
-      AddStkAccountEvent e, Emitter<StkAccountsState> emit) async {
+      AddStkAccountEvent e,
+      Emitter<StkAccountsState> emit,
+      ) async {
     final perId = e.perId ?? state.perId;
 
     if (perId == null) {
@@ -68,11 +101,17 @@ class StkAccountsBloc extends Bloc<StkAccountsEvent, StkAccountsState> {
         actCreditLimit: e.actCreditLimit,
         actSignatory: perId,
       );
-      final accounts = await _repo.getAccounts(perId);
+      final accounts = await _repo.getAccounts(perId: perId);
       emit(StkAccountsLoadedState(
         perId: perId,
         accounts: accounts,
         successMessage: 'Account created',
+      ));
+    } on ApiException catch (err) {
+      emit(StkAccountsFailureState(
+        err.message,
+        perId: perId,
+        accounts: state.accounts,
       ));
     } catch (err) {
       emit(StkAccountsFailureState(
@@ -87,8 +126,10 @@ class StkAccountsBloc extends Bloc<StkAccountsEvent, StkAccountsState> {
   // EDIT
   // ════════════════════════════════════════════════════════════════
   Future<void> _onEdit(
-      EditStkAccountEvent e, Emitter<StkAccountsState> emit) async {
-    final perId = e.perId;         // <-- was state.perId!
+      EditStkAccountEvent e,
+      Emitter<StkAccountsState> emit,
+      ) async {
+    final perId = e.perId;
 
     try {
       await _repo.editAccount(
@@ -98,11 +139,17 @@ class StkAccountsBloc extends Bloc<StkAccountsEvent, StkAccountsState> {
         actCreditLimit: e.actCreditLimit,
         actStatus: e.actStatus,
       );
-      final accounts = await _repo.getAccounts(perId);
+      final accounts = await _repo.getAccounts(perId: perId);
       emit(StkAccountsLoadedState(
         perId: perId,
         accounts: accounts,
         successMessage: 'Account updated',
+      ));
+    } on ApiException catch (err) {
+      emit(StkAccountsFailureState(
+        err.message,
+        perId: perId,
+        accounts: state.accounts,
       ));
     } catch (err) {
       emit(StkAccountsFailureState(
@@ -117,15 +164,23 @@ class StkAccountsBloc extends Bloc<StkAccountsEvent, StkAccountsState> {
   // BLOCK / UNBLOCK
   // ════════════════════════════════════════════════════════════════
   Future<void> _onBlock(
-      BlockStkAccountEvent e, Emitter<StkAccountsState> emit) async {
+      BlockStkAccountEvent e,
+      Emitter<StkAccountsState> emit,
+      ) async {
     final perId = e.perId;
     try {
       await _repo.blockAccount(e.accNumber);
-      final accounts = await _repo.getAccounts(perId);
+      final accounts = await _repo.getAccounts(perId: perId);
       emit(StkAccountsLoadedState(
         perId: perId,
         accounts: accounts,
         successMessage: 'Account blocked',
+      ));
+    } on ApiException catch (err) {
+      emit(StkAccountsFailureState(
+        err.message,
+        perId: perId,
+        accounts: state.accounts,
       ));
     } catch (err) {
       emit(StkAccountsFailureState(
@@ -137,15 +192,23 @@ class StkAccountsBloc extends Bloc<StkAccountsEvent, StkAccountsState> {
   }
 
   Future<void> _onUnblock(
-      UnblockStkAccountEvent e, Emitter<StkAccountsState> emit) async {
+      UnblockStkAccountEvent e,
+      Emitter<StkAccountsState> emit,
+      ) async {
     final perId = e.perId;
     try {
       await _repo.unblockAccount(e.accNumber);
-      final accounts = await _repo.getAccounts(perId);
+      final accounts = await _repo.getAccounts(perId: perId);
       emit(StkAccountsLoadedState(
         perId: perId,
         accounts: accounts,
         successMessage: 'Account unblocked',
+      ));
+    } on ApiException catch (err) {
+      emit(StkAccountsFailureState(
+        err.message,
+        perId: perId,
+        accounts: state.accounts,
       ));
     } catch (err) {
       emit(StkAccountsFailureState(
@@ -160,15 +223,23 @@ class StkAccountsBloc extends Bloc<StkAccountsEvent, StkAccountsState> {
   // DELETE
   // ════════════════════════════════════════════════════════════════
   Future<void> _onDelete(
-      DeleteStkAccountEvent e, Emitter<StkAccountsState> emit) async {
+      DeleteStkAccountEvent e,
+      Emitter<StkAccountsState> emit,
+      ) async {
     final perId = e.perId;
     try {
       await _repo.deleteAccount(e.accNumber);
-      final accounts = await _repo.getAccounts(perId);
+      final accounts = await _repo.getAccounts(perId: perId);
       emit(StkAccountsLoadedState(
         perId: perId,
         accounts: accounts,
         successMessage: 'Account deleted',
+      ));
+    } on ApiException catch (err) {
+      emit(StkAccountsFailureState(
+        err.message,
+        perId: perId,
+        accounts: state.accounts,
       ));
     } catch (err) {
       emit(StkAccountsFailureState(
@@ -183,12 +254,13 @@ class StkAccountsBloc extends Bloc<StkAccountsEvent, StkAccountsState> {
   // CLEAR
   // ════════════════════════════════════════════════════════════════
   void _onClear(
-      ClearStkAccountMessagesEvent _, Emitter<StkAccountsState> emit) {
-    final perId = state.perId;
-    if (perId == null) {
-      emit(const StkAccountsInitialState());
-    } else {
-      emit(StkAccountsLoadedState(perId: perId, accounts: state.accounts));
-    }
+      ClearStkAccountMessagesEvent _,
+      Emitter<StkAccountsState> emit,
+      ) {
+    // Re-emit whatever the last data-bearing state was, minus messages.
+    emit(StkAccountsLoadedState(
+      perId: state.perId,
+      accounts: state.accounts,
+    ));
   }
 }

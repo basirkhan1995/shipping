@@ -460,7 +460,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get instagram => 'انستاگرام';
 
   @override
-  String get location => 'موقیعت';
+  String get location => 'موقعیت';
 
   @override
   String get details => 'جزئیات';
@@ -473,4 +473,136 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get inactive => 'غیرفعال';
+
+  @override
+  String get editProfile => 'ویرایش پروفایل';
+
+  @override
+  String get comDetails => 'معلومات شرکت';
+
+  @override
+  String get addressHint => 'مدیریت آدرس شرکت';
+
+  @override
+  String get socialMediaHint => 'مدیریت پروفایل شبکه‌ های اجتماعی';
+
+  @override
+  String get companyDetailsHint => 'مدیریت اطلاعات شرکت';
+
+  @override
+  String get companyLicence => 'جواز شرکت';
+
+  @override
+  String get payableDue => 'بدهی سررسید';
+
+  @override
+  String get receivableDue => 'طلب سررسید';
+
+  @override
+  String get dueType => 'نوع سررسید';
+
+  @override
+  String get filterByStatus => 'فیلتر وضعیت';
+
+  @override
+  String get reminders => 'یادآوری';
+
+  @override
+  String get dueDate => 'تاریخ سررسید';
+
+  @override
+  String get accounts => 'حسابها';
+
+  @override
+  String get accNameOrNumber => 'نام یا شماره حساب';
+
+  @override
+  String get amountGreaterZero => 'مبلغ باید بیشتر از صفر باشد';
+
+  @override
+  String get account => 'حساب';
+
+  @override
+  String get dueToday => 'موعد امروز';
+
+  @override
+  String get dueTomorrow => 'موعد فردا';
+
+  @override
+  String get day => 'روز';
+
+  @override
+  String get overdueBy => 'با تأخیر';
+
+  @override
+  String get overdueByOne => '۱ روز تأخیر';
+
+  @override
+  String get noReminder => 'هیچ یادآوری یافت نشد';
+
+  @override
+  String get done => 'تایید';
+
+  @override
+  String get aboat => 'درباره';
+
+  @override
+  String get company => 'شرکت';
+
+  @override
+  String get backup => 'پشتیبان‌ گیری';
+
+  @override
+  String get generalSettings => 'تنظیمات عمومی';
+
+  @override
+  String get fiscalYear => 'ختم سال مالی';
+
+  @override
+  String get payroll => 'معاشات';
+
+  @override
+  String get manageFinance => 'مدیریت مالی شرکت';
+
+  @override
+  String get profitAndLoss => 'سود و زیان';
+
+  @override
+  String get eoyClosing => 'بستن سال مالی';
+
+  @override
+  String get summary => 'خلاصه مالی';
+
+  @override
+  String get noPandLMessage => 'اطلاعاتی برای گزارش سود و زیان موجود نیست';
+
+  @override
+  String get proceed => 'اقدام کردن';
+
+  @override
+  String get retainedEarnings => 'سود انباشته';
+
+  @override
+  String get remark => 'ملاحظه';
+
+  @override
+  String get debit => 'بدهکار';
+
+  @override
+  String get credit => 'طلبکار';
+
+  @override
+  String get total => 'مجموع';
+
+  @override
+  String get attention => 'توجه';
+
+  @override
+  String get plMessage => 'سود و زیان بسته و به سود انباشته منتقل شود؟';
+
+  @override
+  String get goodMorning => 'صبح بخیر';
+
+  @override
+  String get profileOverview => 'نمای کلی پروفایل';
 }

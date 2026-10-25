@@ -3,9 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Routes/Auth/bloc/auth_bloc.dart';
 import 'package:shipping/Routes/Auth/login.dart';
 import 'package:shipping/Routes/Home/View/Finance/View/Currencies/bloc/currencies_bloc.dart';
+import 'package:shipping/Routes/Home/View/Finance/View/EOY/bloc/eoy_bloc.dart';
 import 'package:shipping/Routes/Home/View/Finance/View/ExchangeRate/bloc/exchange_rate_bloc.dart';
 import 'package:shipping/Routes/Home/View/Finance/View/GlAccounts/GlCategories/bloc/gl_category_bloc.dart';
 import 'package:shipping/Routes/Home/View/Finance/View/GlAccounts/bloc/gl_accounts_bloc.dart';
+import 'package:shipping/Routes/Home/View/Finance/View/Reminder/bloc/reminder_bloc.dart';
 import 'package:shipping/Routes/Home/View/Finance/bloc/financial_tab_bloc.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/Company/Branch/Ui/BranchLimits/bloc/branch_limit_bloc.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/Company/Branch/bloc/brc_tab_bloc.dart';
@@ -13,6 +15,7 @@ import 'package:shipping/Routes/Home/View/Settings/View/Company/Branches/bloc/br
 import 'package:shipping/Routes/Home/View/Settings/View/Company/CompanyProfile/bloc/company_profile_bloc.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/Company/Storage/bloc/storage_bloc.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/Company/bloc/company_settings_menu_bloc.dart';
+import 'package:shipping/Routes/Home/View/Settings/Visibility/bloc/settings_visible_bloc.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/View/StkAccount/bloc/stk_accounts_bloc.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/bloc/stakeholder_bloc.dart';
 import 'package:shipping/Routes/Home/View/Transactions/bloc/transactions_bloc.dart';
@@ -49,7 +52,8 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (_) => FinanceTabBloc()),
           BlocProvider(create: (_) => BranchTabBloc()),
           BlocProvider(create: (_) => CompanySettingsMenuBloc()),
-
+          BlocProvider(create: (_) => SettingsVisibleBloc()..add(LoadSettingsEvent())),
+          
           ///Auth
           BlocProvider(create: (_) => AuthBloc(Repositories(ApiServices()))),
 
@@ -65,11 +69,16 @@ class MyApp extends StatelessWidget {
           ///GL Accounts
           BlocProvider(create: (_) => GlAccountsBloc(Repositories(ApiServices()))..add(LoadGlAccountEvent())),
           BlocProvider(create: (_) => GlCategoryBloc(Repositories(ApiServices()))),
+          BlocProvider(create: (_) => ReminderBloc(Repositories(ApiServices()))),
 
+          ///Company Bloc
           BlocProvider(create: (_) => CompanyProfileBloc(Repositories(ApiServices()))..add(LoadCompanyProfileEvent())),
           BlocProvider(create: (_) => StorageBloc(Repositories(ApiServices()))..add(LoadStorageEvent())),
           BlocProvider(create: (_) => BranchBloc(Repositories(ApiServices()))..add(LoadBranchesEvent())),
           BlocProvider(create: (_) => BranchLimitBloc(Repositories(ApiServices()))),
+          BlocProvider(create: (_) => EoyBloc(Repositories(ApiServices()))..add(LoadPLEvent())),
+
+
         ],
         child: BlocBuilder<LocalizationBloc, Locale>(
           builder: (context, locale) {

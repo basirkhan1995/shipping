@@ -217,6 +217,26 @@ class ApiServices {
   /*                               FILE UPLOAD                                  */
   /* -------------------------------------------------------------------------- */
 
+  // Future<Response> uploadFile({
+  //   required String endpoint,
+  //   required FormData data,
+  //   CancelToken? cancelToken,
+  // }) async {
+  //   try {
+  //     await _checkConnectivity();
+  //     return await _dio.post(
+  //       endpoint,
+  //       data: data,
+  //       cancelToken: cancelToken,
+  //       options: Options(contentType: 'multipart/form-data'),
+  //     );
+  //   } on DioException catch (e) {
+  //     throw _handleError(e);
+  //   } catch (e) {
+  //     throw ApiException(e.toString());
+  //   }
+  // }
+
   Future<Response> uploadFile({
     required String endpoint,
     required FormData data,
@@ -228,7 +248,6 @@ class ApiServices {
         endpoint,
         data: data,
         cancelToken: cancelToken,
-        options: Options(contentType: 'multipart/form-data'),
       );
     } on DioException catch (e) {
       throw _handleError(e);
