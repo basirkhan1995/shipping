@@ -1,0 +1,661 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../../../../../../../Features/Other/responsive_widget.dart';
+import '../../../../../../../../../../Features/Widgets/cover.dart';
+import '../../../../../../../../../../Features/Widgets/extensions.dart';
+import '../../../../../../../../../../Features/Widgets/noData_widget.dart';
+import '../../../../../../../../../../Features/Widgets/search_field.dart';
+import '../../../../../../../../../../Features/Widgets/zbutton.dart';
+import '../../../../../../../../../../l10n/app_localizations.dart';
+import '../../../../Branches/model/branch_model.dart';
+import '../bloc/branch_limit_bloc.dart';
+import 'add_edit_limit.dart';
+
+class BranchLimitsView extends StatelessWidget {
+  final BranchModel branch;
+  const BranchLimitsView({super.key, required this.branch});
+
+  @override
+  Widget build(BuildContext context) {
+    return ResponsiveLayout(
+      mobile: _MobileBranchLimits(branch: branch),
+      tablet: _TabletBranchLimits(branch: branch),
+      desktop: _DesktopBranchLimits(branch: branch),
+    );
+  }
+}
+
+// Base class to share common functionality
+class _BaseBranchLimits extends StatefulWidget {
+  final BranchModel branch;
+  final bool isMobile;
+  final bool isTablet;
+
+  const _BaseBranchLimits({
+    required this.branch,
+    required this.isMobile,
+    required this.isTablet,
+  });
+
+  @override
+  State<_BaseBranchLimits> createState() => _BaseBranchLimitsState();
+}
+
+class _BaseBranchLimitsState extends State<_BaseBranchLimits> {
+  final TextEditingController searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<BranchLimitBloc>().add(LoadBranchLimitEvent(widget.branch.brcId));
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+  // Build header row with search and buttons
+  Widget _buildHeaderRow(AppLocalizations locale) {
+    if (widget.isMobile) {
+      // Mobile header - stacked layout
+      return Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          children: [
+            ReusableSearchBar(
+              controller: searchController,
+              onChanged: (e) {
+                setState(() {});
+              },
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: ZOutlineButton(
+                    toolTip: "F5",
+                    icon: Icons.refresh,
+                    onPressed: () {
+                      context.read<BranchLimitBloc>().add(
+                        LoadBranchLimitEvent(widget.branch.brcId),
+                      );
+                    },
+                    label: Text(locale.refresh),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ZOutlineButton(
+                    toolTip: "F1",
+                    icon: Icons.add,
+                    isActive: true,
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => BranchLimitAddEditView(
+                          branchCode: widget.branch.brcId,
+                        ),
+                      );
+                    },
+                    label: Text(locale.newKeyword),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    } else if (widget.isTablet) {
+      // Tablet header - compact row layout
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
+        child: Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: ReusableSearchBar(
+                controller: searchController,
+                onChanged: (e) {
+                  setState(() {});
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            ZOutlineButton(
+              toolTip: "F5",
+              width: 100,
+              icon: Icons.refresh,
+              onPressed: () {
+                context.read<BranchLimitBloc>().add(
+                  LoadBranchLimitEvent(widget.branch.brcId),
+                );
+              },
+              label: Text(locale.refresh),
+            ),
+            const SizedBox(width: 8),
+            ZOutlineButton(
+              toolTip: "F1",
+              width: 100,
+              icon: Icons.add,
+              isActive: true,
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => BranchLimitAddEditView(
+                    branchCode: widget.branch.brcId,
+                  ),
+                );
+              },
+              label: Text(locale.newKeyword),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Desktop header
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 8),
+        child: Row(
+          spacing: 8,
+          children: [
+            Expanded(
+              child: ReusableSearchBar(
+                controller: searchController,
+                onChanged: (e) {
+                  setState(() {});
+                },
+              ),
+            ),
+            ZOutlineButton(
+              toolTip: "F5",
+              width: 120,
+              icon: Icons.refresh,
+              onPressed: () {
+                context.read<BranchLimitBloc>().add(
+                  LoadBranchLimitEvent(widget.branch.brcId),
+                );
+              },
+              label: Text(locale.refresh),
+            ),
+            ZOutlineButton(
+              toolTip: "F1",
+              width: 120,
+              icon: Icons.add,
+              isActive: true,
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => BranchLimitAddEditView(
+                    branchCode: widget.branch.brcId,
+                  ),
+                );
+              },
+              label: Text(locale.newKeyword),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+
+  // Helper method to safely parse amount
+  num _parseAmount(dynamic amount) {
+    if (amount == null) return 0;
+    if (amount is num) return amount;
+    if (amount is String) {
+      return num.tryParse(amount) ?? 0;
+    }
+    return 0;
+  }
+
+  // Build limit item based on screen size
+  Widget _buildLimitItem(dynamic limit, int index, TextTheme textTheme, ColorScheme color, AppLocalizations locale) {
+    // Parse the amount safely
+    final amountValue = _parseAmount(limit.balLimitAmount);
+
+    if (widget.isMobile) {
+      // Mobile card view - Enhanced Design
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: .05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+          border: Border.all(
+            color: color.outline.withValues(alpha: .1),
+          ),
+        ),
+        child: InkWell(
+          onTap: () {
+            showDialog(
+              context: context,
+              builder: (context) => BranchLimitAddEditView(branchLimit: limit),
+            );
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Top row with ID and Currency
+                Row(
+                  children: [
+                    // ID Badge
+                    Text(
+                      "#${limit.balId}",
+                      style: textTheme.labelMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    // Currency with icon
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              limit.balCurrency?.toUpperCase() ?? "N/A",
+                              style: textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Divider with gradient
+                Container(
+                  height: 1,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        color.outline.withValues(alpha: .2),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Amount section
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Label
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.trending_up,
+                          size: 18,
+                          color: color.outline,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          locale.amount, // Using existing locale.amount instead of limitAmount
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: color.outline,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Amount value with highlight
+                    Text(
+                      amountValue.toAmount(),
+                      style: textTheme.titleLarge?.copyWith(
+                        color: color.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } else if (widget.isTablet) {
+      // Tablet row view - Enhanced Design
+      return InkWell(
+        onTap: () {
+          showDialog(
+            context: context,
+            builder: (context) => BranchLimitAddEditView(branchLimit: limit),
+          );
+        },
+        splashColor: color.primary.withValues(alpha: .05),
+        highlightColor: color.primary.withValues(alpha: .05),
+        child: Container(
+          decoration: BoxDecoration(
+            color: index.isOdd ? color.primary.withValues(alpha: .02) : Colors.transparent,
+            border: Border(
+              bottom: BorderSide(
+                color: color.outline.withValues(alpha: .05),
+              ),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 14),
+            child: Row(
+              children: [
+                // ID with badge
+                SizedBox(
+                  width: 60,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: color.primary.withValues(alpha: .1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      limit.balId.toString(),
+                      style: textTheme.bodySmall?.copyWith(
+                        color: color.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+
+                // Currency with icon
+                Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          limit.balCurrency?.toUpperCase() ?? "N/A",
+                          style: textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Amount with styling
+                Container(
+                  width: 120,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: color.primary.withValues(alpha: .05),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: color.primary.withValues(alpha: .2),
+                    ),
+                  ),
+                  child: Text(
+                    amountValue.toAmount(),
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: color.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.right,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } else {
+      // Desktop row view - Enhanced Design
+      return InkWell(
+        onTap: () {
+          showDialog(
+            context: context,
+            builder: (context) => BranchLimitAddEditView(branchLimit: limit),
+          );
+        },
+        splashColor: color.primary.withValues(alpha: .05),
+        hoverColor: color.primary.withValues(alpha: .05),
+        child: Container(
+          decoration: BoxDecoration(
+            color: index.isOdd ? color.primary.withValues(alpha: .02) : Colors.transparent,
+            border: Border(
+              bottom: BorderSide(
+                color: color.outline.withValues(alpha: .05),
+              ),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 12),
+            child: Row(
+              children: [
+                // ID with badge
+                SizedBox(
+                  width: 30,
+                  child: Text(
+                    limit.balId.toString(),
+                    style: textTheme.bodySmall?.copyWith(
+                      color: color.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+                // Currency with icon
+                Expanded(
+                  child: Row(
+                    children: [
+                      ZCover(
+                        child: Text(
+                          limit.balCurrency?.toUpperCase() ?? "N/A",
+                          style: textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Amount with styling
+                Text(
+                  amountValue.toAmount() == "9,999,999,999,999.00"? locale.unlimited : amountValue.toAmount(),
+                  style: textTheme.bodyLarge?.copyWith(
+                    color: color.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+  }
+  @override
+  Widget build(BuildContext context) {
+    final locale = AppLocalizations.of(context)!;
+    final textTheme = Theme.of(context).textTheme;
+    final color = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      backgroundColor: color.surface,
+      appBar: widget.isMobile
+          ? AppBar(
+        title: Text("${locale.branchLimit} - ${widget.branch.brcName}"),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              context.read<BranchLimitBloc>().add(
+                LoadBranchLimitEvent(widget.branch.brcId),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => BranchLimitAddEditView(
+                  branchCode: widget.branch.brcId,
+                ),
+              );
+            },
+          ),
+        ],
+      )
+          : null,
+      body: Column(
+        children: [
+          // Header Section
+          _buildHeaderRow(locale),
+          // Limits List
+          Expanded(
+            child: BlocConsumer<BranchLimitBloc, BranchLimitState>(
+              listener: (context, state) {
+                if (state is BranchLimitSuccessState) {
+                  Navigator.of(context).pop();
+                  context.read<BranchLimitBloc>().add(
+                    LoadBranchLimitEvent(widget.branch.brcId),
+                  );
+                }
+              },
+              builder: (context, state) {
+                if (state is BranchLimitErrorState) {
+                  return NoDataWidget(
+                    message: state.message,
+                    onRefresh: () {
+                      context.read<BranchLimitBloc>().add(
+                        LoadBranchLimitEvent(widget.branch.brcId),
+                      );
+                    },
+                  );
+                }
+                if (state is BranchLimitLoadingState) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+                if (state is BranchLimitLoadedState) {
+                  final query = searchController.text.toLowerCase().trim();
+
+                  // Filter with amount parsing for search
+                  final filteredList = state.limits.where((item) {
+                    final name = item.balCurrency?.toLowerCase() ?? '';
+                    final amount = item.balLimitAmount?.toString() ?? '';
+                    final amountValue = _parseAmount(item.balLimitAmount);
+                    final amountFormatted = amountValue.toAmount().toLowerCase();
+
+                    return name.contains(query) ||
+                        amount.contains(query) ||
+                        amountFormatted.contains(query);
+                  }).toList();
+
+                  if (filteredList.isEmpty) {
+                    return NoDataWidget(
+                      message: locale.noDataFound,
+                      onRefresh: () {
+                        context.read<BranchLimitBloc>().add(
+                          LoadBranchLimitEvent(widget.branch.brcId),
+                        );
+                      },
+                    );
+                  }
+
+                  return ListView.builder(
+                    padding: widget.isMobile
+                        ? const EdgeInsets.symmetric(vertical: 8)
+                        : EdgeInsets.zero,
+                    itemCount: filteredList.length,
+                    itemBuilder: (context, index) {
+                      final limit = filteredList[index];
+                      return _buildLimitItem(limit, index, textTheme, color, locale);
+                    },
+                  );
+                }
+                return const SizedBox();
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Mobile View
+class _MobileBranchLimits extends StatelessWidget {
+  final BranchModel branch;
+
+  const _MobileBranchLimits({required this.branch});
+
+  @override
+  Widget build(BuildContext context) {
+    return _BaseBranchLimits(
+      branch: branch,
+      isMobile: true,
+      isTablet: false,
+    );
+  }
+}
+
+// Tablet View
+class _TabletBranchLimits extends StatelessWidget {
+  final BranchModel branch;
+
+  const _TabletBranchLimits({required this.branch});
+
+  @override
+  Widget build(BuildContext context) {
+    return _BaseBranchLimits(
+      branch: branch,
+      isMobile: false,
+      isTablet: true,
+    );
+  }
+}
+
+// Desktop View
+class _DesktopBranchLimits extends StatelessWidget {
+  final BranchModel branch;
+
+  const _DesktopBranchLimits({required this.branch});
+
+  @override
+  Widget build(BuildContext context) {
+    return _BaseBranchLimits(
+      branch: branch,
+      isMobile: false,
+      isTablet: false,
+    );
+  }
+}
