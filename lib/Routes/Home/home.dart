@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Routes/Home/View/HR/hr.dart';
@@ -173,7 +175,6 @@ class _DesktopView extends StatelessWidget {
     );
   }
 }
-
 /// Header shown at the top of the desktop sidebar: company logo + name.
 class _CompanyHeader extends StatelessWidget {
   final bool isExpanded;
@@ -190,21 +191,32 @@ class _CompanyHeader extends StatelessWidget {
     final companyName = company?.comName ?? 'Company';
     final logo = company?.comLogo;
 
+    // Wider avatar: 44px expanded, 34px collapsed.
+    final double logoSize = isExpanded ? 44 : 34;
+
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isExpanded ? 8 : 0,
-        vertical: 6,
+        vertical: 8,
       ),
-      child: isExpanded
-      // Expanded: logo + name side by side
-          ? Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _CompanyLogo(logo: logo, scheme: scheme, radius: 18),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
+          // ── Logo on top ──
+          _CompanyLogo(
+            logoBase64: logo,
+            scheme: scheme,
+            size: logoSize,
+          ),
+
+          // ── Name below (hidden when collapsed) ──
+          if (isExpanded) ...[
+            const SizedBox(height: 6),
+            Text(
               companyName,
               maxLines: 2,
+              textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 13,
@@ -213,12 +225,8 @@ class _CompanyHeader extends StatelessWidget {
                 height: 1.2,
               ),
             ),
-          ),
+          ],
         ],
-      )
-      // Collapsed: just the logo, centered
-          : Center(
-        child: _CompanyLogo(logo: logo, scheme: scheme, radius: 18),
       ),
     );
   }
@@ -226,30 +234,85 @@ class _CompanyHeader extends StatelessWidget {
 
 /// Company logo with initials fallback.
 class _CompanyLogo extends StatelessWidget {
-  final String? logo;
+  /// Raw base64 string from the server (NOT a path).
+  final String? logoBase64;
   final ColorScheme scheme;
-  final double radius;
+  final double size;
 
   const _CompanyLogo({
-    required this.logo,
+    required this.logoBase64,
     required this.scheme,
-    this.radius = 18,
+    this.size = 36,
   });
+
+  bool _isValidImageBytes(Uint8List bytes) {
+    if (bytes.length < 12) return false;
+    if (bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) return true; // JPEG
+    if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) return true; // PNG
+    if (bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x38) return true; // GIF
+    if (bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46 &&
+        bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50) {
+      return true; // WebP
+    }
+    if (bytes[0] == 0x42 && bytes[1] == 0x4D) return true; // BMP
+    return false;
+  }
+
+  Widget _fallback() => Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(
+      color: scheme.primaryContainer,
+      shape: BoxShape.circle,
+    ),
+    child: Icon(
+      Icons.business_outlined,
+      size: size * 0.55,
+      color: scheme.onPrimaryContainer,
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
-    final hasLogo = logo != null && logo!.isNotEmpty;
+    // Fixed-size circular frame — mirrors the profile's fixed Container.
+    final frame = Container(
+      width: size,
+      height: size,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: scheme.primaryContainer,
+        border: Border.all(
+          color: scheme.primary.withValues(alpha: 0.1),
+        ),
+      ),
+    );
 
-    return CircleAvatar(
-      radius: radius,
-      backgroundColor: scheme.primaryContainer,
-      backgroundImage: hasLogo ? NetworkImage(logo!) : null,
-      child: hasLogo
-          ? null
-          : Icon(
-        Icons.business_outlined,
-        size: radius * 0.9,
-        color: scheme.onPrimaryContainer,
+    final raw = logoBase64;
+    if (raw == null || raw.isEmpty) {
+      return frame; // child: fallback icon
+    }
+
+    // Decode base64 exactly like the profile does.
+    Uint8List bytes;
+    try {
+      bytes = base64Decode(raw);
+    } catch (_) {
+      return _fallback();
+    }
+
+    if (!_isValidImageBytes(bytes)) {
+      return _fallback();
+    }
+
+    return ClipOval(
+      child: Image.memory(
+        bytes,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        gaplessPlayback: true,
+        errorBuilder: (_, _, _) => _fallback(),
       ),
     );
   }

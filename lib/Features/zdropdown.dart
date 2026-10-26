@@ -260,7 +260,7 @@ class _ZDropdownState<T> extends State<ZDropdown<T>> {
                               },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 8),
+                                    horizontal: 8, vertical: 8),
                                 decoration: BoxDecoration(
                                   border: Border(
                                     bottom: BorderSide(
@@ -281,7 +281,7 @@ class _ZDropdownState<T> extends State<ZDropdown<T>> {
                                         visualDensity: VisualDensity.compact,
                                       ),
                                     ),
-                                    const SizedBox(width: 6),
+                                    const SizedBox(width: 8),
                                     Text(
                                       AppLocalizations.of(context)!.selectAll,
                                       style: const TextStyle(fontSize: 13),
@@ -296,23 +296,17 @@ class _ZDropdownState<T> extends State<ZDropdown<T>> {
                             final isSelected = widget.multiSelect
                                 ? _selectedItems.contains(item)
                                 : item == _selectedItem;
-
                             return InkWell(
                               onTap: () => _onItemTapped(item),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                                 decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? color.primary.withAlpha(15)
-                                      : null,
-                                  border: index < widget.items.length - 1
-                                      ? Border(
+                                  color: isSelected ? color.primary.withAlpha(15) : null,
+                                  border: index < widget.items.length - 1 ? Border(
                                     bottom: BorderSide(
                                       color: color.outline.withAlpha(20),
                                     ),
-                                  )
-                                      : null,
+                                  ) : null,
                                 ),
                                 child: Row(
                                   children: [
@@ -326,10 +320,11 @@ class _ZDropdownState<T> extends State<ZDropdown<T>> {
                                           visualDensity: VisualDensity.compact,
                                         ),
                                       ),
-                                    if (widget.leadingBuilder != null)
-                                      widget.leadingBuilder!(item),
-                                    if (widget.leadingBuilder != null)
-                                      const SizedBox(width: 8),
+                                    if (widget.leadingBuilder != null)widget.leadingBuilder!(item),
+                                   // if (widget.leadingBuilder != null)
+                                     if(widget.multiSelect)...[
+                                       const SizedBox(width: 8),
+                                     ],
                                     Expanded(
                                       child: Text(
                                         widget.itemLabel(item),

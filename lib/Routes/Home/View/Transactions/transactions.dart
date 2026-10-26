@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Date/shamsi_converter.dart';
+import 'package:shipping/Features/Widgets/noData_widget.dart';
+import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../../../Features/Other/responsive_widget.dart';
 import '../../../../../../Features/Widgets/zbutton.dart';
 import '../../../../../../Features/Widgets/search_field.dart';
 import '../../../../../../Features/Widgets/toast.dart';
 import '../../../../Features/Date/z_range_picker.dart';
 import '../../../../Features/zdropdown.dart';
+import '../../../Auth/bloc/auth_bloc.dart';
+import '../../../Auth/model/user_model.dart';
 import 'bloc/transactions_bloc.dart';
 import 'model/trn_model.dart';
 
@@ -49,26 +53,87 @@ class _DesktopView extends StatefulWidget {
 }
 
 class _DesktopViewState extends State<_DesktopView> {
-  // ── Status options
+  // ── Status options (value only — label resolved at build time)
   static const _statusOptions = <_StatusOption>[
-    _StatusOption('all', 'All'),
-    _StatusOption('pending', 'Pending'),
-    _StatusOption('auth', 'Authorized'),
-    _StatusOption('reversed', 'Reversed'),
-    _StatusOption('deleted', 'Deleted'),
+    _StatusOption('all'),
+    _StatusOption('pending'),
+    _StatusOption('auth'),
+    _StatusOption('reversed'),
+    _StatusOption('deleted'),
   ];
 
-  // ── Types (no duplicates)
+  // ── Types (code only — label resolved at build time)
   static const _typeOptions = <_TypeOption>[
-    _TypeOption('CHDP', 'Cash Deposit'),
-    _TypeOption('CHWL', 'Cash Withdraw'),
-    _TypeOption('INCM', 'Post Income'),
-    _TypeOption('XPNS', 'Post Expense'),
-    _TypeOption('GLDR', 'GL Debit'),
-    _TypeOption('GLCR', 'GL Credit'),
-    _TypeOption('ATAT', 'Fund Transfer'),
-    _TypeOption('CRFX', 'Cross Currency'),
-    _TypeOption('BULK', 'Bulk insertion'),
+    _TypeOption('CHDP'),
+    _TypeOption('CHWL'),
+    _TypeOption('INCM'),
+    _TypeOption('XPNS'),
+    _TypeOption('GLDR'),
+    _TypeOption('GLCR'),
+    _TypeOption('ATAT'),
+    _TypeOption('CRFX'),
+    _TypeOption('BULK'),
+  ];
+
+  // ── Grouped action buttons — each carries a permission ID
+  //    TODO: replace the placeholder IDs with the real permission IDs
+  //          from your backend (matching loginData.hasPermission(x)).
+  static const _actionGroups = <_ActionGroup>[
+    _ActionGroup(
+      titleKey: 'cashFlow',
+      buttons: [
+        _ActionButtonSpec(
+          code: 'CHDP',
+          icon: Icons.arrow_downward_rounded,
+          permission: 21, // TODO: map permission ID
+        ),
+        _ActionButtonSpec(
+          code: 'CHWL',
+          icon: Icons.arrow_upward_rounded,
+          permission: 22, // TODO: map permission ID
+        ),
+        _ActionButtonSpec(
+          code: 'INCM',
+          icon: Icons.trending_up_rounded,
+          permission: 23, // TODO: map permission ID
+        ),
+        _ActionButtonSpec(
+          code: 'XPNS',
+          icon: Icons.trending_down_rounded,
+          permission: 24, // TODO: map permission ID
+        ),
+      ],
+    ),
+    _ActionGroup(
+      titleKey: 'journal',
+      buttons: [
+        _ActionButtonSpec(
+          code: 'ATAT',
+          icon: Icons.swap_horiz_rounded,
+          permission: 25, // TODO: map permission ID
+        ),
+      ],
+    ),
+    _ActionGroup(
+      titleKey: 'bulk',
+      buttons: [
+        _ActionButtonSpec(
+          code: 'BULK',
+          icon: Icons.dynamic_feed_outlined,
+          permission: 26, // TODO: map permission ID
+        ),
+      ],
+    ),
+    _ActionGroup(
+      titleKey: 'exchange',
+      buttons: [
+        _ActionButtonSpec(
+          code: 'CRFX',
+          icon: Icons.currency_exchange_rounded,
+          permission: 27, // TODO: map permission ID
+        ),
+      ],
+    ),
   ];
 
   final _searchCtrl = TextEditingController();
@@ -84,8 +149,8 @@ class _DesktopViewState extends State<_DesktopView> {
   @override
   void initState() {
     super.initState();
-    _status = _statusOptions.first;         // 'all'
-    _types.addAll(_typeOptions);            // all types pre-selected
+    _status = _statusOptions.first;
+    _types.addAll(_typeOptions);
 
     final now = DateTime.now();
     final today = _iso(now);
@@ -150,74 +215,285 @@ class _DesktopViewState extends State<_DesktopView> {
     _reload();
   }
 
+  // ── Permission helper ─────────────────────────────────────────
+  // Single source of truth: `LoginData.hasPermission` comes from
+  // `LoginPermissionExt` in user_model.dart and returns bool? —
+  // coerce once here so call sites can stay clean.
+  bool _checkPermission(LoginData login, int permission) {
+    return login.hasPermission(permission) ?? false;
+  }
+
+  /// Handle an action button tap. Replace with your real routing.
+  void _onActionTapped(_ActionButtonSpec spec) {
+    // Defense-in-depth: re-check permission right before acting
+    final auth = context.read<AuthBloc>().state;
+    final allowed = auth is AuthenticatedState &&
+        _checkPermission(auth.loginData, spec.permission);
+
+    if (!allowed) {
+      final tr = AppLocalizations.of(context)!;
+      ToastManager.show(
+        context: context,
+        title: tr.accessDenied,
+        message: tr.noPermission,
+        type: ToastType.error,
+      );
+      return;
+    }
+
+    // TODO: real navigation per code
+    // switch (spec.code) {
+    //   case 'CHDP': Navigator.of(context).push(...); break;
+    //   ...
+    // }
+    final tr = AppLocalizations.of(context)!;
+    ToastManager.show(
+      context: context,
+      title: _buttonLabel(tr, spec.code),
+      message: 'Coming soon',
+      type: ToastType.error,
+    );
+  }
+
+  // ── Localization resolvers ────────────────────────────────────
+  String _statusLabel(AppLocalizations tr, _StatusOption s) =>
+      switch (s.value) {
+        'all' => tr.all,
+        'pending' => tr.pending,
+        'auth' => tr.authorized,
+        'reversed' => tr.reversed,
+        'deleted' => tr.deleted,
+        _ => s.value,
+      };
+
+  String _typeLabel(AppLocalizations tr, _TypeOption t) => switch (t.code) {
+    'CHDP' => tr.cashDeposit,
+    'CHWL' => tr.cashWithdraw,
+    'INCM' => tr.income,
+    'XPNS' => tr.expense,
+    'GLDR' => tr.glDebit,
+    'GLCR' => tr.glCredit,
+    'ATAT' => tr.fundTransfer,
+    'CRFX' => tr.fxTransaction,
+    'BULK' => tr.bulkTransaction,
+    _ => t.code,
+  };
+
+  String _groupTitle(AppLocalizations tr, String key) => switch (key) {
+    'cashFlow' => tr.cashFlow,
+    'journal' => tr.journal,
+    'bulk' => tr.bulkTransaction,
+    'exchange' => tr.exchange,
+    _ => key,
+  };
+
+  String _buttonLabel(AppLocalizations tr, String code) => switch (code) {
+    'CHDP' => tr.cashDeposit,
+    'CHWL' => tr.cashWithdraw,
+    'INCM' => tr.income,
+    'XPNS' => tr.expense,
+    'ATAT' => tr.journal,
+    'BULK' => tr.bulkTransaction,
+    'CRFX' => tr.fxTransaction,
+    _ => code,
+  };
+
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
+    final authState = context.watch<AuthBloc>().state;
+    if (authState is! AuthenticatedState) {
+      return const SizedBox();
+    }
+    final login = authState.loginData;
+
     return Scaffold(
       backgroundColor: color.surface,
       body: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
+        padding: const EdgeInsets.all(8),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildHeaderRow(textTheme, color),
-            const SizedBox(height: 10),
-            _buildFilterRow(color, textTheme),
-            const SizedBox(height: 10),
-            _buildTableHeader(color, textTheme),
-            const SizedBox(height: 6),
-            Expanded(child: _buildBody(color)),
+            // ── Left: transactions (header, filters, table, list) ──
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildHeaderRow(textTheme, color),
+                  const SizedBox(height: 10),
+                  _buildFilterRow(color, textTheme),
+                  const SizedBox(height: 10),
+                  _buildTableHeader(color, textTheme),
+                  const SizedBox(height: 6),
+                  Expanded(child: _buildBody(color)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // ── Right: grouped action panel (permission-filtered) ──
+            _buildActionPanel(color, textTheme, login),
           ],
         ),
       ),
     );
   }
 
+  // ── Right action panel (grouped + permission-filtered) ────────
+  Widget _buildActionPanel(
+      ColorScheme color,
+      TextTheme textTheme,
+      LoginData login,
+      ) {
+    bool can(int perm) => _checkPermission(login, perm);
+
+    // Filter buttons by permission, then drop empty groups.
+    final visibleGroups = _actionGroups
+        .map(
+          (g) => _ActionGroup(
+        titleKey: g.titleKey,
+        buttons: g.buttons.where((b) => can(b.permission)).toList(),
+      ),
+    )
+        .where((g) => g.buttons.isNotEmpty)
+        .toList();
+
+    if (visibleGroups.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      width: 180,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: color.primary.withValues(alpha: .1)),
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 3,
+            spreadRadius: 2,
+            color: color.surfaceContainerHighest.withValues(alpha: .03),
+          ),
+        ],
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              child: Text(
+                AppLocalizations.of(context)!.newTransaction,
+                style: textTheme.titleSmall?.copyWith(
+                  color: color.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Divider(
+              height: 12,
+              color: color.outlineVariant.withValues(alpha: .2),
+            ),
+            ...visibleGroups.map((g) => _buildActionGroup(g, color, textTheme)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionGroup(
+      _ActionGroup group,
+      ColorScheme color,
+      TextTheme textTheme,
+      ) {
+    final tr = AppLocalizations.of(context)!;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            child: Row(
+              children: [
+                Container(
+                  width: 3,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: color.primary,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _groupTitle(tr, group.titleKey),
+                    style: textTheme.labelMedium?.copyWith(
+                      color: color.onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: .4,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ...group.buttons.map(
+                (spec) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: ZOutlineButton(
+                width: double.infinity,
+                height: 36,
+                icon: spec.icon,
+                iconSize: 16,
+                label: Text(
+                  _buttonLabel(tr, spec.code),
+                  style: const TextStyle(fontSize: 12.5),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                onPressed: () => _onActionTapped(spec),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── Header ─────────────────────────────────────────────────────
   Widget _buildHeaderRow(TextTheme textTheme, ColorScheme color) {
+    final tr = AppLocalizations.of(context)!;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Expanded(
           flex: 5,
           child: Text(
-            'Transactions',
+            tr.transactions,
             style: textTheme.titleLarge?.copyWith(color: color.outline),
           ),
         ),
-
-
         Row(
           children: [
             if (_hasActiveFilters) ...[
               ZOutlineButton(
                 width: 130,
+                height: 35,
                 icon: Icons.filter_alt_off_outlined,
-                label: const Text('Clear filter'),
+                isActive: true,
+                label: Text(tr.clearFilters),
                 onPressed: _clearFilters,
               ),
               const SizedBox(width: 8),
             ],
             ZOutlineButton(
               width: 110,
+              height: 35,
               icon: Icons.refresh,
-              label: const Text('Refresh'),
+              label: Text(tr.refresh),
               onPressed: _reload,
-            ),
-            const SizedBox(width: 8),
-            ZOutlineButton(
-              width: 130,
-              icon: Icons.add,
-              isActive: true,
-              label: const Text('New'),
-              onPressed: () => ToastManager.show(
-                context: context,
-                title: 'New transaction',
-                message: 'Coming soon',
-                type: ToastType.error,
-              ),
             ),
           ],
         ),
@@ -227,13 +503,14 @@ class _DesktopViewState extends State<_DesktopView> {
 
   // ── Filter row ─────────────────────────────────────────────────
   Widget _buildFilterRow(ColorScheme color, TextTheme textTheme) {
+    final tr = AppLocalizations.of(context)!;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Expanded(
           flex: 5,
           child: ReusableSearchBar(
-            height: 40,
+            height: 41,
             controller: _searchCtrl,
             onChanged: (_) {
               setState(() {});
@@ -241,11 +518,11 @@ class _DesktopViewState extends State<_DesktopView> {
             },
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 6),
         Expanded(
           flex: 2,
           child: ZRangeDatePicker(
-            label: 'Date range',
+            label: tr.date,
             startValue: _from,
             endValue: _to,
             onStartDateChanged: (v) {
@@ -256,8 +533,6 @@ class _DesktopViewState extends State<_DesktopView> {
               setState(() => _to = v);
               _reload();
             },
-
-            padding: EdgeInsets.zero,
             gregorianTextStyle: const TextStyle(fontSize: 12),
           ),
         ),
@@ -265,12 +540,12 @@ class _DesktopViewState extends State<_DesktopView> {
         Expanded(
           flex: 2,
           child: ZDropdown<_TypeOption>(
-            title: 'Type',
+            title: tr.type,
             items: _typeOptions,
             multiSelect: true,
             selectedItems: _types.toList(),
-            initialValue: 'All types',
-            itemLabel: (t) => t.label,
+            initialValue: tr.all,
+            itemLabel: (t) => _typeLabel(tr, t),
             height: 40,
             onItemSelected: (_) {},
             onMultiSelectChanged: (list) {
@@ -287,11 +562,11 @@ class _DesktopViewState extends State<_DesktopView> {
         Expanded(
           flex: 2,
           child: ZDropdown<_StatusOption>(
-            title: 'Status',
+            title: tr.status,
             items: _statusOptions,
             selectedItem: _status,
-            initialValue: _status.label,
-            itemLabel: (s) => s.label,
+            initialValue: _statusLabel(tr, _status),
+            itemLabel: (s) => _statusLabel(tr, s),
             height: 40,
             onItemSelected: (s) {
               setState(() => _status = s);
@@ -304,9 +579,9 @@ class _DesktopViewState extends State<_DesktopView> {
   }
 
   // ── Table header ───────────────────────────────────────────────
-  // Order: Date | Reference | Type | Maker | Narration | Amount | Status
   Widget _buildTableHeader(ColorScheme color, TextTheme textTheme) {
     final titleStyle = textTheme.titleSmall?.copyWith(color: color.surface);
+    final tr = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -314,38 +589,22 @@ class _DesktopViewState extends State<_DesktopView> {
       ),
       child: Row(
         children: [
-          SizedBox(
-            width: 140,
-            child: Text('Date', style: titleStyle),
-          ),
-          SizedBox(
-            width: 180,
-            child: Text('Reference', style: titleStyle),
-          ),
-          SizedBox(
-            width: 150,
-            child: Text('Type', style: titleStyle),
-          ),
-          SizedBox(
-            width: 140,
-            child: Text('Maker', style: titleStyle),
-          ),
-          Expanded(
-            child: Text('Narration', style: titleStyle),
-          ),
+          SizedBox(width: 140, child: Text(tr.date, style: titleStyle)),
+          SizedBox(width: 180, child: Text(tr.reference, style: titleStyle)),
+          SizedBox(width: 150, child: Text(tr.type, style: titleStyle)),
+          SizedBox(width: 140, child: Text(tr.maker, style: titleStyle)),
+          Expanded(child: Text(tr.narration, style: titleStyle)),
           SizedBox(
             width: 180,
-            child: Text(
-              'Amount',
-              textAlign: TextAlign.right,
-              style: titleStyle,
-            ),
+            child:
+            Text(tr.amount, textAlign: TextAlign.right, style: titleStyle),
           ),
           SizedBox(
             width: 110,
             child: Padding(
               padding: const EdgeInsets.only(left: 12),
-              child: Text('Status',textAlign: TextAlign.end, style: titleStyle),
+              child:
+              Text(tr.status, textAlign: TextAlign.end, style: titleStyle),
             ),
           ),
         ],
@@ -397,32 +656,18 @@ class _DesktopViewState extends State<_DesktopView> {
   }
 
   Widget _buildEmpty(ColorScheme color) {
+    final tr = AppLocalizations.of(context)!;
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.inbox_outlined,
-              size: 48, color: color.onSurface.withValues(alpha: .3)),
-          const SizedBox(height: 12),
-          Text(
-            'No transactions for the selected filters',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: color.onSurface.withValues(alpha: .6),
-            ),
-          ),
-          const SizedBox(height: 12),
-          ZOutlineButton(
-            label: const Text('Clear filter'),
-            onPressed: _clearFilters,
-          ),
-        ],
+      child: NoDataWidget(
+        title: tr.noTransaction,
+        message: tr.noTransactionMsg,
+        enableAction: false,
       ),
     );
   }
 
   Widget _buildError(String message, ColorScheme color) {
+    final tr = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -438,7 +683,7 @@ class _DesktopViewState extends State<_DesktopView> {
             ),
             const SizedBox(height: 16),
             ZOutlineButton(
-              label: const Text('Try again'),
+              label: Text(tr.tryAgain),
               icon: Icons.refresh,
               onPressed: _reload,
             ),
@@ -447,6 +692,26 @@ class _DesktopViewState extends State<_DesktopView> {
       ),
     );
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Spec classes for the right-panel action buttons
+// ═══════════════════════════════════════════════════════════════════
+class _ActionGroup {
+  final String titleKey;
+  final List<_ActionButtonSpec> buttons;
+  const _ActionGroup({required this.titleKey, required this.buttons});
+}
+
+class _ActionButtonSpec {
+  final String code; // matches trnTypes.trntCode
+  final IconData icon;
+  final int permission; // permission ID checked via loginData.hasPermission
+  const _ActionButtonSpec({
+    required this.code,
+    required this.icon,
+    required this.permission,
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -470,7 +735,6 @@ class _TransactionRowWidget extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // ── Date
           SizedBox(
             width: 140,
             child: Text(
@@ -482,7 +746,6 @@ class _TransactionRowWidget extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          // ── Reference
           SizedBox(
             width: 180,
             child: Text(
@@ -494,7 +757,6 @@ class _TransactionRowWidget extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          // ── Type
           SizedBox(
             width: 150,
             child: Text(
@@ -503,7 +765,6 @@ class _TransactionRowWidget extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          // ── Maker
           SizedBox(
             width: 140,
             child: Text(
@@ -512,7 +773,6 @@ class _TransactionRowWidget extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          // ── Narration
           Expanded(
             child: Text(
               row.narration ?? '—',
@@ -523,7 +783,6 @@ class _TransactionRowWidget extends StatelessWidget {
               maxLines: 1,
             ),
           ),
-          // ── Amount + Currency
           SizedBox(
             width: 180,
             child: Row(
@@ -558,7 +817,6 @@ class _TransactionRowWidget extends StatelessWidget {
               ],
             ),
           ),
-          // ── Status
           SizedBox(
             width: 110,
             child: _StatusPill(row: row),
@@ -567,7 +825,6 @@ class _TransactionRowWidget extends StatelessWidget {
       ),
     );
   }
-
 }
 
 class _StatusPill extends StatelessWidget {
@@ -605,15 +862,14 @@ class _StatusPill extends StatelessWidget {
       ),
     };
 
+    // `bg` currently unused in original code — kept for future pill styling.
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
-
       child: Text(
         label,
         textAlign: TextAlign.end,
         style: TextStyle(
           fontSize: 10,
-
           fontWeight: FontWeight.w700,
           color: fg,
           letterSpacing: 0.3,
@@ -628,8 +884,7 @@ class _StatusPill extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════
 class _StatusOption {
   final String value;
-  final String label;
-  const _StatusOption(this.value, this.label);
+  const _StatusOption(this.value);
   @override
   bool operator ==(Object other) =>
       other is _StatusOption && other.value == value;
@@ -639,11 +894,9 @@ class _StatusOption {
 
 class _TypeOption {
   final String code;
-  final String label;
-  const _TypeOption(this.code, this.label);
+  const _TypeOption(this.code);
   @override
-  bool operator ==(Object other) =>
-      other is _TypeOption && other.code == code;
+  bool operator ==(Object other) => other is _TypeOption && other.code == code;
   @override
   int get hashCode => code.hashCode;
 }

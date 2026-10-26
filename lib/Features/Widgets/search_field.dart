@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shipping/l10n/app_localizations.dart';
 
 /// A fully reusable, debounced search bar widget.
 ///
@@ -34,7 +35,7 @@ class ReusableSearchBar extends StatefulWidget {
   final ValueChanged<String>? onSubmitted;
 
   /// Placeholder text.
-  final String hintText;
+  final String? hintText;
 
   /// Debounce duration before [onChanged] is fired.
   final Duration debounceDuration;
@@ -109,7 +110,7 @@ class ReusableSearchBar extends StatefulWidget {
     required this.onChanged,
     this.onChangedImmediate,
     this.onSubmitted,
-    this.hintText = 'Search',
+    this.hintText,
     this.debounceDuration = const Duration(milliseconds: 350),
     this.controller,
     this.focusNode,
@@ -260,7 +261,7 @@ class _ReusableSearchBarState extends State<ReusableSearchBar> {
         style: widget.textStyle,
         textAlignVertical: TextAlignVertical.center,
         decoration: InputDecoration(
-          hintText: widget.hintText,
+          hintText: widget.hintText ?? AppLocalizations.of(context)!.search,
           hintStyle: resolvedHintStyle,
           prefixIcon: effectivePrefix,
           prefixIconConstraints: const BoxConstraints(

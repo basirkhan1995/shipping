@@ -74,6 +74,7 @@ class _BaseStorageViewState extends State<_BaseStorageView> {
                 Expanded(
                   child: ZOutlineButton(
                     toolTip: "F5",
+
                     icon: Icons.refresh,
                     onPressed: () {
                       context.read<StorageBloc>().add(LoadStorageEvent());
@@ -147,38 +148,47 @@ class _BaseStorageViewState extends State<_BaseStorageView> {
       // Desktop header
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 8),
-        child: Row(
-          spacing: 8,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: ReusableSearchBar(
-                controller: searchController,
-                onChanged: (e) {
-                  setState(() {});
-                },
-              ),
-            ),
-            ZOutlineButton(
-              toolTip: "F5",
-              width: 120,
-              icon: Icons.refresh,
-              onPressed: () {
-                context.read<StorageBloc>().add(LoadStorageEvent());
-              },
-              label: Text(locale.refresh),
-            ),
-            ZOutlineButton(
-              toolTip: "F1",
-              width: 120,
-              icon: Icons.add,
-              isActive: true,
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => const StorageAddEditView(),
-                );
-              },
-              label: Text(locale.newKeyword),
+            Text(AppLocalizations.of(context)!.storage,style: Theme.of(context).textTheme.titleLarge),
+            SizedBox(height: 8),
+            Row(
+              spacing: 8,
+              children: [
+                Expanded(
+                  child: ReusableSearchBar(
+                    controller: searchController,
+                    onChanged: (e) {
+                      setState(() {});
+                    },
+                  ),
+                ),
+                ZOutlineButton(
+                  toolTip: "F5",
+                  width: 120,
+                  height: 36,
+                  icon: Icons.refresh,
+                  onPressed: () {
+                    context.read<StorageBloc>().add(LoadStorageEvent());
+                  },
+                  label: Text(locale.refresh),
+                ),
+                ZOutlineButton(
+                  toolTip: "F1",
+                  width: 120,
+                  height: 36,
+                  icon: Icons.add,
+                  isActive: true,
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => const StorageAddEditView(),
+                    );
+                  },
+                  label: Text(locale.newKeyword),
+                ),
+              ],
             ),
           ],
         ),
@@ -197,7 +207,7 @@ class _BaseStorageViewState extends State<_BaseStorageView> {
     } else if (widget.isTablet) {
       // Tablet table header
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12.0),
+        padding: const EdgeInsets.symmetric(horizontal: 12.0,vertical: 5),
         child: Row(
           children: [
             Expanded(
@@ -214,7 +224,7 @@ class _BaseStorageViewState extends State<_BaseStorageView> {
     } else {
       // Desktop table header
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 15.0),
+        padding: const EdgeInsets.symmetric(horizontal: 15.0,vertical: 5),
         child: Row(
           children: [
             Expanded(

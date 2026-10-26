@@ -605,4 +605,91 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get profileOverview => 'نمای کلی پروفایل';
+
+  @override
+  String get search => 'جستجو';
+
+  @override
+  String get narration => 'شرح';
+
+  @override
+  String get date => 'تاریخ';
+
+  @override
+  String get reference => 'نمبر حواله';
+
+  @override
+  String get type => 'نوع';
+
+  @override
+  String get maker => 'ایجاد کننده';
+
+  @override
+  String get cashDeposit => 'دریافت نقدی';
+
+  @override
+  String get cashWithdraw => 'پرداخت نقدی';
+
+  @override
+  String get clearFilters => 'حذف فلتر';
+
+  @override
+  String get noTransaction => 'معامله یافت نشد';
+
+  @override
+  String get noTransactionMsg => 'معامله برای نمایش وجود ندارد';
+
+  @override
+  String get dateRange => 'تاریخ رینچ';
+
+  @override
+  String get branches => 'نمایندگی ها';
+
+  @override
+  String get branchLimitHint => 'حد مجاز تأیید خودکار نمایندگی';
+
+  @override
+  String get fxTransaction => 'تبادله ارز';
+
+  @override
+  String get bulkTransaction => 'معامله دسته ای';
+
+  @override
+  String get pending => 'در انتظار';
+
+  @override
+  String get authorized => 'تایید شده';
+
+  @override
+  String get reversed => 'برگشت شده';
+
+  @override
+  String get deleted => 'حذف شده';
+
+  @override
+  String get glDebit => 'جی ال دبت';
+
+  @override
+  String get glCredit => 'جی ال کریدت';
+
+  @override
+  String get exchange => 'تبادله';
+
+  @override
+  String get fundTransfer => 'انتقال بودجه';
+
+  @override
+  String get journal => 'روزنامچه';
+
+  @override
+  String get cashFlow => 'جریان نقدی';
+
+  @override
+  String get tryAgain => 'امتحان دوباره';
+
+  @override
+  String get newTransaction => 'معامله جدید';
+
+  @override
+  String get noPermission => 'بدون صلاحیت';
 }

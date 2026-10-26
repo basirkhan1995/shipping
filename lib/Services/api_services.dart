@@ -131,7 +131,7 @@ class ApiServices {
     CancelToken? cancelToken,
   }) async {
     try {
-      await _checkConnectivity();
+     // await _checkConnectivity();
       return await _dio.get(
         endpoint,
         queryParameters: queryParams,
@@ -154,7 +154,7 @@ class ApiServices {
     CancelToken? cancelToken,
   }) async {
     try {
-      await _checkConnectivity();
+     // await _checkConnectivity();
       return await _dio.post(
         endpoint,
         data: data,
@@ -177,7 +177,7 @@ class ApiServices {
     CancelToken? cancelToken,
   }) async {
     try {
-      await _checkConnectivity();
+     // await _checkConnectivity();
       return await _dio.put(
         endpoint,
         data: data,
@@ -200,7 +200,7 @@ class ApiServices {
     CancelToken? cancelToken,
   }) async {
     try {
-      await _checkConnectivity();
+   //   await _checkConnectivity();
       return await _dio.delete(
         endpoint,
         data: data,
@@ -243,7 +243,7 @@ class ApiServices {
     CancelToken? cancelToken,
   }) async {
     try {
-      await _checkConnectivity();
+    //  await _checkConnectivity();
       return await _dio.post(
         endpoint,
         data: data,
@@ -267,7 +267,7 @@ class ApiServices {
     ProgressCallback? onReceiveProgress,
   }) async {
     try {
-      await _checkConnectivity();
+     // await _checkConnectivity();
       return await _dio.download(
         endpoint,
         savePath,

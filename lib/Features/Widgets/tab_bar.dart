@@ -231,11 +231,14 @@ class _ZTabContainerState<T> extends State<ZTabContainer<T>> {
               ],
 
               /// ---------------- Tabs Row
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisAlignment: widget.tabAlignment,
-                  children: _buildZTabs(context),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisAlignment: widget.tabAlignment,
+                    children: _buildZTabs(context),
+                  ),
                 ),
               ),
             ],

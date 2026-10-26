@@ -14,13 +14,6 @@ class LoginEvent extends AuthEvent{
   List<Object?> get props => [usrName, usrPassword];
 }
 
-// class OnProfileUpdateEvent extends AuthEvent{
-//   final CompanySettingsModel newProfile;
-//   const OnProfileUpdateEvent(this.newProfile);
-//   @override
-//   List<Object?> get props => [newProfile];
-// }
-
 class OnLogoChangeEvent extends AuthEvent{
   @override
   List<Object?> get props => [];

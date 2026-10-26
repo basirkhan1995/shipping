@@ -14,6 +14,7 @@ import '../../../../../../../Finance/View/Currencies/model/ccy_model.dart';
 import '../bloc/branch_limit_bloc.dart';
 import '../model/limit_model.dart';
 
+
 class BranchLimitAddEditView extends StatelessWidget {
   final BranchLimitModel? branchLimit;
   final int? branchCode;
@@ -51,7 +52,7 @@ class _BaseBranchLimitAddEdit extends StatefulWidget {
 class _BaseBranchLimitAddEditState extends State<_BaseBranchLimitAddEdit> {
   // Controllers
   final TextEditingController amountLimit = TextEditingController();
-  String currencyCode = "";
+  String currencyCode = "AFN";
   bool isUnlimited = false;
   String unlimitedAmount = "9999999999999";
   final formKey = GlobalKey<FormState>();
@@ -544,7 +545,7 @@ class _BaseBranchLimitAddEditState extends State<_BaseBranchLimitAddEdit> {
                     controller: amountLimit,
                     title: locale.amount,
                     onSubmit: (_) => onSubmit(),
-                    defaultCurrencyCode: widget.model?.balCurrency,
+                    defaultCurrencyCode: widget.model?.balCurrency ?? currencyCode,
                     fieldType: ZTextFieldType.currency,
                     onCurrencyChanged: (currency) {
                       currencyCode = currency?.ccyCode ?? "";

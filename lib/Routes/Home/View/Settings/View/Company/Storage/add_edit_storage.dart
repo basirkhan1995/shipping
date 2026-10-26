@@ -544,49 +544,31 @@ class _BaseStorageAddEditState extends State<_BaseStorageAddEdit> {
                     onFieldSubmitted: (_) => onSubmit(),
                   ),
                   const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: theme.surface,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: theme.outline.withValues(alpha: .2),
+                  Row(
+                    children: [
+                      Switch.adaptive(
+                        value: statusValue == 1,
+                        onChanged: (value) {
+                          setState(() {
+                            isActive = value;
+                            statusValue = isActive ? 1 : 0;
+                          });
+                        },
+                        activeTrackColor: Colors.green,
+                        activeThumbColor: Colors.white,
+                        inactiveTrackColor: Colors.red.withValues(alpha: .5),
+                        inactiveThumbColor: Colors.white,
                       ),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            locale.status,
-                            style: titleStyle,
-                          ),
+                      const SizedBox(width: 5),
+                      Text(
+                        isActive ? locale.active : locale.inactive,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: isActive ? Colors.green : Colors.red,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
-                        Row(
-                          children: [
-                            Switch.adaptive(
-                              value: statusValue == 1,
-                              onChanged: (value) {
-                                setState(() {
-                                  isActive = value;
-                                  statusValue = isActive ? 1 : 0;
-                                });
-                              },
-                              activeTrackColor: Colors.green,
-                              activeThumbColor: Colors.white,
-                              inactiveTrackColor: Colors.red.withValues(alpha: .5),
-                              inactiveThumbColor: Colors.white,
-                            ),
-                            Text(
-                              isActive ? locale.active : locale.inactive,
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: isActive ? Colors.green : Colors.red,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 10),
                 ],

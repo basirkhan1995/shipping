@@ -646,7 +646,6 @@ class _BaseBranchAddEditState extends State<_BaseBranchAddEdit> {
                     },
                   ),
                   const SizedBox(height: 8),
-
                   Row(
                     spacing: 5,
                     children: [
@@ -707,25 +706,7 @@ class _BaseBranchAddEditState extends State<_BaseBranchAddEdit> {
                     title: locale.address,
                     onFieldSubmitted: (_) => onSubmit(),
                   ),
-                  const SizedBox(height: 8),
 
-                  Row(
-                    spacing: 8,
-                    children: [
-                      Checkbox(
-                        visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
-                        value: isMailingAddress,
-                        onChanged: (value) {
-                          setState(() {
-                            isMailingAddress = value ?? true;
-                            mailingValue = isMailingAddress ? 1 : 0;
-                          });
-                        },
-                      ),
-                      Text("isMaling"),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
                 ],
               );
             },

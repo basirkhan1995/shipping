@@ -1153,7 +1153,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboat.
   ///
   /// In en, this message translates to:
-  /// **'Aboat'**
+  /// **'About'**
   String get aboat;
 
   /// No description provided for @company.
@@ -1275,6 +1275,180 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Profile Overview'**
   String get profileOverview;
+
+  /// No description provided for @search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get search;
+
+  /// No description provided for @narration.
+  ///
+  /// In en, this message translates to:
+  /// **'Narration'**
+  String get narration;
+
+  /// No description provided for @date.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get date;
+
+  /// No description provided for @reference.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference'**
+  String get reference;
+
+  /// No description provided for @type.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get type;
+
+  /// No description provided for @maker.
+  ///
+  /// In en, this message translates to:
+  /// **'Txn Maker'**
+  String get maker;
+
+  /// No description provided for @cashDeposit.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash Receipt'**
+  String get cashDeposit;
+
+  /// No description provided for @cashWithdraw.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash Payment'**
+  String get cashWithdraw;
+
+  /// No description provided for @clearFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get clearFilters;
+
+  /// No description provided for @noTransaction.
+  ///
+  /// In en, this message translates to:
+  /// **'No transactions'**
+  String get noTransaction;
+
+  /// No description provided for @noTransactionMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no transactions to display'**
+  String get noTransactionMsg;
+
+  /// No description provided for @dateRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Date range'**
+  String get dateRange;
+
+  /// No description provided for @branches.
+  ///
+  /// In en, this message translates to:
+  /// **'Branches'**
+  String get branches;
+
+  /// No description provided for @branchLimitHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto transactions allowance of branch'**
+  String get branchLimitHint;
+
+  /// No description provided for @fxTransaction.
+  ///
+  /// In en, this message translates to:
+  /// **'FX Transaction'**
+  String get fxTransaction;
+
+  /// No description provided for @bulkTransaction.
+  ///
+  /// In en, this message translates to:
+  /// **'Bulk Insertion'**
+  String get bulkTransaction;
+
+  /// No description provided for @pending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get pending;
+
+  /// No description provided for @authorized.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorized'**
+  String get authorized;
+
+  /// No description provided for @reversed.
+  ///
+  /// In en, this message translates to:
+  /// **'Reversed'**
+  String get reversed;
+
+  /// No description provided for @deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted'**
+  String get deleted;
+
+  /// No description provided for @glDebit.
+  ///
+  /// In en, this message translates to:
+  /// **'GL Debit'**
+  String get glDebit;
+
+  /// No description provided for @glCredit.
+  ///
+  /// In en, this message translates to:
+  /// **'GL Credit'**
+  String get glCredit;
+
+  /// No description provided for @exchange.
+  ///
+  /// In en, this message translates to:
+  /// **'Exchange'**
+  String get exchange;
+
+  /// No description provided for @fundTransfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Fund Transfer'**
+  String get fundTransfer;
+
+  /// No description provided for @journal.
+  ///
+  /// In en, this message translates to:
+  /// **'Journal'**
+  String get journal;
+
+  /// No description provided for @cashFlow.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash flow'**
+  String get cashFlow;
+
+  /// No description provided for @tryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tryAgain;
+
+  /// No description provided for @newTransaction.
+  ///
+  /// In en, this message translates to:
+  /// **'New Transaction'**
+  String get newTransaction;
+
+  /// No description provided for @noPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'No Permission'**
+  String get noPermission;
 }
 
 class _AppLocalizationsDelegate

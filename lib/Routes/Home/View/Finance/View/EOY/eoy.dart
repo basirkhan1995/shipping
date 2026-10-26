@@ -82,33 +82,6 @@ class _DesktopState extends State<_Desktop> {
     );
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(tr.profitAndLoss, style: titleStyle?.copyWith(fontSize: 25,color: Theme.of(context).colorScheme.onSurface)),
-        actionsPadding: const EdgeInsets.all(8),
-        actions: [
-          // ZOutlineButton(
-          //   width: 110,
-          //   label: Text(tr.print),
-          //   icon: Icons.print,
-          //   onPressed: () {},
-          // ),
-          // const SizedBox(width: 8),
-          ZOutlineButton(
-            label: Text(tr.refresh),
-            icon: Icons.refresh,
-            onPressed: () {
-              context.read<EoyBloc>().add(LoadPLEvent());
-            },
-          ),
-          const SizedBox(width: 8),
-          ZOutlineButton(
-            isActive: true,
-            label: Text(tr.eoyClosing),
-            icon: Icons.access_time_outlined,
-            onPressed: eoyClosing,
-          ),
-        ],
-      ),
       body: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
           if (state is AuthenticatedState) {
@@ -135,6 +108,39 @@ class _DesktopState extends State<_Desktop> {
               }
               return Column(
                 children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      children: [
+                        Expanded(child: Text(tr.profitAndLoss, style: titleStyle?.copyWith(fontSize: 25,color: Theme.of(context).colorScheme.onSurface))),
+                        Row(
+                          children: [
+                            // ZOutlineButton(
+                            //   width: 110,
+                            //   label: Text(tr.print),
+                            //   icon: Icons.print,
+                            //   onPressed: () {},
+                            // ),
+                            // const SizedBox(width: 8),
+                            ZOutlineButton(
+                              label: Text(tr.refresh),
+                              icon: Icons.refresh,
+                              onPressed: () {
+                                context.read<EoyBloc>().add(LoadPLEvent());
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            ZOutlineButton(
+                              isActive: true,
+                              label: Text(tr.eoyClosing),
+                              icon: Icons.access_time_outlined,
+                              onPressed: eoyClosing,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                   _HeaderRow(titleStyle: titleStyle, tr: tr, myLocale: myLocale??"en"),
                   Expanded(
                     child: BlocConsumer<EoyBloc, EoyState>(

@@ -7,7 +7,7 @@ import '../../../../../../../../Features/Widgets/zbutton.dart';
 import '../../../../../../../../l10n/app_localizations.dart';
 import '../../Branch/branch_details.dart';
 import '../bloc/branch_bloc.dart';
-import 'add_edit_branch.dart';
+import 'add_branch.dart';
 
 class BranchesView extends StatelessWidget {
   const BranchesView({super.key});
@@ -111,6 +111,7 @@ class _BaseBranchesViewState extends State<_BaseBranchesView> {
             ZOutlineButton(
               toolTip: "F5",
               width: 100,
+              height: 36,
               icon: Icons.refresh,
               onPressed: () {
                 context.read<BranchBloc>().add(LoadBranchesEvent());
@@ -121,6 +122,7 @@ class _BaseBranchesViewState extends State<_BaseBranchesView> {
             ZOutlineButton(
               toolTip: "F1",
               width: 100,
+              height: 36,
               icon: Icons.add,
               isActive: true,
               onPressed: () {
@@ -138,38 +140,47 @@ class _BaseBranchesViewState extends State<_BaseBranchesView> {
       // Desktop header
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 8),
-        child: Row(
-          spacing: 8,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: ReusableSearchBar(
-                controller: searchController,
-                onChanged: (e) {
-                  setState(() {});
-                },
-              ),
-            ),
-            ZOutlineButton(
-              toolTip: "F5",
-              width: 120,
-              icon: Icons.refresh,
-              onPressed: () {
-                context.read<BranchBloc>().add(LoadBranchesEvent());
-              },
-              label: Text(locale.refresh),
-            ),
-            ZOutlineButton(
-              toolTip: "F1",
-              width: 120,
-              icon: Icons.add,
-              isActive: true,
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => const BranchAddEditView(),
-                );
-              },
-              label: Text(locale.newKeyword),
+            Text(AppLocalizations.of(context)!.branches,style: Theme.of(context).textTheme.titleLarge),
+            SizedBox(height: 8),
+            Row(
+              spacing: 8,
+              children: [
+                Expanded(
+                  child: ReusableSearchBar(
+                    controller: searchController,
+                    onChanged: (e) {
+                      setState(() {});
+                    },
+                  ),
+                ),
+                ZOutlineButton(
+                  toolTip: "F5",
+                  width: 120,
+                  height: 36,
+                  icon: Icons.refresh,
+                  onPressed: () {
+                    context.read<BranchBloc>().add(LoadBranchesEvent());
+                  },
+                  label: Text(locale.refresh),
+                ),
+                ZOutlineButton(
+                  toolTip: "F1",
+                  height: 36,
+                  width: 120,
+                  icon: Icons.add,
+                  isActive: true,
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => const BranchAddEditView(),
+                    );
+                  },
+                  label: Text(locale.newKeyword),
+                ),
+              ],
             ),
           ],
         ),
@@ -210,13 +221,9 @@ class _BaseBranchesViewState extends State<_BaseBranchesView> {
     } else {
       // Desktop table header
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 15),
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
         child: Row(
           children: [
-            SizedBox(
-              width: 70,
-              child: Text(locale.branchCode, style: textTheme.titleMedium),
-            ),
             Expanded(
               child: Text(locale.branchName, style: textTheme.titleMedium),
             ),
@@ -396,7 +403,7 @@ class _BaseBranchesViewState extends State<_BaseBranchesView> {
             child: Row(
               children: [
                 SizedBox(
-                  width: 70,
+                  width: 50,
                   child: Text(
                     brc.brcId.toString(),
                     style: textTheme.bodyMedium,

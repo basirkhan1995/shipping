@@ -64,8 +64,8 @@ class _LoginViewState extends State<LoginView> {
       children: [
         // Logo — falls back to an icon if the asset is missing.
         SizedBox(
-          width: 44,
-          height: 44,
+          width: 50,
+          height: 50,
           child: Image.asset(
             'assets/images/zaitoonLogo.png',
             fit: BoxFit.contain,
@@ -77,7 +77,7 @@ class _LoginViewState extends State<LoginView> {
               alignment: Alignment.center,
               child: Icon(
                 Icons.business_outlined,
-                size: 26,
+                size: 30,
                 color: scheme.onPrimaryContainer,
               ),
             ),
@@ -89,11 +89,13 @@ class _LoginViewState extends State<LoginView> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
+          spacing: 3,
           children: [
             Text(
               tr.zaitoonTitle,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w800,
+                fontSize: 20,
                 letterSpacing: 0.4,
                 color: scheme.onSurface,
                 height: 1.1,
@@ -102,7 +104,7 @@ class _LoginViewState extends State<LoginView> {
             Text(
               tr.softwareCompany,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 12,
                 letterSpacing: 1.2,
                 fontWeight: FontWeight.w500,
                 color: scheme.onSurfaceVariant,
@@ -228,31 +230,8 @@ class _LoginViewState extends State<LoginView> {
                                 // Extra top room on narrow layouts so the
                                 // selectors don't overlap the brand block.
                                 SizedBox(height: isNarrow ? 44 : 0),
-
-                                // ── Zaitoon brand (logo + name) ──
                                 _brandBlock(scheme),
                                 const SizedBox(height: 32),
-
-                                // Header
-                                Text(
-                                  tr.welcomeBack,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineMedium
-                                      ?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: scheme.onSurface,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  tr.sign_in_subtitle,
-                                  style: TextStyle(
-                                    fontSize: 13.5,
-                                    color: scheme.onSurfaceVariant,
-                                  ),
-                                ),
-                                const SizedBox(height: 28),
 
                                 // Email
                                 ZTextFieldEntitled(

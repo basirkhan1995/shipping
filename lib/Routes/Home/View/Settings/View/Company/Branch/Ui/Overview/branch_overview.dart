@@ -113,7 +113,7 @@ class _BaseBranchOverviewState extends State<_BaseBranchOverview> {
   Widget build(BuildContext context) {
     final locale = AppLocalizations.of(context)!;
     final theme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    Theme.of(context).textTheme;
 
     return Form(
       key: formKey,
@@ -126,453 +126,227 @@ class _BaseBranchOverviewState extends State<_BaseBranchOverview> {
         builder: (context, state) {
           if (widget.isMobile) {
             // Mobile layout
-            return Container(
-              color: theme.surface,
-              child: Column(
-                children: [
-                  // Mobile Header
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: theme.primary.withValues(alpha: .05),
-                      border: Border(
-                        bottom: BorderSide(
-                          color: theme.outline.withValues(alpha: .1),
-                        ),
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ZTextFieldEntitled(
+                  controller: branchName,
+                  isRequired: true,
+                  title: locale.branchName,
+                  onFieldSubmitted: (_) => onSubmit(),
+                  validator: (value) {
+                    if (value!=null && value.isEmpty) {
+                      return locale.required(locale.branchName);
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 8),
+
+                Row(
+                  spacing: 5,
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: ZTextFieldEntitled(
+                        controller: phone,
+                        title: locale.mobile1,
+                        inputFormat: [FilteringTextInputFormatter.digitsOnly],
+                        onFieldSubmitted: (_) => onSubmit(),
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            locale.overview,
-                            style: textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          "ID: ${branchCode ?? ''}",
-                          style: textTheme.bodyMedium?.copyWith(
-                            color: theme.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Form Fields
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          // Branch Name
-                          Container(
-                            decoration: BoxDecoration(
-                              color: theme.surface,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: .05),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: ZTextFieldEntitled(
-                              controller: branchName,
-                              isRequired: true,
-                              title: locale.branchName,
-                              onFieldSubmitted: (_) => onSubmit(),
-                              validator: (value) {
-                                if (value!=null && value.isEmpty) {
-                                  return locale.required(locale.branchName);
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Phone and Zip Code
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: theme.surface,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: .05),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              children: [
-                                ZTextFieldEntitled(
-                                  controller: phone,
-                                  title: locale.mobile1,
-                                  inputFormat: [FilteringTextInputFormatter.digitsOnly],
-                                  onFieldSubmitted: (_) => onSubmit(),
-                                ),
-                                const SizedBox(height: 12),
-                                ZTextFieldEntitled(
-                                  controller: zipCode,
-                                  title: locale.zipCode,
-                                  inputFormat: [FilteringTextInputFormatter.digitsOnly],
-                                  onFieldSubmitted: (_) => onSubmit(),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Location Fields
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: theme.surface,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: .05),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              children: [
-                                ZTextFieldEntitled(
-                                  controller: city,
-                                  title: locale.city,
-                                  onFieldSubmitted: (_) => onSubmit(),
-                                ),
-                                const SizedBox(height: 12),
-                                ZTextFieldEntitled(
-                                  controller: province,
-                                  title: locale.province,
-                                  onFieldSubmitted: (_) => onSubmit(),
-                                ),
-                                const SizedBox(height: 12),
-                                ZTextFieldEntitled(
-                                  controller: country,
-                                  title: locale.country,
-                                  onFieldSubmitted: (_) => onSubmit(),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Address
-                          Container(
-                            decoration: BoxDecoration(
-                              color: theme.surface,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: .05),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: ZTextFieldEntitled(
-                              controller: address,
-                              keyboardType: TextInputType.multiline,
-                              maxLength: 100,
-                              title: locale.address,
-                              onFieldSubmitted: (_) => onSubmit(),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Mailing Checkbox
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: theme.surface,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: theme.outline.withValues(alpha: .2),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Checkbox(
-                                  visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
-                                  value: isMailingAddress,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      isMailingAddress = value ?? true;
-                                      mailingValue = isMailingAddress ? 1 : 0;
-                                    });
-                                  },
-                                  activeColor: theme.primary,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    "isMilling",
-                                    style: textTheme.bodyLarge,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          // Action Buttons
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ZOutlineButton(
-                                  backgroundHover: theme.error,
-                                  onPressed: () => Navigator.of(context).pop(),
-                                  icon: Icons.close,
-                                  label: Text(locale.cancel),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: ZOutlineButton(
-                                  isActive: true,
-                                  icon: (state is BranchLoadingState) ? null : Icons.refresh,
-                                  label: (state is BranchLoadingState)
-                                      ? SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 3,
-                                      color: theme.surface,
-                                    ),
-                                  )
-                                      : Text(locale.update),
-                                  onPressed: onSubmit,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                        ],
+                    Expanded(
+                      flex: 2,
+                      child: ZTextFieldEntitled(
+                        controller: zipCode,
+                        title: locale.zipCode,
+                        inputFormat: [FilteringTextInputFormatter.digitsOnly],
+                        onFieldSubmitted: (_) => onSubmit(),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                Row(
+                  spacing: 5,
+                  children: [
+                    Expanded(
+                      child: ZTextFieldEntitled(
+                        controller: city,
+                        title: locale.city,
+                        onFieldSubmitted: (_) => onSubmit(),
+                      ),
+                    ),
+                    Expanded(
+                      child: ZTextFieldEntitled(
+                        controller: province,
+                        title: locale.province,
+                        onFieldSubmitted: (_) => onSubmit(),
+                      ),
+                    ),
+                    Expanded(
+                      child: ZTextFieldEntitled(
+                        controller: country,
+                        title: locale.country,
+                        onFieldSubmitted: (_) => onSubmit(),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                ZTextFieldEntitled(
+                  controller: address,
+                  keyboardType: TextInputType.multiline,
+                  maxLength: 100,
+                  title: locale.address,
+                  onFieldSubmitted: (_) => onSubmit(),
+                ),
+                const SizedBox(height: 8),
+
+                const Spacer(),
+                Row(
+                  spacing: 8,
+                  children: [
+                    ZOutlineButton(
+                      width: 100,
+                      backgroundHover: theme.error,
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: Icons.close,
+                      label: Text(locale.cancel),
+                    ),
+                    ZOutlineButton(
+                      width: 110,
+                      isActive: true,
+                      icon: (state is BranchLoadingState) ? null : Icons.refresh,
+                      label: (state is BranchLoadingState)
+                          ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          color: theme.surface,
+                        ),
+                      )
+                          : Text(locale.update),
+                      onPressed: onSubmit,
+                    ),
+                  ],
+                ),
+              ],
             );
           } else if (widget.isTablet) {
             // Tablet layout
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Tablet Header
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: theme.primary.withValues(alpha: .05),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                locale.overview,
-                                style: textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                branchName.text.isEmpty
-                                    ? locale.branchName
-                                    : branchName.text,
-                                style: textTheme.bodyMedium?.copyWith(
-                                  color: theme.outline,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: theme.primary,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            "ID: ${branchCode ?? ''}",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ZTextFieldEntitled(
+                  controller: branchName,
+                  isRequired: true,
+                  title: locale.branchName,
+                  onFieldSubmitted: (_) => onSubmit(),
+                  validator: (value) {
+                    if (value!=null && value.isEmpty) {
+                      return locale.required(locale.branchName);
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 8),
 
-                  // Form Fields
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          ZTextFieldEntitled(
-                            controller: branchName,
-                            isRequired: true,
-                            title: locale.branchName,
-                            onFieldSubmitted: (_) => onSubmit(),
-                            validator: (value) {
-                              if (value !=null &&  value.isEmpty) {
-                                return locale.required(locale.branchName);
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-
-                          Row(
-                            spacing: 12,
-                            children: [
-                              Expanded(
-                                flex: 3,
-                                child: ZTextFieldEntitled(
-                                  controller: phone,
-                                  title: locale.mobile1,
-                                  inputFormat: [FilteringTextInputFormatter.digitsOnly],
-                                  onFieldSubmitted: (_) => onSubmit(),
-                                ),
-                              ),
-                              Expanded(
-                                flex: 2,
-                                child: ZTextFieldEntitled(
-                                  controller: zipCode,
-                                  title: locale.zipCode,
-                                  inputFormat: [FilteringTextInputFormatter.digitsOnly],
-                                  onFieldSubmitted: (_) => onSubmit(),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-
-                          Row(
-                            spacing: 12,
-                            children: [
-                              Expanded(
-                                child: ZTextFieldEntitled(
-                                  controller: city,
-                                  title: locale.city,
-                                  onFieldSubmitted: (_) => onSubmit(),
-                                ),
-                              ),
-                              Expanded(
-                                child: ZTextFieldEntitled(
-                                  controller: province,
-                                  title: locale.province,
-                                  onFieldSubmitted: (_) => onSubmit(),
-                                ),
-                              ),
-                              Expanded(
-                                child: ZTextFieldEntitled(
-                                  controller: country,
-                                  title: locale.country,
-                                  onFieldSubmitted: (_) => onSubmit(),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-
-                          ZTextFieldEntitled(
-                            controller: address,
-                            keyboardType: TextInputType.multiline,
-                            maxLength: 100,
-                            title: locale.address,
-                            onFieldSubmitted: (_) => onSubmit(),
-                          ),
-                          const SizedBox(height: 16),
-
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: theme.outline.withValues(alpha: .2),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Checkbox(
-                                  visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
-                                  value: isMailingAddress,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      isMailingAddress = value ?? true;
-                                      mailingValue = isMailingAddress ? 1 : 0;
-                                    });
-                                  },
-                                  activeColor: theme.primary,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  "isMailing",
-                                  style: textTheme.bodyLarge,
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          // Action Buttons
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            spacing: 12,
-                            children: [
-                              ZOutlineButton(
-                                width: 100,
-                                backgroundHover: theme.error,
-                                onPressed: () => Navigator.of(context).pop(),
-                                icon: Icons.close,
-                                label: Text(locale.cancel),
-                              ),
-                              ZOutlineButton(
-                                width: 110,
-                                isActive: true,
-                                icon: (state is BranchLoadingState) ? null : Icons.refresh,
-                                label: (state is BranchLoadingState)
-                                    ? SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 3,
-                                    color: theme.surface,
-                                  ),
-                                )
-                                    : Text(locale.update),
-                                onPressed: onSubmit,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                        ],
+                Row(
+                  spacing: 5,
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: ZTextFieldEntitled(
+                        controller: phone,
+                        title: locale.mobile1,
+                        inputFormat: [FilteringTextInputFormatter.digitsOnly],
+                        onFieldSubmitted: (_) => onSubmit(),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                    Expanded(
+                      flex: 2,
+                      child: ZTextFieldEntitled(
+                        controller: zipCode,
+                        title: locale.zipCode,
+                        inputFormat: [FilteringTextInputFormatter.digitsOnly],
+                        onFieldSubmitted: (_) => onSubmit(),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                Row(
+                  spacing: 5,
+                  children: [
+                    Expanded(
+                      child: ZTextFieldEntitled(
+                        controller: city,
+                        title: locale.city,
+                        onFieldSubmitted: (_) => onSubmit(),
+                      ),
+                    ),
+                    Expanded(
+                      child: ZTextFieldEntitled(
+                        controller: province,
+                        title: locale.province,
+                        onFieldSubmitted: (_) => onSubmit(),
+                      ),
+                    ),
+                    Expanded(
+                      child: ZTextFieldEntitled(
+                        controller: country,
+                        title: locale.country,
+                        onFieldSubmitted: (_) => onSubmit(),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                ZTextFieldEntitled(
+                  controller: address,
+                  keyboardType: TextInputType.multiline,
+                  maxLength: 100,
+                  title: locale.address,
+                  onFieldSubmitted: (_) => onSubmit(),
+                ),
+                const SizedBox(height: 8),
+
+                const Spacer(),
+                Row(
+                  spacing: 8,
+                  children: [
+                    ZOutlineButton(
+                      width: 100,
+                      backgroundHover: theme.error,
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: Icons.close,
+                      label: Text(locale.cancel),
+                    ),
+                    ZOutlineButton(
+                      width: 110,
+                      isActive: true,
+                      icon: (state is BranchLoadingState) ? null : Icons.refresh,
+                      label: (state is BranchLoadingState)
+                          ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          color: theme.surface,
+                        ),
+                      )
+                          : Text(locale.update),
+                      onPressed: onSubmit,
+                    ),
+                  ],
+                ),
+              ],
             );
           } else {
             // Desktop layout (existing)
@@ -595,7 +369,7 @@ class _BaseBranchOverviewState extends State<_BaseBranchOverview> {
                               title: locale.branchName,
                               onFieldSubmitted: (_) => onSubmit(),
                               validator: (value) {
-                                if (value !=null && value.isEmpty) {
+                                if (value!=null && value.isEmpty) {
                                   return locale.required(locale.branchName);
                                 }
                                 return null;
@@ -664,25 +438,6 @@ class _BaseBranchOverviewState extends State<_BaseBranchOverview> {
                               onFieldSubmitted: (_) => onSubmit(),
                             ),
                             const SizedBox(height: 8),
-
-                            Row(
-                              spacing: 8,
-                              children: [
-                                Checkbox(
-                                  visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
-                                  value: isMailingAddress,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      isMailingAddress = value ?? true;
-                                      mailingValue = isMailingAddress ? 1 : 0;
-                                    });
-                                  },
-                                ),
-                                Text("isMailing"),
-                              ],
-                            ),
-
-                            const SizedBox(height: 20),
 
                             const Spacer(),
                             Row(

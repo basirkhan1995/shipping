@@ -543,7 +543,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get done => 'Done';
 
   @override
-  String get aboat => 'Aboat';
+  String get aboat => 'About';
 
   @override
   String get company => 'Company';
@@ -605,4 +605,91 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileOverview => 'Profile Overview';
+
+  @override
+  String get search => 'Search';
+
+  @override
+  String get narration => 'Narration';
+
+  @override
+  String get date => 'Date';
+
+  @override
+  String get reference => 'Reference';
+
+  @override
+  String get type => 'Type';
+
+  @override
+  String get maker => 'Txn Maker';
+
+  @override
+  String get cashDeposit => 'Cash Receipt';
+
+  @override
+  String get cashWithdraw => 'Cash Payment';
+
+  @override
+  String get clearFilters => 'Clear filters';
+
+  @override
+  String get noTransaction => 'No transactions';
+
+  @override
+  String get noTransactionMsg => 'There are no transactions to display';
+
+  @override
+  String get dateRange => 'Date range';
+
+  @override
+  String get branches => 'Branches';
+
+  @override
+  String get branchLimitHint => 'Auto transactions allowance of branch';
+
+  @override
+  String get fxTransaction => 'FX Transaction';
+
+  @override
+  String get bulkTransaction => 'Bulk Insertion';
+
+  @override
+  String get pending => 'Pending';
+
+  @override
+  String get authorized => 'Authorized';
+
+  @override
+  String get reversed => 'Reversed';
+
+  @override
+  String get deleted => 'Deleted';
+
+  @override
+  String get glDebit => 'GL Debit';
+
+  @override
+  String get glCredit => 'GL Credit';
+
+  @override
+  String get exchange => 'Exchange';
+
+  @override
+  String get fundTransfer => 'Fund Transfer';
+
+  @override
+  String get journal => 'Journal';
+
+  @override
+  String get cashFlow => 'Cash flow';
+
+  @override
+  String get tryAgain => 'Try again';
+
+  @override
+  String get newTransaction => 'New Transaction';
+
+  @override
+  String get noPermission => 'No Permission';
 }

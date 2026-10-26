@@ -66,49 +66,11 @@ class _BaseBranchLimitsState extends State<_BaseBranchLimits> {
       // Mobile header - stacked layout
       return Padding(
         padding: const EdgeInsets.all(12.0),
-        child: Column(
-          children: [
-            ReusableSearchBar(
-              controller: searchController,
-              onChanged: (e) {
-                setState(() {});
-              },
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: ZOutlineButton(
-                    toolTip: "F5",
-                    icon: Icons.refresh,
-                    onPressed: () {
-                      context.read<BranchLimitBloc>().add(
-                        LoadBranchLimitEvent(widget.branch.brcId),
-                      );
-                    },
-                    label: Text(locale.refresh),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ZOutlineButton(
-                    toolTip: "F1",
-                    icon: Icons.add,
-                    isActive: true,
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => BranchLimitAddEditView(
-                          branchCode: widget.branch.brcId,
-                        ),
-                      );
-                    },
-                    label: Text(locale.newKeyword),
-                  ),
-                ),
-              ],
-            ),
-          ],
+        child: ReusableSearchBar(
+          controller: searchController,
+          onChanged: (e) {
+            setState(() {});
+          },
         ),
       );
     } else if (widget.isTablet) {
@@ -222,121 +184,65 @@ class _BaseBranchLimitsState extends State<_BaseBranchLimits> {
 
     if (widget.isMobile) {
       // Mobile card view - Enhanced Design
-      return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: color.surface,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: .05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
+      return InkWell(
+        onTap: () {
+          showDialog(
+            context: context,
+            builder: (context) => BranchLimitAddEditView(branchLimit: limit),
+          );
+        },
+        splashColor: color.primary.withValues(alpha: .05),
+        hoverColor: color.primary.withValues(alpha: .05),
+        child: Container(
+          decoration: BoxDecoration(
+            color: index.isOdd ? color.primary.withValues(alpha: .02) : Colors.transparent,
+            border: Border(
+              bottom: BorderSide(
+                color: color.outline.withValues(alpha: .05),
+              ),
             ),
-          ],
-          border: Border.all(
-            color: color.outline.withValues(alpha: .1),
           ),
-        ),
-        child: InkWell(
-          onTap: () {
-            showDialog(
-              context: context,
-              builder: (context) => BranchLimitAddEditView(branchLimit: limit),
-            );
-          },
-          borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
+            padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 12),
+            child: Row(
               children: [
-                // Top row with ID and Currency
-                Row(
-                  children: [
-                    // ID Badge
-                    Text(
-                      "#${limit.balId}",
-                      style: textTheme.labelMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                      ),
+                // ID with badge
+                SizedBox(
+                  width: 30,
+                  child: Text(
+                    limit.balId.toString(),
+                    style: textTheme.bodySmall?.copyWith(
+                      color: color.primary,
+                      fontWeight: FontWeight.bold,
                     ),
-
-                    const SizedBox(width: 12),
-
-                    // Currency with icon
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              limit.balCurrency?.toUpperCase() ?? "N/A",
-                              style: textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                // Divider with gradient
-                Container(
-                  height: 1,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.transparent,
-                        color.outline.withValues(alpha: .2),
-                        Colors.transparent,
-                      ],
-                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
 
-                const SizedBox(height: 16),
-
-                // Amount section
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Label
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.trending_up,
-                          size: 18,
-                          color: color.outline,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          locale.amount, // Using existing locale.amount instead of limitAmount
-                          style: textTheme.bodyMedium?.copyWith(
-                            color: color.outline,
-                            fontWeight: FontWeight.w500,
+                // Currency with icon
+                Expanded(
+                  child: Row(
+                    children: [
+                      ZCover(
+                        child: Text(
+                          limit.balCurrency?.toUpperCase() ?? "N/A",
+                          style: textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
                           ),
                         ),
-                      ],
-                    ),
-
-                    // Amount value with highlight
-                    Text(
-                      amountValue.toAmount(),
-                      style: textTheme.titleLarge?.copyWith(
-                        color: color.primary,
-                        fontWeight: FontWeight.bold,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                ),
+
+                // Amount with styling
+                Text(
+                  amountValue.toAmount() == "9,999,999,999,999.00"? locale.unlimited : amountValue.toAmount(),
+                  style: textTheme.bodyLarge?.copyWith(
+                    color: color.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -353,7 +259,7 @@ class _BaseBranchLimitsState extends State<_BaseBranchLimits> {
           );
         },
         splashColor: color.primary.withValues(alpha: .05),
-        highlightColor: color.primary.withValues(alpha: .05),
+        hoverColor: color.primary.withValues(alpha: .05),
         child: Container(
           decoration: BoxDecoration(
             color: index.isOdd ? color.primary.withValues(alpha: .02) : Colors.transparent,
@@ -364,26 +270,19 @@ class _BaseBranchLimitsState extends State<_BaseBranchLimits> {
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 12),
             child: Row(
               children: [
                 // ID with badge
                 SizedBox(
-                  width: 60,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: color.primary.withValues(alpha: .1),
-                      borderRadius: BorderRadius.circular(12),
+                  width: 30,
+                  child: Text(
+                    limit.balId.toString(),
+                    style: textTheme.bodySmall?.copyWith(
+                      color: color.primary,
+                      fontWeight: FontWeight.bold,
                     ),
-                    child: Text(
-                      limit.balId.toString(),
-                      style: textTheme.bodySmall?.copyWith(
-                        color: color.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
 
@@ -391,14 +290,13 @@ class _BaseBranchLimitsState extends State<_BaseBranchLimits> {
                 Expanded(
                   child: Row(
                     children: [
-                      Expanded(
+                      ZCover(
                         child: Text(
                           limit.balCurrency?.toUpperCase() ?? "N/A",
                           style: textTheme.bodyLarge?.copyWith(
                             fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -406,23 +304,11 @@ class _BaseBranchLimitsState extends State<_BaseBranchLimits> {
                 ),
 
                 // Amount with styling
-                Container(
-                  width: 120,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: color.primary.withValues(alpha: .05),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: color.primary.withValues(alpha: .2),
-                    ),
-                  ),
-                  child: Text(
-                    amountValue.toAmount(),
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: color.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.right,
+                Text(
+                  amountValue.toAmount() == "9,999,999,999,999.00"? locale.unlimited : amountValue.toAmount(),
+                  style: textTheme.bodyLarge?.copyWith(
+                    color: color.primary,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
@@ -507,35 +393,41 @@ class _BaseBranchLimitsState extends State<_BaseBranchLimits> {
 
     return Scaffold(
       backgroundColor: color.surface,
-      appBar: widget.isMobile
-          ? AppBar(
-        title: Text("${locale.branchLimit} - ${widget.branch.brcName}"),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              context.read<BranchLimitBloc>().add(
-                LoadBranchLimitEvent(widget.branch.brcId),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => BranchLimitAddEditView(
-                  branchCode: widget.branch.brcId,
-                ),
-              );
-            },
-          ),
-        ],
-      )
-          : null,
       body: Column(
         children: [
+           Row(
+             children: [
+               Expanded(
+                   child: ListTile(
+                     visualDensity: VisualDensity(horizontal: -4),
+                 title: Text(AppLocalizations.of(context)!.branchLimit),
+                 subtitle: Text(AppLocalizations.of(context)!.branchLimitHint),
+               )),
+               Row(
+                 children: [
+                   IconButton(
+                     icon: const Icon(Icons.refresh),
+                     onPressed: () {
+                       context.read<BranchLimitBloc>().add(
+                         LoadBranchLimitEvent(widget.branch.brcId),
+                       );
+                     },
+                   ),
+                   IconButton(
+                     icon: const Icon(Icons.add),
+                     onPressed: () {
+                       showDialog(
+                         context: context,
+                         builder: (context) => BranchLimitAddEditView(
+                           branchCode: widget.branch.brcId,
+                         ),
+                       );
+                     },
+                   ),
+                 ],
+               ),
+             ],
+           ),
           // Header Section
           _buildHeaderRow(locale),
           // Limits List
