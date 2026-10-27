@@ -61,7 +61,6 @@ class _DesktopView extends StatefulWidget {
 }
 
 class _DesktopViewState extends State<_DesktopView> {
-  // ── Status options (value only — label resolved at build time)
   static const _statusOptions = <_StatusOption>[
     _StatusOption('all'),
     _StatusOption('pending'),
@@ -70,7 +69,6 @@ class _DesktopViewState extends State<_DesktopView> {
     _StatusOption('deleted'),
   ];
 
-  // ── Types (code only — label resolved at build time)
   static const _typeOptions = <_TypeOption>[
     _TypeOption('CHDP'),
     _TypeOption('CHWL'),
@@ -83,7 +81,6 @@ class _DesktopViewState extends State<_DesktopView> {
     _TypeOption('BULK'),
   ];
 
-  // ── Grouped action buttons — each carries a permission ID
   static const _actionGroups = <_ActionGroup>[
     _ActionGroup(
       titleKey: 'cashFlow',
@@ -221,12 +218,10 @@ class _DesktopViewState extends State<_DesktopView> {
     _reload();
   }
 
-  // ── Permission helper ─────────────────────────────────────────
   bool _checkPermission(LoginData login, int permission) {
     return login.hasPermission(permission) ?? false;
   }
 
-  // ── Cash-flow specs ───────────────────────────────────────────
   CashTxnSpec _cashSpecFor(String code) {
     final tr = AppLocalizations.of(context)!;
     switch (code) {
@@ -285,7 +280,6 @@ class _DesktopViewState extends State<_DesktopView> {
     }
   }
 
-  // ── Base currency (from company profile) ──────────────────────
   String _baseCurrency() {
     final state = context.read<CompanyProfileBloc>().state;
     if (state is CompanyProfileLoadedState) {
@@ -312,13 +306,15 @@ class _DesktopViewState extends State<_DesktopView> {
       final tr = AppLocalizations.of(context)!;
       ToastManager.show(
         context: context,
-        title: "saved",
+        title: tr.save,
         message: _buttonLabel(tr, code),
         type: ToastType.success,
       );
     }
   }
-  Future<void> _openBulkDialog() async {
+
+  // ── Open the bulk dialog (create OR edit) ─────────────────────
+  Future<void> _openBulkDialog({String? reference}) async {
     final auth = context.read<AuthBloc>().state;
     if (auth is! AuthenticatedState) return;
 
@@ -326,20 +322,24 @@ class _DesktopViewState extends State<_DesktopView> {
       context,
       usrName: auth.loginData.usrName ?? '',
       baseCurrency: _baseCurrency(),
+      reference: reference, // ← null → create, non-null → edit
     );
 
     if (!mounted) return;
     if (saved == true) {
       _reload();
-     // final tr = AppLocalizations.of(context)!;
+      final tr = AppLocalizations.of(context)!;
       ToastManager.show(
         context: context,
-        title: "SAVED",
-        message: 'Bulk transfer created',
+        title: tr.save,
+        message: reference != null
+            ? 'Bulk transfer updated'
+            : 'Bulk transfer created',
         type: ToastType.success,
       );
     }
   }
+
   // ── Shared "coming soon" toast for un-built flows ─────────────
   void _comingSoon(String code) {
     final tr = AppLocalizations.of(context)!;
@@ -351,9 +351,23 @@ class _DesktopViewState extends State<_DesktopView> {
     );
   }
 
-  // ── Action button router ──────────────────────────────────────
+  /// Open the bulk dialog for any ATAT / BULK row — regardless of status.
+  /// The dialog itself gates edit / delete / authorize / unauthorize
+  /// on both the transaction's current state AND the caller being the maker.
+  Future<void> _onRowTapped(TransactionListItem row) async {
+    final type = row.typeCode.toUpperCase();
+    final isBulkType = type == 'ATAT' || type == 'BULK';
+
+    if (!isBulkType) {
+      // Cash / GL / FX rows: no bulk dialog for these — their own
+      // edit flows (or read-only detail screens) would go here.
+      return;
+    }
+
+    await _openBulkDialog(reference: row.reference);
+  }
+
   void _onActionTapped(_ActionButtonSpec spec) {
-    // Defense-in-depth: re-check permission right before acting
     final auth = context.read<AuthBloc>().state;
     final allowed = auth is AuthenticatedState &&
         _checkPermission(auth.loginData, spec.permission);
@@ -370,7 +384,6 @@ class _DesktopViewState extends State<_DesktopView> {
     }
 
     switch (spec.code) {
-    // Cash family → shared dialog
       case 'CHDP':
       case 'CHWL':
       case 'INCM':
@@ -380,11 +393,11 @@ class _DesktopViewState extends State<_DesktopView> {
         _openCashDialog(spec.code);
         break;
 
-    // Fund transfer / bulk / FX — not built yet
       case 'ATAT':
       case 'BULK':
         _openBulkDialog();
         break;
+
       case 'CRFX':
         _comingSoon(spec.code);
         break;
@@ -393,15 +406,21 @@ class _DesktopViewState extends State<_DesktopView> {
 
   // ── Shortcuts (F1–F9) ─────────────────────────────────────────
   late final Map<ShortcutActivator, VoidCallback> _shortcuts = {
-    const SingleActivator(LogicalKeyboardKey.f1): () => _openCashDialog('CHDP'),
-    const SingleActivator(LogicalKeyboardKey.f2): () => _openCashDialog('CHWL'),
-    const SingleActivator(LogicalKeyboardKey.f3): () => _openCashDialog('INCM'),
-    const SingleActivator(LogicalKeyboardKey.f4): () => _openCashDialog('XPNS'),
-    const SingleActivator(LogicalKeyboardKey.f5): () => _comingSoon('ATAT'),
-    const SingleActivator(LogicalKeyboardKey.f6): () => _comingSoon('BULK'),
+    const SingleActivator(LogicalKeyboardKey.f1): () =>
+        _openCashDialog('CHDP'),
+    const SingleActivator(LogicalKeyboardKey.f2): () =>
+        _openCashDialog('CHWL'),
+    const SingleActivator(LogicalKeyboardKey.f3): () =>
+        _openCashDialog('INCM'),
+    const SingleActivator(LogicalKeyboardKey.f4): () =>
+        _openCashDialog('XPNS'),
+    const SingleActivator(LogicalKeyboardKey.f5): () => _openBulkDialog(),
+    const SingleActivator(LogicalKeyboardKey.f6): () => _openBulkDialog(),
     const SingleActivator(LogicalKeyboardKey.f7): () => _comingSoon('CRFX'),
-    const SingleActivator(LogicalKeyboardKey.f8): () => _openCashDialog('GLCR'),
-    const SingleActivator(LogicalKeyboardKey.f9): () => _openCashDialog('GLDR'),
+    const SingleActivator(LogicalKeyboardKey.f8): () =>
+        _openCashDialog('GLCR'),
+    const SingleActivator(LogicalKeyboardKey.f9): () =>
+        _openCashDialog('GLDR'),
   };
 
   // ── Localization resolvers ────────────────────────────────────
@@ -467,7 +486,6 @@ class _DesktopViewState extends State<_DesktopView> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ── Left: transactions ──
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -483,8 +501,6 @@ class _DesktopViewState extends State<_DesktopView> {
                 ),
               ),
               const SizedBox(width: 12),
-
-              // ── Right: action panel ──
               _buildActionPanel(color, textTheme, login),
             ],
           ),
@@ -493,7 +509,6 @@ class _DesktopViewState extends State<_DesktopView> {
     );
   }
 
-  // ── Right action panel (grouped + permission-filtered) ────────
   Widget _buildActionPanel(
       ColorScheme color,
       TextTheme textTheme,
@@ -613,7 +628,6 @@ class _DesktopViewState extends State<_DesktopView> {
     );
   }
 
-  // ── Header ─────────────────────────────────────────────────────
   Widget _buildHeaderRow(TextTheme textTheme, ColorScheme color) {
     final tr = AppLocalizations.of(context)!;
     return Row(
@@ -652,7 +666,6 @@ class _DesktopViewState extends State<_DesktopView> {
     );
   }
 
-  // ── Filter row ─────────────────────────────────────────────────
   Widget _buildFilterRow(ColorScheme color, TextTheme textTheme) {
     final tr = AppLocalizations.of(context)!;
     return Row(
@@ -729,7 +742,6 @@ class _DesktopViewState extends State<_DesktopView> {
     );
   }
 
-  // ── Table header ───────────────────────────────────────────────
   Widget _buildTableHeader(ColorScheme color, TextTheme textTheme) {
     final titleStyle = textTheme.titleSmall?.copyWith(color: color.surface);
     final tr = AppLocalizations.of(context)!;
@@ -747,15 +759,21 @@ class _DesktopViewState extends State<_DesktopView> {
           Expanded(child: Text(tr.narration, style: titleStyle)),
           SizedBox(
             width: 180,
-            child:
-            Text(tr.amount, textAlign: TextAlign.right, style: titleStyle),
+            child: Text(
+              tr.amount,
+              textAlign: TextAlign.right,
+              style: titleStyle,
+            ),
           ),
           SizedBox(
             width: 110,
             child: Padding(
               padding: const EdgeInsets.only(left: 12),
-              child:
-              Text(tr.status, textAlign: TextAlign.end, style: titleStyle),
+              child: Text(
+                tr.status,
+                textAlign: TextAlign.end,
+                style: titleStyle,
+              ),
             ),
           ),
         ],
@@ -763,7 +781,6 @@ class _DesktopViewState extends State<_DesktopView> {
     );
   }
 
-  // ── Body ───────────────────────────────────────────────────────
   Widget _buildBody(ColorScheme color) {
     return BlocBuilder<TransactionsBloc, TransactionsState>(
       builder: (context, state) {
@@ -804,6 +821,8 @@ class _DesktopViewState extends State<_DesktopView> {
         itemBuilder: (_, i) => _TransactionRowWidget(
           row: rows[i],
           isOdd: i.isOdd,
+          // ✅ Row tap → open bulk edit when the row is editable.
+          onTap: dim ? null : _onRowTapped,
         ),
       ),
     );
@@ -874,107 +893,121 @@ class _ActionButtonSpec {
 class _TransactionRowWidget extends StatelessWidget {
   final TransactionListItem row;
   final bool isOdd;
-  const _TransactionRowWidget({required this.row, required this.isOdd});
+
+  /// Optional tap handler — set to non-null only when the row is
+  /// editable (pending ATAT / BULK). Tapping a non-editable row is a
+  /// no-op; the callback itself decides what to do.
+  final void Function(TransactionListItem)? onTap;
+
+  const _TransactionRowWidget({
+    required this.row,
+    required this.isOdd,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      decoration: BoxDecoration(
-        color: isOdd ? color.primary.withValues(alpha: .04) : null,
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 140,
-            child: Text(
-              row.entryDate.toFullDateTime,
-              style: textTheme.bodySmall?.copyWith(
-                fontSize: 11,
-                color: color.onSurfaceVariant,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          SizedBox(
-            width: 180,
-            child: Text(
-              row.reference,
-              style: textTheme.bodySmall?.copyWith(
-                fontFamily: 'monospace',
-                fontWeight: FontWeight.w700,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          SizedBox(
-            width: 150,
-            child: Text(
-              row.typeName.isEmpty ? row.typeCode : row.typeName,
-              style: textTheme.bodySmall,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          SizedBox(
-            width: 140,
-            child: Text(
-              row.maker,
-              style: textTheme.bodySmall,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Expanded(
-            child: Text(
-              row.narration ?? '—',
-              style: textTheme.bodySmall?.copyWith(
-                color: color.onSurfaceVariant,
-              ),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
-          ),
-          SizedBox(
-            width: 180,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                Flexible(
-                  child: Text(
-                    row.amountFormatted,
-                    textAlign: TextAlign.right,
-                    style: textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
+    return InkWell(
+      onTap: onTap != null ? () => onTap!(row) : null,
+      hoverColor: color.primary.withValues(alpha: .03),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        decoration: BoxDecoration(
+          color: isOdd ? color.primary.withValues(alpha: .04) : null,
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 140,
+              child: Text(
+                row.entryDate.toFullDateTime,
+                style: textTheme.bodySmall?.copyWith(
+                  fontSize: 11,
+                  color: color.onSurfaceVariant,
                 ),
-                if (row.currencies.isNotEmpty) ...[
-                  const SizedBox(width: 4),
-                  Text(
-                    row.currencies,
-                    style: textTheme.labelSmall?.copyWith(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: color.onSurfaceVariant,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ],
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-          SizedBox(
-            width: 110,
-            child: _StatusPill(row: row),
-          ),
-        ],
+            SizedBox(
+              width: 180,
+              child: Text(
+                row.reference,
+                style: textTheme.bodySmall?.copyWith(
+                  fontFamily: 'monospace',
+                  fontWeight: FontWeight.w700,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            SizedBox(
+              width: 150,
+              child: Text(
+                row.typeName.isEmpty ? row.typeCode : row.typeName,
+                style: textTheme.bodySmall,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            SizedBox(
+              width: 140,
+              child: Text(
+                row.maker,
+                style: textTheme.bodySmall,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Expanded(
+              child: Text(
+                row.narration ?? '—',
+                style: textTheme.bodySmall?.copyWith(
+                  color: color.onSurfaceVariant,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
+            SizedBox(
+              width: 180,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Flexible(
+                    child: Text(
+                      row.amountFormatted,
+                      textAlign: TextAlign.right,
+                      style: textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ),
+                  if (row.currencies.isNotEmpty) ...[
+                    const SizedBox(width: 4),
+                    Text(
+                      row.currencies,
+                      style: textTheme.labelSmall?.copyWith(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: color.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            SizedBox(
+              width: 110,
+              child: _StatusPill(row: row),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1014,7 +1047,6 @@ class _StatusPill extends StatelessWidget {
       row.statusText,
       ),
     };
-    // `bg` kept for future pill styling.
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
       child: Text(

@@ -12,11 +12,13 @@ import '../../../../../../../../Features/Widgets/toast.dart';
 import '../../../../../../../../Features/Widgets/ztextfield.dart';
 import '../../../../../../../../Features/Other/generic_textfield.dart';
 import '../../../../../../../../Services/repository.dart';
+import '../../../../../Auth/bloc/auth_bloc.dart';
 import '../../../Finance/View/Currencies/features/currency_drop.dart';
 import '../../../Finance/View/Currencies/model/ccy_model.dart';
 import '../../../Stakeholder/View/StkAccount/bloc/stk_accounts_bloc.dart';
 import '../../../Stakeholder/View/StkAccount/bloc/stk_accounts_event.dart';
 import '../../../Stakeholder/View/StkAccount/bloc/stk_accounts_state.dart';
+import '../../bloc/transactions_bloc.dart';
 import 'bloc/bulk_transfer_bloc.dart';
 import 'bloc/bulk_transfer_event.dart';
 import 'bloc/bulk_transfer_state.dart';
@@ -26,15 +28,30 @@ Future<bool?> showBulkTransferDialog(
     BuildContext context, {
       required String usrName,
       required String baseCurrency,
+      String? reference,
     }) {
   return showDialog<bool>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => BlocProvider(
-      create: (ctx) => BulkTransferBloc(ctx.read<Repositories>()),
+    builder: (_) => MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (ctx) {
+            final bloc = BulkTransferBloc(ctx.read<Repositories>());
+            if (reference != null && reference.isNotEmpty) {
+              bloc.add(BulkTransferLoadForEditRequested(reference));
+            }
+            return bloc;
+          },
+        ),
+        BlocProvider<TransactionsBloc>.value(
+          value: context.read<TransactionsBloc>(),
+        ),
+      ],
       child: _BulkTransferDialog(
         usrName: usrName,
         baseCurrency: baseCurrency,
+        reference: reference,
       ),
     ),
   );
@@ -43,9 +60,11 @@ Future<bool?> showBulkTransferDialog(
 class _BulkTransferDialog extends StatefulWidget {
   final String usrName;
   final String baseCurrency;
+  final String? reference;
   const _BulkTransferDialog({
     required this.usrName,
     required this.baseCurrency,
+    this.reference,
   });
 
   @override
@@ -56,8 +75,6 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
   late String _headerCurrency;
   final Map<int, _RowControllers> _controllers = {};
 
-  /// API error — rendered as the top banner inside the form, cleared on
-  /// any edit or on the next submit.
   String? _errorMessage;
 
   @override
@@ -107,37 +124,203 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
     );
   }
 
+  // ── row actions dispatched to TransactionsBloc ────────────
+  String? get _reference {
+    final s = context.read<BulkTransferBloc>().state;
+    return (s is BulkTransferEditing) ? s.reference : null;
+  }
+
+  String? _currentUserName() {
+    final auth = context.read<AuthBloc>().state;
+    return auth is AuthenticatedState ? auth.loginData.usrName : null;
+  }
+
+  void _dispatchAuthorize() {
+    final ref = _reference;
+    if (ref == null || ref.isEmpty) return;
+    if (_errorMessage != null) setState(() => _errorMessage = null);
+    context.read<TransactionsBloc>().add(
+      AuthorizeTransactionEvent(
+        reference: ref,
+        userName: _currentUserName(),
+      ),
+    );
+  }
+
+  void _dispatchUnauthorize() {
+    final ref = _reference;
+    if (ref == null || ref.isEmpty) return;
+    if (_errorMessage != null) setState(() => _errorMessage = null);
+    context.read<TransactionsBloc>().add(
+      UnauthorizeTransactionEvent(
+        reference: ref,
+        userName: _currentUserName(),
+      ),
+    );
+  }
+
+  void _dispatchReverse() {
+    final ref = _reference;
+    if (ref == null || ref.isEmpty) return;
+    if (_errorMessage != null) setState(() => _errorMessage = null);
+    context.read<TransactionsBloc>().add(
+      ReverseTransactionEvent(
+        reference: ref,
+        userName: _currentUserName(),
+      ),
+    );
+  }
+
+  Future<void> _dispatchDelete() async {
+    final ref = _reference;
+    if (ref == null || ref.isEmpty) return;
+
+    final tr = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: Text(tr.delete),
+        content: Text(
+          'Permanently delete transaction $ref?\n\n'
+              'This removes the header and every line. It cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: Text(tr.cancel),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            child: Text(tr.delete),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    if (!mounted) return;
+    if (_errorMessage != null) setState(() => _errorMessage = null);
+
+    // Dispatch to TransactionsBloc so the row disappears from the list too.
+    context.read<TransactionsBloc>().add(
+      DeleteTransactionEvent(
+        reference: ref,
+        userName: _currentUserName(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<BulkTransferBloc, BulkTransferState>(
-      listener: (context, state) {
-        if (state is BulkTransferSuccess) {
-          ToastManager.show(
-            context: context,
-            title: 'Bulk transfer',
-            message: state.message,
-            type: ToastType.success,
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<BulkTransferBloc, BulkTransferState>(
+          listener: _bulkListener,
+        ),
+        BlocListener<TransactionsBloc, TransactionsState>(
+          listenWhen: (prev, next) {
+            if (next is! TransactionsLoadedState) return false;
+            return next.actionSuccess != null ||
+                next.actionError != null ||
+                next.actionInProgress != null;
+          },
+          listener: _transactionsListener,
+        ),
+      ],
+      child: BlocBuilder<BulkTransferBloc, BulkTransferState>(
+        builder: (context, bulkState) {
+          final editing = _toEditing(bulkState);
+          final busy = bulkState is BulkTransferSubmitting;
+          final isActionBusy = context.select<TransactionsBloc, bool>(
+                (b) =>
+            b.state is TransactionsLoadedState &&
+                (b.state as TransactionsLoadedState).actionInProgress != null,
           );
-          Navigator.of(context).pop(true);
-        } else if (state is BulkTransferFailure) {
-          // ✅ Show the failure as an inline top banner — no toast.
-          setState(() => _errorMessage = state.message);
-        }
-      },
-      builder: (context, state) {
-        final editing = _toEditing(state);
-        final busy = state is BulkTransferSubmitting;
 
-        return ZFormDialog(
-          width: MediaQuery.of(context).size.width * 0.7,
-          icon: Icons.dynamic_feed_outlined,
-          title: 'Bulk transfer',
-          isActionTrue: false,
-          onAction: null,
-          child: _buildBody(context, editing, busy),
-        );
-      },
+          return ZFormDialog(
+            width: MediaQuery.of(context).size.width * 0.7,
+            icon: Icons.dynamic_feed_outlined,
+            title: editing.isEditing
+                ? '${AppLocalizations.of(context)!.editBulkTransfer} · ${editing.reference}'
+                : AppLocalizations.of(context)!.bulkTransfer,
+            isActionTrue: false,
+            onAction: null,
+            child: _buildBody(
+              context,
+              editing,
+              busy || isActionBusy,
+              isActionBusy,
+            ),
+          );
+        },
+      ),
     );
+  }
+
+  void _bulkListener(BuildContext context, BulkTransferState state) {
+    if (state is BulkTransferSuccess) {
+      ToastManager.show(
+        context: context,
+        title: 'Bulk transfer',
+        message: state.message,
+        type: ToastType.success,
+      );
+      Navigator.of(context).pop(true);
+    } else if (state is BulkTransferDeleted) {
+      ToastManager.show(
+        context: context,
+        title: 'Bulk transfer',
+        message: 'Transaction ${state.reference} deleted.',
+        type: ToastType.success,
+      );
+      Navigator.of(context).pop(true);
+    } else if (state is BulkTransferFailure) {
+      setState(() => _errorMessage = state.message);
+    } else if (state is BulkTransferEditing &&
+        state.reference != null &&
+        state.rows.isNotEmpty) {
+      final ccy = state.rows.first.currency;
+      if (ccy != null && ccy.isNotEmpty && _headerCurrency != ccy && mounted) {
+        setState(() => _headerCurrency = ccy);
+      }
+    }
+  }
+
+  void _transactionsListener(BuildContext context, TransactionsState state) {
+    if (state is! TransactionsLoadedState) return;
+
+    final success = state.actionSuccess;
+    if (success != null) {
+      ToastManager.show(
+        context: context,
+        title: 'Bulk transfer',
+        message: success,
+        type: ToastType.success,
+      );
+      context.read<TransactionsBloc>().add(const ClearRowActionSuccessEvent());
+
+      final ref = _reference;
+      if (ref != null && ref.isNotEmpty) {
+        if (success.toLowerCase().contains('deleted')) {
+          if (mounted) Navigator.of(context).pop(true);
+        } else {
+          context.read<BulkTransferBloc>().add(
+            BulkTransferLoadForEditRequested(ref),
+          );
+        }
+      }
+      return;
+    }
+
+    final error = state.actionError;
+    if (error != null) {
+      setState(() => _errorMessage = error);
+      context.read<TransactionsBloc>().add(const ClearRowActionErrorEvent());
+    }
   }
 
   BulkTransferEditing _toEditing(BulkTransferState state) {
@@ -150,6 +333,17 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
         rows: rows,
         totalDebit: debit,
         totalCredit: credit,
+        reference: state.reference,
+        status: state.status,
+        stateText: state.stateText,
+        makerName: state.makerName,
+      );
+    }
+    if (state is BulkTransferLoadingForEdit) {
+      return const BulkTransferEditing(
+        rows: [],
+        totalDebit: 0,
+        totalCredit: 0,
       );
     }
     return const BulkTransferEditing(rows: [], totalDebit: 0, totalCredit: 0);
@@ -159,7 +353,19 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
       BuildContext context,
       BulkTransferEditing state,
       bool busy,
+      bool isActionBusy,
       ) {
+    final isPending = state.isPending;
+    final isAuthorized = state.isAuthorized;
+
+    final auth = context.read<AuthBloc>().state;
+    final loginName =
+    auth is AuthenticatedState ? auth.loginData.usrName : null;
+    final isMaker = state.isEditing &&
+        state.makerName != null &&
+        loginName != null &&
+        state.makerName == loginName;
+
     return Column(
       children: [
         Padding(
@@ -190,7 +396,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                     ? null
                     : () => _dispatch(const BulkTransferAddRow()),
                 icon: Icons.add,
-                label: Text('Add Row'),
+                label: Text(AppLocalizations.of(context)!.addRow),
               ),
               const Spacer(),
               if (!state.isEmpty) ...[
@@ -216,7 +422,6 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
         ),
 
         // ── Inline warnings ──────────────────────────────────────
-        // API error first (top-most), then local validation warnings.
         if (_errorMessage != null && _errorMessage!.isNotEmpty)
           _banner(_errorMessage!, Colors.red),
 
@@ -247,7 +452,8 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                 row: row,
                 controllers: _ctrlFor(row),
                 headerCurrency: _headerCurrency,
-                enabled: !busy,
+                // Rows editable only when maker + pending.
+                enabled: !busy && (!state.isEditing || (isPending && isMaker)),
                 isLast: isLast,
                 onRowComplete: isLast ? _onRowComplete : null,
                 onChanged: _dispatch,
@@ -267,18 +473,53 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                 backgroundHover: Theme.of(context).colorScheme.error,
                 label: Text(AppLocalizations.of(context)!.cancel),
               ),
-              ZOutlineButton(
-                icon: Icons.save_alt_rounded,
-                isActive: true,
-                onPressed: !state.canSubmit || busy ? null : _onSubmit,
-                label: busy
-                    ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-                    : Text(AppLocalizations.of(context)!.save),
-              ),
+
+              // Pending + maker → Delete + Authorize
+              if (state.isEditing && isPending && isMaker && !busy && !isActionBusy) ...[
+                ZOutlineButton(
+                  onPressed: _dispatchDelete,
+                  backgroundHover: Theme.of(context).colorScheme.error,
+                  icon: Icons.delete_outline_rounded,
+                  label: Text(AppLocalizations.of(context)!.delete),
+                ),
+                ZOutlineButton(
+                  onPressed: _dispatchAuthorize,
+                  icon: Icons.check_circle_outline_rounded,
+                  isActive: true,
+                  label: const Text('Authorize'),
+                ),
+              ],
+
+              // Authorized → Unauthorize + Reverse
+              if (state.isEditing && isAuthorized && !busy && !isActionBusy) ...[
+                ZOutlineButton(
+                  onPressed: _dispatchUnauthorize,
+                  icon: Icons.undo_rounded,
+                  label: const Text('Unauthorize'),
+                ),
+                ZOutlineButton(
+                  onPressed: _dispatchReverse,
+                  icon: Icons.replay_rounded,
+                  label: const Text('Reverse'),
+                ),
+              ],
+
+              // Save / Update — create mode always; edit mode only if pending+maker
+              if (!state.isEditing || (isPending && isMaker))
+                ZOutlineButton(
+                  icon: Icons.save_alt_rounded,
+                  isActive: true,
+                  onPressed: !state.canSubmit || busy ? null : _onSubmit,
+                  label: busy || isActionBusy
+                      ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                      : Text(state.isEditing
+                      ? 'Update'
+                      : AppLocalizations.of(context)!.save),
+                ),
             ],
           ),
         ),
@@ -286,13 +527,13 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
     );
   }
 
-  Widget _emptyState() => const Expanded(
-    child: Center(
-      child: Text(
-        'Add at least two rows — one debit and one credit — '
-            'with the same total.',
-        textAlign: TextAlign.center,
-      ),
+  Widget _emptyState() => Center(
+    child: widget.reference != null && widget.reference!.isNotEmpty
+        ? const CircularProgressIndicator()
+        : const Text(
+      'Add at least two rows — one debit and one credit — '
+          'with the same total.',
+      textAlign: TextAlign.center,
     ),
   );
 
@@ -345,7 +586,9 @@ class _RowControllers {
   final FocusNode narrationFocus = FocusNode();
 
   _RowControllers(BulkTransferRow row)
-      : account = TextEditingController(text: row.accountName ?? ''),
+      : account = TextEditingController(
+    text: _initialAccountText(row),
+  ),
         debit = TextEditingController(
           text: row.debit > 0 ? row.debit.toStringAsFixed(2) : '',
         ),
@@ -353,6 +596,17 @@ class _RowControllers {
           text: row.credit > 0 ? row.credit.toStringAsFixed(2) : '',
         ),
         narration = TextEditingController(text: row.narration);
+
+  static String _initialAccountText(BulkTransferRow row) {
+    final hasName = row.accountName != null && row.accountName!.isNotEmpty;
+    final hasNumber = row.accountNumber != null;
+    if (hasNumber && hasName) {
+      return '${row.accountNumber} | ${row.accountName}';
+    }
+    if (hasNumber) return row.accountNumber!.toString();
+    if (hasName) return row.accountName!;
+    return '';
+  }
 
   void dispose() {
     account.dispose();
@@ -402,7 +656,7 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _focusedOnce) return;
-      if (widget.isLast) {
+      if (widget.isLast && widget.enabled) {
         _focusedOnce = true;
         widget.controllers.accountFocus.requestFocus();
       }
@@ -495,6 +749,7 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
               },
               stateToLoading: (s) => s is StkAccountsLoadingState,
               onSelected: (a) {
+                if (!widget.enabled) return;
                 c.account.text = '${a.accNumber} | ${a.accName ?? ''}';
                 widget.onChanged(BulkTransferUpdateRow(
                   rowId: widget.row.rowId,
@@ -517,6 +772,7 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
               controller: c.debit,
               title: '',
               isRequired: false,
+              isEnabled: widget.enabled,
               focusNode: c.debitFocus,
               textInputAction: TextInputAction.none,
               hint: AppLocalizations.of(context)!.debit,
@@ -527,6 +783,7 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
               ],
               onFieldSubmitted: (_) => c.creditFocus.requestFocus(),
               onChanged: (v) {
+                if (!widget.enabled) return;
                 final d = double.tryParse(v) ?? 0;
                 if (d > 0) c.credit.clear();
                 widget.onChanged(BulkTransferUpdateRow(
@@ -545,6 +802,7 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
               title: '',
               hint: AppLocalizations.of(context)!.credit,
               isRequired: false,
+              isEnabled: widget.enabled,
               focusNode: c.creditFocus,
               textInputAction: TextInputAction.none,
               keyboardType:
@@ -554,6 +812,7 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
               ],
               onFieldSubmitted: (_) => c.narrationFocus.requestFocus(),
               onChanged: (v) {
+                if (!widget.enabled) return;
                 final cr = double.tryParse(v) ?? 0;
                 if (cr > 0) c.debit.clear();
                 widget.onChanged(BulkTransferUpdateRow(
@@ -572,19 +831,24 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
               hint: AppLocalizations.of(context)!.narration,
               title: '',
               isRequired: false,
+              isEnabled: widget.enabled,
               focusNode: c.narrationFocus,
               textInputAction: TextInputAction.none,
               onFieldSubmitted: (_) {
+                if (!widget.enabled) return;
                 widget.onChanged(BulkTransferUpdateRow(
                   rowId: widget.row.rowId,
                   narration: c.narration.text,
                 ));
                 _onNarrationDone();
               },
-              onChanged: (v) => widget.onChanged(BulkTransferUpdateRow(
-                rowId: widget.row.rowId,
-                narration: v,
-              )),
+              onChanged: (v) {
+                if (!widget.enabled) return;
+                widget.onChanged(BulkTransferUpdateRow(
+                  rowId: widget.row.rowId,
+                  narration: v,
+                ));
+              },
             ),
           ),
 

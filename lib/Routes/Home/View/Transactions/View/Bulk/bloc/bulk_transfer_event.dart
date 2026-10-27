@@ -61,3 +61,27 @@ class BulkTransferSubmitted extends BulkTransferEvent {
 class BulkTransferReset extends BulkTransferEvent {
   const BulkTransferReset();
 }
+
+// ── NEW: edit mode ─────────────────────────────────────────────
+
+/// Load an existing bulk transfer for editing.
+class BulkTransferLoadForEditRequested extends BulkTransferEvent {
+  final String reference;
+  const BulkTransferLoadForEditRequested(this.reference);
+  @override
+  List<Object?> get props => [reference];
+}
+
+/// Delete the currently-edited bulk transaction entirely
+/// (header + every line).
+class BulkTransferDeleteRequested extends BulkTransferEvent {
+  final String reference;
+  final String userName;
+  const BulkTransferDeleteRequested({
+    required this.reference,
+    required this.userName,
+  });
+
+  @override
+  List<Object?> get props => [reference, userName];
+}

@@ -12,11 +12,31 @@ class BulkTransferEditing extends BulkTransferState {
   final double totalDebit;
   final double totalCredit;
 
+  /// Non-null when the dialog is editing an existing transaction.
+  final String? reference;
+
+  /// 0 = pending, 1 = authorized
+  final int? status;
+  /// 'Pending' | 'Authorized' | 'Reversed' | 'Deleted'
+  final String? stateText;
+  /// Username of the transaction maker.
+  final String? makerName;
+
   const BulkTransferEditing({
     required this.rows,
     required this.totalDebit,
     required this.totalCredit,
+    this.reference,
+    this.status,
+    this.stateText,
+    this.makerName,
   });
+
+  bool get isEditing => reference != null;
+  bool get isPending => stateText == 'Pending';
+  bool get isAuthorized => stateText == 'Authorized';
+  bool get isReversed => stateText == 'Reversed';
+  bool get isDeleted => stateText == 'Deleted';
 
   double get difference => totalDebit - totalCredit;
   bool get isBalanced => difference.abs() < 0.01;
@@ -27,7 +47,6 @@ class BulkTransferEditing extends BulkTransferState {
   bool get noMixedAmounts =>
       rows.every((r) => !(r.debit > 0 && r.credit > 0));
 
-  /// Unique currencies currently represented in the rows.
   Set<String> get rowCurrencies => rows
       .map((r) => r.currency)
       .whereType<String>()
@@ -44,8 +63,35 @@ class BulkTransferEditing extends BulkTransferState {
           noMixedAmounts &&
           !hasCurrencyMix;
 
+  BulkTransferEditing copyWith({
+    List<BulkTransferRow>? rows,
+    double? totalDebit,
+    double? totalCredit,
+    String? reference,
+    int? status,
+    String? stateText,
+    String? makerName,
+  }) =>
+      BulkTransferEditing(
+        rows: rows ?? this.rows,
+        totalDebit: totalDebit ?? this.totalDebit,
+        totalCredit: totalCredit ?? this.totalCredit,
+        reference: reference ?? this.reference,
+        status: status ?? this.status,
+        stateText: stateText ?? this.stateText,
+        makerName: makerName ?? this.makerName,
+      );
+
   @override
-  List<Object?> get props => [rows, totalDebit, totalCredit];
+  List<Object?> get props => [
+    rows,
+    totalDebit,
+    totalCredit,
+    reference,
+    status,
+    stateText,
+    makerName,
+  ];
 }
 
 class BulkTransferSubmitting extends BulkTransferEditing {
@@ -53,10 +99,16 @@ class BulkTransferSubmitting extends BulkTransferEditing {
     required super.rows,
     required super.totalDebit,
     required super.totalCredit,
+    super.reference,
+    super.status,
+    super.stateText,
+    super.makerName,
   });
+}
 
-  @override
-  List<Object?> get props => [rows, totalDebit, totalCredit];
+/// Loading an existing reference for edit.
+class BulkTransferLoadingForEdit extends BulkTransferState {
+  const BulkTransferLoadingForEdit();
 }
 
 class BulkTransferSuccess extends BulkTransferState {
@@ -69,16 +121,31 @@ class BulkTransferSuccess extends BulkTransferState {
 
 class BulkTransferFailure extends BulkTransferState {
   final String message;
-  /// Mirrors the PHP error codes: no limit / blocked / diff ccy / failed.
   final String? errorType;
   final List<BulkTransferRow> rows;
+  final String? reference;
+  final int? status;
+  final String? stateText;
+  final String? makerName;
 
   const BulkTransferFailure(
       this.message, {
         this.errorType,
         required this.rows,
+        this.reference,
+        this.status,
+        this.stateText,
+        this.makerName,
       });
 
   @override
-  List<Object?> get props => [message, errorType, rows];
+  List<Object?> get props =>
+      [message, errorType, rows, reference, status, stateText, makerName];
+}
+
+class BulkTransferDeleted extends BulkTransferState {
+  final String reference;
+  const BulkTransferDeleted(this.reference);
+  @override
+  List<Object?> get props => [reference];
 }

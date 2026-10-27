@@ -1461,6 +1461,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Selected · {count}'**
   String selectedCount(int count);
+
+  /// No description provided for @addRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Row'**
+  String get addRow;
+
+  /// No description provided for @diff.
+  ///
+  /// In en, this message translates to:
+  /// **'Diff'**
+  String get diff;
+
+  /// No description provided for @bulkTransfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Bulk Transfer'**
+  String get bulkTransfer;
+
+  /// No description provided for @editBulkTransfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Bulk Transfer'**
+  String get editBulkTransfer;
 }
 
 class _AppLocalizationsDelegate

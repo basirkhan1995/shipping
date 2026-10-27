@@ -698,4 +698,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String selectedCount(int count) {
     return 'انتخاب‌ شده · $count';
   }
+
+  @override
+  String get addRow => 'سطر جدید';
+
+  @override
+  String get diff => 'تفاوت';
+
+  @override
+  String get bulkTransfer => 'ټولیز لېږد';
+
+  @override
+  String get editBulkTransfer => 'ویرایش انتقال گروهی';
 }

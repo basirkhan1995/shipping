@@ -700,4 +700,16 @@ class AppLocalizationsFa extends AppLocalizations {
   String selectedCount(int count) {
     return 'انتخاب‌ شده · $count';
   }
+
+  @override
+  String get addRow => 'سطر جدید';
+
+  @override
+  String get diff => 'تفاوت';
+
+  @override
+  String get bulkTransfer => 'انتقال گروهی';
+
+  @override
+  String get editBulkTransfer => 'ویرایش انتقال گروهی';
 }

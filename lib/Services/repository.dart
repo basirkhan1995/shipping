@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' hide MultipartFile;
 import 'package:flutter/services.dart';
 import '../Routes/Home/View/Finance/View/Currencies/model/ccy_model.dart';
@@ -666,9 +667,30 @@ class Repositories {
       endpoint: '/journal/transactionActivity.php',
       data: {'reference': reference, 'username': usrName},
     );
-    return _requireSuccess(
-      response.data,
-      fallback: 'Failed to authorize transaction',
+
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+
+    final msg = body['msg']?.toString().toLowerCase() ?? '';
+
+    // Accept both — PHP currently sends 'authorized'.
+    if (msg == 'success' || msg == 'authorized') return body;
+
+    // Anything else is a real failure.
+    throw ApiException(
+      body['error']?.toString() ??
+          body['message']?.toString() ??
+          (msg == 'invalid'
+              ? 'Only the maker of this transaction can authorize it.'
+              : msg == 'invalid action'
+              ? 'This transaction is not in the right state to be authorized.'
+              : msg == 'pending'
+              ? 'This transaction is already pending.'
+              : msg == 'failed'
+              ? 'The transaction could not be processed.'
+              : msg.isEmpty
+              ? 'Authorization failed.'
+              : msg),
     );
   }
 
@@ -677,12 +699,27 @@ class Repositories {
     required String? usrName,
   }) async {
     final response = await _api.put(
-      endpoint: '/journal/unauthorizeTrn.php',
-      data: {'reference': reference, 'username': usrName},
+      endpoint: "/journal/transactionActivity.php",
+      data: {'action': 'unauthorize',"reference": reference, "username": usrName},
     );
-    return _requireSuccess(
-      response.data,
-      fallback: 'Failed to unauthorize transaction',
+
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+
+    final msg = body['msg']?.toString().toLowerCase() ?? '';
+    if (msg == 'success') return body;
+
+    throw ApiException(
+      body['error']?.toString() ??
+          (msg == 'invalid'
+              ? 'Only the maker of this transaction can unauthorize it.'
+              : msg == 'invalid action'
+              ? 'This transaction cannot be unauthorized in its current state.'
+              : msg == 'failed'
+              ? 'The transaction could not be unauthorized.'
+              : msg.isEmpty
+              ? 'Unauthorization failed.'
+              : msg),
     );
   }
 
@@ -1062,9 +1099,44 @@ class Repositories {
     'no limit' => 'One or more accounts exceeded their credit limit.',
     'blocked' => 'One or more accounts are blocked.',
     'diff ccy' => 'All rows must use the same currency as their account.',
+    'unbalanced' => 'Total debit must equal total credit.',
+    'not_found' => 'Transaction not found.',
+    'invalid user' => 'You are not the maker of this transaction.',
+    'invalid action' => 'This transaction can no longer be edited.',
     'failed' || 'empty' => 'The transaction could not be processed.',
     _ => 'Transaction failed.',
   };
+
+  Future<Map<String, dynamic>> deleteBulkTransfer({
+    required String reference,
+    required String userName,
+  }) async {
+    final response = await _api.delete(
+      endpoint: '/journal/fundTransferMA.php',
+      queryParams: {
+        'ref': reference,
+        'usrName': userName,
+      },
+    );
+
+    debugPrint('DELETE RAW: ${response.data}');
+
+    final body = _asMap(response.data);
+    if (body == null) {
+      throw ApiException('Invalid server response');
+    }
+
+    final msg = body['msg']?.toString().toLowerCase();
+    if (msg == 'success') return body;
+
+    throw ApiException(
+      body['error']?.toString() ??
+          body['message']?.toString() ??
+          'Failed to delete transaction',
+    );
+  }
+
+
 
 
 }

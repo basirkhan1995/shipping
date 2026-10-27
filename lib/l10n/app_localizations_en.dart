@@ -700,4 +700,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String selectedCount(int count) {
     return 'Selected · $count';
   }
+
+  @override
+  String get addRow => 'Add Row';
+
+  @override
+  String get diff => 'Diff';
+
+  @override
+  String get bulkTransfer => 'Bulk Transfer';
+
+  @override
+  String get editBulkTransfer => 'Edit Bulk Transfer';
 }

@@ -233,13 +233,15 @@
   "noPermission": "No Permission",
   "selected": "Selected",
   "selectedCount": "Selected · {count}",
+  "addRow": "Add Row",
+  "diff": "Diff",
+  "bulkTransfer": "Bulk Transfer",
+  "editBulkTransfer": "Edit Bulk Transfer",
   "@selectedCount": {
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
-  },
-  "addRow": "Add Row",
-  "diff": "Diff"
+  }
 }

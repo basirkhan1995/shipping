@@ -233,13 +233,15 @@
   "noPermission": "بدون صلاحیت",
   "selected": "تاکل شوی",
   "selectedCount": "انتخاب‌ شده · {count}",
+  "addRow": "سطر جدید",
+  "diff": "تفاوت",
+  "bulkTransfer": "ټولیز لېږد",
+  "editBulkTransfer": "ویرایش انتقال گروهی",
   "@selectedCount": {
     "placeholders": {
       "count": {
-        "type": "select"
+        "type": "int"
       }
     }
-  },
-  "addRow": "سطر جدید",
-  "diff": "تفاوت"
+  }
 }

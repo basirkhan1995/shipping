@@ -197,13 +197,14 @@ class ApiServices {
   Future<Response> delete({
     required String endpoint,
     dynamic data,
+    Map<String, dynamic>? queryParams,
     CancelToken? cancelToken,
   }) async {
     try {
-   //   await _checkConnectivity();
       return await _dio.delete(
         endpoint,
         data: data,
+        queryParameters: queryParams,
         cancelToken: cancelToken,
       );
     } on DioException catch (e) {
