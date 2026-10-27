@@ -1,6 +1,7 @@
 import 'package:flag/flag_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../../../../Features/zdropdown.dart';
 import '../../../../../../Auth/bloc/auth_bloc.dart';
 import '../bloc/currencies_bloc.dart';
@@ -88,7 +89,8 @@ class _CurrencyDropdownState extends State<CurrencyDropdown> {
           height: widget.height,
           leadingBuilder: (CurrenciesModel ccy) {
             if(widget.flag) {
-              return SizedBox(
+              return Container(
+                margin: EdgeInsets.symmetric(horizontal: 5),
                 width: 30,
                 child: Flag.fromString(
                   ccy.ccyCountryCode ?? "",
@@ -106,7 +108,7 @@ class _CurrencyDropdownState extends State<CurrencyDropdown> {
           selectedItems: widget.isMulti ? _selectedMulti : [],
           selectedItem: widget.isMulti ? null : _selectedSingle,
           itemLabel: (item) => item.ccyCode ?? "",
-          initialValue: defaultCcy ?? "Currency",
+          initialValue: defaultCcy ?? AppLocalizations.of(context)!.currencyTitle,
           onMultiSelectChanged: widget.isMulti
               ? (selected) {
             setState(() => _selectedMulti = selected);

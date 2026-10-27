@@ -56,6 +56,10 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
   late String _headerCurrency;
   final Map<int, _RowControllers> _controllers = {};
 
+  /// API error — rendered as the top banner inside the form, cleared on
+  /// any edit or on the next submit.
+  String? _errorMessage;
+
   @override
   void initState() {
     super.initState();
@@ -73,8 +77,16 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
   _RowControllers _ctrlFor(BulkTransferRow row) =>
       _controllers.putIfAbsent(row.rowId, () => _RowControllers(row));
 
+  void _dispatch(BulkTransferEvent event) {
+    if (_errorMessage != null) setState(() => _errorMessage = null);
+    context.read<BulkTransferBloc>().add(event);
+  }
+
   void _changeHeaderCurrency(String ccy) {
-    setState(() => _headerCurrency = ccy);
+    setState(() {
+      _headerCurrency = ccy;
+      _errorMessage = null;
+    });
     final cur = context.read<BulkTransferBloc>().state;
     if (cur is BulkTransferEditing) {
       for (final row in cur.rows) {
@@ -86,10 +98,13 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
     }
   }
 
-  /// Called by the last row when narration is submitted.
-  /// The new row focuses its own account field on initState (via isLast).
-  void _onRowComplete() {
-    context.read<BulkTransferBloc>().add(const BulkTransferAddRow());
+  void _onRowComplete() => _dispatch(const BulkTransferAddRow());
+
+  void _onSubmit() {
+    if (_errorMessage != null) setState(() => _errorMessage = null);
+    context.read<BulkTransferBloc>().add(
+      BulkTransferSubmitted(userName: widget.usrName),
+    );
   }
 
   @override
@@ -105,12 +120,8 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
           );
           Navigator.of(context).pop(true);
         } else if (state is BulkTransferFailure) {
-          ToastManager.show(
-            context: context,
-            title: 'Failed',
-            message: state.message,
-            type: ToastType.error,
-          );
+          // ✅ Show the failure as an inline top banner — no toast.
+          setState(() => _errorMessage = state.message);
         }
       },
       builder: (context, state) {
@@ -161,7 +172,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                 child: CurrencyDropdown(
                   title: AppLocalizations.of(context)!.currencyTitle,
                   isMulti: false,
-                  height: 40,
+                  height: 35,
                   disableAction: busy,
                   initiallySelectedSingle:
                   CurrenciesModel(ccyCode: _headerCurrency),
@@ -173,37 +184,52 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
               ),
               const SizedBox(width: 8),
               ZOutlineButton(
-                height: 47,
+                height: 42,
                 isActive: true,
                 onPressed: busy
                     ? null
-                    : () => context
-                    .read<BulkTransferBloc>()
-                    .add(const BulkTransferAddRow()),
+                    : () => _dispatch(const BulkTransferAddRow()),
                 icon: Icons.add,
-                label: const Text('Add new row'),
+                label: Text('Add Row'),
               ),
               const Spacer(),
               if (!state.isEmpty) ...[
-                _pill('D ${state.totalDebit.toStringAsFixed(2)}',
-                    Colors.green),
+                _pill(
+                  '${AppLocalizations.of(context)!.debit} '
+                      '${state.totalDebit.toStringAsFixed(2)}',
+                  Colors.green,
+                ),
                 const SizedBox(width: 8),
-                _pill('C ${state.totalCredit.toStringAsFixed(2)}',
-                    Colors.blue),
+                _pill(
+                  '${AppLocalizations.of(context)!.credit} '
+                      '${state.totalCredit.toStringAsFixed(2)}',
+                  Colors.blue,
+                ),
                 const SizedBox(width: 8),
-                _pill('Diff ${state.difference.toStringAsFixed(2)}',
-                    state.isBalanced ? Colors.green : Colors.red),
+                _pill(
+                  'Diff ${state.difference.toStringAsFixed(2)}',
+                  state.isBalanced ? Colors.green : Colors.red,
+                ),
               ],
             ],
           ),
         ),
+
+        // ── Inline warnings ──────────────────────────────────────
+        // API error first (top-most), then local validation warnings.
+        if (_errorMessage != null && _errorMessage!.isNotEmpty)
+          _banner(_errorMessage!, Colors.red),
+
         if (!state.isEmpty && state.hasCurrencyMix)
           _banner(
             'Rows use different currencies. Pick one currency for all rows.',
             Colors.orange,
           ),
+
         if (!state.isEmpty && !state.isBalanced)
           _banner('Total debit must equal total credit.', Colors.red),
+
+        // ── Rows ─────────────────────────────────────────────────
         Expanded(
           child: state.isEmpty
               ? _emptyState()
@@ -224,13 +250,13 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                 enabled: !busy,
                 isLast: isLast,
                 onRowComplete: isLast ? _onRowComplete : null,
-                onChanged: (update) => context
-                    .read<BulkTransferBloc>()
-                    .add(update),
+                onChanged: _dispatch,
               );
             },
           ),
         ),
+
+        // ── Footer ───────────────────────────────────────────────
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
           child: Row(
@@ -244,11 +270,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
               ZOutlineButton(
                 icon: Icons.save_alt_rounded,
                 isActive: true,
-                onPressed: !state.canSubmit || busy
-                    ? null
-                    : () => context.read<BulkTransferBloc>().add(
-                  BulkTransferSubmitted(userName: widget.usrName),
-                ),
+                onPressed: !state.canSubmit || busy ? null : _onSubmit,
                 label: busy
                     ? const SizedBox(
                   width: 18,
@@ -301,7 +323,8 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
         Icon(Icons.warning_amber_rounded, color: color, size: 16),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(text, style: TextStyle(color: color, fontSize: 12)),
+          child: Text(text,
+              style: TextStyle(color: color, fontSize: 12)),
         ),
       ],
     ),
@@ -377,9 +400,6 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
   @override
   void initState() {
     super.initState();
-    // ✅ The last row focuses its own account field on creation — this
-    // covers both cases: the very first row when the dialog opens, and
-    // every new row created via "Add row" or narration → Enter.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _focusedOnce) return;
       if (widget.isLast) {
@@ -400,19 +420,14 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
     final c = widget.controllers;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.outlineVariant.withValues(alpha: .5)),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         spacing: 8,
         children: [
           Container(
-            width: 28,
-            height: 28,
+            width: 30,
+            height: 30,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: color.primary.withValues(alpha: .08),
@@ -434,7 +449,7 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
                 StkAccountsState>(
               controller: c.account,
               title: '',
-              hintText: 'Account name or number',
+              hintText: AppLocalizations.of(context)!.accNameOrNumber,
               isRequired: true,
               bloc: context.read<StkAccountsBloc>(),
               focusNode: c.accountFocus,
@@ -497,35 +512,6 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
           ),
 
           SizedBox(
-            width: 60,
-            height: 40,
-            child: Container(
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: (widget.row.currency ?? '') == widget.headerCurrency
-                    ? color.primary.withValues(alpha: .08)
-                    : color.error.withValues(alpha: .08),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: (widget.row.currency ?? '') == widget.headerCurrency
-                      ? color.primary.withValues(alpha: .3)
-                      : color.error.withValues(alpha: .3),
-                ),
-              ),
-              child: Text(
-                widget.row.currency ?? widget.headerCurrency,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: (widget.row.currency ?? '') == widget.headerCurrency
-                      ? color.primary
-                      : color.error,
-                ),
-              ),
-            ),
-          ),
-
-          SizedBox(
             width: 130,
             child: ZTextFieldEntitled(
               controller: c.debit,
@@ -533,6 +519,7 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
               isRequired: false,
               focusNode: c.debitFocus,
               textInputAction: TextInputAction.none,
+              hint: AppLocalizations.of(context)!.debit,
               keyboardType:
               const TextInputType.numberWithOptions(decimal: true),
               inputFormat: [
@@ -556,6 +543,7 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
             child: ZTextFieldEntitled(
               controller: c.credit,
               title: '',
+              hint: AppLocalizations.of(context)!.credit,
               isRequired: false,
               focusNode: c.creditFocus,
               textInputAction: TextInputAction.none,
@@ -581,6 +569,7 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
             flex: 2,
             child: ZTextFieldEntitled(
               controller: c.narration,
+              hint: AppLocalizations.of(context)!.narration,
               title: '',
               isRequired: false,
               focusNode: c.narrationFocus,
@@ -599,15 +588,78 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
             ),
           ),
 
-          IconButton(
-            icon: const Icon(Icons.delete_outline, size: 18),
-            color: color.error,
-            onPressed: widget.enabled
-                ? () => context
-                .read<BulkTransferBloc>()
-                .add(BulkTransferRemoveRow(widget.row.rowId))
-                : null,
-            tooltip: 'Remove row',
+          Builder(
+            builder: (context) {
+              final enabled = widget.enabled;
+              bool hovering = false;
+              return StatefulBuilder(
+                builder: (context, setLocal) {
+                  final bg = !enabled
+                      ? color.error.withValues(alpha: .04)
+                      : hovering
+                      ? color.error.withValues(alpha: .20)
+                      : color.error.withValues(alpha: .08);
+
+                  final borderColor = enabled
+                      ? color.error
+                      .withValues(alpha: hovering ? .45 : .20)
+                      : color.error.withValues(alpha: .08);
+
+                  final fg = !enabled
+                      ? color.error.withValues(alpha: .4)
+                      : color.error;
+
+                  return Tooltip(
+                    message: 'Remove row',
+                    child: MouseRegion(
+                      cursor: enabled
+                          ? SystemMouseCursors.click
+                          : SystemMouseCursors.basic,
+                      onEnter: (_) {
+                        if (enabled) setLocal(() => hovering = true);
+                      },
+                      onExit: (_) {
+                        if (enabled) setLocal(() => hovering = false);
+                      },
+                      child: GestureDetector(
+                        onTap: enabled
+                            ? () => context
+                            .read<BulkTransferBloc>()
+                            .add(BulkTransferRemoveRow(widget.row.rowId))
+                            : null,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          curve: Curves.easeOut,
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: bg,
+                            shape: BoxShape.circle,
+                            border:
+                            Border.all(color: borderColor, width: 1),
+                            boxShadow: enabled && hovering
+                                ? [
+                              BoxShadow(
+                                color: color.error
+                                    .withValues(alpha: .18),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                              ),
+                            ]
+                                : null,
+                          ),
+                          child: Icon(
+                            Icons.delete_outline_rounded,
+                            size: 18,
+                            color: fg,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
           ),
         ],
       ),

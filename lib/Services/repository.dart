@@ -1001,5 +1001,70 @@ class Repositories {
     );
   }
 
+  // GET /journal/fundTransferMA.php?ref=…
+  Future<Map<String, dynamic>> getBulkTransferByReference({
+    required String reference,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.get(
+      endpoint: '/journal/fundTransferMA.php',
+      queryParams: {'ref': reference},
+      cancelToken: cancelToken,
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) {
+      throw ApiException('Invalid server response');
+    }
+
+    final msg = body['msg']?.toString().toLowerCase();
+    if (msg == 'failed' || msg == 'empty') {
+      throw ApiException(
+        body['error']?.toString() ??
+            body['message']?.toString() ??
+            'Bulk transfer not found',
+      );
+    }
+    return body;
+  }
+
+// PUT /journal/fundTransferMA.php
+  Future<Map<String, dynamic>> updateBulkTransfer({
+    required String reference,
+    required String userName,
+    required List<Map<String, dynamic>> records,
+  }) async {
+    final response = await _api.put(
+      endpoint: '/journal/fundTransferMA.php',
+      data: {
+        'reference': reference,
+        'usrName': userName,
+        'records': records,
+      },
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) {
+      throw ApiException('Invalid server response');
+    }
+
+    final msg = body['msg']?.toString().toLowerCase();
+    if (msg == 'success') return body;
+
+    throw ApiException(
+      body['error']?.toString() ??
+          body['message']?.toString() ??
+          _bulkErrorText(msg ?? ''),
+    );
+  }
+
+  String _bulkErrorText(String code) => switch (code) {
+    'no limit' => 'One or more accounts exceeded their credit limit.',
+    'blocked' => 'One or more accounts are blocked.',
+    'diff ccy' => 'All rows must use the same currency as their account.',
+    'failed' || 'empty' => 'The transaction could not be processed.',
+    _ => 'Transaction failed.',
+  };
+
 
 }

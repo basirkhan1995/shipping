@@ -234,6 +234,12 @@
   "selected": "Selected",
   "selectedCount": "Selected · {count}",
   "@selectedCount": {
-    "placeholders": { "count": { "type": "int" } }
-  }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addRow": "Add Row",
+  "diff": "Diff"
 }

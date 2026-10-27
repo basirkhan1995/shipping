@@ -232,5 +232,14 @@
   "newTransaction": "معامله جدید",
   "noPermission": "بدون صلاحیت",
   "selected": "انتخاب شده",
-  "selectedCount": "انتخاب‌ شده · {count}"
+  "selectedCount": "انتخاب‌ شده · {count}",
+  "@selectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "انتخاب"
+      }
+    }
+  },
+  "addRow": "سطر جدید",
+  "diff": "تفاوت"
 }
