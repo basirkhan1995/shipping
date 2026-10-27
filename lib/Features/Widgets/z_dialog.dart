@@ -107,7 +107,7 @@ class _ZFormDialogState extends State<ZFormDialog> {
                   ),
                 },
                 child: Focus(
-                  autofocus: true,
+                  autofocus: false,
                   child: Container(
                     margin: EdgeInsets.zero,
                     padding: EdgeInsets.zero,

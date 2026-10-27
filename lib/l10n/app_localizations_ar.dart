@@ -690,4 +690,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get noPermission => 'بدون صلاحیت';
+
+  @override
+  String get selected => 'تاکل شوی';
+
+  @override
+  String selectedCount(int count) {
+    return 'انتخاب‌ شده · $count';
+  }
 }

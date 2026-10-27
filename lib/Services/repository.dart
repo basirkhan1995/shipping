@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:http/http.dart' hide MultipartFile;
 import 'package:flutter/services.dart';
-
 import '../Routes/Home/View/Finance/View/Currencies/model/ccy_model.dart';
 import '../Routes/Home/View/Finance/View/EOY/model/eoy_model.dart';
 import '../Routes/Home/View/Finance/View/ExchangeRate/model/ex_rate_model.dart';
@@ -13,6 +12,7 @@ import '../Routes/Home/View/Settings/View/Company/Branches/model/branch_model.da
 import '../Routes/Home/View/Settings/View/Company/CompanyProfile/model/com_model.dart';
 import '../Routes/Home/View/Settings/View/Company/Storage/model/storage_model.dart';
 import '../Routes/Home/View/Stakeholder/model/stk_model.dart';
+import '../Routes/Home/View/Transactions/model/trn_model.dart';
 import 'api_exception.dart';
 import 'api_services.dart';
 
@@ -482,6 +482,7 @@ class Repositories {
     _requireSuccess(response.data, fallback: 'Failed to update currency');
   }
 
+  /// Transactions
   Future<Map<String, dynamic>> getTransactions({
     String status = 'all',
     String? from,
@@ -512,6 +513,205 @@ class Repositories {
       );
     }
     return body;
+  }
+
+  // Future<TxnByReferenceModel> getTxnByReference({
+  //   required String reference,
+  //   CancelToken? cancelToken,
+  // }) async {
+  //   final response = await _api.get(
+  //     endpoint: '/journal/getSingleTransaction.php',
+  //     queryParams: {'ref': reference},
+  //     cancelToken: cancelToken,
+  //   );
+  //
+  //   final body = response.data;
+  //
+  //   // Case 1: a single object.
+  //   final map = _asMap(body);
+  //   if (map != null) {
+  //     return TxnByReferenceModel.fromMap(map);
+  //   }
+  //
+  //   // Case 2: a list — take the first element.
+  //   final list = _asList(body);
+  //   if (list != null && list.isNotEmpty && list.first is Map) {
+  //     return TxnByReferenceModel.fromMap(
+  //       Map<String, dynamic>.from(list.first as Map),
+  //     );
+  //   }
+  //
+  //   _fail(body, fallback: 'Failed to load transaction by reference');
+  // }
+  //
+  // Future<FetchAtatModel> getATATByReference({
+  //   required String reference,
+  //   CancelToken? cancelToken,
+  // }) async {
+  //   final response = await _api.get(
+  //     endpoint: '/journal/fundTransfer.php',
+  //     queryParams: {'ref': reference},
+  //     cancelToken: cancelToken,
+  //   );
+  //
+  //   final body = response.data;
+  //
+  //   // Case 1: a single object.
+  //   final map = _asMap(body);
+  //   if (map != null) {
+  //     return FetchAtatModel.fromMap(map);
+  //   }
+  //
+  //   // Case 2: a list — take the first element.
+  //   final list = _asList(body);
+  //   if (list != null && list.isNotEmpty && list.first is Map) {
+  //     return FetchAtatModel.fromMap(
+  //       Map<String, dynamic>.from(list.first as Map),
+  //     );
+  //   }
+  //
+  //   _fail(body, fallback: 'Failed to load transfer by reference');
+  // }
+
+  Future<Map<String, dynamic>> cashFlowOperations({
+    required TransactionDraft newTransaction,
+  }) async {
+    final response = await _api.post(
+      endpoint: '/journal/cashWD.php',
+      data: newTransaction.toMap(),
+    );
+    return _requireSuccess(
+      response.data,
+      fallback: 'Failed to process cash transaction',
+    );
+  }
+
+  Future<Map<String, dynamic>> updateTxn({
+    required TransactionDraft newTxn,
+  }) async {
+    final response = await _api.put(
+      endpoint: '/journal/cashWD.php',
+      data: newTxn.toMap(),
+    );
+    return _requireSuccess(
+      response.data,
+      fallback: 'Failed to update transaction',
+    );
+  }
+
+  Future<Map<String, dynamic>> fundTransfer({
+    required TransactionDraft newTransaction,
+  }) async {
+    final response = await _api.post(
+      endpoint: '/journal/fundTransfer.php',
+      data: newTransaction.toMap(),
+    );
+    return _requireSuccess(
+      response.data,
+      fallback: 'Failed to process fund transfer',
+    );
+  }
+
+  Future<Map<String, dynamic>> bulkTransfer({
+    required String userName,
+    required List<Map<String, dynamic>> records,
+  }) async {
+    final response = await _api.post(
+      endpoint: '/journal/fundTransferMA.php',
+      data: {'usrName': userName, 'records': records},
+    );
+
+    final body = response.data;
+
+    // Success response is typically a map.
+    final map = _asMap(body);
+    if (map != null) return map;
+
+    // Some servers respond with a bare string message.
+    if (body is String) {
+      return {'msg': body};
+    }
+
+    _fail(body, fallback: 'Failed to process bulk transfer');
+  }
+
+  Future<Map<String, dynamic>> fxTransfer({
+    required String userName,
+    required List<Map<String, dynamic>> records,
+  }) async {
+    final response = await _api.post(
+      endpoint: '/journal/crossCurrency.php',
+      data: {'usrName': userName, 'records': records},
+    );
+
+    final body = response.data;
+
+    final map = _asMap(body);
+    if (map != null) return map;
+
+    // Some servers respond with a bare string message; echo it back as
+    // both `msg` and `account` to preserve the old contract.
+    if (body is String) {
+      return {'msg': body, 'account': body};
+    }
+
+    _fail(body, fallback: 'Failed to process FX transfer');
+  }
+
+  Future<Map<String, dynamic>> authorizeTxn({
+    required String reference,
+    required String? usrName,
+  }) async {
+    final response = await _api.put(
+      endpoint: '/journal/transactionActivity.php',
+      data: {'reference': reference, 'username': usrName},
+    );
+    return _requireSuccess(
+      response.data,
+      fallback: 'Failed to authorize transaction',
+    );
+  }
+
+  Future<Map<String, dynamic>> unAuthorizeTxn({
+    required String reference,
+    required String? usrName,
+  }) async {
+    final response = await _api.put(
+      endpoint: '/journal/unauthorizeTrn.php',
+      data: {'reference': reference, 'username': usrName},
+    );
+    return _requireSuccess(
+      response.data,
+      fallback: 'Failed to unauthorize transaction',
+    );
+  }
+
+  Future<Map<String, dynamic>> reverseTxn({
+    required String reference,
+    required String? usrName,
+  }) async {
+    final response = await _api.post(
+      endpoint: '/journal/transactionActivity.php',
+      data: {'reference': reference, 'username': usrName},
+    );
+    return _requireSuccess(
+      response.data,
+      fallback: 'Failed to reverse transaction',
+    );
+  }
+
+  Future<Map<String, dynamic>> deleteTxn({
+    required String reference,
+    required String? usrName,
+  }) async {
+    final response = await _api.delete(
+      endpoint: '/journal/transactionActivity.php',
+      data: {'reference': reference, 'username': usrName},
+    );
+    return _requireSuccess(
+      response.data,
+      fallback: 'Failed to delete transaction',
+    );
   }
 
 

@@ -1449,6 +1449,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No Permission'**
   String get noPermission;
+
+  /// No description provided for @selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
+  String get selected;
+
+  /// No description provided for @selectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected · {count}'**
+  String selectedCount(int count);
 }
 
 class _AppLocalizationsDelegate

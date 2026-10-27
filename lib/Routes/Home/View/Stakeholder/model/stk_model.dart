@@ -187,6 +187,7 @@ class StakeholderAccount {
   final int? accNumber;
   final String? accName;
   final String? accCurrency;
+  final int? accCategory;
   final int? accStatus;
 
   /// Either a double (numeric limit) or the string "Unlimited".
@@ -198,6 +199,7 @@ class StakeholderAccount {
     this.accNumber,
     this.accName,
     this.accCurrency,
+    this.accCategory,
     this.accStatus,
     this.accLimit,
     this.accBalance = 0,
@@ -207,6 +209,7 @@ class StakeholderAccount {
     int? accNumber,
     String? accName,
     String? accCurrency,
+    int? accCategory,
     int? accStatus,
     dynamic accLimit,
     double? accBalance,
@@ -217,6 +220,7 @@ class StakeholderAccount {
         accCurrency: accCurrency ?? this.accCurrency,
         accStatus: accStatus ?? this.accStatus,
         accLimit: accLimit ?? this.accLimit,
+        accCategory: accCategory ?? this.accCategory,
         accBalance: accBalance ?? this.accBalance,
       );
 
@@ -227,6 +231,7 @@ class StakeholderAccount {
         accCurrency: json["accCurrency"] as String?,
         accStatus: _asInt(json["accStatus"]),
         accLimit: json["accLimit"],
+        accCategory: _asInt(json["accCategory"]),
         accBalance: _asDouble(json["accBalance"]) ?? 0,
       );
 
@@ -236,6 +241,7 @@ class StakeholderAccount {
     "accCurrency": accCurrency,
     "accStatus": accStatus,
     "accLimit": accLimit,
+    "accCategory": accCategory,
     "accBalance": accBalance,
   };
 

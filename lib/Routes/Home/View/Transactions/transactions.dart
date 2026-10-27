@@ -1,16 +1,24 @@
+// Routes/Home/View/Journal/View/TransactionsView/transactions_view.dart
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Date/shamsi_converter.dart';
 import 'package:shipping/Features/Widgets/noData_widget.dart';
 import 'package:shipping/l10n/app_localizations.dart';
+
 import '../../../../../../Features/Other/responsive_widget.dart';
 import '../../../../../../Features/Widgets/zbutton.dart';
 import '../../../../../../Features/Widgets/search_field.dart';
 import '../../../../../../Features/Widgets/toast.dart';
 import '../../../../Features/Date/z_range_picker.dart';
+import '../../../../Features/Other/global_shortcut.dart';
 import '../../../../Features/zdropdown.dart';
 import '../../../Auth/bloc/auth_bloc.dart';
 import '../../../Auth/model/user_model.dart';
+import '../Settings/View/Company/CompanyProfile/bloc/company_profile_bloc.dart';
+import 'View/Bulk/bulk.dart';
+import 'View/CashWD/cash_wd.dart';
 import 'bloc/transactions_bloc.dart';
 import 'model/trn_model.dart';
 
@@ -76,8 +84,6 @@ class _DesktopViewState extends State<_DesktopView> {
   ];
 
   // ── Grouped action buttons — each carries a permission ID
-  //    TODO: replace the placeholder IDs with the real permission IDs
-  //          from your backend (matching loginData.hasPermission(x)).
   static const _actionGroups = <_ActionGroup>[
     _ActionGroup(
       titleKey: 'cashFlow',
@@ -85,22 +91,22 @@ class _DesktopViewState extends State<_DesktopView> {
         _ActionButtonSpec(
           code: 'CHDP',
           icon: Icons.arrow_downward_rounded,
-          permission: 21, // TODO: map permission ID
+          permission: 21,
         ),
         _ActionButtonSpec(
           code: 'CHWL',
           icon: Icons.arrow_upward_rounded,
-          permission: 22, // TODO: map permission ID
+          permission: 22,
         ),
         _ActionButtonSpec(
           code: 'INCM',
           icon: Icons.trending_up_rounded,
-          permission: 23, // TODO: map permission ID
+          permission: 23,
         ),
         _ActionButtonSpec(
           code: 'XPNS',
           icon: Icons.trending_down_rounded,
-          permission: 24, // TODO: map permission ID
+          permission: 24,
         ),
       ],
     ),
@@ -110,7 +116,7 @@ class _DesktopViewState extends State<_DesktopView> {
         _ActionButtonSpec(
           code: 'ATAT',
           icon: Icons.swap_horiz_rounded,
-          permission: 25, // TODO: map permission ID
+          permission: 25,
         ),
       ],
     ),
@@ -120,7 +126,7 @@ class _DesktopViewState extends State<_DesktopView> {
         _ActionButtonSpec(
           code: 'BULK',
           icon: Icons.dynamic_feed_outlined,
-          permission: 26, // TODO: map permission ID
+          permission: 26,
         ),
       ],
     ),
@@ -130,7 +136,7 @@ class _DesktopViewState extends State<_DesktopView> {
         _ActionButtonSpec(
           code: 'CRFX',
           icon: Icons.currency_exchange_rounded,
-          permission: 27, // TODO: map permission ID
+          permission: 27,
         ),
       ],
     ),
@@ -216,14 +222,136 @@ class _DesktopViewState extends State<_DesktopView> {
   }
 
   // ── Permission helper ─────────────────────────────────────────
-  // Single source of truth: `LoginData.hasPermission` comes from
-  // `LoginPermissionExt` in user_model.dart and returns bool? —
-  // coerce once here so call sites can stay clean.
   bool _checkPermission(LoginData login, int permission) {
     return login.hasPermission(permission) ?? false;
   }
 
-  /// Handle an action button tap. Replace with your real routing.
+  // ── Cash-flow specs ───────────────────────────────────────────
+  CashTxnSpec _cashSpecFor(String code) {
+    final tr = AppLocalizations.of(context)!;
+    switch (code) {
+      case 'CHDP':
+        return CashTxnSpec(
+          typeCode: 'CHDP',
+          icon: Icons.arrow_downward_rounded,
+          title: (_) => tr.cashDeposit,
+          accountInclude: 'all',
+          allowReminder: true,
+        );
+      case 'CHWL':
+        return CashTxnSpec(
+          typeCode: 'CHWL',
+          icon: Icons.arrow_upward_rounded,
+          title: (_) => tr.cashWithdraw,
+          accountInclude: 'all',
+          allowReminder: true,
+        );
+      case 'INCM':
+        return CashTxnSpec(
+          typeCode: 'INCM',
+          icon: Icons.trending_up_rounded,
+          title: (_) => tr.income,
+          accountInclude: '9,10',
+          editableCurrency: true,
+        );
+      case 'XPNS':
+        return CashTxnSpec(
+          typeCode: 'XPNS',
+          icon: Icons.trending_down_rounded,
+          title: (_) => tr.expense,
+          accountInclude: '11,12',
+          editableCurrency: true,
+        );
+      case 'GLDR':
+        return CashTxnSpec(
+          typeCode: 'GLDR',
+          icon: Icons.menu_book_rounded,
+          title: (_) => tr.glDebit,
+          accountInclude: '1,2,3,4,5,6,7',
+          accountExclude: '10101011',
+          editableCurrency: true,
+        );
+      case 'GLCR':
+        return CashTxnSpec(
+          typeCode: 'GLCR',
+          icon: Icons.menu_book_rounded,
+          title: (_) => tr.glCredit,
+          accountInclude: '1,2,3,4,5,6,7',
+          accountExclude: '10101011',
+          editableCurrency: true,
+        );
+      default:
+        throw ArgumentError('Unsupported cash type: $code');
+    }
+  }
+
+  // ── Base currency (from company profile) ──────────────────────
+  String _baseCurrency() {
+    final state = context.read<CompanyProfileBloc>().state;
+    if (state is CompanyProfileLoadedState) {
+      return state.company.comLocalCcy ?? '';
+    }
+    return '';
+  }
+
+  // ── Open the cash dialog (single call site) ───────────────────
+  Future<void> _openCashDialog(String code) async {
+    final auth = context.read<AuthBloc>().state;
+    if (auth is! AuthenticatedState) return;
+
+    final saved = await showCashTxnDialog(
+      context,
+      spec: _cashSpecFor(code),
+      usrName: auth.loginData.usrName ?? '',
+      baseCurrency: _baseCurrency(),
+    );
+
+    if (!mounted) return;
+    if (saved == true) {
+      _reload();
+      final tr = AppLocalizations.of(context)!;
+      ToastManager.show(
+        context: context,
+        title: "saved",
+        message: _buttonLabel(tr, code),
+        type: ToastType.success,
+      );
+    }
+  }
+  Future<void> _openBulkDialog() async {
+    final auth = context.read<AuthBloc>().state;
+    if (auth is! AuthenticatedState) return;
+
+    final saved = await showBulkTransferDialog(
+      context,
+      usrName: auth.loginData.usrName ?? '',
+      baseCurrency: _baseCurrency(),
+    );
+
+    if (!mounted) return;
+    if (saved == true) {
+      _reload();
+     // final tr = AppLocalizations.of(context)!;
+      ToastManager.show(
+        context: context,
+        title: "SAVED",
+        message: 'Bulk transfer created',
+        type: ToastType.success,
+      );
+    }
+  }
+  // ── Shared "coming soon" toast for un-built flows ─────────────
+  void _comingSoon(String code) {
+    final tr = AppLocalizations.of(context)!;
+    ToastManager.show(
+      context: context,
+      title: _buttonLabel(tr, code),
+      message: 'Coming soon',
+      type: ToastType.error,
+    );
+  }
+
+  // ── Action button router ──────────────────────────────────────
   void _onActionTapped(_ActionButtonSpec spec) {
     // Defense-in-depth: re-check permission right before acting
     final auth = context.read<AuthBloc>().state;
@@ -241,19 +369,40 @@ class _DesktopViewState extends State<_DesktopView> {
       return;
     }
 
-    // TODO: real navigation per code
-    // switch (spec.code) {
-    //   case 'CHDP': Navigator.of(context).push(...); break;
-    //   ...
-    // }
-    final tr = AppLocalizations.of(context)!;
-    ToastManager.show(
-      context: context,
-      title: _buttonLabel(tr, spec.code),
-      message: 'Coming soon',
-      type: ToastType.error,
-    );
+    switch (spec.code) {
+    // Cash family → shared dialog
+      case 'CHDP':
+      case 'CHWL':
+      case 'INCM':
+      case 'XPNS':
+      case 'GLDR':
+      case 'GLCR':
+        _openCashDialog(spec.code);
+        break;
+
+    // Fund transfer / bulk / FX — not built yet
+      case 'ATAT':
+      case 'BULK':
+        _openBulkDialog();
+        break;
+      case 'CRFX':
+        _comingSoon(spec.code);
+        break;
+    }
   }
+
+  // ── Shortcuts (F1–F9) ─────────────────────────────────────────
+  late final Map<ShortcutActivator, VoidCallback> _shortcuts = {
+    const SingleActivator(LogicalKeyboardKey.f1): () => _openCashDialog('CHDP'),
+    const SingleActivator(LogicalKeyboardKey.f2): () => _openCashDialog('CHWL'),
+    const SingleActivator(LogicalKeyboardKey.f3): () => _openCashDialog('INCM'),
+    const SingleActivator(LogicalKeyboardKey.f4): () => _openCashDialog('XPNS'),
+    const SingleActivator(LogicalKeyboardKey.f5): () => _comingSoon('ATAT'),
+    const SingleActivator(LogicalKeyboardKey.f6): () => _comingSoon('BULK'),
+    const SingleActivator(LogicalKeyboardKey.f7): () => _comingSoon('CRFX'),
+    const SingleActivator(LogicalKeyboardKey.f8): () => _openCashDialog('GLCR'),
+    const SingleActivator(LogicalKeyboardKey.f9): () => _openCashDialog('GLDR'),
+  };
 
   // ── Localization resolvers ────────────────────────────────────
   String _statusLabel(AppLocalizations tr, _StatusOption s) =>
@@ -311,31 +460,34 @@ class _DesktopViewState extends State<_DesktopView> {
 
     return Scaffold(
       backgroundColor: color.surface,
-      body: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ── Left: transactions (header, filters, table, list) ──
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildHeaderRow(textTheme, color),
-                  const SizedBox(height: 10),
-                  _buildFilterRow(color, textTheme),
-                  const SizedBox(height: 10),
-                  _buildTableHeader(color, textTheme),
-                  const SizedBox(height: 6),
-                  Expanded(child: _buildBody(color)),
-                ],
+      body: GlobalShortcuts(
+        shortcuts: _shortcuts,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── Left: transactions ──
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildHeaderRow(textTheme, color),
+                    const SizedBox(height: 10),
+                    _buildFilterRow(color, textTheme),
+                    const SizedBox(height: 10),
+                    _buildTableHeader(color, textTheme),
+                    const SizedBox(height: 6),
+                    Expanded(child: _buildBody(color)),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
+              const SizedBox(width: 12),
 
-            // ── Right: grouped action panel (permission-filtered) ──
-            _buildActionPanel(color, textTheme, login),
-          ],
+              // ── Right: action panel ──
+              _buildActionPanel(color, textTheme, login),
+            ],
+          ),
         ),
       ),
     );
@@ -349,7 +501,6 @@ class _DesktopViewState extends State<_DesktopView> {
       ) {
     bool can(int perm) => _checkPermission(login, perm);
 
-    // Filter buttons by permission, then drop empty groups.
     final visibleGroups = _actionGroups
         .map(
           (g) => _ActionGroup(
@@ -636,8 +787,11 @@ class _DesktopViewState extends State<_DesktopView> {
     );
   }
 
-  Widget _buildList(List<TransactionRow> rows, ColorScheme color,
-      {bool dim = false}) {
+  Widget _buildList(
+      List<TransactionListItem> rows,
+      ColorScheme color, {
+        bool dim = false,
+      }) {
     return Opacity(
       opacity: dim ? .6 : 1,
       child: ListView.separated(
@@ -704,9 +858,9 @@ class _ActionGroup {
 }
 
 class _ActionButtonSpec {
-  final String code; // matches trnTypes.trntCode
+  final String code;
   final IconData icon;
-  final int permission; // permission ID checked via loginData.hasPermission
+  final int permission;
   const _ActionButtonSpec({
     required this.code,
     required this.icon,
@@ -716,10 +870,9 @@ class _ActionButtonSpec {
 
 // ═══════════════════════════════════════════════════════════════════
 // Row widget
-// Order: Date | Reference | Type | Maker | Narration | Amount+CCY | Status
 // ═══════════════════════════════════════════════════════════════════
 class _TransactionRowWidget extends StatelessWidget {
-  final TransactionRow row;
+  final TransactionListItem row;
   final bool isOdd;
   const _TransactionRowWidget({required this.row, required this.isOdd});
 
@@ -828,7 +981,7 @@ class _TransactionRowWidget extends StatelessWidget {
 }
 
 class _StatusPill extends StatelessWidget {
-  final TransactionRow row;
+  final TransactionListItem row;
   const _StatusPill({required this.row});
 
   @override
@@ -861,8 +1014,7 @@ class _StatusPill extends StatelessWidget {
       row.statusText,
       ),
     };
-
-    // `bg` currently unused in original code — kept for future pill styling.
+    // `bg` kept for future pill styling.
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
       child: Text(

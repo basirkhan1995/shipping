@@ -86,13 +86,11 @@ class _ZDropdownState<T> extends State<ZDropdown<T>> {
   void didUpdateWidget(covariant ZDropdown<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (!widget.multiSelect &&
-        widget.selectedItem != oldWidget.selectedItem) {
+    if (!widget.multiSelect && widget.selectedItem != oldWidget.selectedItem) {
       _selectedItem = widget.selectedItem;
     }
 
-    if (widget.multiSelect &&
-        widget.selectedItems != oldWidget.selectedItems) {
+    if (widget.multiSelect && widget.selectedItems != oldWidget.selectedItems) {
       _selectedItems =
       widget.selectedItems != null ? List.from(widget.selectedItems!) : [];
     }
@@ -130,15 +128,31 @@ class _ZDropdownState<T> extends State<ZDropdown<T>> {
     }
   }
 
+  /// Builds the header label shown on the closed dropdown button.
+  /// - Multi-select: never dumps item labels; shows a localized count instead.
+  /// - Single-select: shows the selected item's label, else initialValue.
+  String _buildDisplayText(AppLocalizations tr) {
+    if (widget.multiSelect) {
+      if (_selectedItems.isEmpty) {
+        return widget.initialValue ?? '';
+      }
+      if (_selectedItems.length == widget.items.length &&
+          widget.items.isNotEmpty) {
+        // Fully-selected → show "All" (localized)
+        return tr.all;
+      }
+      // ✅ Localized "Selected · N"
+      return tr.selectedCount(_selectedItems.length);
+    }
+    return _selectedItem != null
+        ? widget.itemLabel(_selectedItem as T)
+        : widget.initialValue ?? '';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final displayText = widget.multiSelect
-        ? (_selectedItems.isEmpty
-        ? widget.initialValue ?? ''
-        : _selectedItems.map(widget.itemLabel).join(', '))
-        : (_selectedItem != null
-        ? widget.itemLabel(_selectedItem as T)
-        : widget.initialValue ?? '');
+    final tr = AppLocalizations.of(context)!;
+    final displayText = _buildDisplayText(tr);
 
     return Focus(
       focusNode: _focusNode,
@@ -150,12 +164,14 @@ class _ZDropdownState<T> extends State<ZDropdown<T>> {
             widget.customTitle!
           else if (widget.title != null && widget.title!.isNotEmpty) ...[
             Text(
-                widget.title ?? "",
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(fontSize: 12,color: Theme.of(context).colorScheme.outline)
+              widget.title ?? "",
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.outline,
+              ),
             ),
             const SizedBox(height: 4),
           ],
-
           GestureDetector(
             onTap: widget.disableAction || widget.isLoading
                 ? null
@@ -186,7 +202,10 @@ class _ZDropdownState<T> extends State<ZDropdown<T>> {
                       displayText,
                       overflow: TextOverflow.ellipsis,
                       style: widget.itemStyle ??
-                          Theme.of(context).textTheme.titleSmall?.copyWith(fontSize: 14),
+                          Theme.of(context)
+                              .textTheme
+                              .titleSmall
+                              ?.copyWith(fontSize: 14),
                     ),
                   ),
                   Icon(_isOpen
@@ -206,6 +225,7 @@ class _ZDropdownState<T> extends State<ZDropdown<T>> {
     _buttonKey.currentContext!.findRenderObject() as RenderBox;
     final offset = renderBox.localToGlobal(Offset.zero);
     final color = Theme.of(context).colorScheme;
+    final tr = AppLocalizations.of(context)!;
 
     return OverlayEntry(
       builder: (_) => Stack(
@@ -283,7 +303,7 @@ class _ZDropdownState<T> extends State<ZDropdown<T>> {
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      AppLocalizations.of(context)!.selectAll,
+                                      tr.selectAll,
                                       style: const TextStyle(fontSize: 13),
                                     ),
                                   ],
@@ -299,14 +319,19 @@ class _ZDropdownState<T> extends State<ZDropdown<T>> {
                             return InkWell(
                               onTap: () => _onItemTapped(item),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 8),
                                 decoration: BoxDecoration(
-                                  color: isSelected ? color.primary.withAlpha(15) : null,
-                                  border: index < widget.items.length - 1 ? Border(
+                                  color: isSelected
+                                      ? color.primary.withAlpha(15)
+                                      : null,
+                                  border: index < widget.items.length - 1
+                                      ? Border(
                                     bottom: BorderSide(
                                       color: color.outline.withAlpha(20),
                                     ),
-                                  ) : null,
+                                  )
+                                      : null,
                                 ),
                                 child: Row(
                                   children: [
@@ -316,21 +341,23 @@ class _ZDropdownState<T> extends State<ZDropdown<T>> {
                                         height: 24,
                                         child: Checkbox(
                                           value: isSelected,
-                                          onChanged: (_) => _onItemTapped(item),
+                                          onChanged: (_) =>
+                                              _onItemTapped(item),
                                           visualDensity: VisualDensity.compact,
                                         ),
                                       ),
-                                    if (widget.leadingBuilder != null)widget.leadingBuilder!(item),
-                                   // if (widget.leadingBuilder != null)
-                                     if(widget.multiSelect)...[
-                                       const SizedBox(width: 8),
-                                     ],
+                                    if (widget.leadingBuilder != null)
+                                      widget.leadingBuilder!(item),
+                                    if (widget.multiSelect) ...[
+                                      const SizedBox(width: 8),
+                                    ],
                                     Expanded(
                                       child: Text(
                                         widget.itemLabel(item),
                                         style: TextStyle(
                                           fontSize: 13,
-                                          fontWeight: isSelected && !widget.multiSelect
+                                          fontWeight: isSelected &&
+                                              !widget.multiSelect
                                               ? FontWeight.w500
                                               : FontWeight.normal,
                                         ),

@@ -230,5 +230,7 @@
   "cashFlow": "جریان نقدی",
   "tryAgain": "امتحان دوباره",
   "newTransaction": "معامله جدید",
-  "noPermission": "بدون صلاحیت"
+  "noPermission": "بدون صلاحیت",
+  "selected": "تاکل شوی",
+  "selectedCount": "انتخاب‌ شده · {count}"
 }

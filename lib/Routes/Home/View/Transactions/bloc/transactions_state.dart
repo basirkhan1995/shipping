@@ -9,14 +9,14 @@ sealed class TransactionsState extends Equatable {
 final class TransactionsInitial extends TransactionsState {}
 
 final class TransactionsLoadingState extends TransactionsState {
-  final List<TransactionRow> previous;
+  final List<TransactionListItem> previous;
   const TransactionsLoadingState({this.previous = const []});
   @override
   List<Object?> get props => [previous];
 }
 
 final class TransactionsLoadedState extends TransactionsState {
-  final List<TransactionRow> rows;
+  final List<TransactionListItem> rows;
   final int total;
   const TransactionsLoadedState(this.rows, {required this.total});
   @override

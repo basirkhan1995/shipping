@@ -14,7 +14,7 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
     on<LoadTransactionsEvent>((event, emit) async {
       final before = state is TransactionsLoadedState
           ? (state as TransactionsLoadedState).rows
-          : const <TransactionRow>[];
+          : const <TransactionListItem>[];
 
       emit(TransactionsLoadingState(previous: before));
 
@@ -30,7 +30,7 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
 
         final list = (body['data'] as List? ?? const [])
             .whereType<Map<String, dynamic>>()
-            .map(TransactionRow.fromMap)
+            .map(TransactionListItem.fromMap)
             .toList();
         final total = body['total'] is num
             ? (body['total'] as num).toInt()

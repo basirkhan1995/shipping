@@ -18,6 +18,7 @@ import 'package:shipping/Routes/Home/View/Settings/View/Company/bloc/company_set
 import 'package:shipping/Routes/Home/View/Settings/Visibility/bloc/settings_visible_bloc.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/View/StkAccount/bloc/stk_accounts_bloc.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/bloc/stakeholder_bloc.dart';
+import 'package:shipping/Routes/Home/View/Transactions/View/Bulk/bloc/bulk_transfer_bloc.dart';
 import 'package:shipping/Routes/Home/View/Transactions/bloc/transactions_bloc.dart';
 import 'Routes/Home/View/Settings/bloc/settings_tab_bloc.dart';
 import 'Routes/Home/View/Stakeholder/View/StakeholderById/bloc/stakeholder_by_id_bloc.dart';
@@ -79,6 +80,8 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (_) => EoyBloc(Repositories(ApiServices()))..add(LoadPLEvent())),
 
 
+          ///Transactions
+          BlocProvider(create: (_) => BulkTransferBloc(Repositories(ApiServices()))),
         ],
         child: BlocBuilder<LocalizationBloc, Locale>(
           builder: (context, locale) {

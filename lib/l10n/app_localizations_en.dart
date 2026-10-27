@@ -692,4 +692,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noPermission => 'No Permission';
+
+  @override
+  String get selected => 'Selected';
+
+  @override
+  String selectedCount(int count) {
+    return 'Selected · $count';
+  }
 }

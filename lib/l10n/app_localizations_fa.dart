@@ -692,4 +692,12 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get noPermission => 'بدون صلاحیت';
+
+  @override
+  String get selected => 'انتخاب شده';
+
+  @override
+  String selectedCount(int count) {
+    return 'انتخاب‌ شده · $count';
+  }
 }

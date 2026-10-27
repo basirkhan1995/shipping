@@ -19,6 +19,10 @@ enum TextFieldStyle {
 }
 
 class GenericTextField<T, B extends BlocBase<S>, S> extends StatefulWidget {
+  final FocusNode? focusNode;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onFieldSubmitted;
+
   final LoadingBuilder? loadingBuilder;
   final bool Function(S state)? stateToLoading;
   final double? width;
@@ -53,11 +57,11 @@ class GenericTextField<T, B extends BlocBase<S>, S> extends StatefulWidget {
   final String allOptionText;
   final TextFieldStyle textFieldStyle;
 
-  /// Optional external focus node
-  final FocusNode? focusNode;
-
   const GenericTextField({
     super.key,
+    this.focusNode,
+    this.textInputAction,
+    this.onFieldSubmitted,
     this.isEnabled = true,
     this.height = 60,
     required this.controller,
@@ -91,14 +95,14 @@ class GenericTextField<T, B extends BlocBase<S>, S> extends StatefulWidget {
     this.showAllOption = false,
     this.allOptionText = 'All',
     this.textFieldStyle = TextFieldStyle.roundedBorder,
-    this.focusNode,
   }) : assert(
   bloc != null || searchFunction == null,
   'If searchFunction is provided, bloc must also be provided',
   );
 
   @override
-  State<GenericTextField<T, B, S>> createState() => _GenericTextFieldState<T, B, S>();
+  State<GenericTextField<T, B, S>> createState() =>
+      _GenericTextFieldState<T, B, S>();
 }
 
 class _GenericTextFieldState<T, B extends BlocBase<S>, S>
@@ -109,6 +113,11 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
 
   late FocusNode _focusNode;
 
+  // ✅ Dedicated node for the keyboard listener. Kept across rebuilds and
+  //    disposed in dispose(). skipTraversal keeps it out of Tab order.
+  late final FocusNode _keyboardListenerFocus =
+  FocusNode(skipTraversal: true, debugLabel: 'GenericTextFieldKeys');
+
   List<T> _currentSuggestions = [];
   Timer? _debounce;
   final ScrollController _scrollController = ScrollController();
@@ -117,7 +126,6 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
   bool _showClear = false;
   bool _firstFocus = true;
 
-  /// Keyboard navigation index
   int _highlightedIndex = -1;
 
   bool get _usingExternalFocusNode => widget.focusNode != null;
@@ -125,17 +133,13 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
   @override
   void initState() {
     super.initState();
-
     _focusNode = widget.focusNode ?? FocusNode();
-
     _focusNode.addListener(_onFocusChange);
     widget.controller?.addListener(_onControllerChanged);
   }
 
   @override
-  void didUpdateWidget(
-      covariant GenericTextField<T, B, S> oldWidget,
-      ) {
+  void didUpdateWidget(covariant GenericTextField<T, B, S> oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     if (oldWidget.controller != widget.controller) {
@@ -162,6 +166,7 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
     if (!_usingExternalFocusNode) {
       _focusNode.dispose();
     }
+    _keyboardListenerFocus.dispose();
     _scrollController.dispose();
     widget.controller?.removeListener(_onControllerChanged);
 
@@ -173,7 +178,6 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
 
   void _onControllerChanged() {
     if (!mounted) return;
-
     setState(() {
       _showClear = widget.controller?.text.isNotEmpty == true;
     });
@@ -183,24 +187,21 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
     _overlayEntry?.remove();
     _overlayEntry = null;
   }
+
   void _scrollToHighlighted() {
     if (!_scrollController.hasClients || _highlightedIndex < 0) return;
 
     final targetOffset = _highlightedIndex * _itemHeight;
-
     final currentOffset = _scrollController.offset;
     final maxOffset = _scrollController.position.maxScrollExtent;
     final viewport = _scrollController.position.viewportDimension;
 
-    /// Current visible area
     final visibleTop = currentOffset;
     final visibleBottom = currentOffset + viewport;
 
-    /// Item area
     final itemTop = targetOffset;
     final itemBottom = targetOffset + _itemHeight;
 
-    /// Scroll only when item is outside visible area
     if (itemBottom > visibleBottom) {
       _scrollController.animateTo(
         (itemBottom - viewport).clamp(0, maxOffset),
@@ -215,6 +216,7 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
       );
     }
   }
+
   void _onFocusChange() {
     if (widget.readOnly) {
       _removeOverlay();
@@ -222,6 +224,12 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
     }
 
     if (_focusNode.hasFocus) {
+      // Keep keyboard listener focused alongside the text field so
+      // arrow keys work.
+      if (!_keyboardListenerFocus.hasFocus) {
+        _keyboardListenerFocus.requestFocus();
+      }
+
       if (widget.showAllOnFocus &&
           _firstFocus &&
           widget.bloc != null &&
@@ -231,7 +239,7 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
       }
 
       if (_currentSuggestions.isNotEmpty) {
-        _showOverlay(_currentSuggestions);
+        _showOverlay();
       }
     } else {
       Future.delayed(const Duration(milliseconds: 300), () {
@@ -242,34 +250,22 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
     }
   }
 
-  // void _selectItem(T item) {
-  //   final itemText = widget.itemToString(item);
-  //
-  //   widget.controller?.text = itemText;
-  //
-  //   widget.onSelected?.call(item);
-  //   widget.onChanged?.call(itemText);
-  //
-  //   _removeOverlay();
-  //   _focusNode.unfocus();
-  // }
-
   void _selectItem(T item) {
     final itemText = widget.itemToString(item);
 
     widget.controller?.text = itemText;
-
     widget.onSelected?.call(item);
     widget.onChanged?.call(itemText);
 
     _removeOverlay();
+    // Keep the field focused so downstream listeners (e.g. "account
+    // selected → move to amount") can decide what to do.
   }
 
   void _handleKeyEvent(KeyEvent event) {
     if (event is! KeyDownEvent) return;
 
     final allItems = _getAllItems();
-
     if (allItems.isEmpty) return;
 
     if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
@@ -280,15 +276,11 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
           _highlightedIndex = 0;
         }
       });
-
       _refreshOverlay();
-
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToHighlighted();
       });
-    }
-
-    else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+    } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
       setState(() {
         if (_highlightedIndex > 0) {
           _highlightedIndex--;
@@ -296,40 +288,33 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
           _highlightedIndex = allItems.length - 1;
         }
       });
-
       _refreshOverlay();
-
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToHighlighted();
       });
-    }
-
-    else if (event.logicalKey == LogicalKeyboardKey.enter ||
+    } else if (event.logicalKey == LogicalKeyboardKey.enter ||
         event.logicalKey == LogicalKeyboardKey.numpadEnter) {
-      if (_highlightedIndex >= 0 &&
-          _highlightedIndex < allItems.length) {
+      if (_highlightedIndex >= 0 && _highlightedIndex < allItems.length) {
         _selectItem(allItems[_highlightedIndex]);
       }
-    }
-
-    else if (event.logicalKey == LogicalKeyboardKey.escape) {
+    } else if (event.logicalKey == LogicalKeyboardKey.escape) {
       _removeOverlay();
     }
   }
 
   List<T> _getAllItems() {
     final items = [..._currentSuggestions];
-
     if (widget.showAllOption && widget.allOption != null) {
       items.insert(0, widget.allOption as T);
     }
-
     return items;
   }
+
   void _refreshOverlay() {
     _overlayEntry?.markNeedsBuild();
   }
-  void _showOverlay(List<T> items) {
+
+  void _showOverlay() {
     if (_overlayEntry != null) {
       _refreshOverlay();
       return;
@@ -337,10 +322,8 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
 
     final renderBox =
     _fieldKey.currentContext?.findRenderObject() as RenderBox?;
-
     final overlay =
     Overlay.of(context).context.findRenderObject() as RenderBox?;
-
     if (renderBox == null || overlay == null) return;
 
     final position =
@@ -357,13 +340,11 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(3),
             side: BorderSide(
-              color: Theme.of(context)
-                  .colorScheme
-                  .surfaceContainerHighest,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               width: 1,
             ),
           ),
-          child: _buildSuggestionsList(items),
+          child: _buildSuggestionsList(),
         ),
       ),
     );
@@ -371,7 +352,7 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
     Overlay.of(context).insert(_overlayEntry!);
   }
 
-  Widget _buildSuggestionsList(List<T> items) {
+  Widget _buildSuggestionsList() {
     final allItems = _getAllItems();
 
     if (allItems.isEmpty) {
@@ -386,16 +367,11 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
               ? const SizedBox(
             width: 20,
             height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-            ),
+            child: CircularProgressIndicator(strokeWidth: 2),
           )
               : Text(
             widget.noResultsText,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontSize: 12,
               color: Theme.of(context)
                   .colorScheme
@@ -416,7 +392,6 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
         itemCount: allItems.length,
         itemBuilder: (context, index) {
           final item = allItems[index];
-
           final isHighlighted = index == _highlightedIndex;
 
           return Material(
@@ -434,10 +409,8 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
               highlightColor: Colors.transparent,
               onTap: () => _selectItem(item),
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 4,
-                  vertical: 2,
-                ),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 child: Row(
                   children: [
                     SizedBox(
@@ -449,16 +422,12 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
                           width: 3,
                           height: isHighlighted ? 18 : 0,
                           decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primary,
-                            borderRadius:
-                            BorderRadius.circular(100),
+                            color: Theme.of(context).colorScheme.primary,
+                            borderRadius: BorderRadius.circular(100),
                           ),
                         ),
                       ),
                     ),
-
                     Expanded(
                       child: widget.itemBuilder(context, item),
                     ),
@@ -473,15 +442,12 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
   }
 
   String? _customValidator(String? value) {
-    if (widget.isRequired &&
-        (value == null || value.isEmpty)) {
-      return AppLocalizations.of(context)!
-          .required(widget.title);
+    if (widget.isRequired && (value == null || value.isEmpty)) {
+      return AppLocalizations.of(context)!.required(widget.title);
     }
 
     if (widget.itemValidator != null) {
       T? selectedItem;
-
       try {
         selectedItem = _currentSuggestions.firstWhere(
               (item) => widget.itemToString(item) == value,
@@ -489,7 +455,6 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
       } catch (_) {
         selectedItem = null;
       }
-
       if (selectedItem != null) {
         return widget.itemValidator!(selectedItem);
       }
@@ -516,43 +481,30 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
       children: [
         if (isLoading)
           Padding(
-            padding:
-            const EdgeInsets.symmetric(horizontal: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
             child: widget.loadingBuilder?.call(context) ??
                 const SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                  ),
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 ),
           ),
-        if (_showClear &&
-            widget.showClearButton &&
-            !isLoading)
+        if (_showClear && widget.showClearButton && !isLoading)
           IconButton(
             splashRadius: 2,
-            splashColor: Theme.of(context)
-                .colorScheme
-                .primary
-                .withAlpha(23),
-            highlightColor: Theme.of(context)
-                .colorScheme
-                .primary
-                .withAlpha(23),
-            hoverColor: Theme.of(context)
-                .colorScheme
-                .primary
-                .withAlpha(23),
+            splashColor:
+            Theme.of(context).colorScheme.primary.withAlpha(23),
+            highlightColor:
+            Theme.of(context).colorScheme.primary.withAlpha(23),
+            hoverColor:
+            Theme.of(context).colorScheme.primary.withAlpha(23),
             icon: Icon(
               Icons.clear,
               size: 14,
-              color:
-              Theme.of(context).colorScheme.secondary,
+              color: Theme.of(context).colorScheme.secondary,
             ),
             onPressed: () {
               widget.controller?.clear();
-
               widget.onChanged?.call('');
 
               setState(() {
@@ -582,10 +534,8 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
                 .withValues(alpha: .3),
           ),
         );
-
       case TextFieldStyle.underline:
         return const UnderlineInputBorder();
-
       case TextFieldStyle.noBorder:
         return const OutlineInputBorder(
           borderRadius: BorderRadius.zero,
@@ -604,7 +554,6 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
             width: 1.5,
           ),
         );
-
       case TextFieldStyle.underline:
         return UnderlineInputBorder(
           borderSide: BorderSide(
@@ -612,7 +561,6 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
             width: 1.5,
           ),
         );
-
       case TextFieldStyle.noBorder:
         return const OutlineInputBorder(
           borderRadius: BorderRadius.zero,
@@ -631,15 +579,10 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
             width: 1.5,
           ),
         );
-
       case TextFieldStyle.underline:
         return const UnderlineInputBorder(
-          borderSide: BorderSide(
-            color: Colors.red,
-            width: 1.5,
-          ),
+          borderSide: BorderSide(color: Colors.red, width: 1.5),
         );
-
       case TextFieldStyle.noBorder:
         return OutlineInputBorder(
           borderRadius: BorderRadius.zero,
@@ -663,10 +606,8 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
                 .withValues(alpha: .2),
           ),
         );
-
       case TextFieldStyle.underline:
         return const UnderlineInputBorder();
-
       case TextFieldStyle.noBorder:
         return const OutlineInputBorder(
           borderRadius: BorderRadius.zero,
@@ -678,22 +619,43 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
   EdgeInsets _getContentPadding() {
     switch (widget.textFieldStyle) {
       case TextFieldStyle.roundedBorder:
-        return const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 8,
-        );
-
+        return const EdgeInsets.symmetric(horizontal: 12, vertical: 8);
       case TextFieldStyle.underline:
-        return const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 8,
-        );
-
+        return const EdgeInsets.symmetric(horizontal: 12, vertical: 8);
       case TextFieldStyle.noBorder:
-        return const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 10,
-        );
+        return const EdgeInsets.symmetric(horizontal: 12, vertical: 10);
+    }
+  }
+
+  void _onFieldSubmittedInternal(String value) {
+    // 1) Notify the caller first — this is what drives "Enter = submit"
+    //    or "Enter = next field" in forms.
+    widget.onFieldSubmitted?.call(value);
+
+    // 2) Legacy callback (proCode-style lookup) — kept for compatibility.
+    final input = value.trim();
+    widget.onSubmitted?.call(name: input);
+
+    T? match;
+    try {
+      match = _currentSuggestions.firstWhere((item) {
+        // Match either by proCode (legacy) OR by itemToString equality.
+        try {
+          final dynamic dyn = item;
+          final String? code = dyn.proCode?.toLowerCase();
+          if (code != null && code == input.toLowerCase()) return true;
+        } catch (_) {}
+        return widget.itemToString(item) == input;
+      });
+    } catch (_) {
+      match = null;
+    }
+
+    if (match != null) {
+      widget.controller?.text = widget.itemToString(match);
+      widget.onChanged?.call(widget.itemToString(match));
+      widget.onSelected?.call(match);
+      _removeOverlay();
     }
   }
 
@@ -709,33 +671,24 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
           children: [
             if (widget.title.isNotEmpty)
               Padding(
-                padding:
-                const EdgeInsets.only(bottom: 4),
+                padding: const EdgeInsets.only(bottom: 4),
                 child: Row(
                   children: [
                     Text(
                       widget.title,
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleSmall
-                          ?.copyWith(
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontSize: 12,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .outline,
+                        color: Theme.of(context).colorScheme.outline,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     if (widget.isRequired)
                       Padding(
-                        padding:
-                        const EdgeInsets.only(left: 2),
+                        padding: const EdgeInsets.only(left: 2),
                         child: Text(
                           ' *',
                           style: TextStyle(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .error,
+                            color: Theme.of(context).colorScheme.error,
                           ),
                         ),
                       ),
@@ -743,32 +696,31 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
                 ),
               ),
             Container(
-              decoration:
-              widget.textFieldStyle ==
-                  TextFieldStyle.noBorder
+              decoration: widget.textFieldStyle == TextFieldStyle.noBorder
                   ? BoxDecoration(
                 color: Theme.of(context)
                     .colorScheme
                     .surfaceContainerHighest
                     .withValues(alpha: .08),
-                borderRadius:
-                BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(4),
               )
                   : null,
               child: KeyboardListener(
-                focusNode: FocusNode(skipTraversal: true),
+                focusNode: _keyboardListenerFocus,
                 onKeyEvent: _handleKeyEvent,
                 child: CompositedTransformTarget(
                   link: _layerLink,
                   child: TextFormField(
+                    // ✅ use the internal focus node (falls back correctly)
                     focusNode: _focusNode,
+                    textInputAction: widget.textInputAction,
+                    // ✅ single merged onFieldSubmitted
+                    onFieldSubmitted: _onFieldSubmittedInternal,
                     key: _fieldKey,
                     controller: widget.controller,
                     enabled: widget.isEnabled,
                     readOnly: widget.readOnly,
-                    validator:
-                    widget.validator ?? _customValidator,
-
+                    validator: widget.validator ?? _customValidator,
                     onChanged: (value) {
                       if (widget.readOnly) return;
 
@@ -787,17 +739,11 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
                           if (value.isNotEmpty &&
                               widget.bloc != null &&
                               widget.searchFunction != null) {
-                            widget.searchFunction!(
-                              widget.bloc!,
-                              value,
-                            );
+                            widget.searchFunction!(widget.bloc!, value);
                           } else if (value.isEmpty &&
                               widget.bloc != null &&
-                              widget.fetchAllFunction !=
-                                  null) {
-                            widget.fetchAllFunction!(
-                              widget.bloc!,
-                            );
+                              widget.fetchAllFunction != null) {
+                            widget.fetchAllFunction!(widget.bloc!);
                           } else {
                             _currentSuggestions = [];
                             _removeOverlay();
@@ -805,81 +751,21 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
                         },
                       );
                     },
-
-                    onFieldSubmitted: (value) {
-                      final input = value.trim();
-
-                      widget.onSubmitted?.call(
-                        name: input,
-                      );
-
-                      T? match;
-
-                      try {
-                        match =
-                            _currentSuggestions.firstWhere(
-                                  (item) {
-                                String? code;
-
-                                try {
-                                  final dynamic dyn = item;
-                                  code = dyn.proCode
-                                      ?.toLowerCase();
-                                } catch (_) {
-                                  code = null;
-                                }
-
-                                return code ==
-                                    input.toLowerCase();
-                              },
-                            );
-                      } catch (_) {
-                        match = null;
-                      }
-
-                      if (match != null) {
-                        widget.controller?.text =
-                            widget.itemToString(match);
-
-                        widget.onChanged?.call(
-                          widget.itemToString(match),
-                        );
-
-                        widget.onSelected?.call(match);
-
-                        _focusNode.unfocus();
-
-                        _removeOverlay();
-                      }
-                    },
-
                     style: TextStyle(
                       fontSize: 13,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
-
                     decoration: InputDecoration(
                       isDense: true,
-
                       prefixIcon: widget.icon != null
                           ? Padding(
                         padding:
-                        const EdgeInsets.symmetric(
-                          horizontal: 8,
-                        ),
-                        child: Icon(
-                          widget.icon,
-                          size: 18,
-                        ),
+                        const EdgeInsets.symmetric(horizontal: 8),
+                        child: Icon(widget.icon, size: 18),
                       )
                           : null,
-
                       suffixIcon: _buildSuffixIcon(),
-
                       hintText: widget.hintText,
-
                       hintStyle: TextStyle(
                         fontSize: 13,
                         color: Theme.of(context)
@@ -887,36 +773,19 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
                             .secondary
                             .withValues(alpha: .5),
                       ),
-
-                      contentPadding:
-                      _getContentPadding(),
-
-                      disabledBorder:
-                      _getDisabledBorder(),
-
-                      enabledBorder:
-                      _getEnabledBorder(),
-
-                      focusedBorder:
-                      _getFocusedBorder(),
-
-                      focusedErrorBorder:
-                      _getErrorBorder(),
-
+                      contentPadding: _getContentPadding(),
+                      disabledBorder: _getDisabledBorder(),
+                      enabledBorder: _getEnabledBorder(),
+                      focusedBorder: _getFocusedBorder(),
+                      focusedErrorBorder: _getErrorBorder(),
                       errorBorder: _getErrorBorder(),
-
-                      errorStyle:
-                      const TextStyle(fontSize: 11),
-
+                      errorStyle: const TextStyle(fontSize: 11),
                       fillColor:
-                      widget.textFieldStyle ==
-                          TextFieldStyle.noBorder
+                      widget.textFieldStyle == TextFieldStyle.noBorder
                           ? Colors.transparent
                           : null,
-
                       filled:
-                      widget.textFieldStyle ==
-                          TextFieldStyle.noBorder,
+                      widget.textFieldStyle == TextFieldStyle.noBorder,
                     ),
                   ),
                 ),
@@ -933,21 +802,17 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
                 listener: (context, state) {
                   if (widget.readOnly) return;
 
-                  final items =
-                  widget.stateToItems(state);
+                  final items = widget.stateToItems(state);
 
                   setState(() {
                     _currentSuggestions = items;
-
-                    if (_highlightedIndex >=
-                        items.length) {
-                      _highlightedIndex =
-                      items.isEmpty ? -1 : 0;
+                    if (_highlightedIndex >= items.length) {
+                      _highlightedIndex = items.isEmpty ? -1 : 0;
                     }
                   });
 
                   if (_focusNode.hasFocus) {
-                    _showOverlay(items);
+                    _showOverlay();
                   } else {
                     _removeOverlay();
                   }

@@ -230,5 +230,10 @@
   "cashFlow": "Cash flow",
   "tryAgain": "Try again",
   "newTransaction": "New Transaction",
-  "noPermission": "No Permission"
+  "noPermission": "No Permission",
+  "selected": "Selected",
+  "selectedCount": "Selected · {count}",
+  "@selectedCount": {
+    "placeholders": { "count": { "type": "int" } }
+  }
 }
