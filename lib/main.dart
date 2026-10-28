@@ -19,6 +19,7 @@ import 'package:shipping/Routes/Home/View/Settings/Visibility/bloc/settings_visi
 import 'package:shipping/Routes/Home/View/Stakeholder/View/StkAccount/bloc/stk_accounts_bloc.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/bloc/stakeholder_bloc.dart';
 import 'package:shipping/Routes/Home/View/Transactions/View/Bulk/bloc/bulk_transfer_bloc.dart';
+import 'package:shipping/Routes/Home/View/Transactions/View/FundTransfer/bloc/fund_transfer_bloc.dart';
 import 'package:shipping/Routes/Home/View/Transactions/bloc/transactions_bloc.dart';
 import 'Routes/Home/View/Settings/bloc/settings_tab_bloc.dart';
 import 'Routes/Home/View/Stakeholder/View/StakeholderById/bloc/stakeholder_by_id_bloc.dart';
@@ -82,6 +83,7 @@ class MyApp extends StatelessWidget {
 
           ///Transactions
           BlocProvider(create: (_) => BulkTransferBloc(Repositories(ApiServices()))),
+          BlocProvider(create: (_) => FundTransferBloc(Repositories(ApiServices()))),
         ],
         child: BlocBuilder<LocalizationBloc, Locale>(
           builder: (context, locale) {

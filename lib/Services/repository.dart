@@ -13,6 +13,7 @@ import '../Routes/Home/View/Settings/View/Company/Branches/model/branch_model.da
 import '../Routes/Home/View/Settings/View/Company/CompanyProfile/model/com_model.dart';
 import '../Routes/Home/View/Settings/View/Company/Storage/model/storage_model.dart';
 import '../Routes/Home/View/Stakeholder/model/stk_model.dart';
+import '../Routes/Home/View/Transactions/View/FundTransfer/model/ft_model.dart';
 import '../Routes/Home/View/Transactions/model/trn_model.dart';
 import 'api_exception.dart';
 import 'api_services.dart';
@@ -1136,7 +1137,261 @@ class Repositories {
     );
   }
 
+  Future<Map<String, dynamic>> getCashTxnByReference({
+    required String reference,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.get(
+      endpoint: '/journal/cashWD.php',
+      queryParams: {'ref': reference},
+      cancelToken: cancelToken,
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+
+    final msg = body['msg']?.toString().toLowerCase() ?? '';
+    if (msg == 'success') return body;
+
+    throw ApiException(
+      body['error']?.toString() ??
+          (msg == 'not_found' ? 'Transaction not found.' : 'Failed to load transaction'),
+    );
+  }
+
+  Future<Map<String, dynamic>> deleteCashTxn({
+    required String reference,
+    required String userName,
+  }) async {
+    final response = await _api.delete(
+      endpoint: '/journal/cashWD.php',
+      data: {'reference': reference, 'username': userName},
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+
+    final msg = body['msg']?.toString().toLowerCase() ?? '';
+    if (msg == 'success') return body;
+
+    throw ApiException(
+      body['error']?.toString() ??
+          (msg == 'invalid action'
+              ? 'Only pending transactions can be deleted.'
+              : msg == 'invalid'
+              ? 'Only the maker can delete this transaction.'
+              : 'Failed to delete transaction'),
+    );
+  }
 
 
+  // ═════════════════════════════════════════════════════════════════
+  // Fund Transfer (account → account)
+  //   Add / Edit / Delete / Get (list + single).
+  //   Authorize / Unauthorize / Reverse are handled by the generic
+  //   transactions.php endpoint via authorizeTxn / unAuthorizeTxn /
+  //   reverseTxn above.
+  // ═════════════════════════════════════════════════════════════════
+
+  /// GET list — supports optional state filter and search.
+  Future<List<FundTransferListItem>> getFundTransfers({
+    String? state,
+    String? search,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.get(
+      endpoint: '/journal/fundTransfer.php',
+      queryParams: {
+        if (state != null && state.isNotEmpty) 'state': state,
+        if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+      },
+      cancelToken: cancelToken,
+    );
+    return _parseList(
+      response.data,
+      FundTransferListItem.fromMap,
+      fallback: 'Failed to load fund transfers',
+    );
+  }
+
+  /// GET single — used by the edit form.
+  Future<FundTransferDetail> getFundTransferByReference({
+    required String reference,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.get(
+      endpoint: '/journal/fundTransfer.php',
+      queryParams: {'ref': reference},
+      cancelToken: cancelToken,
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+
+    // Server returns {msg: 'not_found'} / {msg: 'invalid_type'} on bad refs.
+    final msg = body['msg']?.toString().toLowerCase() ?? '';
+    if (msg.isNotEmpty && msg != 'success') {
+      throw ApiException(
+        body['error']?.toString() ??
+            (msg == 'not_found'
+                ? 'Fund transfer not found.'
+                : msg == 'invalid_type'
+                ? 'This reference is not a fund transfer.'
+                : msg == 'missing_ref'
+                ? 'Missing reference.'
+                : 'Failed to load fund transfer'),
+      );
+    }
+
+    return FundTransferDetail.fromMap(body);
+  }
+
+  /// POST — create a new account → account transfer (always Pending).
+  /// Returns the new trnReference.
+  Future<String> addFundTransfer({
+    required String usrName,
+    required int fromAccount,
+    required String fromAccCcy,
+    required int toAccount,
+    required String toAccCcy,
+    required double amount,
+    required String narration,
+  }) async {
+    final response = await _api.post(
+      endpoint: '/journal/fundTransfer.php',
+      data: {
+        'usrName': usrName,
+        'fromAccount': fromAccount,
+        'fromAccCcy': fromAccCcy,
+        'toAccount': toAccount,
+        'toAccCcy': toAccCcy,
+        'amount': amount,
+        'narration': narration,
+      },
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+
+    final msg = body['msg']?.toString().toLowerCase() ?? '';
+    if (msg == 'success') {
+      final ref = body['reference']?.toString();
+      if (ref == null || ref.isEmpty) {
+        throw ApiException('Server returned success but no reference');
+      }
+      return ref;
+    }
+
+    throw ApiException(
+      body['error']?.toString() ??
+          (msg == 'empty'
+              ? 'Please fill in all fields.'
+              : msg == 'same_account'
+              ? 'From and To accounts must be different.'
+              : msg == 'currency_unmatch'
+              ? 'From and To accounts must share the same currency.'
+              : msg == 'blocked'
+              ? 'One of the accounts is blocked.'
+              : msg == 'no_limit'
+              ? 'The account has exceeded its credit limit.'
+              : msg == 'invalid_user'
+              ? 'Invalid user.'
+              : msg == 'failed'
+              ? 'The fund transfer could not be created.'
+              : msg.isEmpty
+              ? 'Failed to create fund transfer'
+              : msg),
+    );
+  }
+
+  /// PUT — edit a Pending fund transfer. Maker only.
+  Future<void> editFundTransfer({
+    required String reference,
+    required String usrName,
+    required int fromAccount,
+    required int toAccount,
+    required double amount,
+    required String narration,
+  }) async {
+    final response = await _api.put(
+      endpoint: '/journal/fundTransfer.php',
+      data: {
+        'reference': reference,
+        'usrName': usrName,
+        'fromAccount': fromAccount,
+        'toAccount': toAccount,
+        'amount': amount,
+        'narration': narration,
+      },
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+
+    final msg = body['msg']?.toString().toLowerCase() ?? '';
+    if (msg == 'success') return;
+
+    throw ApiException(
+      body['error']?.toString() ??
+          (msg == 'empty'
+              ? 'Please fill in all fields.'
+              : msg == 'same_account'
+              ? 'From and To accounts must be different.'
+              : msg == 'blocked'
+              ? 'One of the accounts is blocked.'
+              : msg == 'no_limit'
+              ? 'The account has exceeded its credit limit.'
+              : msg == 'not_found'
+              ? 'Fund transfer not found.'
+              : msg == 'invalid_type'
+              ? 'This reference is not a fund transfer.'
+              : msg == 'invalid_action'
+              ? 'Only Pending fund transfers can be edited.'
+              : msg == 'invalid'
+              ? 'Only the maker can edit this fund transfer.'
+              : msg == 'failed'
+              ? 'The fund transfer could not be updated.'
+              : msg.isEmpty
+              ? 'Failed to update fund transfer'
+              : msg),
+    );
+  }
+
+  /// DELETE — soft delete a Pending fund transfer. Maker only.
+  /// Keeps the header row, marks it Deleted, and drops the detail legs.
+  Future<void> deleteFundTransfer({
+    required String reference,
+    required String usrName,
+  }) async {
+    final response = await _api.delete(
+      endpoint: '/journal/fundTransfer.php',
+      data: {'reference': reference, 'usrName': usrName},
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+
+    final msg = body['msg']?.toString().toLowerCase() ?? '';
+    if (msg == 'success') return;
+
+    throw ApiException(
+      body['error']?.toString() ??
+          (msg == 'empty'
+              ? 'Missing reference or user.'
+              : msg == 'not_found'
+              ? 'Fund transfer not found.'
+              : msg == 'invalid_type'
+              ? 'This reference is not a fund transfer.'
+              : msg == 'invalid_action'
+              ? 'Only Pending fund transfers can be deleted.'
+              : msg == 'invalid'
+              ? 'Only the maker can delete this fund transfer.'
+              : msg == 'failed'
+              ? 'The fund transfer could not be deleted.'
+              : msg.isEmpty
+              ? 'Failed to delete fund transfer'
+              : msg),
+    );
+  }
 
 }

@@ -584,10 +584,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get remark => 'څرګندونې';
 
   @override
-  String get debit => 'بدهکار';
+  String get debit => 'دبت';
 
   @override
-  String get credit => 'طلبکار';
+  String get credit => 'کریدت';
 
   @override
   String get total => 'ټولټال';
@@ -710,4 +710,32 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get editBulkTransfer => 'ویرایش انتقال گروهی';
+
+  @override
+  String get authorize => 'تایید کول';
+
+  @override
+  String get reverse => 'برگشتاندن';
+
+  @override
+  String get print => 'چاپ';
+
+  @override
+  String get unauthorize => 'از تایید کشیدن';
+
+  @override
+  String get setReminder => 'تعیین یادآوری';
+
+  @override
+  String get sameAccount => 'انتقال بین حساب خود مجاز نیست';
+
+  @override
+  String get currencyMismatch =>
+      'ارز حساب یکسان نیست، هر دو حساب باید ارز یکسان باشد';
+
+  @override
+  String get debitAccount => 'حساب دبت';
+
+  @override
+  String get creditAccount => 'حساب کریدت';
 }

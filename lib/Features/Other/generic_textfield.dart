@@ -126,6 +126,10 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
   bool _showClear = false;
   bool _firstFocus = true;
 
+  /// ✅ Only `true` when the user has actually typed something into the field.
+  ///    The overlay is NEVER shown unless this is `true`.
+  bool _isUserSearching = false;
+
   int _highlightedIndex = -1;
 
   bool get _usingExternalFocusNode => widget.focusNode != null;
@@ -230,6 +234,9 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
         _keyboardListenerFocus.requestFocus();
       }
 
+      // ✅ Do NOT auto-fetch / auto-open on focus.
+      //    Optionally prefetch "all" data for validation, but never show
+      //    the overlay unless the user is actively searching.
       if (widget.showAllOnFocus &&
           _firstFocus &&
           widget.bloc != null &&
@@ -238,7 +245,8 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
         _firstFocus = false;
       }
 
-      if (_currentSuggestions.isNotEmpty) {
+      // ✅ Only (re)show if the user is actively searching.
+      if (_isUserSearching && _currentSuggestions.isNotEmpty) {
         _showOverlay();
       }
     } else {
@@ -257,6 +265,8 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
     widget.onSelected?.call(item);
     widget.onChanged?.call(itemText);
 
+    // ✅ Selecting an item ends the search session.
+    _isUserSearching = false;
     _removeOverlay();
     // Keep the field focused so downstream listeners (e.g. "account
     // selected → move to amount") can decide what to do.
@@ -315,6 +325,9 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
   }
 
   void _showOverlay() {
+    // ✅ Hard guard: the overlay can NEVER open unless the user is searching.
+    if (!_isUserSearching) return;
+
     if (_overlayEntry != null) {
       _refreshOverlay();
       return;
@@ -512,6 +525,8 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
                 _showClear = false;
                 _firstFocus = true;
                 _highlightedIndex = -1;
+                // ✅ Clearing ends the search session.
+                _isUserSearching = false;
               });
 
               _removeOverlay();
@@ -655,6 +670,7 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
       widget.controller?.text = widget.itemToString(match);
       widget.onChanged?.call(widget.itemToString(match));
       widget.onSelected?.call(match);
+      _isUserSearching = false;
       _removeOverlay();
     }
   }
@@ -724,10 +740,19 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
                     onChanged: (value) {
                       if (widget.readOnly) return;
 
+                      final hasQuery = value.trim().isNotEmpty;
+
                       setState(() {
                         _showClear = value.isNotEmpty;
                         _highlightedIndex = -1;
+                        // ✅ Only allow the overlay while the user has typed.
+                        _isUserSearching = hasQuery;
                       });
+
+                      // If the user cleared the field, drop the overlay now.
+                      if (!hasQuery) {
+                        _removeOverlay();
+                      }
 
                       if (_debounce?.isActive ?? false) {
                         _debounce?.cancel();
@@ -811,7 +836,8 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
                     }
                   });
 
-                  if (_focusNode.hasFocus) {
+                  // ✅ Only show the overlay if the user is actively searching.
+                  if (_isUserSearching && _focusNode.hasFocus) {
                     _showOverlay();
                   } else {
                     _removeOverlay();

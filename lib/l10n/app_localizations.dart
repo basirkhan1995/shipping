@@ -1485,6 +1485,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit Bulk Transfer'**
   String get editBulkTransfer;
+
+  /// No description provided for @authorize.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorize'**
+  String get authorize;
+
+  /// No description provided for @reverse.
+  ///
+  /// In en, this message translates to:
+  /// **'Reverse'**
+  String get reverse;
+
+  /// No description provided for @print.
+  ///
+  /// In en, this message translates to:
+  /// **'Print'**
+  String get print;
+
+  /// No description provided for @unauthorize.
+  ///
+  /// In en, this message translates to:
+  /// **'Unauthorize'**
+  String get unauthorize;
+
+  /// No description provided for @setReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Set reminder'**
+  String get setReminder;
+
+  /// No description provided for @sameAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Same account transfer is not allowed.'**
+  String get sameAccount;
+
+  /// No description provided for @currencyMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency doesn\'t match, both must same currency'**
+  String get currencyMismatch;
+
+  /// No description provided for @debitAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Debit Account'**
+  String get debitAccount;
+
+  /// No description provided for @creditAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit Account'**
+  String get creditAccount;
 }
 
 class _AppLocalizationsDelegate

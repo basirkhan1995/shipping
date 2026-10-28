@@ -3,19 +3,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shipping/Features/Widgets/extensions.dart';
+import 'package:shipping/Features/Widgets/zbutton.dart';                     // ZOutlineButton
 import 'package:shipping/Routes/Home/View/Stakeholder/model/stk_model.dart';
+import 'package:shipping/l10n/app_localizations.dart';
 
 import '../../../../../../Features/Date/z_generic_date.dart';
 import '../../../../../../Features/Other/generic_textfield.dart';
 import '../../../../../../Features/Widgets/ztextfield.dart';
-
 import '../../../../../../Features/Widgets/z_dialog.dart';
 import '../../../../../../Features/Widgets/toast.dart';
 import '../../../../../../Services/repository.dart';
-
+import '../../../../../Auth/bloc/auth_bloc.dart';
 import '../../../Stakeholder/View/StkAccount/bloc/stk_accounts_bloc.dart';
 import '../../../Stakeholder/View/StkAccount/bloc/stk_accounts_event.dart';
 import '../../../Stakeholder/View/StkAccount/bloc/stk_accounts_state.dart';
+import '../../bloc/transactions_bloc.dart';
 import '../../model/trn_model.dart';
 import 'bloc/cash_txn_bloc.dart';
 import 'bloc/cash_txn_event.dart';
@@ -25,23 +28,10 @@ class CashTxnSpec {
   final String typeCode;
   final IconData icon;
   final String Function(BuildContext) title;
-
-  /// Account categories to show (comma-separated). Default '8' = stakeholder.
-  /// Pass 'all' or empty to show all categories.
   final String accountInclude;
-
-  /// Account numbers to exclude (comma-separated), e.g. '10101011'.
   final String accountExclude;
-
-  /// When true, only accounts whose currency == baseCurrency (or whose
-  /// currency is null) are shown. Only meaningful for GL-style accounts.
   final bool restrictToBaseCurrency;
-
-  /// Whether to show the "Set reminder" checkbox (only CHDP / CHWL).
   final bool allowReminder;
-
-  /// Only honoured for stakeholder accounts (category 8).
-  /// GL / INCM / XPNS accounts are always forced to baseCurrency.
   final bool editableCurrency;
 
   const CashTxnSpec({
@@ -56,12 +46,18 @@ class CashTxnSpec {
   });
 }
 
+// ═════════════════════════════════════════════════════════════════
+// FORM
+// ═════════════════════════════════════════════════════════════════
+
 class CashTxnForm extends StatefulWidget {
   final CashTxnSpec spec;
   final String usrName;
   final String baseCurrency;
   final ValueChanged<TransactionDraft> onSubmit;
   final GlobalKey<CashTxnFormState>? formKey;
+  final TransactionDraft? initialDraft;
+  final String? stateText;
 
   const CashTxnForm({
     super.key,
@@ -70,6 +66,8 @@ class CashTxnForm extends StatefulWidget {
     required this.baseCurrency,
     required this.onSubmit,
     this.formKey,
+    this.initialDraft,
+    this.stateText,
   });
 
   @override
@@ -94,22 +92,46 @@ class CashTxnFormState extends State<CashTxnForm> {
   bool _reminder = false;
   DateTime? _reminderDate;
 
-  /// Category 8 = stakeholder. Only these use the account's own currency;
-  /// everything else posts in the base currency.
   static const int _stakeholderCategory = 8;
+
+  bool get _isEditable =>
+      widget.stateText == null || widget.stateText == 'Pending';
 
   @override
   void initState() {
     super.initState();
     _ccy = widget.baseCurrency;
+    _applyDraft(widget.initialDraft);
 
-    // Wait two frames so the dialog route and ZTextFieldEntitled finish
-    // their own focus setup — avoids the Amount→Account flash.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _accountFocus.requestFocus();
+        if (mounted && _isEditable) _accountFocus.requestFocus();
       });
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant CashTxnForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldRef = oldWidget.initialDraft?.trnReference;
+    final newRef = widget.initialDraft?.trnReference;
+    final draftArrived =
+        oldWidget.initialDraft == null && widget.initialDraft != null;
+    final refChanged = oldRef != newRef;
+
+    if (draftArrived || refChanged) {
+      setState(() => _applyDraft(widget.initialDraft));
+    }
+  }
+
+  void _applyDraft(TransactionDraft? draft) {
+    if (draft == null) return;
+    _ccy = draft.trdCcy ?? widget.baseCurrency;
+    _amountCtrl.text = draft.trdAmount ?? '';
+    _narrationCtrl.text = draft.trdNarration ?? '';
+    if (draft.trdAccount != null) {
+      _accountCtrl.text = draft.trdAccount.toString();
+    }
   }
 
   @override
@@ -124,17 +146,28 @@ class CashTxnFormState extends State<CashTxnForm> {
   }
 
   void submit() {
+    if (!_isEditable) return;
     final ok = _formKey.currentState?.validate() == true;
     debugPrint(
-      'CashTxnForm.submit: valid=$ok acc=${_acc?.accNumber} ccy=$_ccy',
+      'CashTxnForm.submit: valid=$ok acc=${_acc?.accNumber} '
+          'draftAcc=${widget.initialDraft?.trdAccount} ccy=$_ccy',
     );
     if (!ok) return;
-    if (_acc == null || _acc!.accNumber == null) return;
+
+    // In edit mode _acc is null because the draft only carries the number.
+    // Fall back to the draft's account number so Update works.
+    final draft = widget.initialDraft;
+    final accNumber = _acc?.accNumber ?? draft?.trdAccount;
+    if (accNumber == null) {
+      debugPrint('CashTxnForm.submit: no account number — aborting');
+      return;
+    }
 
     widget.onSubmit(TransactionDraft(
+      trnReference: draft?.trnReference,
       trnType: widget.spec.typeCode,
       usrName: widget.usrName,
-      trdAccount: _acc!.accNumber!,
+      trdAccount: accNumber,
       trdCcy: _ccy ?? widget.baseCurrency,
       trdAmount: _amountCtrl.text.replaceAll(',', '').trim(),
       trdNarration: _narrationCtrl.text.trim(),
@@ -146,6 +179,7 @@ class CashTxnFormState extends State<CashTxnForm> {
     return Form(
       key: _formKey,
       child: SingleChildScrollView(
+        // ── FIX #3 — constrain height so the dialog doesn't fill the screen
         padding: const EdgeInsets.all(8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -171,14 +205,15 @@ class CashTxnFormState extends State<CashTxnForm> {
   Widget _buildAccountPicker() =>
       GenericTextField<StakeholderAccount, StkAccountsBloc, StkAccountsState>(
         controller: _accountCtrl,
-        title: 'Accounts',
-        hintText: 'Start typing to search…',
+        title: AppLocalizations.of(context)!.accounts,
+        hintText: AppLocalizations.of(context)!.accNameOrNumber,
         isRequired: true,
         bloc: context.read<StkAccountsBloc>(),
         focusNode: _accountFocus,
         textInputAction: TextInputAction.none,
         showAllOnFocus: false,
         fetchAllFunction: null,
+        readOnly: !_isEditable,
         searchFunction: (bloc, q) {
           if (q.trim().isEmpty) return;
           bloc.add(LoadStkAccountsEvent(query: q));
@@ -206,11 +241,6 @@ class CashTxnFormState extends State<CashTxnForm> {
         onSelected: (a) {
           setState(() {
             _acc = a;
-
-            // Currency rule:
-            //   • Stakeholder (cat 8) → use the account's own currency
-            //     (unless editableCurrency, in which case keep caller's value)
-            //   • Any other category   → always base currency.
             final isStakeholder = a.accCategory == _stakeholderCategory;
             if (!isStakeholder) {
               _ccy = widget.baseCurrency;
@@ -219,20 +249,16 @@ class CashTxnFormState extends State<CashTxnForm> {
             }
           });
 
-          // Defer focus jump so the overlay's tap handler finishes first.
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) _amountFocus.requestFocus();
           });
         },
-        validator: (v) => (_acc == null) ? 'Required' : null,
+        validator: (v) =>
+        (_acc == null && widget.initialDraft?.trdAccount == null)
+            ? 'Required'
+            : null,
       );
 
-  // ── Filter rules ────────────────────────────────────────────────
-  //   1. Category — required unless spec says 'all'.
-  //   2. Account-number excludes.
-  //   3. Currency — only when restrictToBaseCurrency is true AND the
-  //      account actually has a currency. `null` currency = treat as base
-  //      (GL/INCM/XPNS may not have an accountDetails row yet).
   List<StakeholderAccount> _filterAccounts(List<StakeholderAccount> all) {
     final includeRaw = widget.spec.accountInclude.trim();
     final includeAll =
@@ -253,13 +279,10 @@ class CashTxnFormState extends State<CashTxnForm> {
         .toSet();
 
     return all.where((a) {
-      // 1) Category.
       if (include.isNotEmpty && !include.contains(a.accCategory)) {
         return false;
       }
-      // 2) Excludes.
       if (exclude.contains(a.accNumber.toString())) return false;
-      // 3) Currency — null counts as base.
       if (widget.spec.restrictToBaseCurrency &&
           widget.baseCurrency.isNotEmpty &&
           a.accCurrency != null &&
@@ -270,11 +293,11 @@ class CashTxnFormState extends State<CashTxnForm> {
     }).toList();
   }
 
-  // ── Amount ─────────────────────────────────────────────────────
   Widget _buildAmountField() => ZTextFieldEntitled(
     controller: _amountCtrl,
-    title: 'Amount',
+    title: AppLocalizations.of(context)!.amount,
     isRequired: true,
+    isEnabled: _isEditable,
     focusNode: _amountFocus,
     textInputAction: TextInputAction.none,
     onFieldSubmitted: (_) => _narrationFocus.requestFocus(),
@@ -283,44 +306,47 @@ class CashTxnFormState extends State<CashTxnForm> {
       FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
     ],
     validator: (v) {
+      if (!_isEditable) return null;
       final n = double.tryParse((v ?? '').replaceAll(',', ''));
       if (n == null || n <= 0) return 'Must be greater than zero';
       return null;
     },
   );
 
-  // ── Narration ──────────────────────────────────────────────────
   Widget _buildNarrationField() => ZTextFieldEntitled(
     controller: _narrationCtrl,
-    title: 'Narration',
+    title: AppLocalizations.of(context)!.narration,
+    isEnabled: _isEditable,
     focusNode: _narrationFocus,
     textInputAction: TextInputAction.none,
     onFieldSubmitted: (_) => submit(),
     keyboardType: TextInputType.multiline,
     validator: (v) =>
-    (v == null || v.trim().isEmpty) ? 'Required' : null,
+    (!_isEditable || (v != null && v.trim().isNotEmpty))
+        ? null
+        : 'Required',
   );
 
-  // ── Toggles ────────────────────────────────────────────────────
   Widget _buildToggles() => Row(
     spacing: 12,
     children: [
-      if (widget.spec.allowReminder)
+      if (widget.spec.allowReminder && _isEditable)
         _Check(
-          label: 'Set reminder',
+          label: AppLocalizations.of(context)!.setReminder,
           value: _reminder,
           onChanged: (v) => setState(() => _reminder = v),
         ),
-      _Check(
-        label: 'Print',
-        value: _print,
-        onChanged: (v) => setState(() => _print = v),
-      ),
+      if (_isEditable)
+        _Check(
+          label: AppLocalizations.of(context)!.print,
+          value: _print,
+          onChanged: (v) => setState(() => _print = v),
+        ),
     ],
   );
 
   Widget _buildReminderPicker() => ZDatePicker(
-    label: 'Due date',
+    label: AppLocalizations.of(context)!.dueDate,
     disablePastDate: true,
     value: _reminderDate?.toIso8601String(),
     onDateChanged: (v) =>
@@ -329,7 +355,7 @@ class CashTxnFormState extends State<CashTxnForm> {
 }
 
 // ═════════════════════════════════════════════════════════════════
-// Dialog
+// DIALOG
 // ═════════════════════════════════════════════════════════════════
 
 Future<bool?> showCashTxnDialog(
@@ -337,16 +363,31 @@ Future<bool?> showCashTxnDialog(
       required CashTxnSpec spec,
       required String usrName,
       required String baseCurrency,
+      String? reference,
     }) {
   return showDialog<bool>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => BlocProvider(
-      create: (ctx) => CashTxnBloc(ctx.read<Repositories>()),
+    builder: (_) => MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (ctx) {
+            final bloc = CashTxnBloc(ctx.read<Repositories>());
+            if (reference != null && reference.isNotEmpty) {
+              bloc.add(CashTxnLoadRequested(reference));
+            }
+            return bloc;
+          },
+        ),
+        BlocProvider<TransactionsBloc>.value(
+          value: context.read<TransactionsBloc>(),
+        ),
+      ],
       child: _CashTxnDialog(
         spec: spec,
         usrName: usrName,
         baseCurrency: baseCurrency,
+        reference: reference,
       ),
     ),
   );
@@ -356,57 +397,342 @@ class _CashTxnDialog extends StatelessWidget {
   final CashTxnSpec spec;
   final String usrName;
   final String baseCurrency;
+  final String? reference;
 
   const _CashTxnDialog({
     required this.spec,
     required this.usrName,
     required this.baseCurrency,
+    this.reference,
   });
+
+  bool get _isEditing => reference != null && reference!.isNotEmpty;
+
+  String? _loginName(BuildContext context) {
+    final auth = context.read<AuthBloc>().state;
+    return auth is AuthenticatedState ? auth.loginData.usrName : null;
+  }
+
+  void _dispatchAuthorize(BuildContext context) {
+    final ref = reference;
+    if (ref == null || ref.isEmpty) return;
+    context.read<TransactionsBloc>().add(
+      AuthorizeTransactionEvent(
+        reference: ref,
+        userName: _loginName(context),
+      ),
+    );
+  }
+
+  void _dispatchUnauthorize(BuildContext context) {
+    final ref = reference;
+    if (ref == null || ref.isEmpty) return;
+    context.read<TransactionsBloc>().add(
+      UnauthorizeTransactionEvent(
+        reference: ref,
+        userName: _loginName(context),
+      ),
+    );
+  }
+
+  void _dispatchReverse(BuildContext context) {
+    final ref = reference;
+    if (ref == null || ref.isEmpty) return;
+    context.read<TransactionsBloc>().add(
+      ReverseTransactionEvent(
+        reference: ref,
+        userName: _loginName(context),
+      ),
+    );
+  }
+
+  Future<void> _dispatchDelete(BuildContext context) async {
+    final ref = reference;
+    if (ref == null || ref.isEmpty) return;
+
+    final tr = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: Text(tr.delete),
+        content: Text(
+          'Delete transaction $ref?\n\nThis cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: Text(tr.cancel),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            child: Text(tr.delete),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    if (!context.mounted) return;
+
+    context.read<TransactionsBloc>().add(
+      DeleteTransactionEvent(
+        reference: ref,
+        userName: _loginName(context),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final formKey = GlobalKey<CashTxnFormState>();
 
-    return BlocConsumer<CashTxnBloc, CashTxnState>(
-      listener: (context, state) {
-        if (state is CashTxnSuccess) {
-          Navigator.of(context).pop(true);
-        } else if (state is CashTxnFailure) {
-          ToastManager.show(
-            context: context,
-            title: 'Failed',
-            message: state.message,
-            type: ToastType.error,
-          );
-        }
-      },
-      builder: (context, state) {
-        final busy = state is CashTxnSubmitting;
+    return MultiBlocListener(
+      listeners: [
+        // ── Cash bloc: save / load-for-edit result ─────────────────
+        BlocListener<CashTxnBloc, CashTxnState>(
+          listener: (context, state) {
+            if (state is CashTxnSuccess) {
+              ToastManager.show(
+                context: context,
+                title: 'Saved',
+                message: 'Transaction saved.',
+                type: ToastType.success,
+              );
+              Navigator.of(context).pop(true);
+            }
+            // Failures render as the inline banner, not a toast —
+            // keeps the dialog open so the user can retry.
+          },
+        ),
 
-        return ZFormDialog(
-          width: 600,
-          icon: spec.icon,
-          title: spec.title(context),
-          actionLabel: busy
-              ? const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 3),
-          )
-              : const Text('Create'),
-          onAction: busy ? null : () => formKey.currentState?.submit(),
-          child: CashTxnForm(
-            formKey: formKey,
-            spec: spec,
-            usrName: usrName,
-            baseCurrency: baseCurrency,
-            onSubmit: (draft) =>
-                context.read<CashTxnBloc>().add(CashTxnCreateRequested(draft)),
-          ),
-        );
-      },
+        // ── Transactions bloc: row actions (auth / unauth / reverse / delete) ──
+        // FIX #4 — after every successful action, reload the transaction
+        // so `stateText` (and therefore the footer buttons) updates without
+        // requiring the user to close and reopen the dialog.
+        BlocListener<TransactionsBloc, TransactionsState>(
+          listenWhen: (prev, next) =>
+          next is TransactionsLoadedState &&
+              (next.actionSuccess != null || next.actionError != null),
+          listener: (context, state) {
+            if (state is! TransactionsLoadedState) return;
+
+            final success = state.actionSuccess;
+            if (success != null) {
+              ToastManager.show(
+                context: context,
+                title: 'Success',
+                message: success,
+                type: ToastType.success,
+              );
+              context
+                  .read<TransactionsBloc>()
+                  .add(const ClearRowActionSuccessEvent());
+
+              final ref = reference;
+              if (ref != null && ref.isNotEmpty) {
+                // If it was a delete, the txn is gone — close the dialog.
+                if (success.toLowerCase().contains('deleted')) {
+                  Navigator.of(context).pop(true);
+                  return;
+                }
+                // Otherwise reload so the stateText and the footer refresh.
+                context.read<CashTxnBloc>().add(CashTxnLoadRequested(ref));
+              }
+            }
+
+            final error = state.actionError;
+            if (error != null) {
+              ToastManager.show(
+                context: context,
+                title: 'Failed',
+                message: error,
+                type: ToastType.error,
+              );
+              context
+                  .read<TransactionsBloc>()
+                  .add(const ClearRowActionErrorEvent());
+            }
+          },
+        ),
+      ],
+      child: BlocBuilder<CashTxnBloc, CashTxnState>(
+        builder: (context, state) {
+          final busy = state is CashTxnSubmitting;
+          final loaded = state is CashTxnLoadedForEdit ? state : null;
+
+          final stateText = loaded?.stateText;
+          final isPending = stateText == null || stateText == 'Pending';
+          final isAuthorized = stateText == 'Authorized';
+
+          final loginName = _loginName(context);
+          final isMaker = loaded == null ||
+              (loaded.makerName != null &&
+                  loginName != null &&
+                  loaded.makerName == loginName);
+
+          final initial = loaded?.draft;
+          final isEditing = _isEditing;
+
+          // ── Loading gate ────────────────────────────────────────
+          if (isEditing && loaded == null && state is! CashTxnFailure) {
+            return ZFormDialog(
+              width: 600,
+              icon: spec.icon,
+              title: '${spec.title(context)} · $reference',
+              isActionTrue: false,
+              onAction: null,
+              child: const SizedBox(
+                height: 220,                                     // FIX #3
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            );
+          }
+
+          return ZFormDialog(
+            width: 600,
+            icon: spec.icon,
+            title: isEditing
+                ? '${spec.title(context)} · $reference'
+                : spec.title(context),
+            isActionTrue: false,
+            onAction: null,
+            child: ConstrainedBox(                              // FIX #3
+              constraints: const BoxConstraints(maxHeight: 520),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Inline error banner ───────────────────────
+                  if (state is CashTxnFailure && state.message.isNotEmpty)
+                    _banner(state.message,
+                        Theme.of(context).colorScheme.error),
+
+                  // ── Form ──────────────────────────────────────
+                  Flexible(                                     // FIX #3
+                    child: CashTxnForm(
+                      key: ValueKey(reference ?? 'new'),
+                      formKey: formKey,
+                      spec: spec,
+                      usrName: usrName,
+                      baseCurrency: baseCurrency,
+                      initialDraft: initial,
+                      stateText: stateText,
+                      onSubmit: (draft) {
+                        if (isEditing) {
+                          context
+                              .read<CashTxnBloc>()
+                              .add(CashTxnUpdateRequested(draft));
+                        } else {
+                          context
+                              .read<CashTxnBloc>()
+                              .add(CashTxnCreateRequested(draft));
+                        }
+                      },
+                    ),
+                  ),
+
+                  // ── Footer with ZOutlineButton (FIX #2) ───────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ZOutlineButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          label: Text(AppLocalizations.of(context)!.cancel),
+                        ),
+
+                        // Pending + maker → Delete · Authorize · Update
+                        if (isEditing &&
+                            isPending &&
+                            isMaker &&
+                            !busy) ...[
+                          ZOutlineButton(
+                            onPressed: () => _dispatchDelete(context),
+                            backgroundHover:
+                            Theme.of(context).colorScheme.error,
+                            icon: Icons.delete_outline_rounded,
+                            label:
+                            Text(AppLocalizations.of(context)!.delete),
+                          ),
+                          ZOutlineButton(
+                            isActive: true,
+                            onPressed: () => _dispatchAuthorize(context),
+                            icon: Icons.check_circle_outline_rounded,
+                            label: Text(AppLocalizations.of(context)!.authorize),
+                          ),
+                          ZOutlineButton(
+                            isActive: true,
+                            onPressed: () =>
+                                formKey.currentState?.submit(),
+                            icon: Icons.save_alt_rounded,
+                            label: Text(AppLocalizations.of(context)!.update),
+                          ),
+                        ],
+
+                        // Authorized → Unauthorize · Reverse
+                        if (isEditing && isAuthorized && !busy) ...[
+                          ZOutlineButton(
+                            onPressed: () =>
+                                _dispatchUnauthorize(context),
+                            icon: Icons.undo_rounded,
+                            label: Text(AppLocalizations.of(context)!.unauthorize),
+                          ),
+                          ZOutlineButton(
+                            onPressed: () => _dispatchReverse(context),
+                            icon: Icons.replay_rounded,
+                            label: Text(AppLocalizations.of(context)!.reverse),
+                          ),
+                        ],
+
+                        // Create mode → Save
+                        if (!isEditing)
+                          ZOutlineButton(
+                            isActive: true,
+                            onPressed: busy
+                                ? null
+                                : () => formKey.currentState?.submit(),
+                            icon: Icons.save_alt_rounded,
+                            label:
+                            Text(AppLocalizations.of(context)!.save),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
+
+  Widget _banner(String text, Color color) => Container(
+    width: double.infinity,
+    margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: .08),
+      borderRadius: BorderRadius.circular(4),
+      border: Border.all(color: color.withValues(alpha: .3)),
+    ),
+    child: Row(
+      children: [
+        Icon(Icons.warning_amber_rounded, color: color, size: 16),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(text,
+              style: TextStyle(color: color, fontSize: 12)),
+        ),
+      ],
+    ),
+  );
 }
 
 // ── Shared widgets ──────────────────────────────────────────────
@@ -437,9 +763,6 @@ class _Check extends StatelessWidget {
 
 class _AccountDetailsCard extends StatelessWidget {
   final StakeholderAccount account;
-
-  /// Effective currency to display when the account has no currency of
-  /// its own. Always base currency for GL / INCM / XPNS accounts.
   final String fallbackCurrency;
 
   const _AccountDetailsCard({
@@ -476,8 +799,6 @@ class _AccountDetailsCard extends StatelessWidget {
 
     final isStakeholder = account.accCategory == _stakeholderCategory;
     final status = account.accStatus;
-
-    // Effective currency the transaction will actually use.
     final effectiveCcy = account.accCurrency ??
         (fallbackCurrency.isEmpty ? '' : fallbackCurrency);
 
@@ -496,10 +817,8 @@ class _AccountDetailsCard extends StatelessWidget {
           const Divider(),
           row('Account number', account.accNumber?.toString() ?? ''),
           row('Account name', account.accName ?? ''),
-          row('Currency', effectiveCcy),
-          // Status only exists for stakeholder accounts.
-          if (isStakeholder && status != null)
-            row('Status', status == 1 ? 'Active' : 'Blocked'),
+          row('Balance', "${account.accBalance.toAmount()} $effectiveCcy"),
+          if (isStakeholder && status != null) row('Status', status == 1 ? 'Active' : 'Blocked'),
         ],
       ),
     );

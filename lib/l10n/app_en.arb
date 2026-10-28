@@ -243,5 +243,14 @@
         "type": "int"
       }
     }
-  }
+  },
+  "authorize": "Authorize",
+  "reverse": "Reverse",
+  "print": "Print",
+  "unauthorize": "Unauthorize",
+  "setReminder": "Set reminder",
+  "sameAccount": "Same account transfer is not allowed.",
+  "currencyMismatch": "Currency doesn't match, both must same currency",
+  "debitAccount": "Debit Account",
+  "creditAccount": "Credit Account"
 }

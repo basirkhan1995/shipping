@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shipping/Features/Widgets/extensions.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/model/stk_model.dart';
 import 'package:shipping/l10n/app_localizations.dart';
@@ -486,7 +487,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                   onPressed: _dispatchAuthorize,
                   icon: Icons.check_circle_outline_rounded,
                   isActive: true,
-                  label: const Text('Authorize'),
+                  label: Text(AppLocalizations.of(context)!.authorize),
                 ),
               ],
 
@@ -495,12 +496,12 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                 ZOutlineButton(
                   onPressed: _dispatchUnauthorize,
                   icon: Icons.undo_rounded,
-                  label: const Text('Unauthorize'),
+                  label: Text(AppLocalizations.of(context)!.unauthorize),
                 ),
                 ZOutlineButton(
                   onPressed: _dispatchReverse,
                   icon: Icons.replay_rounded,
-                  label: const Text('Reverse'),
+                  label: Text(AppLocalizations.of(context)!.reverse),
                 ),
               ],
 
@@ -517,7 +518,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                       : Text(state.isEditing
-                      ? 'Update'
+                      ? AppLocalizations.of(context)!.update
                       : AppLocalizations.of(context)!.save),
                 ),
             ],
@@ -699,8 +700,7 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
 
           Expanded(
             flex: 3,
-            child: GenericTextField<StakeholderAccount, StkAccountsBloc,
-                StkAccountsState>(
+            child: GenericTextField<StakeholderAccount, StkAccountsBloc, StkAccountsState>(
               controller: c.account,
               title: '',
               hintText: AppLocalizations.of(context)!.accNameOrNumber,
@@ -708,43 +708,64 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
               bloc: context.read<StkAccountsBloc>(),
               focusNode: c.accountFocus,
               textInputAction: TextInputAction.none,
-              showAllOnFocus: false,
-              fetchAllFunction: null,
+
+              showAllOnFocus: true,
+              fetchAllFunction: (bloc) => bloc.add(const LoadStkAccountsEvent()),
+
               searchFunction: (bloc, q) {
                 if (q.trim().isEmpty) return;
                 bloc.add(LoadStkAccountsEvent(query: q));
               },
-              itemBuilder: (context, account) => Padding(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${account.accName ?? ''} · ${account.accNumber}',
-                        style: const TextStyle(fontSize: 13),
+              itemBuilder: (context, account) {
+                // GL accounts have no accCurrency → they inherit the header currency.
+                // Stakeholder accounts keep their own accCurrency.
+                final isStakeholder = account.accCategory == 8;
+                final effectiveCcy = account.accCurrency ??
+                    (isStakeholder ? '' : widget.headerCurrency);
+                final matchesHeader =
+                    effectiveCcy.isNotEmpty && effectiveCcy == widget.headerCurrency;
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${account.accNumber} · ${account.accName ?? ''}',
+                          style: const TextStyle(fontSize: 13),
+                        ),
                       ),
-                    ),
-                    Text(
-                      account.accCurrency ?? '',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: account.accCurrency == widget.headerCurrency
-                            ? color.primary
-                            : color.error,
-                        fontWeight: FontWeight.w600,
+                      Row(
+                        spacing: 5,
+                        children: [
+                          Text(account.accBalance.toAmount()),
+                          Text(
+                            effectiveCcy,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: matchesHeader ? color.primary : color.error,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              ),
+                    ],
+                  ),
+                );
+              },
               itemToString: (a) => '${a.accNumber} | ${a.accName}',
+
+              // ✅ NO category filter — return every account from the bloc's state.
               stateToItems: (s) {
                 if (s is! StkAccountsLoadedState) {
                   return const <StakeholderAccount>[];
                 }
+
+                // Accounts that must never appear in the bulk transfer picker.
+                const excluded = <int>{10101011};
+
                 return s.accounts
-                    .where((a) => a.accCategory == 8)
+                    .where((a) => !excluded.contains(a.accNumber))
                     .toList();
               },
               stateToLoading: (s) => s is StkAccountsLoadingState,

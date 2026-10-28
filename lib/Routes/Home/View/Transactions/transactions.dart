@@ -19,6 +19,7 @@ import '../../../Auth/model/user_model.dart';
 import '../Settings/View/Company/CompanyProfile/bloc/company_profile_bloc.dart';
 import 'View/Bulk/bulk.dart';
 import 'View/CashWD/cash_wd.dart';
+import 'View/FundTransfer/fund_transfer.dart';
 import 'bloc/transactions_bloc.dart';
 import 'model/trn_model.dart';
 
@@ -115,21 +116,11 @@ class _DesktopViewState extends State<_DesktopView> {
           icon: Icons.swap_horiz_rounded,
           permission: 25,
         ),
-      ],
-    ),
-    _ActionGroup(
-      titleKey: 'bulk',
-      buttons: [
         _ActionButtonSpec(
           code: 'BULK',
           icon: Icons.dynamic_feed_outlined,
           permission: 26,
         ),
-      ],
-    ),
-    _ActionGroup(
-      titleKey: 'exchange',
-      buttons: [
         _ActionButtonSpec(
           code: 'CRFX',
           icon: Icons.currency_exchange_rounded,
@@ -137,6 +128,7 @@ class _DesktopViewState extends State<_DesktopView> {
         ),
       ],
     ),
+
   ];
 
   final _searchCtrl = TextEditingController();
@@ -230,7 +222,7 @@ class _DesktopViewState extends State<_DesktopView> {
           typeCode: 'CHDP',
           icon: Icons.arrow_downward_rounded,
           title: (_) => tr.cashDeposit,
-          accountInclude: 'all',
+          accountInclude: '8',
           allowReminder: true,
         );
       case 'CHWL':
@@ -238,7 +230,7 @@ class _DesktopViewState extends State<_DesktopView> {
           typeCode: 'CHWL',
           icon: Icons.arrow_upward_rounded,
           title: (_) => tr.cashWithdraw,
-          accountInclude: 'all',
+          accountInclude: '8',
           allowReminder: true,
         );
       case 'INCM':
@@ -351,20 +343,98 @@ class _DesktopViewState extends State<_DesktopView> {
     );
   }
 
-  /// Open the bulk dialog for any ATAT / BULK row — regardless of status.
-  /// The dialog itself gates edit / delete / authorize / unauthorize
-  /// on both the transaction's current state AND the caller being the maker.
+  // ── Open the cash dialog in edit / view mode ──────────────────
+  Future<void> _openCashDialogForEdit({
+    required String typeCode,
+    required String reference,
+  }) async {
+    final auth = context.read<AuthBloc>().state;
+    if (auth is! AuthenticatedState) return;
+
+    final saved = await showCashTxnDialog(
+      context,
+      spec: _cashSpecFor(typeCode),          // reuse the existing spec factory
+      usrName: auth.loginData.usrName ?? '',
+      baseCurrency: _baseCurrency(),
+      reference: reference,                   // ← edit / view mode
+    );
+
+    if (!mounted) return;
+    if (saved == true) {
+      _reload();
+      final tr = AppLocalizations.of(context)!;
+      ToastManager.show(
+        context: context,
+        title: tr.save,
+        message: _buttonLabel(tr, typeCode),
+        type: ToastType.success,
+      );
+    }
+  }
+  // ── Open the single account→account fund-transfer dialog ────────
+  Future<void> _openFundTransferDialog({String? reference}) async {
+    final auth = context.read<AuthBloc>().state;
+    if (auth is! AuthenticatedState) return;
+
+    final saved = await showFundTransferDialog(
+      context,
+      usrName: auth.loginData.usrName ?? '',
+      baseCurrency: _baseCurrency(),
+      reference: reference, // null → create, non-null → edit/view
+    );
+
+    if (!mounted) return;
+    if (saved == true) {
+      _reload();
+      final tr = AppLocalizations.of(context)!;
+      ToastManager.show(
+        context: context,
+        title: tr.save,
+        message: reference != null
+            ? 'Fund transfer updated'
+            : 'Fund transfer created',
+        type: ToastType.success,
+      );
+    }
+  }
+  /// Open the correct dialog for the tapped row:
+  ///   • ATAT / BULK        → bulk dialog
+  ///   • CHDP/CHWL/INCM/XPNS/GLDR/GLCR → cash dialog
+  ///   • CRFX               → not built yet — no-op
+  ///
+  /// Both dialogs internally gate edit / delete / authorize / unauthorize
+  /// on (a) the transaction's current state and (b) the caller being the
+  /// maker. So the row tap can be status-agnostic — always open, let the
+  /// dialog decide what's allowed.
   Future<void> _onRowTapped(TransactionListItem row) async {
     final type = row.typeCode.toUpperCase();
-    final isBulkType = type == 'ATAT' || type == 'BULK';
 
-    if (!isBulkType) {
-      // Cash / GL / FX rows: no bulk dialog for these — their own
-      // edit flows (or read-only detail screens) would go here.
-      return;
+    switch (type) {
+      case 'ATAT':
+        await _openFundTransferDialog(reference: row.reference);
+        break;
+      case 'BULK':
+        await _openBulkDialog(reference: row.reference);
+        break;
+
+      case 'CHDP':
+      case 'CHWL':
+      case 'INCM':
+      case 'XPNS':
+      case 'GLDR':
+      case 'GLCR':
+        await _openCashDialogForEdit(
+          typeCode: type,
+          reference: row.reference,
+        );
+        break;
+
+      case 'CRFX':
+      default:
+      // No edit / view dialog for FX yet.
+      // Optionally show a "Coming soon" toast.
+        break;
     }
-
-    await _openBulkDialog(reference: row.reference);
   }
 
   void _onActionTapped(_ActionButtonSpec spec) {
@@ -394,6 +464,8 @@ class _DesktopViewState extends State<_DesktopView> {
         break;
 
       case 'ATAT':
+        _openFundTransferDialog();
+        break;
       case 'BULK':
         _openBulkDialog();
         break;

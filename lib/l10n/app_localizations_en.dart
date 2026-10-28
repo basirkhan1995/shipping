@@ -712,4 +712,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get editBulkTransfer => 'Edit Bulk Transfer';
+
+  @override
+  String get authorize => 'Authorize';
+
+  @override
+  String get reverse => 'Reverse';
+
+  @override
+  String get print => 'Print';
+
+  @override
+  String get unauthorize => 'Unauthorize';
+
+  @override
+  String get setReminder => 'Set reminder';
+
+  @override
+  String get sameAccount => 'Same account transfer is not allowed.';
+
+  @override
+  String get currencyMismatch =>
+      'Currency doesn\'t match, both must same currency';
+
+  @override
+  String get debitAccount => 'Debit Account';
+
+  @override
+  String get creditAccount => 'Credit Account';
 }

@@ -29,3 +29,11 @@ class CashTxnUpdateRequested extends CashTxnEvent {
 class CashTxnReset extends CashTxnEvent {
   const CashTxnReset();
 }
+
+/// Load an existing cash transaction for edit / view.
+class CashTxnLoadRequested extends CashTxnEvent {
+  final String reference;
+  const CashTxnLoadRequested(this.reference);
+  @override
+  List<Object?> get props => [reference];
+}

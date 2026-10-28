@@ -195,8 +195,8 @@
   "proceed": "اقدام کردن",
   "retainedEarnings": "انباشته ګټه",
   "remark": "څرګندونې",
-  "debit": "بدهکار",
-  "credit": "طلبکار",
+  "debit": "دبت",
+  "credit": "کریدت",
   "total": "ټولټال",
   "attention": "توجه",
   "plMessage": "ګټه او تاوان وتړل شي او انباشته ګټې ته ولېږدول شي؟",
@@ -243,5 +243,14 @@
         "type": "int"
       }
     }
-  }
+  },
+  "authorize": "تایید کول",
+  "reverse": "برگشتاندن",
+  "print": "چاپ",
+  "unauthorize": "از تایید کشیدن",
+  "setReminder": "تعیین یادآوری",
+  "sameAccount": "انتقال بین حساب خود مجاز نیست",
+  "currencyMismatch": "ارز حساب یکسان نیست، هر دو حساب باید ارز یکسان باشد",
+  "debitAccount": "حساب دبت",
+  "creditAccount": "حساب کریدت"
 }

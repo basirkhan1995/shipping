@@ -195,8 +195,8 @@
   "proceed": "اقدام کردن",
   "retainedEarnings": "سود انباشته",
   "remark": "ملاحظه",
-  "debit": "بدهکار",
-  "credit": "طلبکار",
+  "debit": "دبت",
+  "credit": "کریدت",
   "total": "مجموع",
   "attention": "توجه",
   "plMessage": "سود و زیان بسته و به سود انباشته منتقل شود؟",
@@ -243,5 +243,14 @@
         "type": "int"
       }
     }
-  }
+  },
+  "authorize": "تایید کردن",
+  "reverse": "برگشتاندن",
+  "print": "چاپ",
+  "unauthorize": "از تایید کشیدن",
+  "setReminder": "تعیین یادآوری",
+  "sameAccount": "انتقال بین حساب خود مجاز نیست",
+  "currencyMismatch": "ارز حساب یکسان نیست، هر دو حساب باید ارز یکسان باشد",
+  "debitAccount": "حساب دبت",
+  "creditAccount": "حساب کریدت"
 }
