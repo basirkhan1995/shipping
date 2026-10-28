@@ -670,9 +670,31 @@ class _AccountsSection extends StatelessWidget {
               const Spacer(),
               ZOutlineButton(
                 onPressed: onAdd,
+                height: 45,
+                icon: Icons.arrow_downward_rounded,
+                label: Text(AppLocalizations.of(context)!.cashWithdraw),
+              ),
+              SizedBox(width: 5),
+              ZOutlineButton(
+                onPressed: onAdd,
+                height: 45,
+                icon: Icons.arrow_upward_rounded,
+                label: Text(AppLocalizations.of(context)!.cashDeposit),
+              ),
+              SizedBox(width: 5),
+              ZOutlineButton(
+                onPressed: onAdd,
+                height: 45,
+                icon: Icons.swap_horiz_rounded,
+                label: Text(AppLocalizations.of(context)!.fundTransfer),
+              ),
+              SizedBox(width: 5),
+              ZOutlineButton(
+                onPressed: onAdd,
                 icon: Icons.add,
+                height: 45,
                 isActive: true,
-                label: const Text('Add account'),
+                label: Text(AppLocalizations.of(context)!.addAccount),
               ),
             ],
           ),
@@ -1002,7 +1024,7 @@ class _RecentTxnRow extends StatelessWidget {
               children: [
                 Text(
                   tx.accountName ?? '—',
-                  textAlign: TextAlign.right,
+                  textAlign: TextAlign.start,
                   style: textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     fontSize: 11,
@@ -1014,7 +1036,7 @@ class _RecentTxnRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   tx.account?.toString() ?? '—',
-                  textAlign: TextAlign.right,
+                  textAlign: TextAlign.start,
                   style: textTheme.labelSmall?.copyWith(
                     fontSize: 10,
                     fontFamily: 'monospace',
@@ -1165,7 +1187,7 @@ class _TxnStatusPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        tx.statusText ?? (isAuth ? 'Authorized' : 'Pending'),
+        tx.statusText ?? (isAuth ? AppLocalizations.of(context)!.authorized : AppLocalizations.of(context)!.pending),
         style: TextStyle(
           fontSize: 9,
           fontWeight: FontWeight.w700,
@@ -1240,7 +1262,7 @@ class _BankCard extends StatelessWidget {
     final isActive = account.accStatus == 1;
     final name = (account.accName?.isNotEmpty ?? false)
         ? account.accName!
-        : 'Account';
+        : AppLocalizations.of(context)!.account;
     final currency = account.accCurrency ?? '—';
     final accountNumber = account.accNumber?.toString() ?? '—';
 
@@ -1457,7 +1479,8 @@ class _BalancePositionBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (label, bg, fg) = _resolve(balance);
+    final tr = AppLocalizations.of(context)!;
+    final (label, bg, fg) = _resolve(balance,tr: tr);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -1477,23 +1500,23 @@ class _BalancePositionBadge extends StatelessWidget {
     );
   }
 
-  (String, Color, Color) _resolve(double balance) {
+  (String, Color, Color) _resolve(double balance,{AppLocalizations? tr}) {
     if (balance < 0) {
       return (
-      'DEBTOR',
+      tr!.debitor.toUpperCase(),
       const Color(0xFFEF4444).withValues(alpha: .18),
       const Color(0xFFFECACA),
       );
     }
     if (balance > 0) {
       return (
-      'CREDITOR',
+      tr!.creditor.toUpperCase(),
       const Color(0xFF22C55E).withValues(alpha: .18),
       const Color(0xFFBBF7D0),
       );
     }
     return (
-    'NO BALANCE',
+    tr!.noBalance.toUpperCase(),
     Colors.white.withValues(alpha: .18),
     Colors.white.withValues(alpha: .85),
     );
@@ -1513,6 +1536,7 @@ class _BankCardMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context)!;
     return PopupMenuButton<String>(
       tooltip: 'Account actions',
       padding: EdgeInsets.zero,
@@ -1538,25 +1562,25 @@ class _BankCardMenu extends StatelessWidget {
         }
       },
       itemBuilder: (_) => [
-        const PopupMenuItem(
+          PopupMenuItem(
           value: 'statement',
           height: 40,
           child: Row(
             children: [
               Icon(Icons.receipt_long_outlined, size: 16),
               SizedBox(width: 10),
-              Text('Statement', style: TextStyle(fontSize: 13)),
+              Text(tr.statement, style: TextStyle(fontSize: 13)),
             ],
           ),
         ),
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'edit',
           height: 40,
           child: Row(
             children: [
               Icon(Icons.edit_outlined, size: 16),
               SizedBox(width: 10),
-              Text('Edit', style: TextStyle(fontSize: 13)),
+              Text(tr.edit, style: TextStyle(fontSize: 13)),
             ],
           ),
         ),
@@ -1580,7 +1604,7 @@ class _DeleteItem extends StatelessWidget {
       children: [
         Icon(Icons.delete_outline, size: 16, color: error),
         const SizedBox(width: 10),
-        Text('Delete', style: TextStyle(fontSize: 13, color: error)),
+        Text(AppLocalizations.of(context)!.delete, style: TextStyle(fontSize: 13, color: error)),
       ],
     );
   }

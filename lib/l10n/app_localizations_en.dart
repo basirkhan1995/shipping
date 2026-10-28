@@ -765,4 +765,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nationalId => 'National ID';
+
+  @override
+  String get debitor => 'Debitor';
+
+  @override
+  String get creditor => 'Creditor';
+
+  @override
+  String get noBalance => 'No Balance';
+
+  @override
+  String get statement => 'Statement';
+
+  @override
+  String get addAccount => 'Add Account';
 }

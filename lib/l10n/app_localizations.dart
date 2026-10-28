@@ -1587,6 +1587,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'National ID'**
   String get nationalId;
+
+  /// No description provided for @debitor.
+  ///
+  /// In en, this message translates to:
+  /// **'Debitor'**
+  String get debitor;
+
+  /// No description provided for @creditor.
+  ///
+  /// In en, this message translates to:
+  /// **'Creditor'**
+  String get creditor;
+
+  /// No description provided for @noBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'No Balance'**
+  String get noBalance;
+
+  /// No description provided for @statement.
+  ///
+  /// In en, this message translates to:
+  /// **'Statement'**
+  String get statement;
+
+  /// No description provided for @addAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Account'**
+  String get addAccount;
 }
 
 class _AppLocalizationsDelegate

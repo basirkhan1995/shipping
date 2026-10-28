@@ -260,5 +260,10 @@
   "recentTransactions": "Recent Transactions",
   "gender": "Gender",
   "dob": "Date of birth",
-  "nationalId": "National ID"
+  "nationalId": "National ID",
+  "debitor": "Debitor",
+  "creditor": "Creditor",
+  "noBalance": "No Balance",
+  "statement": "Statement",
+  "addAccount": "Add Account"
 }

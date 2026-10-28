@@ -376,7 +376,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get accountName => 'نام حساب';
 
   @override
-  String get edit => 'بروزرسانی';
+  String get edit => 'ویرایش';
 
   @override
   String get subCategory => 'بخش فرعی';
@@ -764,4 +764,19 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get nationalId => 'تذکره';
+
+  @override
+  String get debitor => 'بدهکار';
+
+  @override
+  String get creditor => 'طلبکار';
+
+  @override
+  String get noBalance => 'بی حساب';
+
+  @override
+  String get statement => 'صورتحساب';
+
+  @override
+  String get addAccount => 'حساب جدید';
 }

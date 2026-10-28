@@ -125,7 +125,7 @@
   "noDataFound": "هیچ اطلاعات یافت نشد",
   "accountNumber": "حساب شمیره",
   "accountName": "حساب نوم",
-  "edit": "بروزرسانی",
+  "edit": "ویرایش",
   "subCategory": "فرعی بخش",
   "glAccount": "حساب های سیستم",
   "areYouSure": "آیا مطمئین هستید؟",
@@ -260,5 +260,10 @@
   "recentTransactions": "آخرین معاملات",
   "gender": "جنسیت",
   "dob": "تاریخ تولد",
-  "nationalId": "تذکره"
+  "nationalId": "تذکره",
+  "debitor": "بدهکار",
+  "creditor": "طلبکار",
+  "noBalance": "بی حساب",
+  "statement": "صورتحساب",
+  "addAccount": "نوی حساب"
 }
