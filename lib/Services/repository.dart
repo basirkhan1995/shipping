@@ -13,6 +13,7 @@ import '../Routes/Home/View/Settings/View/Company/Branches/model/branch_model.da
 import '../Routes/Home/View/Settings/View/Company/CompanyProfile/model/com_model.dart';
 import '../Routes/Home/View/Settings/View/Company/Storage/model/storage_model.dart';
 import '../Routes/Home/View/Stakeholder/model/stk_model.dart';
+import '../Routes/Home/View/Transactions/View/Exchange/model/ex_model.dart';
 import '../Routes/Home/View/Transactions/View/FundTransfer/model/ft_model.dart';
 import '../Routes/Home/View/Transactions/model/trn_model.dart';
 import 'api_exception.dart';
@@ -1392,6 +1393,136 @@ class Repositories {
               ? 'Failed to delete fund transfer'
               : msg),
     );
+  }
+
+  Future<ExchangeDetail> getExchangeByReference({
+    required String reference,
+    CancelToken? cancelToken,
+  }) async {
+    final res = await _api.get(
+      endpoint: '/journal/crossCurrency.php',
+      queryParams: {'ref': reference},
+      cancelToken: cancelToken,
+    );
+    final body = _asMap(res.data);
+    if (body == null) throw ApiException('Invalid server response');
+
+    final msg = body['msg']?.toString().toLowerCase() ?? '';
+    if (msg.isNotEmpty && msg != 'success') {
+      throw ApiException(
+        body['error']?.toString() ??
+            (msg == 'not_found'
+                ? 'Exchange transfer not found.'
+                : msg == 'invalid_type'
+                ? 'This reference is not an exchange transfer.'
+                : 'Failed to load exchange transfer'),
+      );
+    }
+    return ExchangeDetail.fromMap(body);
+  }
+
+  Future<List<ExchangeListItem>> getExchangeList({
+    String? state,
+    String? search,
+    CancelToken? cancelToken,
+  }) async {
+    final res = await _api.get(
+      endpoint: '/journal/crossCurrency.php',
+      queryParams: {
+        if (state != null && state.isNotEmpty) 'state': state,
+        if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+      },
+      cancelToken: cancelToken,
+    );
+    return _parseList(
+      res.data,
+      ExchangeListItem.fromMap,
+      fallback: 'Failed to load exchange transfers',
+    );
+  }
+
+  Future<String> addExchangeTransfer({
+    required String usrName,
+    required ExchangeLeg debit,
+    required ExchangeLeg credit,
+  }) async {
+    final records = ExchangeDraft(
+      usrName: usrName,
+      debit: debit,
+      credit: credit,
+    ).toRecords();
+
+    final res = await _api.post(
+      endpoint: '/journal/crossCurrency.php',
+      data: {
+        'usrName': usrName,
+        'records': records,
+      },
+    );
+
+    final body = _asMap(res.data);
+    if (body == null) throw ApiException('Invalid server response');
+
+    if (body['msg']?.toString().toLowerCase() == 'success') {
+      return '${body['reference'] ?? ''}';
+    }
+    throw ApiException(_fxErrorText('${body['msg'] ?? ''}', body));
+  }
+
+  Future<void> editExchangeTransfer({
+    required String reference,
+    required String usrName,
+    required ExchangeLeg debit,
+    required ExchangeLeg credit,
+  }) async {
+    final res = await _api.put(
+      endpoint: '/journal/crossCurrency.php',
+      data: ExchangeEditDraft(
+        reference: reference,
+        usrName: usrName,
+        debit: debit,
+        credit: credit,
+      ).toMap(),
+    );
+    final body = _asMap(res.data);
+    if (body == null) throw ApiException('Invalid server response');
+    if (body['msg']?.toString().toLowerCase() == 'success') return;
+    throw ApiException(_fxErrorText('${body['msg'] ?? ''}', body));
+  }
+
+  Future<void> deleteExchangeTransfer({
+    required String reference,
+    required String usrName,
+  }) async {
+    final response = await _api.delete(
+      endpoint: '/journal/crossCurrency.php',
+      data: {'reference': reference, 'usrName': usrName},
+    );
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+    if (body['msg']?.toString().toLowerCase() == 'success') return;
+    throw ApiException(_fxErrorText('${body['msg'] ?? ''}', body));
+  }
+
+  String _fxErrorText(String code, Map<String, dynamic> body) {
+    final serverErr = body['error']?.toString();
+    if (serverErr != null && serverErr.isNotEmpty) return serverErr;
+    return switch (code.toLowerCase()) {
+      'empty' => 'Please fill in all fields.',
+      'same_account' => 'Debit and credit accounts must be different.',
+      'same_ccy' => 'Exchange requires two different currencies.',
+      'ccy_mismatch' => 'Leg currency does not match the account currency.',
+      'blocked' => 'One of the accounts is blocked.',
+      'no_limit' => 'The account has exceeded its credit limit.',
+      'not_found' => 'Exchange transfer not found.',
+      'invalid_type' => 'This reference is not an exchange transfer.',
+      'invalid_action' => 'Only Pending exchange transfers can be modified.',
+      'invalid' => 'Only the maker can perform this action.',
+      'invalid_legs' => 'An exchange needs exactly one debit and one credit leg.',
+      'invalid_user' => 'Invalid user.',
+      'failed' => 'The exchange transfer could not be processed.',
+      _ => 'Exchange transfer failed.',
+    };
   }
 
 }

@@ -1363,13 +1363,13 @@ abstract class AppLocalizations {
   /// No description provided for @fxTransaction.
   ///
   /// In en, this message translates to:
-  /// **'FX Transaction'**
+  /// **'Exchange'**
   String get fxTransaction;
 
   /// No description provided for @bulkTransaction.
   ///
   /// In en, this message translates to:
-  /// **'Bulk Insertion'**
+  /// **'Bulk Transfer'**
   String get bulkTransaction;
 
   /// No description provided for @pending.
@@ -1539,6 +1539,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Credit Account'**
   String get creditAccount;
+
+  /// No description provided for @balance.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get balance;
+
+  /// No description provided for @blocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get blocked;
+
+  /// No description provided for @newFundTransfer.
+  ///
+  /// In en, this message translates to:
+  /// **'New Fund Transfer'**
+  String get newFundTransfer;
+
+  /// No description provided for @sameCurrencyForExchange.
+  ///
+  /// In en, this message translates to:
+  /// **'Debit and credit currencies must differ.'**
+  String get sameCurrencyForExchange;
+
+  /// No description provided for @recentTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Transactions'**
+  String get recentTransactions;
+
+  /// No description provided for @gender.
+  ///
+  /// In en, this message translates to:
+  /// **'Gender'**
+  String get gender;
+
+  /// No description provided for @dob.
+  ///
+  /// In en, this message translates to:
+  /// **'Date of birth'**
+  String get dob;
+
+  /// No description provided for @nationalId.
+  ///
+  /// In en, this message translates to:
+  /// **'National ID'**
+  String get nationalId;
 }
 
 class _AppLocalizationsDelegate

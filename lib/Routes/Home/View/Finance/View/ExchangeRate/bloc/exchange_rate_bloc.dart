@@ -1,3 +1,4 @@
+// lib/features/exchange/bloc/exchange_rate_bloc.dart
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../../../../../../Services/api_exception.dart';
@@ -70,6 +71,21 @@ class ExchangeRateBloc extends Bloc<ExchangeRateEvent, ExchangeRateState> {
 
     // ── GET single rate (used by FX transaction forms) ────────────
     on<GetExchangeRateEvent>((event, emit) async {
+      // Same-currency pairs → rate is 1.0, no API call.
+      if (event.fromCcy == event.toCcy) {
+        final rates = state is ExchangeRateLoadedState
+            ? (state as ExchangeRateLoadedState).rates
+            : const <ExchangeRateModel>[];
+        emit(ExchangeRateLoadedState(
+          rates: rates,
+          rate: '1',
+          fromCcy: event.fromCcy,
+          toCcy: event.toCcy,
+          requestId: ++_requestId,
+        ));
+        return;
+      }
+
       // Preserve existing list.
       List<ExchangeRateModel>? currentRates;
       if (state is ExchangeRateLoadedState) {

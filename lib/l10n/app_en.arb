@@ -216,8 +216,8 @@
   "dateRange": "Date range",
   "branches": "Branches",
   "branchLimitHint": "Auto transactions allowance of branch",
-  "fxTransaction": "FX Transaction",
-  "bulkTransaction": "Bulk Insertion",
+  "fxTransaction": "Exchange",
+  "bulkTransaction": "Bulk Transfer",
   "pending": "Pending",
   "authorized": "Authorized",
   "reversed": "Reversed",
@@ -252,5 +252,13 @@
   "sameAccount": "Same account transfer is not allowed.",
   "currencyMismatch": "Currency doesn't match, both must same currency",
   "debitAccount": "Debit Account",
-  "creditAccount": "Credit Account"
+  "creditAccount": "Credit Account",
+  "balance": "Balance",
+  "blocked": "Blocked",
+  "newFundTransfer": "New Fund Transfer",
+  "sameCurrencyForExchange": "Debit and credit currencies must differ.",
+  "recentTransactions": "Recent Transactions",
+  "gender": "Gender",
+  "dob": "Date of birth",
+  "nationalId": "National ID"
 }

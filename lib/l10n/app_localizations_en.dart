@@ -649,10 +649,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get branchLimitHint => 'Auto transactions allowance of branch';
 
   @override
-  String get fxTransaction => 'FX Transaction';
+  String get fxTransaction => 'Exchange';
 
   @override
-  String get bulkTransaction => 'Bulk Insertion';
+  String get bulkTransaction => 'Bulk Transfer';
 
   @override
   String get pending => 'Pending';
@@ -740,4 +740,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get creditAccount => 'Credit Account';
+
+  @override
+  String get balance => 'Balance';
+
+  @override
+  String get blocked => 'Blocked';
+
+  @override
+  String get newFundTransfer => 'New Fund Transfer';
+
+  @override
+  String get sameCurrencyForExchange =>
+      'Debit and credit currencies must differ.';
+
+  @override
+  String get recentTransactions => 'Recent Transactions';
+
+  @override
+  String get gender => 'Gender';
+
+  @override
+  String get dob => 'Date of birth';
+
+  @override
+  String get nationalId => 'National ID';
 }

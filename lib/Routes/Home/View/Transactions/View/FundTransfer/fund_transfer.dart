@@ -629,7 +629,7 @@ class _FundTransferDialog extends StatelessWidget {
             return ZFormDialog(
               width: 640,
               icon: Icons.swap_horiz_rounded,
-              title: 'Fund Transfer · $reference',
+              title: '${AppLocalizations.of(context)!.fundTransfer} · $reference',
               isActionTrue: false,
               onAction: null,
               child: const SizedBox(
@@ -642,8 +642,8 @@ class _FundTransferDialog extends StatelessWidget {
             width: 640,
             icon: Icons.swap_horiz_rounded,
             title: isEditing
-                ? 'Fund Transfer · $reference'
-                : 'New Fund Transfer',
+                ? '${AppLocalizations.of(context)!.fundTransfer} · $reference'
+                : AppLocalizations.of(context)!.newFundTransfer,
             isActionTrue: false,
             onAction: null,
             child: ConstrainedBox(
@@ -839,7 +839,7 @@ class _AccountDetailsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme;
     final title = Theme.of(context).textTheme.titleSmall;
-
+    final tr = AppLocalizations.of(context)!;
     Widget row(String k, String v, {bool bold = false}) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -878,11 +878,11 @@ class _AccountDetailsCard extends StatelessWidget {
           Text(label,
               style: title?.copyWith(fontWeight: FontWeight.bold)),
           const Divider(),
-          row('Account number', account.accNumber?.toString() ?? ''),
-          row('Account name', account.accName ?? ''),
-          row('Balance', '${account.accBalance.toAmount()} $effectiveCcy'),
+          row(tr.accountNumber, account.accNumber?.toString() ?? ''),
+          row(tr.accountName, account.accName ?? ''),
+          row(tr.balance, '${account.accBalance.toAmount()} $effectiveCcy'),
           if (isStakeholder && status != null)
-            row('Status', status == 1 ? 'Active' : 'Blocked'),
+            row(tr.status, status == 1 ? tr.active : tr.blocked),
         ],
       ),
     );
@@ -900,7 +900,7 @@ class _LegDetailsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme;
     final title = Theme.of(context).textTheme.titleSmall;
-
+    final tr = AppLocalizations.of(context)!;
     Widget row(String k, String v) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -923,9 +923,9 @@ class _LegDetailsCard extends StatelessWidget {
         children: [
           Text(label, style: title?.copyWith(fontWeight: FontWeight.bold)),
           const Divider(),
-          row('Account number', leg.account.toString()),
-          row('Account name', leg.accountName),
-          row('Amount', '${leg.amount.toStringAsFixed(2)} ${leg.currency}'),
+          row(tr.accountNumber, leg.account.toString()),
+          row(tr.accountName, leg.accountName),
+          row(tr.amount, '${leg.amount.toStringAsFixed(2)} ${leg.currency}'),
         ],
       ),
     );

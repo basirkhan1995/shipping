@@ -4,6 +4,7 @@ import 'package:shipping/Features/Widgets/toast.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/bloc/stakeholder_bloc.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/stk_form.dart';
+import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../../../Features/Other/image_helper.dart';
 import '../../../../../../Features/Other/responsive_widget.dart';
 import '../../model/stk_model.dart';
@@ -14,6 +15,7 @@ import '../StkAccount/stk_acc_form.dart';
 import 'bloc/stakeholder_by_id_bloc.dart';
 import 'bloc/stakeholder_by_id_event.dart';
 import 'bloc/stakeholder_by_id_state.dart';
+import '../../../../../../Features/Date/shamsi_converter.dart'; // .shamsiDateString
 
 // ═══════════════════════════════════════════════════════════════════
 // Entry point
@@ -233,7 +235,7 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
-        title: const Text('Profile Overview'),
+        title: Text(AppLocalizations.of(context)!.profileOverview),
       ),
       body: BlocListener<StakeholderBloc, StakeholderState>(
         listenWhen: (p, c) =>
@@ -245,7 +247,7 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
           } else if (state is UpdateStakeholderFailureState) {
             ToastManager.show(
               context: context,
-              title: "Failed",
+              title: AppLocalizations.of(context)!.failed,
               message: 'Update failed: ${state.message}',
               type: ToastType.error,
             );
@@ -261,14 +263,14 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
               _reloadProfile();
               ToastManager.show(
                 context: context,
-                title: "Success",
+                title: AppLocalizations.of(context)!.successTitle,
                 message: '${state.successMessage}',
                 type: ToastType.success,
               );
             } else if (state is StkAccountsFailureState) {
               ToastManager.show(
                 context: context,
-                title: "Failed",
+                title: AppLocalizations.of(context)!.failed,
                 message: '${state.errorMessage}',
                 type: ToastType.error,
               );
@@ -356,7 +358,7 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
       IndividualsModel data,
       ) {
     final dob = data.perDoB;
-
+    final tr = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -436,61 +438,61 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
           ),
         ],
         const SizedBox(height: 20),
-        _sectionDivider(color, 'PROFILE'),
+        _sectionDivider(color, tr.profile.toUpperCase()),
         const SizedBox(height: 14),
         _infoSection(
           context,
           icon: Icons.person_outline,
-          title: 'Gender',
+          title: tr.gender,
           value: data.perGender ?? '',
         ),
         if (dob != null)
           _infoSection(
             context,
             icon: Icons.cake_outlined,
-            title: 'Date of Birth',
+            title: tr.dob,
             value: _formatDate(dob),
           ),
         if (data.perEnidNo != null && data.perEnidNo!.isNotEmpty)
           _infoSection(
             context,
             icon: Icons.badge_outlined,
-            title: 'National ID',
+            title: tr.nationalId,
             value: data.perEnidNo!,
           ),
         if (data.addName != null && data.addName!.isNotEmpty)
           _infoSection(
             context,
             icon: Icons.location_on_outlined,
-            title: 'Address',
+            title: tr.address,
             value: data.addName!,
           ),
         if (data.addCity != null && data.addCity!.isNotEmpty)
           _infoSection(
             context,
             icon: Icons.location_city_outlined,
-            title: 'City',
+            title: tr.city,
             value: data.addCity!,
           ),
         if (data.addProvince != null && data.addProvince!.isNotEmpty)
           _infoSection(
             context,
             icon: Icons.map_outlined,
-            title: 'Province',
+            title: tr.province,
             value: data.addProvince!,
           ),
         if (data.addCountry != null && data.addCountry!.isNotEmpty)
           _infoSection(
             context,
             icon: Icons.public_outlined,
-            title: 'Country',
+            title: tr.country,
             value: data.addCountry!,
           ),
         if (data.addZipCode != null && data.addZipCode!.isNotEmpty)
           _infoSection(
             context,
             icon: Icons.markunread_mailbox_outlined,
-            title: 'Zip Code',
+            title: tr.zipCode,
             value: data.addZipCode!,
           ),
         const SizedBox(height: 16),
@@ -643,7 +645,7 @@ class _AccountsSection extends StatelessWidget {
           child: Row(
             children: [
               Text(
-                'Accounts',
+                AppLocalizations.of(context)!.accounts,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -707,15 +709,31 @@ class _AccountsSection extends StatelessWidget {
 
 // ═══════════════════════════════════════════════════════════════════
 // Recent transactions panel
+//   • Title + column headers always visible
+//   • Date column first, Shamsi + Gregorian
+//   • Amount follows the ACCOUNT perspective:
+//       Dr → account received money → + green, up arrow
+//       Cr → account paid money     → − red,   down arrow
 // ═══════════════════════════════════════════════════════════════════
 class _RecentTransactionsPanel extends StatelessWidget {
   final List<RecentTransaction> transactions;
   const _RecentTransactionsPanel({required this.transactions});
 
+  // ── Column widths ──────────────────────────────────────────
+  static const double _wDate = 170;
+  static const double _wRef = 220;
+  static const double _wAccount = 140;
+  static const double _wAmount = 130;
+  static const double _wBalance = 130;
+  static const double _wStatus = 84;
+  static const double _gap = 12;
+
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final tr = AppLocalizations.of(context)!;
+    final isEmpty = transactions.isEmpty;
 
     return Container(
       decoration: BoxDecoration(
@@ -728,22 +746,26 @@ class _RecentTransactionsPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // ── Title (always visible) ──────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: color.primary.withValues(alpha: .1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Icon(Icons.receipt_long_outlined,
-                      size: 16, color: color.primary),
+                  child: Icon(
+                    Icons.line_axis_rounded,
+                    size: 20,
+                    color: color.primary,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  'Recent transactions',
+                  tr.recentTransactions,
                   style: textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -768,64 +790,75 @@ class _RecentTransactionsPanel extends StatelessWidget {
               ],
             ),
           ),
+
           Divider(
             height: 1,
             color: color.outlineVariant.withValues(alpha: 0.5),
           ),
+
+          // ── Column headers (always visible) ─────────────────
           Padding(
-            padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                const SizedBox(width: 38),
+                SizedBox(
+                  width: _wDate,
+                  child: Text(tr.date.toUpperCase(), style: _headerStyle(color)),
+                ),
+                const SizedBox(width: _gap),
                 Expanded(
-                  flex: 4,
-                  child: Text('TRANSACTION', style: _headerStyle(color)),
+                  child: Text(tr.transactions.toUpperCase(), style: _headerStyle(color)),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: _gap),
                 SizedBox(
-                  width: 150,
-                  child: Text('ACCOUNT',
-                      textAlign: TextAlign.right,
-                      style: _headerStyle(color)),
+                  width: _wAccount,
+                  child: Text(
+                    tr.account.toUpperCase(),
+                    textAlign: TextAlign.end,
+                    style: _headerStyle(color),
+                  ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: _gap),
                 SizedBox(
-                  width: 110,
-                  child: Text('DATE',
-                      textAlign: TextAlign.right,
-                      style: _headerStyle(color)),
+                  width: _wAmount,
+                  child: Text(
+                    tr.amount.toUpperCase(),
+                    textAlign: TextAlign.end,
+                    style: _headerStyle(color),
+                  ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: _gap),
                 SizedBox(
-                  width: 110,
-                  child: Text('AMOUNT',
-                      textAlign: TextAlign.right,
-                      style: _headerStyle(color)),
+                  width: _wBalance,
+                  child: Text(
+                    tr.balance.toUpperCase(),
+                    textAlign: TextAlign.end,
+                    style: _headerStyle(color),
+                  ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: _gap),
                 SizedBox(
-                  width: 130,
-                  child: Text('BALANCE',
-                      textAlign: TextAlign.right,
-                      style: _headerStyle(color)),
-                ),
-                const SizedBox(width: 12),
-                SizedBox(
-                  width: 76,
-                  child: Text('STATUS',
-                      textAlign: TextAlign.right,
-                      style: _headerStyle(color)),
+                  width: _wStatus,
+                  child: Text(
+                    tr.status,
+                    textAlign: TextAlign.end,
+                    style: _headerStyle(color),
+                  ),
                 ),
               ],
             ),
           ),
+
           Divider(
             height: 1,
             color: color.outlineVariant.withValues(alpha: 0.3),
           ),
+
+          // ── Body (rows, or empty state) ─────────────────────
           Expanded(
-            child: ListView.separated(
+            child: isEmpty
+                ? _EmptyTransactions(color: color)
+                : ListView.separated(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: EdgeInsets.zero,
               itemCount: transactions.length,
@@ -834,153 +867,17 @@ class _RecentTransactionsPanel extends StatelessWidget {
                 color: color.outlineVariant.withValues(alpha: 0.2),
               ),
               itemBuilder: (context, i) {
-                final tx = transactions[i];
-                final isCr = tx.drCr == 'Cr';
-                final amountColor =
-                isCr ? const Color(0xFF16A34A) : color.error;
-                final balanceNegative = tx.runningBalance < 0;
-
-                return Padding(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 30,
-                        height: 30,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: amountColor.withValues(alpha: .12),
-                        ),
-                        child: Icon(
-                          isCr
-                              ? Icons.arrow_downward_rounded
-                              : Icons.arrow_upward_rounded,
-                          size: 16,
-                          color: amountColor,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 4,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              tx.reference ?? '—',
-                              style: textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
-                                fontFamily: 'monospace',
-                                color: color.onSurface,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            if ((tx.narration ?? '').isNotEmpty) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                tx.narration!,
-                                style: textTheme.labelSmall?.copyWith(
-                                  fontSize: 10,
-                                  color: color.onSurfaceVariant,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      SizedBox(
-                        width: 150,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              tx.accountName ?? '—',
-                              textAlign: TextAlign.right,
-                              style: textTheme.bodySmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 11,
-                                color: color.onSurface,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              tx.account?.toString() ?? '—',
-                              textAlign: TextAlign.right,
-                              style: textTheme.labelSmall?.copyWith(
-                                fontSize: 10,
-                                fontFamily: 'monospace',
-                                color: color.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      SizedBox(
-                        width: 110,
-                        child: Text(
-                          tx.formattedDate,
-                          textAlign: TextAlign.right,
-                          style: textTheme.bodySmall?.copyWith(
-                            fontSize: 10,
-                            color: color.onSurfaceVariant,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      SizedBox(
-                        width: 110,
-                        child: Text(
-                          tx.formattedAmount,
-                          textAlign: TextAlign.right,
-                          style: textTheme.bodySmall?.copyWith(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: amountColor,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      SizedBox(
-                        width: 130,
-                        child: Text(
-                          tx.formattedRunningBalance,
-                          textAlign: TextAlign.right,
-                          style: textTheme.bodySmall?.copyWith(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: balanceNegative
-                                ? color.error
-                                : color.onSurface,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      SizedBox(
-                        width: 76,
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: _StatusPill(tx: tx),
-                        ),
-                      ),
-                    ],
-                  ),
+                return _RecentTxnRow(
+                  tx: transactions[i],
+                  color: color,
+                  textTheme: textTheme,
+                  wDate: _wDate,
+                  wRef: _wRef,
+                  wAccount: _wAccount,
+                  wAmount: _wAmount,
+                  wBalance: _wBalance,
+                  wStatus: _wStatus,
+                  gap: _gap,
                 );
               },
             ),
@@ -998,9 +895,260 @@ class _RecentTransactionsPanel extends StatelessWidget {
   );
 }
 
-class _StatusPill extends StatelessWidget {
+// ═══════════════════════════════════════════════════════════════════
+// One recent-transaction row
+// ═══════════════════════════════════════════════════════════════════
+class _RecentTxnRow extends StatelessWidget {
   final RecentTransaction tx;
-  const _StatusPill({required this.tx});
+  final ColorScheme color;
+  final TextTheme textTheme;
+  final double wDate;
+  final double wRef;
+  final double wAccount;
+  final double wAmount;
+  final double wBalance;
+  final double wStatus;
+  final double gap;
+
+  const _RecentTxnRow({
+    required this.tx,
+    required this.color,
+    required this.textTheme,
+    required this.wDate,
+    required this.wRef,
+    required this.wAccount,
+    required this.wAmount,
+    required this.wBalance,
+    required this.wStatus,
+    required this.gap,
+  });
+
+  /// Server Dr/Cr → ACCOUNT perspective:
+  ///   Dr → account received money → +, green, arrow up
+  ///   Cr → account paid money     → −, red,   arrow down
+  bool get _isDebitIn => tx.drCr == 'Dr';
+  Color get _amountColor =>
+      _isDebitIn ? const Color(0xFF16A34A) : color.error;
+  IconData get _arrowIcon => _isDebitIn
+      ? Icons.arrow_upward_rounded
+      : Icons.arrow_downward_rounded;
+
+  /// Builds "+1,234.00 USD" / "−1,234.00 USD" independent of
+  /// `tx.formattedAmount` so the sign always matches colour + arrow.
+  String get _signedAmount {
+    final sign = _isDebitIn ? '+' : '−';
+    final raw = tx.amount;
+    final body = raw.toStringAsFixed(2);
+    final ccy = tx.currency ?? '';
+    return ccy.isEmpty ? '$sign$body' : '$sign$body $ccy';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final balanceNegative = tx.runningBalance < 0;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // ── DATE (Shamsi · Gregorian) ──────────────────────
+          SizedBox(
+            width: wDate,
+            child: _DateCell(tx: tx),
+          ),
+          const SizedBox(width: 12),
+
+          // ── TRANSACTION ────────────────────────────────────
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  tx.reference ?? '—',
+                  style: textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    fontFamily: 'monospace',
+                    color: color.onSurface,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if ((tx.narration ?? '').isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    tx.narration!,
+                    style: textTheme.labelSmall?.copyWith(
+                      fontSize: 10,
+                      color: color.onSurfaceVariant,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // ── ACCOUNT ────────────────────────────────────────
+          SizedBox(
+            width: wAccount,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  tx.accountName ?? '—',
+                  textAlign: TextAlign.right,
+                  style: textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                    color: color.onSurface,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  tx.account?.toString() ?? '—',
+                  textAlign: TextAlign.right,
+                  style: textTheme.labelSmall?.copyWith(
+                    fontSize: 10,
+                    fontFamily: 'monospace',
+                    color: color.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // ── AMOUNT (account perspective) ───────────────────
+          SizedBox(
+            width: wAmount,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Icon(_arrowIcon, size: 14, color: _amountColor),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    _signedAmount,
+                    textAlign: TextAlign.end,
+                    style: textTheme.bodySmall?.copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: _amountColor,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // ── BALANCE ────────────────────────────────────────
+          SizedBox(
+            width: wBalance,
+            child: Text(
+              tx.formattedRunningBalance,
+              textAlign: TextAlign.end,
+              style: textTheme.bodySmall?.copyWith(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: balanceNegative ? color.error : color.onSurface,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // ── STATUS ─────────────────────────────────────────
+          SizedBox(
+            width: wStatus,
+            child: Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: _TxnStatusPill(tx: tx),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Date cell — Shamsi (.shamsiDateString) + Gregorian
+// ═══════════════════════════════════════════════════════════════════
+class _DateCell extends StatelessWidget {
+  final RecentTransaction tx;
+  const _DateCell({required this.tx});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    final raw = tx.entryDate;
+    if (raw == null) {
+      return Text(
+        '—',
+        style: textTheme.bodySmall?.copyWith(
+          fontSize: 10,
+          color: color.onSurfaceVariant,
+        ),
+      );
+    }
+
+    // Shamsi via your extension.
+    final shamsi = raw.shamsiDateString;
+
+    // Gregorian, ISO `yyyy-MM-dd`.
+    final gregorian = '${raw.year.toString().padLeft(4, '0')}-'
+        '${raw.month.toString().padLeft(2, '0')}-'
+        '${raw.day.toString().padLeft(2, '0')}';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          shamsi,
+          style: textTheme.bodySmall?.copyWith(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: color.onSurface,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          gregorian,
+          style: textTheme.labelSmall?.copyWith(
+            fontSize: 9,
+            color: color.onSurfaceVariant,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Status pill (renamed to avoid clashing with the file-level _StatusPill)
+// ═══════════════════════════════════════════════════════════════════
+class _TxnStatusPill extends StatelessWidget {
+  final RecentTransaction tx;
+  const _TxnStatusPill({required this.tx});
 
   @override
   Widget build(BuildContext context) {
@@ -1023,6 +1171,42 @@ class _StatusPill extends StatelessWidget {
           fontWeight: FontWeight.w700,
           color: fg,
           letterSpacing: 0.3,
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Empty state (title + headers are shown above this)
+// ═══════════════════════════════════════════════════════════════════
+class _EmptyTransactions extends StatelessWidget {
+  final ColorScheme color;
+  const _EmptyTransactions({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.receipt_long_outlined,
+              size: 40,
+              color: color.onSurfaceVariant.withValues(alpha: .35),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'No recent transactions',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: color.onSurfaceVariant.withValues(alpha: .75),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1264,6 +1448,8 @@ class _BankCard extends StatelessWidget {
 
 // ═══════════════════════════════════════════════════════════════════
 // Debtor / Creditor badge
+//   balance > 0  → CREDITOR  (account has money, can withdraw)
+//   balance < 0  → DEBTOR    (account owes the system)
 // ═══════════════════════════════════════════════════════════════════
 class _BalancePositionBadge extends StatelessWidget {
   final double balance;

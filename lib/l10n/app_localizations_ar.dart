@@ -647,10 +647,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get branchLimitHint => 'حد مجاز تأیید خودکار نمایندگی';
 
   @override
-  String get fxTransaction => 'تبادله ارز';
+  String get fxTransaction => 'د اسعارو تبادله';
 
   @override
-  String get bulkTransaction => 'معامله دسته ای';
+  String get bulkTransaction => 'معامله گروهی';
 
   @override
   String get pending => 'در انتظار';
@@ -674,7 +674,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get exchange => 'تبادله';
 
   @override
-  String get fundTransfer => 'انتقال بودجه';
+  String get fundTransfer => 'حساب انتقال';
 
   @override
   String get journal => 'روزنامچه';
@@ -738,4 +738,28 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get creditAccount => 'حساب کریدت';
+
+  @override
+  String get balance => 'بیلانس';
+
+  @override
+  String get blocked => 'مسدود';
+
+  @override
+  String get newFundTransfer => 'نوی انتقال حساب';
+
+  @override
+  String get sameCurrencyForExchange => 'حساب ها باید ارز متفاوت داشته باشد';
+
+  @override
+  String get recentTransactions => 'آخرین معاملات';
+
+  @override
+  String get gender => 'جنسیت';
+
+  @override
+  String get dob => 'تاریخ تولد';
+
+  @override
+  String get nationalId => 'تذکره';
 }
