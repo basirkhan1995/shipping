@@ -45,7 +45,7 @@ class ZTextFieldEntitled extends StatelessWidget {
     this.maxLength,
     this.infoColor,
     this.borderType = ZTextFieldBorderType.rounded,
-    this.autoFocus = false,
+    this.autoFocus = true,
     this.compactMode,
     this.vertical,
     this.isEnabled = true,
@@ -78,7 +78,7 @@ class ZTextFieldEntitled extends StatelessWidget {
           return TextFormField(
             readOnly: readOnly,
             focusNode: focus,
-            autofocus:focusNode == null,
+            autofocus: autoFocus,
             enabled: isEnabled,
             validator: validator,
             textInputAction: textInputAction ?? TextInputAction.done,

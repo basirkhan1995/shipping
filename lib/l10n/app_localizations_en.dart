@@ -354,7 +354,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liability => 'Liability';
 
   @override
-  String get income => 'income';
+  String get income => 'Income';
 
   @override
   String get expense => 'Expense';
@@ -780,4 +780,132 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addAccount => 'Add Account';
+
+  @override
+  String get accountLimit => 'Account Limit';
+
+  @override
+  String get accountStatus => 'Account Status';
+
+  @override
+  String get accountActiveMsg => 'Account is available for transactions';
+
+  @override
+  String get accountBlockMsg => 'Account is blocked for transactions.';
+
+  @override
+  String get ccyChangeWarnings =>
+      'Currency cannot be changed if the account has recorded transactions.';
+
+  @override
+  String get permissions => 'Permissions';
+
+  @override
+  String get userProfile => 'User Profile';
+
+  @override
+  String get password8Char => 'Password must be at least 8 characters';
+
+  @override
+  String get passwordUpperCase =>
+      'Password must contain at least one uppercase letter';
+
+  @override
+  String get passwordLowerCase =>
+      'Password must contain at least one lowercase letter';
+
+  @override
+  String get passwordWithDigit => 'Password must contain at least one digit';
+
+  @override
+  String get passwordWithSpecialChar =>
+      'Password must contain at least one special character';
+
+  @override
+  String get usernameMinLength => 'Username must be at least 4 characters';
+
+  @override
+  String get usernameNoStartDigit => 'Username cannot start with a number';
+
+  @override
+  String get usernameInvalidChars =>
+      'Username can only contain letters, numbers, . or _';
+
+  @override
+  String get usernameNoSpaces => 'Username cannot contain spaces';
+
+  @override
+  String get changePassowrd => 'Change Password';
+
+  @override
+  String get oldPassword => 'Old Passwor';
+
+  @override
+  String get newPassword => 'New Password';
+
+  @override
+  String get confirmPassword => 'Re-enter password';
+
+  @override
+  String get passwordNotMatch => 'Passwords don\'t match.';
+
+  @override
+  String get users => 'Users';
+
+  @override
+  String get attendance => 'Attendance';
+
+  @override
+  String get employees => 'Employees';
+
+  @override
+  String get hrTitle => 'Human Resources Management';
+
+  @override
+  String get emailExists => 'Email already exists, try another';
+
+  @override
+  String get usernameExists => 'Username already exists, try another';
+
+  @override
+  String get addUser => 'Add User';
+
+  @override
+  String get userOwner => 'User owner';
+
+  @override
+  String get editRole => 'Edit Role';
+
+  @override
+  String get addRole => 'Add Role';
+
+  @override
+  String get roleName => 'Role name';
+
+  @override
+  String get userRole => 'User Role';
+
+  @override
+  String get errorTitle => 'Error';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get forceChangePassword => 'Change Password after login';
+
+  @override
+  String get forceEmailVerification => 'Email Verification';
+
+  @override
+  String get view => 'View';
+
+  @override
+  String get editUser => 'Edit User';
+
+  @override
+  String get block => 'Block';
+
+  @override
+  String get unblock => 'Activate';
 }

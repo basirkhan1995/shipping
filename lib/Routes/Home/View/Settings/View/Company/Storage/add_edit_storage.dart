@@ -581,7 +581,7 @@ class _BaseStorageAddEditState extends State<_BaseStorageAddEdit> {
   }
 }
 
-// Mobile View
+// Mobile model
 class _MobileStorageAddEdit extends StatelessWidget {
   final StorageModel? model;
 
@@ -597,7 +597,7 @@ class _MobileStorageAddEdit extends StatelessWidget {
   }
 }
 
-// Tablet View
+// Tablet model
 class _TabletStorageAddEdit extends StatelessWidget {
   final StorageModel? model;
 
@@ -613,7 +613,7 @@ class _TabletStorageAddEdit extends StatelessWidget {
   }
 }
 
-// Desktop View
+// Desktop model
 class _DesktopStorageAddEdit extends StatelessWidget {
   final StorageModel? model;
 

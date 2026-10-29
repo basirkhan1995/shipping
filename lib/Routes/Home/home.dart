@@ -86,7 +86,7 @@ class _DesktopView extends StatelessWidget {
       MenuDefinition(
         value: MenuName.hr,
         label: AppLocalizations.of(context)!.hr,
-        screen: const HrView(),
+        screen: const HrTabView(),
         icon: Icons.person,
       ),
       MenuDefinition(

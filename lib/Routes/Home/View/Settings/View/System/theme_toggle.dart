@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:io';
 import '../../../../../../../../Themes/Bloc/themes_bloc.dart';
-import '../../../../../../l10n/app_localizations.dart';
+import '../../../../../../../../l10n/app_localizations.dart';
 
 
 class ThemeSelectorWidget extends StatelessWidget {

@@ -1,9 +1,10 @@
-// Routes/Home/View/Journal/View/TransactionsView/transactions_view.dart
+// Routes/Home/model/Journal/model/TransactionsView/transactions_view.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Date/shamsi_converter.dart';
+import 'package:shipping/Features/Widgets/extensions.dart';
 import 'package:shipping/Features/Widgets/noData_widget.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 
@@ -253,7 +254,7 @@ class _DesktopViewState extends State<_DesktopView> {
       case 'CHDP':
         return CashTxnSpec(
           typeCode: 'CHDP',
-          icon: Icons.arrow_downward_rounded,
+          icon: Icons.arrow_upward_rounded,
           title: (_) => tr.cashDeposit,
           accountInclude: '8',
           allowReminder: true,
@@ -261,7 +262,7 @@ class _DesktopViewState extends State<_DesktopView> {
       case 'CHWL':
         return CashTxnSpec(
           typeCode: 'CHWL',
-          icon: Icons.arrow_upward_rounded,
+          icon: Icons.arrow_downward_rounded,
           title: (_) => tr.cashWithdraw,
           accountInclude: '8',
           allowReminder: true,
@@ -668,30 +669,22 @@ class _DesktopViewState extends State<_DesktopView> {
 
     if (visibleGroups.isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.primary.withValues(alpha: .08)),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (var i = 0; i < visibleGroups.length; i++) ...[
-                _buildRibbonGroup(visibleGroups[i], color, textTheme),
-                if (i != visibleGroups.length - 1)
-                  Container(
-                    width: 1,
-                    margin: const EdgeInsets.symmetric(horizontal: 10),
-                    color: color.outlineVariant.withValues(alpha: .35),
-                  ),
-              ],
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            for (var i = 0; i < visibleGroups.length; i++) ...[
+              _buildRibbonGroup(visibleGroups[i], color, textTheme),
+              if (i != visibleGroups.length - 1)
+                Container(
+                  width: 0,
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                 // color: color.outlineVariant.withValues(alpha: .35),
+                ),
             ],
-          ),
+          ],
         ),
       ),
     );
@@ -715,7 +708,7 @@ class _DesktopViewState extends State<_DesktopView> {
             style: textTheme.labelSmall?.copyWith(
               color: color.onSurfaceVariant,
               fontWeight: FontWeight.w700,
-              fontSize: 10,
+              fontSize: 11,
               letterSpacing: 0.6,
             ),
           ),
@@ -828,8 +821,8 @@ class _DesktopViewState extends State<_DesktopView> {
       ),
       child: Row(
         children: [
-          SizedBox(width: 140, child: Text(tr.date, style: titleStyle)),
-          SizedBox(width: 180, child: Text(tr.reference, style: titleStyle)),
+          SizedBox(width: 150, child: Text(tr.date, style: titleStyle)),
+          SizedBox(width: 200, child: Text(tr.reference, style: titleStyle)),
           SizedBox(width: 150, child: Text(tr.type, style: titleStyle)),
           SizedBox(width: 140, child: Text(tr.maker, style: titleStyle)),
           Expanded(child: Text(tr.narration, style: titleStyle)),
@@ -1023,7 +1016,7 @@ class _RibbonButtonState extends State<_RibbonButton> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: textTheme.labelSmall?.copyWith(
-                        fontSize: 14.5,
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: color.onSurface,
                         height: 1.15,
@@ -1226,26 +1219,42 @@ class _TransactionRowWidget extends StatelessWidget {
       onTap: onTap != null ? () => onTap!(row) : null,
       hoverColor: color.primary.withValues(alpha: .03),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: isOdd ? color.primary.withValues(alpha: .04) : null,
         ),
         child: Row(
           children: [
+            // ── DATE ────────────────────────────────────────────
             SizedBox(
-              width: 140,
-              child: Text(
-                row.entryDate.toFullDateTime,
-                style: textTheme.bodySmall?.copyWith(
-                  fontSize: 11,
-                  color: color.onSurfaceVariant,
-                ),
-                overflow: TextOverflow.ellipsis,
+              width: 150,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    row.entryDate.shamsiDateString,
+                    style: textTheme.bodySmall?.copyWith(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: color.onSurfaceVariant,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    row.entryDate.toFullDateTime,
+                    style: textTheme.bodySmall?.copyWith(
+                      fontSize: 12,
+                      color: color.onSurfaceVariant,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ),
-            // ── Reference + copy button ────────────────────────
+
+            // ── REFERENCE + COPY ────────────────────────────────
             SizedBox(
-              width: 180,
+              width: 200,
               child: Row(
                 children: [
                   _CopyRefButton(
@@ -1266,6 +1275,8 @@ class _TransactionRowWidget extends StatelessWidget {
                 ],
               ),
             ),
+
+            // ── TYPE ────────────────────────────────────────────
             SizedBox(
               width: 150,
               child: Text(
@@ -1274,6 +1285,8 @@ class _TransactionRowWidget extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
+
+            // ── MAKER ───────────────────────────────────────────
             SizedBox(
               width: 140,
               child: Text(
@@ -1282,6 +1295,8 @@ class _TransactionRowWidget extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
+
+            // ── NARRATION ───────────────────────────────────────
             Expanded(
               child: Text(
                 row.narration ?? '—',
@@ -1292,6 +1307,8 @@ class _TransactionRowWidget extends StatelessWidget {
                 maxLines: 1,
               ),
             ),
+
+            // ── AMOUNT + CURRENCY ───────────────────────────────
             SizedBox(
               width: 180,
               child: Row(
@@ -1301,8 +1318,8 @@ class _TransactionRowWidget extends StatelessWidget {
                 children: [
                   Flexible(
                     child: Text(
-                      row.amountFormatted,
-                      textAlign: TextAlign.right,
+                      row.amount.toAmount(),
+                      textAlign: TextAlign.end,
                       style: textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -1326,6 +1343,8 @@ class _TransactionRowWidget extends StatelessWidget {
                 ],
               ),
             ),
+
+            // ── STATUS ──────────────────────────────────────────
             SizedBox(
               width: 110,
               child: _StatusPill(row: row),
@@ -1344,26 +1363,27 @@ class _StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = row.statusText.toLowerCase();
+    final tr = AppLocalizations.of(context)!;
     final (_, fg, label) = switch (status) {
       'authorized' => (
       const Color(0xFF22C55E).withValues(alpha: .12),
       const Color(0xFF166534),
-      'Authorized',
+      tr.authorized,
       ),
       'pending' => (
       const Color(0xFFF59E0B).withValues(alpha: .12),
       const Color(0xFF92400E),
-      'Pending',
+      tr.pending,
       ),
       'reversed' => (
       const Color(0xFF6366F1).withValues(alpha: .12),
       const Color(0xFF3730A3),
-      'Reversed',
+      tr.reversed,
       ),
       'deleted' => (
       const Color(0xFFEF4444).withValues(alpha: .12),
       const Color(0xFF991B1B),
-      'Deleted',
+      tr.deleted,
       ),
       _ => (
       Colors.grey.withValues(alpha: .15),
@@ -1377,8 +1397,8 @@ class _StatusPill extends StatelessWidget {
         label,
         textAlign: TextAlign.end,
         style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
+          fontSize: 12.5,
+          fontWeight: FontWeight.w500,
           color: fg,
           letterSpacing: 0.3,
         ),

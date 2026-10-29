@@ -144,14 +144,9 @@ class EntityWidget extends StatelessWidget {
               // ── Balances ──
               Expanded(
                 flex: 4,
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: _balanceStack(balances, scheme, textTheme),
-                ),
+                child: _balanceStack(balances, scheme, textTheme),
               ),
-
               const SizedBox(width: 8),
-
               // ── Status dot ──
               Container(
                 width: 8,
@@ -298,7 +293,7 @@ class EntityWidget extends StatelessWidget {
             children: [
               Icon(Icons.visibility_outlined, size: 16),
               SizedBox(width: 10),
-              Text('View', style: TextStyle(fontSize: 13)),
+              Text('model', style: TextStyle(fontSize: 13)),
             ],
           ),
         ),

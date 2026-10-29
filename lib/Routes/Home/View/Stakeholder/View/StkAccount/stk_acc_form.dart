@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/ztextfield.dart';
+import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../../../Features/Other/form_dialog.dart';
 import '../../../../../../Features/Widgets/z_generic_field.dart';
 import '../../model/stk_model.dart';
@@ -56,6 +57,8 @@ class _StkAccountFormDialogState extends State<StkAccountFormDialog> {
 
     _nameCtrl.addListener(_refresh);
     _limitCtrl.addListener(_refresh);
+
+    _active = true;
 
     // Auto-focus the first field when the dialog opens.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -135,7 +138,7 @@ class _StkAccountFormDialogState extends State<StkAccountFormDialog> {
             ZGenericTextField(
               controller: _nameCtrl,
               focusNode: _nameFocus,                    // <-- wire focus
-              title: "accountName",
+              title: AppLocalizations.of(context)!.accountName,
               hint: "e.g Ahmad",
               defaultCurrencyCode: _currency,
               fieldType: ZTextFieldType.currency,
@@ -155,7 +158,7 @@ class _StkAccountFormDialogState extends State<StkAccountFormDialog> {
             ZTextFieldEntitled(
               controller: _limitCtrl,
               focusNode: _limitFocus,
-              title: "Account Limit",
+              title: AppLocalizations.of(context)!.accountLimit,
               keyboardType:
               const TextInputType.numberWithOptions(decimal: true),
               textInputAction: TextInputAction.next,
@@ -170,11 +173,11 @@ class _StkAccountFormDialogState extends State<StkAccountFormDialog> {
               contentPadding: EdgeInsets.zero,
               value: _active,
               onChanged: (v) => setState(() => _active = v),
-              title: const Text('Account active'),
+              title: Text(AppLocalizations.of(context)!.accountStatus),
               subtitle: Text(
                 _active
-                    ? 'Account is available for transactions'
-                    : 'Account is blocked for transactions',
+                    ? AppLocalizations.of(context)!.accountActiveMsg
+                    : AppLocalizations.of(context)!.accountBlockMsg,
                 style: TextStyle(
                   fontSize: 11,
                   color: scheme.onSurfaceVariant,
@@ -192,7 +195,7 @@ class _StkAccountFormDialogState extends State<StkAccountFormDialog> {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'Currency cannot be changed if the account has recorded transactions.',
+                      AppLocalizations.of(context)!.ccyChangeWarnings,
                       style: TextStyle(
                         fontSize: 11,
                         color: scheme.onSurfaceVariant,

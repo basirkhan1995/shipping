@@ -542,7 +542,7 @@ class _BaseBranchesViewState extends State<_BaseBranchesView> {
   }
 }
 
-// Mobile View
+// Mobile model
 class _MobileBranchesView extends StatelessWidget {
   const _MobileBranchesView();
 
@@ -555,7 +555,7 @@ class _MobileBranchesView extends StatelessWidget {
   }
 }
 
-// Tablet View
+// Tablet model
 class _TabletBranchesView extends StatelessWidget {
   const _TabletBranchesView();
 
@@ -568,7 +568,7 @@ class _TabletBranchesView extends StatelessWidget {
   }
 }
 
-// Desktop View
+// Desktop model
 class _DesktopBranchesView extends StatelessWidget {
   const _DesktopBranchesView();
 

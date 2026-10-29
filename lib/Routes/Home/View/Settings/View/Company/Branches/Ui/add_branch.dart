@@ -717,7 +717,7 @@ class _BaseBranchAddEditState extends State<_BaseBranchAddEdit> {
   }
 }
 
-// Mobile View
+// Mobile model
 class _MobileBranchAddEdit extends StatelessWidget {
   final BranchModel? model;
 
@@ -733,7 +733,7 @@ class _MobileBranchAddEdit extends StatelessWidget {
   }
 }
 
-// Tablet View
+// Tablet model
 class _TabletBranchAddEdit extends StatelessWidget {
   final BranchModel? model;
 
@@ -749,7 +749,7 @@ class _TabletBranchAddEdit extends StatelessWidget {
   }
 }
 
-// Desktop View
+// Desktop model
 class _DesktopBranchAddEdit extends StatelessWidget {
   final BranchModel? model;
 

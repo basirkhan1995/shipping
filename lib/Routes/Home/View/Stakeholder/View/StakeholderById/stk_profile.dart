@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shipping/Features/Widgets/extensions.dart';
 import 'package:shipping/Features/Widgets/toast.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/bloc/stakeholder_bloc.dart';
@@ -7,6 +8,8 @@ import 'package:shipping/Routes/Home/View/Stakeholder/stk_form.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../../../Features/Other/image_helper.dart';
 import '../../../../../../Features/Other/responsive_widget.dart';
+import '../../../Transactions/View/CashWD/cash_wd.dart';
+import '../../../Transactions/View/FundTransfer/fund_transfer.dart';
 import '../../model/stk_model.dart';
 import '../StkAccount/bloc/stk_accounts_bloc.dart';
 import '../StkAccount/bloc/stk_accounts_event.dart';
@@ -15,7 +18,9 @@ import '../StkAccount/stk_acc_form.dart';
 import 'bloc/stakeholder_by_id_bloc.dart';
 import 'bloc/stakeholder_by_id_event.dart';
 import 'bloc/stakeholder_by_id_state.dart';
-import '../../../../../../Features/Date/shamsi_converter.dart'; // .shamsiDateString
+import '../../../../../../Features/Date/shamsi_converter.dart';
+import '../../../../../Auth/bloc/auth_bloc.dart';
+import '../../../Settings/View/Company/CompanyProfile/bloc/company_profile_bloc.dart';
 
 // ═══════════════════════════════════════════════════════════════════
 // Entry point
@@ -90,6 +95,14 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
     fullName = _composeName(widget.ind);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      if (_stkId != null) {
+        context
+            .read<StkAccountsBloc>()
+            .add(LoadStkAccountsEvent(perId: _stkId!));
+      }
+
       if (_stkId != null) {
         context
             .read<StakeholderByIdBloc>()
@@ -124,6 +137,101 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
     );
   }
 
+  // ── Current user / base currency ────────────────────────────────
+  String? _loginName() {
+    final auth = context.read<AuthBloc>().state;
+    return auth is AuthenticatedState ? auth.loginData.usrName : null;
+  }
+
+  String _baseCurrency() {
+    final state = context.read<CompanyProfileBloc>().state;
+    if (state is CompanyProfileLoadedState) {
+      return state.company.comLocalCcy ?? '';
+    }
+    return '';
+  }
+
+  // ── Cash specs for CHDP / CHWL ──────────────────────────────────
+  //
+  // `perId: _stkId` scopes the account picker to this stakeholder.
+  // The cash form forwards it to every LoadStkAccountsEvent it
+  // dispatches (initial + search), so the dropdown never spills over
+  // to other stakeholders' accounts.
+  CashTxnSpec _cashSpecFor(BuildContext context, String code) {
+    final tr = AppLocalizations.of(context)!;
+    switch (code) {
+      case 'CHDP':
+        return CashTxnSpec(
+          typeCode: 'CHDP',
+          icon: Icons.arrow_downward_rounded,
+          title: (_) => tr.cashDeposit,
+          accountInclude: '8',
+          allowReminder: true,
+          perId: _stkId, // ← scope to this stakeholder
+        );
+      case 'CHWL':
+        return CashTxnSpec(
+          typeCode: 'CHWL',
+          icon: Icons.arrow_upward_rounded,
+          title: (_) => tr.cashWithdraw,
+          accountInclude: '8',
+          allowReminder: true,
+          perId: _stkId, // ← scope to this stakeholder
+        );
+      default:
+        throw ArgumentError('Unsupported cash type: $code');
+    }
+  }
+
+  // ── Cash dialog ─────────────────────────────────────────────────
+  Future<void> _openCashDialog(String code) async {
+    final usrName = _loginName();
+    if (usrName == null) return;
+
+    final saved = await showCashTxnDialog(
+      context,
+      spec: _cashSpecFor(context, code),
+      usrName: usrName,
+      baseCurrency: _baseCurrency(),
+    );
+
+    if (!mounted) return;
+    if (saved == true) {
+      _reloadProfile();
+      final tr = AppLocalizations.of(context)!;
+      ToastManager.show(
+        context: context,
+        title: tr.save,
+        message: code == 'CHDP' ? tr.cashDeposit : tr.cashWithdraw,
+        type: ToastType.success,
+      );
+    }
+  }
+
+  // ── Fund-transfer dialog ────────────────────────────────────────
+  Future<void> _openFundTransferDialog() async {
+    final usrName = _loginName();
+    if (usrName == null) return;
+
+    final saved = await showFundTransferDialog(
+      context,
+      usrName: usrName,
+      baseCurrency: _baseCurrency(),
+    );
+
+    if (!mounted) return;
+    if (saved == true) {
+      _reloadProfile();
+      final tr = AppLocalizations.of(context)!;
+      ToastManager.show(
+        context: context,
+        title: tr.save,
+        message: tr.fundTransfer,
+        type: ToastType.success,
+      );
+    }
+  }
+
   // ── Edit profile ────────────────────────────────────────────────
   Future<void> _onEditProfile(IndividualsModel data) async {
     if (data.perId == null) {
@@ -154,6 +262,10 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
         context: context,
         builder: (_) => StkAccountFormDialog(perId: _stkId!),
       );
+      if (!mounted) return;
+      context
+          .read<StkAccountsBloc>()
+          .add(LoadStkAccountsEvent(perId: _stkId!));
     } catch (e) {
       _showError('Add account', e);
     }
@@ -184,7 +296,6 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
       _showError('Statement', 'accNumber is null');
       return;
     }
-    // TODO: open a statement view for account.accNumber
     _showError('Statement', 'Not implemented yet for ${account.accNumber}');
   }
 
@@ -231,11 +342,41 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme;
+    final tr = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
-        title: Text(AppLocalizations.of(context)!.profileOverview),
+        title: Text(tr.profileOverview),
+        actions: [
+          _AppBarAction(
+            icon: Icons.arrow_downward_rounded,
+            tooltip: tr.cashDeposit,
+            onPressed: () => _openCashDialog('CHDP'),
+          ),
+          _AppBarAction(
+            icon: Icons.arrow_upward_rounded,
+            tooltip: tr.cashWithdraw,
+            onPressed: () => _openCashDialog('CHWL'),
+          ),
+          _AppBarAction(
+            icon: Icons.swap_horiz_rounded,
+            tooltip: tr.fundTransfer,
+            onPressed: _openFundTransferDialog,
+          ),
+          const SizedBox(width: 4),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+            child: ZOutlineButton(
+              onPressed: _onAddAccount,
+              height: 36,
+              icon: Icons.add,
+              isActive: true,
+              label: Text(tr.addAccount),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: BlocListener<StakeholderBloc, StakeholderState>(
         listenWhen: (p, c) =>
@@ -247,7 +388,7 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
           } else if (state is UpdateStakeholderFailureState) {
             ToastManager.show(
               context: context,
-              title: AppLocalizations.of(context)!.failed,
+              title: tr.failed,
               message: 'Update failed: ${state.message}',
               type: ToastType.error,
             );
@@ -263,14 +404,14 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
               _reloadProfile();
               ToastManager.show(
                 context: context,
-                title: AppLocalizations.of(context)!.successTitle,
+                title: tr.successTitle,
                 message: '${state.successMessage}',
                 type: ToastType.success,
               );
             } else if (state is StkAccountsFailureState) {
               ToastManager.show(
                 context: context,
-                title: AppLocalizations.of(context)!.failed,
+                title: tr.failed,
                 message: '${state.errorMessage}',
                 type: ToastType.error,
               );
@@ -295,8 +436,8 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    SizedBox(
-                      width: 380,
+                    Expanded(
+                      flex: 2,
                       child: SingleChildScrollView(
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
@@ -308,28 +449,27 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
                       color: color.outlineVariant.withValues(alpha: 0.5),
                     ),
                     Expanded(
+                      flex: 8,
                       child: Padding(
-                        padding: const EdgeInsets.only(left: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Expanded(
-                              flex: 2,
+                            SizedBox(
+                              height: 250,
                               child: _AccountsSection(
                                 accounts: accounts,
                                 ownerName: fullName ?? '—',
                                 isLoading:
                                 state is StakeholderByIdLoadingState,
-                                onAdd: _onAddAccount,
                                 onEdit: _onEditAccount,
                                 onDelete: _onDeleteAccount,
                                 onStatement: _onStatement,
                               ),
                             ),
                             if (recent.isNotEmpty) ...[
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 12),
                               Expanded(
-                                flex: 3,
                                 child: _RecentTransactionsPanel(
                                   transactions: recent,
                                 ),
@@ -363,7 +503,7 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Stack(
-          alignment: Alignment.bottomRight,
+          alignment: AlignmentDirectional.bottomEnd,
           children: [
             Hero(
               tag: 'stakeholder_img_${data.perId}',
@@ -612,13 +752,58 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// AppBar action button
+// ═══════════════════════════════════════════════════════════════════
+class _AppBarAction extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  const _AppBarAction({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Tooltip(
+        message: tooltip,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(6),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: Theme.of(context)
+                    .colorScheme
+                    .outlineVariant
+                    .withValues(alpha: .4),
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: 18,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // Accounts section
 // ═══════════════════════════════════════════════════════════════════
 class _AccountsSection extends StatelessWidget {
   final List<StakeholderAccount> accounts;
   final String ownerName;
   final bool isLoading;
-  final VoidCallback onAdd;
   final ValueChanged<StakeholderAccount> onEdit;
   final ValueChanged<StakeholderAccount> onDelete;
   final ValueChanged<StakeholderAccount> onStatement;
@@ -627,7 +812,6 @@ class _AccountsSection extends StatelessWidget {
     required this.accounts,
     required this.ownerName,
     required this.isLoading,
-    required this.onAdd,
     required this.onEdit,
     required this.onDelete,
     required this.onStatement,
@@ -636,6 +820,7 @@ class _AccountsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme;
+    final tr = AppLocalizations.of(context)!;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -645,7 +830,7 @@ class _AccountsSection extends StatelessWidget {
           child: Row(
             children: [
               Text(
-                AppLocalizations.of(context)!.accounts,
+                tr.accounts,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -666,35 +851,6 @@ class _AccountsSection extends StatelessWidget {
                     color: color.primary,
                   ),
                 ),
-              ),
-              const Spacer(),
-              ZOutlineButton(
-                onPressed: onAdd,
-                height: 45,
-                icon: Icons.arrow_downward_rounded,
-                label: Text(AppLocalizations.of(context)!.cashWithdraw),
-              ),
-              SizedBox(width: 5),
-              ZOutlineButton(
-                onPressed: onAdd,
-                height: 45,
-                icon: Icons.arrow_upward_rounded,
-                label: Text(AppLocalizations.of(context)!.cashDeposit),
-              ),
-              SizedBox(width: 5),
-              ZOutlineButton(
-                onPressed: onAdd,
-                height: 45,
-                icon: Icons.swap_horiz_rounded,
-                label: Text(AppLocalizations.of(context)!.fundTransfer),
-              ),
-              SizedBox(width: 5),
-              ZOutlineButton(
-                onPressed: onAdd,
-                icon: Icons.add,
-                height: 45,
-                isActive: true,
-                label: Text(AppLocalizations.of(context)!.addAccount),
               ),
             ],
           ),
@@ -731,22 +887,16 @@ class _AccountsSection extends StatelessWidget {
 
 // ═══════════════════════════════════════════════════════════════════
 // Recent transactions panel
-//   • Title + column headers always visible
-//   • Date column first, Shamsi + Gregorian
-//   • Amount follows the ACCOUNT perspective:
-//       Dr → account received money → + green, up arrow
-//       Cr → account paid money     → − red,   down arrow
 // ═══════════════════════════════════════════════════════════════════
 class _RecentTransactionsPanel extends StatelessWidget {
   final List<RecentTransaction> transactions;
   const _RecentTransactionsPanel({required this.transactions});
 
-  // ── Column widths ──────────────────────────────────────────
-  static const double _wDate = 170;
+  static const double _wDate = 100;
   static const double _wRef = 220;
-  static const double _wAccount = 140;
-  static const double _wAmount = 130;
-  static const double _wBalance = 130;
+  static const double _wAccount = 150;
+  static const double _wAmount = 150;
+  static const double _wBalance = 150;
   static const double _wStatus = 84;
   static const double _gap = 12;
 
@@ -768,7 +918,6 @@ class _RecentTransactionsPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Title (always visible) ──────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
             child: Row(
@@ -812,24 +961,23 @@ class _RecentTransactionsPanel extends StatelessWidget {
               ],
             ),
           ),
-
           Divider(
             height: 1,
             color: color.outlineVariant.withValues(alpha: 0.5),
           ),
-
-          // ── Column headers (always visible) ─────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
                 SizedBox(
                   width: _wDate,
-                  child: Text(tr.date.toUpperCase(), style: _headerStyle(color)),
+                  child:
+                  Text(tr.date.toUpperCase(), style: _headerStyle(color)),
                 ),
                 const SizedBox(width: _gap),
                 Expanded(
-                  child: Text(tr.transactions.toUpperCase(), style: _headerStyle(color)),
+                  child: Text(tr.narration.toUpperCase(),
+                      style: _headerStyle(color)),
                 ),
                 const SizedBox(width: _gap),
                 SizedBox(
@@ -870,13 +1018,10 @@ class _RecentTransactionsPanel extends StatelessWidget {
               ],
             ),
           ),
-
           Divider(
             height: 1,
             color: color.outlineVariant.withValues(alpha: 0.3),
           ),
-
-          // ── Body (rows, or empty state) ─────────────────────
           Expanded(
             child: isEmpty
                 ? _EmptyTransactions(color: color)
@@ -910,7 +1055,7 @@ class _RecentTransactionsPanel extends StatelessWidget {
   }
 
   TextStyle _headerStyle(ColorScheme color) => TextStyle(
-    fontSize: 9,
+    fontSize: 13,
     fontWeight: FontWeight.w700,
     letterSpacing: 1.0,
     color: color.onSurfaceVariant.withValues(alpha: .7),
@@ -945,9 +1090,6 @@ class _RecentTxnRow extends StatelessWidget {
     required this.gap,
   });
 
-  /// Server Dr/Cr → ACCOUNT perspective:
-  ///   Dr → account received money → +, green, arrow up
-  ///   Cr → account paid money     → −, red,   arrow down
   bool get _isDebitIn => tx.drCr == 'Dr';
   Color get _amountColor =>
       _isDebitIn ? const Color(0xFF16A34A) : color.error;
@@ -955,12 +1097,10 @@ class _RecentTxnRow extends StatelessWidget {
       ? Icons.arrow_upward_rounded
       : Icons.arrow_downward_rounded;
 
-  /// Builds "+1,234.00 USD" / "−1,234.00 USD" independent of
-  /// `tx.formattedAmount` so the sign always matches colour + arrow.
   String get _signedAmount {
     final sign = _isDebitIn ? '+' : '−';
-    final raw = tx.amount;
-    final body = raw.toStringAsFixed(2);
+    final raw = tx.amount.toAmount();
+    final body = raw.toAmount();
     final ccy = tx.currency ?? '';
     return ccy.isEmpty ? '$sign$body' : '$sign$body $ccy';
   }
@@ -970,18 +1110,12 @@ class _RecentTxnRow extends StatelessWidget {
     final balanceNegative = tx.runningBalance < 0;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // ── DATE (Shamsi · Gregorian) ──────────────────────
-          SizedBox(
-            width: wDate,
-            child: _DateCell(tx: tx),
-          ),
+          SizedBox(width: wDate, child: _DateCell(tx: tx)),
           const SizedBox(width: 12),
-
-          // ── TRANSACTION ────────────────────────────────────
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1014,8 +1148,6 @@ class _RecentTxnRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-
-          // ── ACCOUNT ────────────────────────────────────────
           SizedBox(
             width: wAccount,
             child: Column(
@@ -1024,7 +1156,7 @@ class _RecentTxnRow extends StatelessWidget {
               children: [
                 Text(
                   tx.accountName ?? '—',
-                  textAlign: TextAlign.start,
+                  textAlign: TextAlign.end,
                   style: textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     fontSize: 11,
@@ -1036,7 +1168,7 @@ class _RecentTxnRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   tx.account?.toString() ?? '—',
-                  textAlign: TextAlign.start,
+                  textAlign: TextAlign.end,
                   style: textTheme.labelSmall?.copyWith(
                     fontSize: 10,
                     fontFamily: 'monospace',
@@ -1047,8 +1179,6 @@ class _RecentTxnRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-
-          // ── AMOUNT (account perspective) ───────────────────
           SizedBox(
             width: wAmount,
             child: Row(
@@ -1073,8 +1203,6 @@ class _RecentTxnRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-
-          // ── BALANCE ────────────────────────────────────────
           SizedBox(
             width: wBalance,
             child: Text(
@@ -1090,8 +1218,6 @@ class _RecentTxnRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-
-          // ── STATUS ─────────────────────────────────────────
           SizedBox(
             width: wStatus,
             child: Align(
@@ -1106,7 +1232,7 @@ class _RecentTxnRow extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Date cell — Shamsi (.shamsiDateString) + Gregorian
+// Date cell
 // ═══════════════════════════════════════════════════════════════════
 class _DateCell extends StatelessWidget {
   final RecentTransaction tx;
@@ -1128,10 +1254,7 @@ class _DateCell extends StatelessWidget {
       );
     }
 
-    // Shamsi via your extension.
     final shamsi = raw.shamsiDateString;
-
-    // Gregorian, ISO `yyyy-MM-dd`.
     final gregorian = '${raw.year.toString().padLeft(4, '0')}-'
         '${raw.month.toString().padLeft(2, '0')}-'
         '${raw.day.toString().padLeft(2, '0')}';
@@ -1143,7 +1266,7 @@ class _DateCell extends StatelessWidget {
         Text(
           shamsi,
           style: textTheme.bodySmall?.copyWith(
-            fontSize: 11,
+            fontSize: 13,
             fontWeight: FontWeight.w600,
             color: color.onSurface,
           ),
@@ -1154,7 +1277,7 @@ class _DateCell extends StatelessWidget {
         Text(
           gregorian,
           style: textTheme.labelSmall?.copyWith(
-            fontSize: 9,
+            fontSize: 13,
             color: color.onSurfaceVariant,
           ),
           maxLines: 1,
@@ -1166,7 +1289,7 @@ class _DateCell extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Status pill (renamed to avoid clashing with the file-level _StatusPill)
+// Status pill
 // ═══════════════════════════════════════════════════════════════════
 class _TxnStatusPill extends StatelessWidget {
   final RecentTransaction tx;
@@ -1174,6 +1297,7 @@ class _TxnStatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context)!;
     final isAuth = tx.isAuthorized;
     final bg = isAuth
         ? const Color(0xFF22C55E).withValues(alpha: .12)
@@ -1187,7 +1311,7 @@ class _TxnStatusPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        tx.statusText ?? (isAuth ? AppLocalizations.of(context)!.authorized : AppLocalizations.of(context)!.pending),
+        tx.statusText ?? (isAuth ? tr.authorized : tr.pending),
         style: TextStyle(
           fontSize: 9,
           fontWeight: FontWeight.w700,
@@ -1200,7 +1324,7 @@ class _TxnStatusPill extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Empty state (title + headers are shown above this)
+// Empty state
 // ═══════════════════════════════════════════════════════════════════
 class _EmptyTransactions extends StatelessWidget {
   final ColorScheme color;
@@ -1470,8 +1594,6 @@ class _BankCard extends StatelessWidget {
 
 // ═══════════════════════════════════════════════════════════════════
 // Debtor / Creditor badge
-//   balance > 0  → CREDITOR  (account has money, can withdraw)
-//   balance < 0  → DEBTOR    (account owes the system)
 // ═══════════════════════════════════════════════════════════════════
 class _BalancePositionBadge extends StatelessWidget {
   final double balance;
@@ -1480,7 +1602,7 @@ class _BalancePositionBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
-    final (label, bg, fg) = _resolve(balance,tr: tr);
+    final (label, bg, fg) = _resolve(balance, tr: tr);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -1500,7 +1622,7 @@ class _BalancePositionBadge extends StatelessWidget {
     );
   }
 
-  (String, Color, Color) _resolve(double balance,{AppLocalizations? tr}) {
+  (String, Color, Color) _resolve(double balance, {AppLocalizations? tr}) {
     if (balance < 0) {
       return (
       tr!.debitor.toUpperCase(),
@@ -1562,7 +1684,7 @@ class _BankCardMenu extends StatelessWidget {
         }
       },
       itemBuilder: (_) => [
-          PopupMenuItem(
+        PopupMenuItem(
           value: 'statement',
           height: 40,
           child: Row(
@@ -1604,7 +1726,8 @@ class _DeleteItem extends StatelessWidget {
       children: [
         Icon(Icons.delete_outline, size: 16, color: error),
         const SizedBox(width: 10),
-        Text(AppLocalizations.of(context)!.delete, style: TextStyle(fontSize: 13, color: error)),
+        Text(AppLocalizations.of(context)!.delete,
+            style: TextStyle(fontSize: 13, color: error)),
       ],
     );
   }

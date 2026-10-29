@@ -1,3 +1,5 @@
+import '../../../../../../Features/Widgets/extensions.dart'; // NumberFormatting
+
 class TransactionListItem {
   final String reference;
   final String typeCode;
@@ -48,16 +50,18 @@ class TransactionListItem {
     );
   }
 
-  String get amountFormatted {
-    // Debit == Credit in balanced journals; show the debit side.
-    final v = totalDebit == 0 ? totalCredit : totalDebit;
-    final parts = v.toStringAsFixed(2).split('.');
-    final intPart = parts[0].replaceAllMapped(
-      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-          (m) => '${m[1]},',
-    );
-    return '$intPart.${parts[1]}';
-  }
+  /// Numeric amount used across the UI.
+  /// Balanced journals have debit == credit, so either side works;
+  /// fall back to credit only if debit is zero.
+  num get amount => totalDebit == 0 ? totalCredit : totalDebit;
+
+  /// Formatted via the shared NumberFormatting extension — always
+  /// consistent with the rest of the app.
+  String get amountFormatted => amount.toAmount();
+
+  /// Convenience: "1,234.00 USD" (or "1,234.00 USD, EUR" for multi-ccy).
+  String get amountWithCurrency =>
+      currencies.isEmpty ? amountFormatted : '$amountFormatted $currencies';
 }
 
 class TransactionDraft {

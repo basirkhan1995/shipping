@@ -277,7 +277,7 @@ class _BaseBranchDetails extends StatelessWidget {
   }
 }
 
-// Mobile View
+// Mobile model
 class _MobileBranchDetails extends StatelessWidget {
   final BranchModel branch;
 
@@ -293,7 +293,7 @@ class _MobileBranchDetails extends StatelessWidget {
   }
 }
 
-// Tablet View
+// Tablet model
 class _TabletBranchDetails extends StatelessWidget {
   final BranchModel branch;
 
@@ -309,7 +309,7 @@ class _TabletBranchDetails extends StatelessWidget {
   }
 }
 
-// Desktop View
+// Desktop model
 class _DesktopBranchDetails extends StatelessWidget {
   final BranchModel branch;
 

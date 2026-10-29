@@ -8,10 +8,13 @@ import '../Routes/Home/View/Finance/View/ExchangeRate/model/ex_rate_model.dart';
 import '../Routes/Home/View/Finance/View/GlAccounts/GlCategories/model/cat_model.dart';
 import '../Routes/Home/View/Finance/View/GlAccounts/model/gl_model.dart';
 import '../Routes/Home/View/Finance/View/Reminder/model/reminder_model.dart';
+import '../Routes/Home/View/HR/View/Users/model/user_model.dart';
+import '../Routes/Home/View/HR/View/Users/model/usr_report_model.dart';
 import '../Routes/Home/View/Settings/View/Company/Branch/Ui/BranchLimits/model/limit_model.dart';
 import '../Routes/Home/View/Settings/View/Company/Branches/model/branch_model.dart';
 import '../Routes/Home/View/Settings/View/Company/CompanyProfile/model/com_model.dart';
 import '../Routes/Home/View/Settings/View/Company/Storage/model/storage_model.dart';
+import '../Routes/Home/View/Settings/View/General/UserRole/model/role_model.dart';
 import '../Routes/Home/View/Stakeholder/model/stk_model.dart';
 import '../Routes/Home/View/Transactions/View/Exchange/model/ex_model.dart';
 import '../Routes/Home/View/Transactions/View/FundTransfer/model/ft_model.dart';
@@ -1524,5 +1527,181 @@ class Repositories {
       _ => 'Exchange transfer failed.',
     };
   }
+
+  ///Users .....................................................................
+  Future<List<UsersModel>> getUsers({int? usrOwner, CancelToken? cancelToken,}) async {
+    // Build query parameters dynamically
+    final queryParams = usrOwner != null ? {'perID': usrOwner} : null;
+
+    // Fetch data from API
+    final response = await _api.get(
+      endpoint: "/HR/users.php",
+      queryParams: queryParams,
+      cancelToken: cancelToken,
+    );
+
+    // Handle error messages from server
+    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+      throw Exception(response.data['msg']);
+    }
+
+    // If data is null or empty, return empty list
+    if (response.data == null ||
+        (response.data is List && response.data.isEmpty)) {
+      return [];
+    }
+
+    // Parse list of stakeholders safely
+    if (response.data is List) {
+      return (response.data as List)
+          .whereType<Map<String, dynamic>>() // ensure map type
+          .map((json) => UsersModel.fromMap(json))
+          .toList();
+    }
+
+    return [];
+  }
+  Future<Map<String, dynamic>> addUser({required UsersModel newUser}) async {
+    final response = await _api.post(
+      endpoint: "/HR/users.php",
+      data: newUser.toMap(),
+    );
+    return response.data;
+  }
+  Future<Map<String, dynamic>> editUser({required UsersModel newUser}) async {
+    final response = await _api.put(
+      endpoint: "/HR/users.php",
+      data: newUser.toMap(),
+    );
+    return response.data;
+  }
+  Future<List<UsersReportModel>> getUsersReport({
+    String? usrName,
+    int? status,
+    int? branch,
+    int? role,
+  }) async {
+    final response = await _api.post(
+      endpoint: "/reports/usersList.php",
+      data: {
+        "username": usrName,
+        "status": status,
+        "branch": branch,
+        "role": role,
+      },
+    );
+
+    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+      throw Exception(response.data['msg']);
+    }
+
+    if (response.data == null ||
+        (response.data is List && response.data.isEmpty)) {
+      return [];
+    }
+
+    if (response.data is List) {
+      return (response.data as List)
+          .whereType<Map<String, dynamic>>()
+          .map((json) => UsersReportModel.fromMap(json))
+          .toList();
+    }
+
+    return [];
+  }
+
+  ///Roles .....................................................................
+  Future<List<UserRoleModel>> getUserRole({int? usrOwner, CancelToken? cancelToken,}) async {
+
+    // Fetch data from API
+    final response = await _api.get(
+      endpoint: "/setting/roles.php",
+      cancelToken: cancelToken,
+    );
+
+    // Handle error messages from server
+    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+      throw Exception(response.data['msg']);
+    }
+
+    // If data is null or empty, return empty list
+    if (response.data == null ||
+        (response.data is List && response.data.isEmpty)) {
+      return [];
+    }
+
+    // Parse list of stakeholders safely
+    if (response.data is List) {
+      return (response.data as List)
+          .whereType<Map<String, dynamic>>() // ensure map type
+          .map((json) => UserRoleModel.fromMap(json))
+          .toList();
+    }
+
+    return [];
+  }
+  Future<Map<String, dynamic>> addNewRole({required String usrName, required String roleName}) async {
+    final response = await _api.post(
+        endpoint: "/setting/roles.php",
+        data: {
+          "usrName": usrName,
+          "rolName": roleName
+        }
+    );
+    return response.data;
+  }
+  Future<Map<String, dynamic>> editUserRole({required UserRoleModel newRole}) async {
+    final response = await _api.put(
+        endpoint: "/setting/roles.php",
+        data: newRole.toMap()
+    );
+    return response.data;
+  }
+  Future<Map<String, dynamic>> deleteUserRole({required int roleId}) async {
+    final response = await _api.delete(
+      endpoint: "/setting/roles.php",
+      data:  {
+        "rolID": roleId
+      },
+    );
+    return response.data;
+  }
+
+  ///User Role Settings ........................................................
+  // Future<List<UserRolePermissionSettingModel>> getPermissionSettings({CancelToken? cancelToken,}) async {
+  //   final response = await _api.get(
+  //     endpoint: "/setting/userRoles.php",
+  //     cancelToken: cancelToken,
+  //   );
+  //
+  //   // Handle error messages from server
+  //   if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+  //     throw Exception(response.data['msg']);
+  //   }
+  //
+  //   // If data is null or empty, return empty list
+  //   if (response.data == null ||
+  //       (response.data is List && response.data.isEmpty)) {
+  //     return [];
+  //   }
+  //
+  //   // Parse list of stakeholders safely
+  //   if (response.data is List) {
+  //     return (response.data as List)
+  //         .whereType<Map<String, dynamic>>() // ensure map type
+  //         .map((json) => UserRolePermissionSettingModel.fromMap(json))
+  //         .toList();
+  //   }
+  //
+  //   return [];
+  // }
+  // Future<Map<String, dynamic>> updatePermissionSettings({required PermissionActionModel permissions,}) async {
+  //
+  //   final response = await _api.put(
+  //     endpoint: "/setting/userRoles.php",
+  //     data: permissions.toMap(),
+  //   );
+  //   return response.data;
+  // }
 
 }

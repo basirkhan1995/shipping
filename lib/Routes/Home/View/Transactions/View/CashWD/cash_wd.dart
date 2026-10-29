@@ -33,7 +33,7 @@ class CashTxnSpec {
   final bool restrictToBaseCurrency;
   final bool allowReminder;
   final bool editableCurrency;
-
+  final int? perId;
   const CashTxnSpec({
     required this.typeCode,
     required this.icon,
@@ -43,6 +43,7 @@ class CashTxnSpec {
     this.restrictToBaseCurrency = false,
     this.allowReminder = false,
     this.editableCurrency = false,
+    this.perId
   });
 }
 
@@ -216,7 +217,7 @@ class CashTxnFormState extends State<CashTxnForm> {
         readOnly: !_isEditable,
         searchFunction: (bloc, q) {
           if (q.trim().isEmpty) return;
-          bloc.add(LoadStkAccountsEvent(query: q));
+          bloc.add(LoadStkAccountsEvent(query: q,perId: widget.spec.perId));
         },
         itemBuilder: (context, account) => Padding(
           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),

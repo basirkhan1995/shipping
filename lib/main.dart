@@ -9,12 +9,15 @@ import 'package:shipping/Routes/Home/View/Finance/View/GlAccounts/GlCategories/b
 import 'package:shipping/Routes/Home/View/Finance/View/GlAccounts/bloc/gl_accounts_bloc.dart';
 import 'package:shipping/Routes/Home/View/Finance/View/Reminder/bloc/reminder_bloc.dart';
 import 'package:shipping/Routes/Home/View/Finance/bloc/financial_tab_bloc.dart';
+import 'package:shipping/Routes/Home/View/HR/View/Users/bloc/users_bloc.dart';
+import 'package:shipping/Routes/Home/View/HR/bloc/hrtab_bloc.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/Company/Branch/Ui/BranchLimits/bloc/branch_limit_bloc.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/Company/Branch/bloc/brc_tab_bloc.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/Company/Branches/bloc/branch_bloc.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/Company/CompanyProfile/bloc/company_profile_bloc.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/Company/Storage/bloc/storage_bloc.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/Company/bloc/company_settings_menu_bloc.dart';
+import 'package:shipping/Routes/Home/View/Settings/View/General/UserRole/bloc/user_role_bloc.dart';
 import 'package:shipping/Routes/Home/View/Settings/Visibility/bloc/settings_visible_bloc.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/View/StkAccount/bloc/stk_accounts_bloc.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/bloc/stakeholder_bloc.dart';
@@ -55,11 +58,13 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (_) => FinanceTabBloc()),
           BlocProvider(create: (_) => BranchTabBloc()),
           BlocProvider(create: (_) => CompanySettingsMenuBloc()),
+          BlocProvider(create: (_) => HrTabBloc()),
           BlocProvider(create: (_) => SettingsVisibleBloc()..add(LoadSettingsEvent())),
           
           ///Auth
           BlocProvider(create: (_) => AuthBloc(Repositories(ApiServices()))),
-
+          BlocProvider(create: (_) => UsersBloc(Repositories(ApiServices()))..add(LoadUsersEvent())),
+          BlocProvider(create: (_) => UserRoleBloc(Repositories(ApiServices()))..add(LoadUserRolesEvent())),
           ///Stakeholders
           BlocProvider(create: (_) => StakeholderBloc(Repositories(ApiServices()))..add(GetStakeholdersEvent())),
           BlocProvider(create: (_) => StakeholderByIdBloc(Repositories(ApiServices()))),
@@ -80,7 +85,6 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (_) => BranchBloc(Repositories(ApiServices()))..add(LoadBranchesEvent())),
           BlocProvider(create: (_) => BranchLimitBloc(Repositories(ApiServices()))),
           BlocProvider(create: (_) => EoyBloc(Repositories(ApiServices()))..add(LoadPLEvent())),
-
 
           ///Transactions
           BlocProvider(create: (_) => BulkTransferBloc(Repositories(ApiServices()))),

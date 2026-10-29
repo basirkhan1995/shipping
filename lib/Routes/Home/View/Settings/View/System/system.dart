@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/System/theme_toggle.dart';
-
-import '../../../../../../l10n/locale_selector.dart';
-
+import '../../../../../../../../l10n/locale_selector.dart';
 
 class SystemView extends StatelessWidget {
   const SystemView({super.key});

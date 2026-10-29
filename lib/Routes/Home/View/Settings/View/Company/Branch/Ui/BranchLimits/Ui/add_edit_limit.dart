@@ -587,7 +587,7 @@ class _BaseBranchLimitAddEditState extends State<_BaseBranchLimitAddEdit> {
   }
 }
 
-// Mobile View
+// Mobile model
 class _MobileBranchLimitAddEdit extends StatelessWidget {
   final BranchLimitModel? model;
   final int? branchCode;
@@ -605,7 +605,7 @@ class _MobileBranchLimitAddEdit extends StatelessWidget {
   }
 }
 
-// Tablet View
+// Tablet model
 class _TabletBranchLimitAddEdit extends StatelessWidget {
   final BranchLimitModel? model;
   final int? branchCode;
@@ -623,7 +623,7 @@ class _TabletBranchLimitAddEdit extends StatelessWidget {
   }
 }
 
-// Desktop View
+// Desktop model
 class _DesktopBranchLimitAddEdit extends StatelessWidget {
   final BranchLimitModel? model;
   final int? branchCode;

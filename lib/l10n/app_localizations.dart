@@ -775,7 +775,7 @@ abstract class AppLocalizations {
   /// No description provided for @income.
   ///
   /// In en, this message translates to:
-  /// **'income'**
+  /// **'Income'**
   String get income;
 
   /// No description provided for @expense.
@@ -1617,6 +1617,252 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add Account'**
   String get addAccount;
+
+  /// No description provided for @accountLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Limit'**
+  String get accountLimit;
+
+  /// No description provided for @accountStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Status'**
+  String get accountStatus;
+
+  /// No description provided for @accountActiveMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Account is available for transactions'**
+  String get accountActiveMsg;
+
+  /// No description provided for @accountBlockMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Account is blocked for transactions.'**
+  String get accountBlockMsg;
+
+  /// No description provided for @ccyChangeWarnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency cannot be changed if the account has recorded transactions.'**
+  String get ccyChangeWarnings;
+
+  /// No description provided for @permissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get permissions;
+
+  /// No description provided for @userProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'User Profile'**
+  String get userProfile;
+
+  /// No description provided for @password8Char.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 8 characters'**
+  String get password8Char;
+
+  /// No description provided for @passwordUpperCase.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must contain at least one uppercase letter'**
+  String get passwordUpperCase;
+
+  /// No description provided for @passwordLowerCase.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must contain at least one lowercase letter'**
+  String get passwordLowerCase;
+
+  /// No description provided for @passwordWithDigit.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must contain at least one digit'**
+  String get passwordWithDigit;
+
+  /// No description provided for @passwordWithSpecialChar.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must contain at least one special character'**
+  String get passwordWithSpecialChar;
+
+  /// No description provided for @usernameMinLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Username must be at least 4 characters'**
+  String get usernameMinLength;
+
+  /// No description provided for @usernameNoStartDigit.
+  ///
+  /// In en, this message translates to:
+  /// **'Username cannot start with a number'**
+  String get usernameNoStartDigit;
+
+  /// No description provided for @usernameInvalidChars.
+  ///
+  /// In en, this message translates to:
+  /// **'Username can only contain letters, numbers, . or _'**
+  String get usernameInvalidChars;
+
+  /// No description provided for @usernameNoSpaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Username cannot contain spaces'**
+  String get usernameNoSpaces;
+
+  /// No description provided for @changePassowrd.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Password'**
+  String get changePassowrd;
+
+  /// No description provided for @oldPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Old Passwor'**
+  String get oldPassword;
+
+  /// No description provided for @newPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New Password'**
+  String get newPassword;
+
+  /// No description provided for @confirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-enter password'**
+  String get confirmPassword;
+
+  /// No description provided for @passwordNotMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords don\'t match.'**
+  String get passwordNotMatch;
+
+  /// No description provided for @users.
+  ///
+  /// In en, this message translates to:
+  /// **'Users'**
+  String get users;
+
+  /// No description provided for @attendance.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance'**
+  String get attendance;
+
+  /// No description provided for @employees.
+  ///
+  /// In en, this message translates to:
+  /// **'Employees'**
+  String get employees;
+
+  /// No description provided for @hrTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Human Resources Management'**
+  String get hrTitle;
+
+  /// No description provided for @emailExists.
+  ///
+  /// In en, this message translates to:
+  /// **'Email already exists, try another'**
+  String get emailExists;
+
+  /// No description provided for @usernameExists.
+  ///
+  /// In en, this message translates to:
+  /// **'Username already exists, try another'**
+  String get usernameExists;
+
+  /// No description provided for @addUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Add User'**
+  String get addUser;
+
+  /// No description provided for @userOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'User owner'**
+  String get userOwner;
+
+  /// No description provided for @editRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Role'**
+  String get editRole;
+
+  /// No description provided for @addRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Role'**
+  String get addRole;
+
+  /// No description provided for @roleName.
+  ///
+  /// In en, this message translates to:
+  /// **'Role name'**
+  String get roleName;
+
+  /// No description provided for @userRole.
+  ///
+  /// In en, this message translates to:
+  /// **'User Role'**
+  String get userRole;
+
+  /// No description provided for @errorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get errorTitle;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
+  /// No description provided for @forceChangePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Password after login'**
+  String get forceChangePassword;
+
+  /// No description provided for @forceEmailVerification.
+  ///
+  /// In en, this message translates to:
+  /// **'Email Verification'**
+  String get forceEmailVerification;
+
+  /// No description provided for @view.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get view;
+
+  /// No description provided for @editUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit User'**
+  String get editUser;
+
+  /// No description provided for @block.
+  ///
+  /// In en, this message translates to:
+  /// **'Block'**
+  String get block;
+
+  /// No description provided for @unblock.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate'**
+  String get unblock;
 }
 
 class _AppLocalizationsDelegate

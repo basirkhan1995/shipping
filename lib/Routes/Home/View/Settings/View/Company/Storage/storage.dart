@@ -568,7 +568,7 @@ class _BaseStorageViewState extends State<_BaseStorageView> {
   }
 }
 
-// Mobile View
+// Mobile model
 class _MobileStorageView extends StatelessWidget {
   const _MobileStorageView();
 
@@ -581,7 +581,7 @@ class _MobileStorageView extends StatelessWidget {
   }
 }
 
-// Tablet View
+// Tablet model
 class _TabletStorageView extends StatelessWidget {
   const _TabletStorageView();
 
@@ -594,7 +594,7 @@ class _TabletStorageView extends StatelessWidget {
   }
 }
 
-// Desktop View
+// Desktop model
 class _DesktopStorageView extends StatelessWidget {
   const _DesktopStorageView();
 

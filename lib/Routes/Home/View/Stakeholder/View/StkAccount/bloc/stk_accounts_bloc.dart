@@ -26,6 +26,9 @@ class StkAccountsBloc extends Bloc<StkAccountsEvent, StkAccountsState> {
       LoadStkAccountsEvent e,
       Emitter<StkAccountsState> emit,
       ) async {
+    // perId is entirely the caller's choice:
+    //   perId == 5   → only that stakeholder's accounts
+    //   perId == null → all accounts
     await _load(
       perId: e.perId,
       search: e.query,
@@ -257,7 +260,6 @@ class StkAccountsBloc extends Bloc<StkAccountsEvent, StkAccountsState> {
       ClearStkAccountMessagesEvent _,
       Emitter<StkAccountsState> emit,
       ) {
-    // Re-emit whatever the last data-bearing state was, minus messages.
     emit(StkAccountsLoadedState(
       perId: state.perId,
       accounts: state.accounts,

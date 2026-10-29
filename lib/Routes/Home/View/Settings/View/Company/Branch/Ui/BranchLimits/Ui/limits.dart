@@ -504,7 +504,7 @@ class _BaseBranchLimitsState extends State<_BaseBranchLimits> {
   }
 }
 
-// Mobile View
+// Mobile model
 class _MobileBranchLimits extends StatelessWidget {
   final BranchModel branch;
 
@@ -520,7 +520,7 @@ class _MobileBranchLimits extends StatelessWidget {
   }
 }
 
-// Tablet View
+// Tablet model
 class _TabletBranchLimits extends StatelessWidget {
   final BranchModel branch;
 
@@ -536,7 +536,7 @@ class _TabletBranchLimits extends StatelessWidget {
   }
 }
 
-// Desktop View
+// Desktop model
 class _DesktopBranchLimits extends StatelessWidget {
   final BranchModel branch;
 

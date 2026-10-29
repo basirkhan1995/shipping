@@ -777,4 +777,132 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get addAccount => 'نوی حساب';
+
+  @override
+  String get accountLimit => 'حد حساب';
+
+  @override
+  String get accountStatus => 'وضعیت حساب';
+
+  @override
+  String get accountActiveMsg => 'حساب برای معاملات آماده است';
+
+  @override
+  String get accountBlockMsg => 'حساب برای معاملات مسدود است';
+
+  @override
+  String get ccyChangeWarnings =>
+      'درصورت موجود تراکنش ارز حساب قابل تغییر نیست';
+
+  @override
+  String get permissions => 'صلاحیت ها';
+
+  @override
+  String get userProfile => 'پروفایل کاربر';
+
+  @override
+  String get password8Char => 'پټنوم باید لږ تر لږه ۸ توري ولري';
+
+  @override
+  String get passwordUpperCase =>
+      'پټنوم باید لږ تر لږه یو لوی انګلیسي توری ولري';
+
+  @override
+  String get passwordLowerCase =>
+      'پټنوم باید لږ تر لږه یو کوچنی انګلیسي توری ولري';
+
+  @override
+  String get passwordWithDigit => 'پټنوم باید لږ تر لږه یوه شمېره ولري';
+
+  @override
+  String get passwordWithSpecialChar =>
+      'پټنوم باید لږ تر لږه یو ځانګړی نښه ولري';
+
+  @override
+  String get usernameMinLength => 'کارن نوم باید لږ تر لږه ۴ توري ولري';
+
+  @override
+  String get usernameNoStartDigit => 'کارن نوم نشي کولی په شمېره پیل شي';
+
+  @override
+  String get usernameInvalidChars =>
+      'کارن نوم یوازې توري، شمېرې، نقطه (.) یا کرښه (_) لرلی شي';
+
+  @override
+  String get usernameNoSpaces => 'کارن نوم نشي کولی تشه (space) ولري';
+
+  @override
+  String get changePassowrd => 'تغییر رمز عبور';
+
+  @override
+  String get oldPassword => 'رمز قبلی';
+
+  @override
+  String get newPassword => 'رمز عبور جدید';
+
+  @override
+  String get confirmPassword => 'تکرار رمز عبور';
+
+  @override
+  String get passwordNotMatch => 'رمز عبور همخوانی ندارد';
+
+  @override
+  String get users => 'یوزر ها';
+
+  @override
+  String get attendance => 'حضور و غیاب';
+
+  @override
+  String get employees => 'کارمندان';
+
+  @override
+  String get hrTitle => 'مدیریت منابع بشری';
+
+  @override
+  String get emailExists => 'این ایمیل از قبل استفاده شده است';
+
+  @override
+  String get usernameExists => 'نام کاربر تکراری است';
+
+  @override
+  String get addUser => 'کاربر جدید';
+
+  @override
+  String get userOwner => 'دارنده یوزر';
+
+  @override
+  String get editRole => 'ویرایش نقش';
+
+  @override
+  String get addRole => 'نقش جدید';
+
+  @override
+  String get roleName => 'نام نقش';
+
+  @override
+  String get userRole => 'نقش کاربر';
+
+  @override
+  String get errorTitle => 'خطا';
+
+  @override
+  String get retry => 'تلاش دوباره';
+
+  @override
+  String get forceChangePassword => 'تغییر رمز بعد ورود';
+
+  @override
+  String get forceEmailVerification => 'تایید ایمیل';
+
+  @override
+  String get view => 'مشاهده';
+
+  @override
+  String get editUser => 'ویرایش یوزر';
+
+  @override
+  String get block => 'مسدود کردن';
+
+  @override
+  String get unblock => 'فعال کردن';
 }

@@ -223,7 +223,7 @@ class _StakeholderTablet extends StatelessWidget {
               onPressed: () => _StakeholderController.refresh(context),
             ),
             Padding(
-              padding: const EdgeInsets.only(right: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 6),
               child: ZOutlineButton(
                 label: const Text('Add'),
                 icon: Icons.add,

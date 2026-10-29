@@ -779,4 +779,132 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get addAccount => 'حساب جدید';
+
+  @override
+  String get accountLimit => 'حد حساب';
+
+  @override
+  String get accountStatus => 'وضعیت حساب';
+
+  @override
+  String get accountActiveMsg => 'حساب برای معاملات آماده است';
+
+  @override
+  String get accountBlockMsg => 'حساب برای معاملات مسدود است';
+
+  @override
+  String get ccyChangeWarnings =>
+      'درصورت موجود تراکنش ارز حساب قابل تغییر نیست';
+
+  @override
+  String get permissions => 'صلاحیت ها';
+
+  @override
+  String get userProfile => 'پروفایل کاربر';
+
+  @override
+  String get password8Char => 'رمز عبور باید حداقل ۸ کاراکتر باشد';
+
+  @override
+  String get passwordUpperCase =>
+      'رمز عبور باید حداقل شامل یک حرف بزرگ انگلیسی باشد';
+
+  @override
+  String get passwordLowerCase =>
+      'رمز عبور باید حداقل شامل یک حرف کوچک انگلیسی باشد';
+
+  @override
+  String get passwordWithDigit => 'رمز عبور باید حداقل شامل یک عدد باشد';
+
+  @override
+  String get passwordWithSpecialChar =>
+      'رمز عبور باید حداقل شامل یک کاراکتر ویژه باشد';
+
+  @override
+  String get usernameMinLength => 'نام کاربری باید حداقل ۴ کاراکتر باشد';
+
+  @override
+  String get usernameNoStartDigit => 'نام کاربری نمی‌تواند با عدد شروع شود';
+
+  @override
+  String get usernameInvalidChars =>
+      'نام کاربری فقط می‌تواند شامل حروف، اعداد، نقطه (.) یا زیرخط (_) باشد';
+
+  @override
+  String get usernameNoSpaces => 'نام کاربری نمی‌تواند شامل فاصله باشد';
+
+  @override
+  String get changePassowrd => 'تغییر رمز عبور';
+
+  @override
+  String get oldPassword => 'رمز قبلی';
+
+  @override
+  String get newPassword => 'رمز عبور جدید';
+
+  @override
+  String get confirmPassword => 'تکرار رمز عبور';
+
+  @override
+  String get passwordNotMatch => 'رمز عبور همخوانی ندارد';
+
+  @override
+  String get users => 'یوزر ها';
+
+  @override
+  String get attendance => 'حضور و غیاب';
+
+  @override
+  String get employees => 'کارمندان';
+
+  @override
+  String get hrTitle => 'مدیریت منابع بشری';
+
+  @override
+  String get emailExists => 'این ایمیل از قبل استفاده شده است';
+
+  @override
+  String get usernameExists => 'نام کاربر تکراری است';
+
+  @override
+  String get addUser => 'کاربر جدید';
+
+  @override
+  String get userOwner => 'دارنده یوزر';
+
+  @override
+  String get editRole => 'ویرایش نقش';
+
+  @override
+  String get addRole => 'نقش جدید';
+
+  @override
+  String get roleName => 'نام نقش';
+
+  @override
+  String get userRole => 'نقش کاربر';
+
+  @override
+  String get errorTitle => 'خطا';
+
+  @override
+  String get retry => 'تلاش دوباره';
+
+  @override
+  String get forceChangePassword => 'تغییر رمز بعد ورود';
+
+  @override
+  String get forceEmailVerification => 'تایید ایمیل';
+
+  @override
+  String get view => 'مشاهده';
+
+  @override
+  String get editUser => 'ویرایش یوزر';
+
+  @override
+  String get block => 'مسدود کردن';
+
+  @override
+  String get unblock => 'فعال کردن';
 }

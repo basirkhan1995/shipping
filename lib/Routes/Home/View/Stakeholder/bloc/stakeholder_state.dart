@@ -1,4 +1,4 @@
-// lib/Routes/Home/View/Stakeholder/bloc/stakeholder_state.dart
+// lib/Routes/Home/model/Stakeholder/bloc/stakeholder_state.dart
 
 part of 'stakeholder_bloc.dart';
 
