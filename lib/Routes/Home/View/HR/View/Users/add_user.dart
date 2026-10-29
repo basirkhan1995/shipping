@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shipping/Routes/Home/View/HR/View/Users/permission_section.dart';
+import 'package:shipping/Routes/Home/View/HR/View/Users/features/permission_section.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/bloc/stakeholder_bloc.dart';
 
 import '../../../../../../Features/Other/form_dialog.dart';

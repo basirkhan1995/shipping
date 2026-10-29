@@ -65,12 +65,12 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
         final String msg = response['msg'];
 
         if (msg == "success") {
+          // Only emit the final list — no intermediate state.
           final updatedList = [
             for (final u in cached)
               if (u.usrId == event.user.usrId) event.user else u,
           ];
           emit(UsersLoadedState(updatedList));
-          emit(UserStatusToggledState(event.user));
         } else if (msg == "not allowed") {
           emit(UsersErrorState(
               "Password or role changes are not allowed. Contact your admin."));

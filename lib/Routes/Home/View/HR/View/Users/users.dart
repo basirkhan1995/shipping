@@ -95,7 +95,7 @@ class _UsersController {
     // backend activity-log insert fail (ualUser is NOT NULL FK).
     final auth = context.read<AuthBloc>().state;
     final actor = auth is AuthenticatedState ? auth.loginData.usrName : '';
-    if (actor!=null && actor.isEmpty) return;
+    if (actor == null || actor.isEmpty) return;
 
     context.read<UsersBloc>().add(
       ToggleUserStatusEvent(
@@ -107,8 +107,6 @@ class _UsersController {
 
 // ═══════════════════════════════════════════════════════════════════
 // Shared listener — full reload only on Add/Edit success.
-// Toggle uses ToggleUserStatusEvent, which never reaches this
-// listener, so the list is not blanked.
 // ═══════════════════════════════════════════════════════════════════
 class _UsersListener extends StatelessWidget {
   final Widget child;
@@ -384,6 +382,11 @@ class _UsersList extends StatefulWidget {
 class _UsersListState extends State<_UsersList> {
   final _query = ValueNotifier<String>('');
 
+  /// Last known-good user list. Preserved across LoadingState,
+  /// UserStatusToggledState, UsersErrorState, and UsersInitial so the
+  /// grid never blanks out mid-action.
+  List<UsersModel> _lastUsers = const [];
+
   @override
   void dispose() {
     _query.dispose();
@@ -400,26 +403,31 @@ class _UsersListState extends State<_UsersList> {
         valueListenable: _query,
         builder: (context, query, _) {
           return BlocBuilder<UsersBloc, UsersState>(
-            // Keep the list visible during a toggle: UserStatusToggledState
-            // and UsersLoadedState both render rows; only true LoadingState
-            // shows the spinner.
             builder: (context, state) {
-              if (state is UsersLoadingState && state is! UsersLoadedState) {
-                // Show spinner only if we have no data yet — this branch
-                // still shows on a fresh load. (Bloc emits a fresh
-                // UsersLoadingState for a genuine reload.)
+              // ── Cache the latest list ────────────────────────────
+              if (state is UsersLoadedState) {
+                _lastUsers = state.users;
+              }
+
+              // Loading: only show spinner if we have NO cached data.
+              if (state is UsersLoadingState && _lastUsers.isEmpty) {
                 return const Center(child: CircularProgressIndicator());
               }
-              if (state is UsersErrorState) {
+
+              // Error: only show the error view if we have no data to
+              // display behind it. Otherwise keep the list and let the
+              // page-level listener surface a SnackBar.
+              if (state is UsersErrorState && _lastUsers.isEmpty) {
                 return _ErrorView(
                   message: state.message,
                   onRetry: () => _UsersController.refresh(context),
                 );
               }
 
-              final users = state is UsersLoadedState
-                  ? state.users
-                  : const <UsersModel>[];
+              // Use the state's list when available, otherwise fall
+              // back to the last known-good list.
+              final users =
+              state is UsersLoadedState ? state.users : _lastUsers;
 
               if (users.isEmpty) {
                 return _EmptyView(
@@ -457,11 +465,7 @@ class _UsersListState extends State<_UsersList> {
                       itemBuilder: (context, index) {
                         final usr = filtered[index];
                         return _UserRow(
-                          // Key by stable ID so rows aren't rebuilt
-                          // unnecessarily and hover state resets safely.
-                          key: ValueKey(
-                            usr.usrId ?? usr.usrName ?? index,
-                          ),
+                          key: ValueKey(usr.usrId ?? usr.usrName ?? index),
                           user: usr,
                           isEven: index.isEven,
                           compact: compact,
@@ -556,7 +560,8 @@ class _UserRowState extends State<_UserRow> {
         borderRadius: radius,
         child: InkWell(
           borderRadius: radius,
-          onTap: () {}, // TODO: push UserDetailsView when available
+          // ── Tap row → open Edit dialog ────────────────────────────
+          onTap: () => _UsersController.openEditDialog(context, user),
           child: Padding(
             padding: EdgeInsets.symmetric(
               horizontal: widget.compact ? 12 : 16,
@@ -691,9 +696,9 @@ class _UserRowState extends State<_UserRow> {
 
 /// Isolated popup menu.
 ///
-/// Key fix: uses `showMenu` via a `GestureDetector` so we control
-/// when the route closes — before any state change that could tear
-/// the row (and the menu's anchor) down.
+/// Uses `showMenu` directly so we control when the route closes —
+/// before any state change that could tear the row (and the menu's
+/// anchor) down.
 class _RowActionsMenu extends StatefulWidget {
   final bool isActive;
   final VoidCallback onEdit;
@@ -744,17 +749,7 @@ class _RowActionsMenuState extends State<_RowActionsMenu> {
       context: context,
       position: position,
       items: [
-        PopupMenuItem(
-          value: 'view',
-          height: 40,
-          child: Row(
-            children: [
-              const Icon(Icons.visibility_outlined, size: 16),
-              const SizedBox(width: 10),
-              Text(tr.view, style: const TextStyle(fontSize: 13)),
-            ],
-          ),
-        ),
+        // "View" item removed — tap the row to open it.
         PopupMenuItem(
           value: 'edit',
           height: 40,
