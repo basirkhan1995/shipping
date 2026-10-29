@@ -6,6 +6,7 @@ import 'package:shipping/Features/Widgets/toast.dart';
 import '../../../../../../Features/Date/shamsi_converter.dart';
 import '../../../../../../Features/Other/form_dialog.dart';
 import '../../../../../../Features/Other/responsive_widget.dart';
+import '../../../../../../Features/PrintSettings/report_model.dart';
 import '../../../../../../Features/Widgets/extensions.dart';
 import '../../../../../../Features/Widgets/noData_widget.dart';
 import '../../../../../../Features/Widgets/shimmer.dart';
@@ -16,7 +17,6 @@ import '../../../../../../l10n/Bloc/localizations_bloc.dart';
 import '../../../../../../l10n/app_localizations.dart';
 import '../../../../../Auth/bloc/auth_bloc.dart';
 import '../../../Settings/View/Company/CompanyProfile/bloc/company_profile_bloc.dart';
-import '../../../Settings/View/Company/CompanyProfile/model/report_model.dart';
 import 'bloc/eoy_bloc.dart';
 import 'model/eoy_model.dart';
 

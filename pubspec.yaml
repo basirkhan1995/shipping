@@ -21,7 +21,7 @@ dependencies:
   equatable: ^3.0.0
   dio: ^5.11.1
   shared_preferences: ^2.5.6
-  syncfusion_flutter_xlsio: ^35.1.39
+  syncfusion_flutter_xlsio: ^35.1.42
   shamsi_date: ^1.1.1
   file_picker: ^13.1.0
   shimmer: ^4.0.0
@@ -33,6 +33,11 @@ dependencies:
   connectivity_plus: ^7.3.2
   cached_network_image: ^4.0.5
   flag: ^7.1.0
+  pdf: ^3.13.1
+  printing: ^5.15.1
+  share_plus: ^13.3.1
+  file_selector: ^1.1.0
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:
@@ -48,6 +53,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/l10n/print_translations.json
 
   fonts:
     - family: NotoSans

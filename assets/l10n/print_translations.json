@@ -1,0 +1,1577 @@
+{
+  "debitEntries": {
+    "en": "Debit Entries",
+    "ar": "د بدهکار ننوتل",
+    "fa": "ورودی‌های بدهکار"
+  },
+  "totalItemsRecord": {
+    "en": "Total Items",
+    "ar": "تعداد قلم",
+    "fa": "تعداد قلم"
+  },
+  "sku": {
+    "en": "Sku",
+    "ar": "کد کالا",
+    "fa": "کد کالا"
+  },
+  "cny": {
+    "en": "CNY",
+    "ar": "ین",
+    "fa": "ین"
+  },
+  "receivedBy": {
+    "en": "Received By",
+    "ar": "دریافت کننده",
+    "fa": "دریافت کننده"
+  },
+  "totalItem": {
+    "en": "Total Item",
+    "ar": "کل تعداد",
+    "fa": "کل تعداد"
+  },
+  "totalItemSum": {
+    "en": "Total",
+    "ar": "کل تعداد",
+    "fa": "کل تعداد"
+  },
+  "cashier": {
+    "en": "Cashier",
+    "ar": "خزانه دار",
+    "fa": "خزانه دار"
+  },
+  "accountHolder": {
+    "en": "Account Holder",
+    "ar": "طرف حساب",
+    "fa": "طرف حساب"
+  },
+  "invoiceDate": {
+    "en": "Invoice Date",
+    "ar": "بل نیته",
+    "fa": "تاریخ بل"
+  },
+  "printedBy": {
+    "en": "Printed By:",
+    "ar": "چاپ کونکی:",
+    "fa": "چاپ کننده:"
+  },
+  "note": {
+    "en": "Remark:",
+    "ar": "یاداشت:",
+    "fa": "یاداشت:"
+  },
+  "localAmount": {
+    "en": "Amount",
+    "ar": "قیمت",
+    "fa": "قیمت"
+  },
+  "creditEntries": {
+    "en": "Credit Entries",
+    "ar": "د کریډیټ ننوتل",
+    "fa": "ورودی‌های بستانکار"
+  },
+  "invoiceAmount": {
+    "en": "Receivable Amount",
+    "ar": "پاتی وړ مقدار",
+    "fa": "الباقی مبلغ بل"
+  },
+  "noDebitEntries": {
+    "en": "No debit entries",
+    "ar": "د بدهکار ننوتل نشته",
+    "fa": "بدون ورودی بدهکار"
+  },
+  "noCreditEntries": {
+    "en": "No credit entries",
+    "ar": "د کریډیټ ننوتل نشته",
+    "fa": "بدون ورودی بستانکار"
+  },
+  "summaryByCurrency": {
+    "en": "Summary by Currency",
+    "ar": "لنډیز د اسعارو له مخې",
+    "fa": "خلاصه بر اساس ارز"
+  },
+  "netAmount": {
+    "en": "Net Amount",
+    "ar": "خالص مقدار",
+    "fa": "مقدار خالص"
+  },
+  "balanced": {
+    "en": "Balanced",
+    "ar": "متوازن",
+    "fa": "متوازن"
+  },
+  "totalDebit": {
+    "en": "Total Debit",
+    "ar": "ټول بدهکار",
+    "fa": "مجموع بدهکار"
+  },
+  "totalCredit": {
+    "en": "Total Credit",
+    "ar": "ټول کریډیټ",
+    "fa": "مجموع بستانکار"
+  },
+  "grandTotal": {
+    "en": "Grand Total",
+    "ar": "ټول مجموعه",
+    "fa": "مجموع کل"
+  },
+  "authorized": {
+    "en": "Authorized",
+    "ar": "اجازه شوی",
+    "fa": "تایید شده"
+  },
+  "pending": {
+    "en": "Pending",
+    "ar": "په تمه",
+    "fa": "در انتظار"
+  },
+  "accountName": {
+    "en": "Account Name",
+    "ar": "د حساب نوم",
+    "fa": "نام حساب"
+  },
+  "accountNumber": {
+    "en": "Account Number",
+    "ar": "د حساب شمېره",
+    "fa": "شماره حساب"
+  },
+  "amount": {
+    "en": "Amount",
+    "ar": "مبلغ",
+    "fa": "مبلغ"
+  },
+  "currency": {
+    "en": "Currency",
+    "ar": "اسعار",
+    "fa": "ارز"
+  },
+  "date": {
+    "en": "Date",
+    "ar": "نیټه",
+    "fa": "تاریخ"
+  },
+  "time": {
+    "en": "Time",
+    "ar": "وخت",
+    "fa": "زمان"
+  },
+  "referenceNumber": {
+    "en": "Reference Number",
+    "ar": "د حوالې شمېره",
+    "fa": "شماره مرجع"
+  },
+  "branch": {
+    "en": "Branch",
+    "ar": "څانګه",
+    "fa": "شعبه"
+  },
+  "maker": {
+    "en": "Maker",
+    "ar": "جوړونکی",
+    "fa": "ایجاد کننده"
+  },
+  "checker": {
+    "en": "Checker",
+    "ar": "تاییدونکی",
+    "fa": "بررسی کننده"
+  },
+  "status": {
+    "en": "Status",
+    "ar": "حالت",
+    "fa": "وضعیت"
+  },
+  "type": {
+    "en": "Type",
+    "ar": "ډول",
+    "fa": "نوع"
+  },
+  "postSalary": {
+    "en": "Post Salary",
+    "ar": "معاش پوسټ کړئ",
+    "fa": "ثبت حقوق"
+  },
+  "accountTransfer": {
+    "en": "Account Transfer",
+    "ar": "د حساب لیږد",
+    "fa": "انتقال حساب"
+  },
+  "fxTransaction": {
+    "en": "FX Transaction",
+    "ar": "د اسعارو معامله",
+    "fa": "تراکنش ارزی"
+  },
+  "profitAndLoss": {
+    "en": "Profit and Loss",
+    "ar": "ګټه او تاوان",
+    "fa": "سود و زیان"
+  },
+  "narration": {
+    "en": "Narration",
+    "ar": "تشریح",
+    "fa": "توضیحات"
+  },
+  "moneyReceipt": {
+    "en": "Money Receipt",
+    "ar": "پول رسید",
+    "fa": "رسید پول"
+  },
+  "currencyBreakdown": {
+    "en": "Currency Breakdown",
+    "ar": "حسابونه خلاصه",
+    "fa": "خلاصه حسابها"
+  },
+  "totalAccounts": {
+    "en": "Total Accounts",
+    "ar": "تول حسابونه",
+    "fa": "همه حسابها"
+  },
+  "activeAccounts": {
+    "en": "Active Accounts",
+    "ar": "فعال حسابونه",
+    "fa": "حسابهای فعال"
+  },
+  "inactiveAccounts": {
+    "en": "Inactive Accounts",
+    "ar": "غیرفعال حسابونه",
+    "fa": "حسابهای غیرفعال"
+  },
+  "saleAmount": {
+    "en": "Sale Amount",
+    "ar": "د پلور مقدار",
+    "fa": "مقدار فروش"
+  },
+  "previousAccBalance": {
+    "en": "Previous Balance",
+    "ar": "اوسنی پاتی",
+    "fa": "مانده قبلی"
+  },
+  "thisCredit": {
+    "en": "Current Invoice",
+    "ar": "دا کریډیټ",
+    "fa": "این اعتبار"
+  },
+  "totalDebits": {
+    "en": "Total Debits",
+    "ar": "مجموعه بدهکار",
+    "fa": "مجموعه بدهکار"
+  },
+  "totalCredits": {
+    "en": "Total Credits",
+    "ar": "مجموعه بستانکار",
+    "fa": "مجموعه بستانکار"
+  },
+  "netBalance": {
+    "en": "Net Balance",
+    "ar": "خالص بیلانس",
+    "fa": "مانده خالص"
+  },
+  "statementAccount": {
+    "en": "Statement of Account",
+    "ar": "صورتحساب",
+    "fa": "صورتحساب"
+  },
+  "address": {
+    "en": "Address",
+    "ar": "پته",
+    "fa": "آدرس"
+  },
+  "accountSummary": {
+    "en": "Account Summary",
+    "ar": "حساب لنډیز",
+    "fa": "خلاصه صورتحساب"
+  },
+  "signatory": {
+    "en": "Signatory",
+    "ar": "دارنده حساب",
+    "fa": "دارنده حساب"
+  },
+  "currentBalance": {
+    "en": "Current Balance",
+    "ar": "فعلی مانده",
+    "fa": "مانده فعلی"
+  },
+  "email": {
+    "en": "Email",
+    "ar": "ایمیل آدرس",
+    "fa": "ایمیل آدرس"
+  },
+  "availableBalance": {
+    "en": "Available Balance",
+    "ar": "قابل برداشت مانده",
+    "fa": "مانده قابل برداشت"
+  },
+  "incomeStatement": {
+    "en": "Profit & Loss",
+    "ar": "سود و زیان",
+    "fa": "سود و زیان"
+  },
+  "grossProfit": {
+    "en": "Gross Profit",
+    "ar": "ناخالصه ګټه",
+    "fa": "سود ناخالص"
+  },
+  "cogs": {
+    "en": "Cost of Goods Sold",
+    "ar": "د پلورل شویو توکو لګښت",
+    "fa": "هزینه کالا فروخته شده"
+  },
+  "totalExpense": {
+    "en": "Total Expenses",
+    "ar": "مصرفونه",
+    "fa": "مصارف"
+  },
+  "totalRevenue": {
+    "en": "Total Revenue",
+    "ar": "عواید",
+    "fa": "عواید"
+  },
+  "balanceSheet": {
+    "en": "Balance sheet",
+    "ar": "بیلانس شیت",
+    "fa": "بیلانس شیت"
+  },
+  "equityFormula": {
+    "en": "Equity = Asset - Liability",
+    "ar": "سهام = دارایی - بدهی",
+    "fa": "سهام = دارایی - بدهی"
+  },
+  "assetFormula": {
+    "en": "Asset = Liability + Equity",
+    "ar": "دارایی = بدهی + سهام",
+    "fa": "دارایی = بدهی + سهام"
+  },
+  "accounts": {
+    "en": "Accounts",
+    "ar": "حسابونه",
+    "fa": "حساب ها"
+  },
+  "equity": {
+    "en": "Equity",
+    "ar": "سهام",
+    "fa": "سهام"
+  },
+  "netProfit": {
+    "en": "Net Profit",
+    "ar": "خالص سود",
+    "fa": "سود خالص"
+  },
+  "drawings": {
+    "en": "Drawings",
+    "ar": "برداشتونه",
+    "fa": "برداشت ها"
+  },
+  "opb": {
+    "en": "Opening Balance",
+    "ar": "لومری بیلانس",
+    "fa": "بیلانس اولیه"
+  },
+  "retainedEarnings": {
+    "en": "Retained Earnings",
+    "ar": "انباشته سود",
+    "fa": "سود انباشته"
+  },
+  "capital": {
+    "en": "Capital",
+    "ar": "دارایی",
+    "fa": "دارایی"
+  },
+  "liability": {
+    "en": "Liability",
+    "ar": "دیون",
+    "fa": "بدهی ها"
+  },
+  "totalAsset": {
+    "en": "Total Asset",
+    "ar": "سرمایه",
+    "fa": "سرمایه"
+  },
+  "accountReceivable": {
+    "en": "Receivables",
+    "ar": "دریافتی پیسی",
+    "fa": "پول دریافتنی"
+  },
+  "cashVault": {
+    "en": "Cash Vault",
+    "ar": "نقدی پیسی",
+    "fa": "پول نقد"
+  },
+  "bank": {
+    "en": "Bank",
+    "ar": "بانک",
+    "fa": "بانک"
+  },
+  "saraf": {
+    "en": "Saraf",
+    "ar": "صراف",
+    "fa": "صراف"
+  },
+  "products": {
+    "en": "Products",
+    "ar": "محصولات",
+    "fa": "محصولات"
+  },
+  "items": {
+    "en": "Items",
+    "ar": "اجناس",
+    "fa": "اجناس"
+  },
+  "stock": {
+    "en": "Stock",
+    "ar": "گدام",
+    "fa": "گدام"
+  },
+  "returnInvoice": {
+    "en": "Return Invoice",
+    "ar": "بل برگشتی",
+    "fa": "بل برگشتی"
+  },
+  "RTPU": {
+    "en": "OrderReport Return",
+    "ar": "برگشت خرید",
+    "fa": "برگشت خرید"
+  },
+  "RTSL": {
+    "en": "SaleReport Return",
+    "ar": "برگشت فروش",
+    "fa": "برگشت فروش"
+  },
+  "inventoryMovement": {
+    "en": "Product Card",
+    "ar": "کالا گردش",
+    "fa": "گردش کالا"
+  },
+  "qtyIn": {
+    "en": "IN",
+    "ar": "ورود",
+    "fa": "ورود"
+  },
+  "qtyOut": {
+    "en": "OUT",
+    "ar": "خروج",
+    "fa": "خروج"
+  },
+  "unitBasePrice": {
+    "en": "Price",
+    "ar": "قیمت",
+    "fa": "قیمت"
+  },
+  "deal": {
+    "en": "Deal",
+    "ar": "معامله",
+    "fa": "معامله"
+  },
+  "id": {
+    "en": "ID",
+    "ar": "شناسه",
+    "fa": "شناسه"
+  },
+  "noAccount": {
+    "en": "Settled",
+    "ar": "تسویه",
+    "fa": "تسویه"
+  },
+  "details": {
+    "en": "Details",
+    "ar": "جزئیات",
+    "fa": "جزئیات"
+  },
+  "productName": {
+    "en": "Product name",
+    "ar": "کالا نوم",
+    "fa": "نام کالا"
+  },
+  "inventoryTitle": {
+    "en": "Inventory Report",
+    "ar": "کالا گزارش",
+    "fa": "گزارش کالا ها"
+  },
+  "category": {
+    "en": "Category",
+    "ar": "کتگوری",
+    "fa": "کتگوری"
+  },
+  "inventory": {
+    "en": "QTY",
+    "ar": "موجودی",
+    "fa": "موجودی"
+  },
+  "unit": {
+    "en": "Unit",
+    "ar": "واحد",
+    "fa": "واحد"
+  },
+  "amountInWords": {
+    "en": "Amount in words",
+    "ar": "مبلغ کلمو کې",
+    "fa": "مبلغ به حروف"
+  },
+  "statementPeriod": {
+    "en": "Statement Period",
+    "ar": "صورت حساب مدت",
+    "fa": "مدت صورت حساب"
+  },
+  "statementDate": {
+    "en": "Statement Date",
+    "ar": "صورت حساب نیټه",
+    "fa": "تاریخ صورت حساب"
+  },
+  "total": {
+    "en": "Total",
+    "ar": "ټول قیمت",
+    "fa": "جمع کل"
+  },
+  "debitAccount": {
+    "en": "Debit Account",
+    "ar": "دبت حساب",
+    "fa": "حساب دبت"
+  },
+  "creditAccount": {
+    "en": "Credit Account",
+    "ar": "کریدت حساب",
+    "fa": "حساب کریدت"
+  },
+  "debitAmount": {
+    "en": "Debit Amount",
+    "ar": "مبلغ حساب",
+    "fa": "مبلغ دبت"
+  },
+  "ACCT": {
+    "en": "ACCT Transfer",
+    "ar": "حساب به حساب",
+    "fa": "حساب به حساب"
+  },
+  "creditAmount": {
+    "en": "Credit Amount",
+    "ar": "کریدت مبلغ",
+    "fa": "مبلغ کریدت"
+  },
+  "OBAL": {
+    "en": "OBAL",
+    "ar": "افتتاحیه بیلانس",
+    "fa": "بیلانس افتتاحیه"
+  },
+  "openingBalance": {
+    "en": "Opening Balance",
+    "ar": "د پرانیستې بیلانس",
+    "fa": "بیلانس افتتاحیه"
+  },
+  "closingBalance": {
+    "en": "Closing Balance",
+    "ar": "تړلو بیلانس",
+    "fa": "بیلانس نهایی"
+  },
+  "page": {
+    "en": "Page",
+    "ar": "پاڼه",
+    "fa": "صفحه"
+  },
+  "of": {
+    "en": "of",
+    "ar": "له",
+    "fa": "از "
+  },
+  "accountStatement": {
+    "en": "Account Statement",
+    "ar": "صورتحساب اشخاص",
+    "fa": "صورتحساب اشخاص"
+  },
+  "trnType": {
+    "en": "Transaction Code",
+    "ar": "معامله کد",
+    "fa": "کد معامله"
+  },
+  "CHDP": {
+    "en": "Cash Deposit",
+    "ar": "نقدی دریافت",
+    "fa": "دریافت نقدی"
+  },
+  "CHWL": {
+    "en": "Cash Withdraw",
+    "ar": "نقدی پرداخت",
+    "fa": "پرداخت نقدی"
+  },
+  "GLDR": {
+    "en": "General Ledger Debit",
+    "ar": "پرداخت دفتر کل",
+    "fa": "پرداخت دفتر کل"
+  },
+  "exchangeRate": {
+    "en": "Exchange Rate",
+    "ar": "تبادله نرخ",
+    "fa": "نرخ تبادله"
+  },
+  "GLCR": {
+    "en": "General Ledger Credit",
+    "ar": "دریافت دفتر کل",
+    "fa": "دریافت دفتر کل"
+  },
+  "XPNS": {
+    "en": "Expense",
+    "ar": "لګښت",
+    "fa": "مصارف"
+  },
+  "INCM": {
+    "en": "Income (Profit)",
+    "ar": "عواید",
+    "fa": "عواید"
+  },
+  "EXCH": {
+    "en": "Cross Currency",
+    "ar": "متقابل ارز",
+    "fa": "ارز متقابل"
+  },
+  "debit": {
+    "en": "Debit",
+    "ar": "بدهکار",
+    "fa": "بدهکار"
+  },
+  "credit": {
+    "en": "Credit",
+    "ar": "بسټانکار",
+    "fa": "بستانکار"
+  },
+  "authorizedBy": {
+    "en": "Authorized by: ",
+    "ar": "تایید کونکی",
+    "fa": "تایید کننده"
+  },
+  "producedBy": {
+    "en": "Powered by Zaitoon Inc",
+    "ar": "زیتون سافت لخوا وړاندې شوی",
+    "fa": "ساخته شده زیتون سافت"
+  },
+  "createdBy": {
+    "en": "Issued By",
+    "ar": "چمتو کونکی",
+    "fa": "تهیه کننده"
+  },
+  "reference": {
+    "en": "Reference",
+    "ar": "حوالې شمیره",
+    "fa": "نمبر حواله"
+  },
+  "debtor": {
+    "en": "Debtor ",
+    "ar": "بدهکار",
+    "fa": "بدهکار"
+  },
+  "creditor": {
+    "en": "Creditor ",
+    "ar": "طلبکار",
+    "fa": "طلبکار"
+  },
+  "withdrawal": {
+    "en": "Withdrawal",
+    "ar": "دریافت",
+    "fa": "دریافت"
+  },
+  "deposit": {
+    "en": "Deposit",
+    "ar": "پرداخت",
+    "fa": "پرداخت"
+  },
+  "balance": {
+    "en": "Balance",
+    "ar": "بیلانس",
+    "fa": "بیلانس"
+  },
+  "accOwner": {
+    "en": "Account holder",
+    "ar": "دارنده حساب",
+    "fa": "دارنده حساب"
+  },
+  "mobile": {
+    "en": "Mobile",
+    "ar": "تماس",
+    "fa": "تماس"
+  },
+  "qty": {
+    "en": "Qty",
+    "ar": "مقدار",
+    "fa": "مقدار"
+  },
+  "unitPrice": {
+    "en": "Rate",
+    "ar": "نرخ",
+    "fa": "نرخ"
+  },
+  "totalInvoice": {
+    "en": "Total",
+    "ar": "ټول قیمت",
+    "fa": "جمع کل"
+  },
+  "subTotal": {
+    "en": "Total",
+    "ar": "فرعي مجموعه",
+    "fa": "مجمع فرعی"
+  },
+  "number": {
+    "en": "No",
+    "ar": "شمېره",
+    "fa": "شماره"
+  },
+  "invoiceType": {
+    "en": "Invoice",
+    "ar": "بل نوع",
+    "fa": "نوع بل"
+  },
+  "PUR": {
+    "en": "Purchase",
+    "ar": "خرید",
+    "fa": "خرید"
+  },
+  "invDate": {
+    "en": "Invoice Date",
+    "ar": "بل نیته",
+    "fa": "تاریخ بل"
+  },
+  "SEL": {
+    "en": "Sale",
+    "ar": "فروش",
+    "fa": "فروش"
+  },
+  "invoiceNumber": {
+    "en": "INV",
+    "ar": "بل نمبر",
+    "fa": "نمبر بل"
+  },
+  "previousBalance": {
+    "en": "Previous Amount Due",
+    "ar": "پاتې حساب",
+    "fa": "صورتحساب قبلی"
+  },
+  "payment": {
+    "en": "Payment",
+    "ar": "رسید مبلغ",
+    "fa": "مبلغ رسید"
+  },
+  "vehicleDetails": {
+    "en": "Vehicle Details",
+    "ar": "د موټرو معلومات",
+    "fa": "جزئیات وسیله نقلیه"
+  },
+  "vehicleID": {
+    "en": "Vehicle ID",
+    "ar": "د موټر آی ډی",
+    "fa": "شناسه وسیله نقلیه"
+  },
+  "model": {
+    "en": "Model",
+    "ar": "مودل",
+    "fa": "مدل"
+  },
+  "year": {
+    "en": "Year",
+    "ar": "کال",
+    "fa": "سال"
+  },
+  "vinNumber": {
+    "en": "VIN Number",
+    "ar": "وی آی اېن نمبر",
+    "fa": "شماره VIN"
+  },
+  "fuelType": {
+    "en": "Fuel Type",
+    "ar": "د سون توکي ډول",
+    "fa": "نوع سوخت"
+  },
+  "enginePower": {
+    "en": "Engine Power",
+    "ar": "د انجن قوت",
+    "fa": "قدرت موتور"
+  },
+  "bodyType": {
+    "en": "Body Type",
+    "ar": "د بدن ډول",
+    "fa": "نوع بدنه"
+  },
+  "plateNumber": {
+    "en": "Plate Number",
+    "ar": "د پلیټ نمبر",
+    "fa": "شماره پلاک"
+  },
+  "registrationNumber": {
+    "en": "Registration Number",
+    "ar": "د ثبت نمبر",
+    "fa": "شماره ثبت"
+  },
+  "expiryDate": {
+    "en": "Expiry Date",
+    "ar": "د پای نیټه",
+    "fa": "تاریخ انقضا"
+  },
+  "odometer": {
+    "en": "Odometer",
+    "ar": "د ګزاریچې شمار",
+    "fa": "کیلومتر شمار"
+  },
+  "purchaseAmount": {
+    "en": "Orders Amount",
+    "ar": "د پیرود مقدار",
+    "fa": "مبلغ خرید"
+  },
+  "dueAmount": {
+    "en": "Total Invoice Due",
+    "ar": "ټول پاتې پیسې",
+    "fa": "الباقی بل"
+  },
+  "driver": {
+    "en": "Driver",
+    "ar": "چلوونکی",
+    "fa": "راننده"
+  },
+  "txnType": {
+    "en": "TXN Type",
+    "ar": "معامله دول",
+    "fa": "نوع معامله"
+  },
+  "units": {
+    "en": "Units",
+    "ar": "واحد",
+    "fa": "واحد"
+  },
+  "expense": {
+    "en": "Expense",
+    "ar": "لگشت",
+    "fa": "مصرف"
+  },
+  "entry": {
+    "en": "Entry",
+    "ar": "ورود",
+    "fa": "ورود"
+  },
+  "transactionDetails": {
+    "en": "Transaction Details",
+    "ar": "د معاملې معلومات",
+    "fa": "جزئیات تراکنش"
+  },
+  "transactionStatus": {
+    "en": "Transaction Status",
+    "ar": "د معاملې حالت",
+    "fa": "وضعیت تراکنش"
+  },
+  "inactive": {
+    "en": "Inactive",
+    "ar": "غیر فعال",
+    "fa": "غیرفعال"
+  },
+  "active": {
+    "en": "Active",
+    "ar": "فعال",
+    "fa": "فعال"
+  },
+  "approved": {
+    "en": "Approved",
+    "ar": "تصویب شوی",
+    "fa": "تایید شده"
+  },
+  "rejected": {
+    "en": "Rejected",
+    "ar": "رد شوی",
+    "fa": "رد شده"
+  },
+  "unknown": {
+    "en": "Unknown",
+    "ar": "نامعلوم",
+    "fa": "ناشناخته"
+  },
+  "allShipping": {
+    "en": "All Shipping Records",
+    "ar": "جميع سجلات الشحن",
+    "fa": "همه سوابق حمل و نقل"
+  },
+  "shippingSummary": {
+    "en": "Shipping Summary",
+    "ar": "ملخص الشحن",
+    "fa": "خلاصه حمل و نقل"
+  },
+  "totalShipments": {
+    "en": "Total Shipments",
+    "ar": "إجمالي الشحنات",
+    "fa": "کل حمل و نقل"
+  },
+  "completed": {
+    "en": "Completed",
+    "ar": "مكتمل",
+    "fa": "تکمیل شده"
+  },
+  "totalRent": {
+    "en": "Total Rent",
+    "ar": "الإيجار الكلي",
+    "fa": "کرایه کل"
+  },
+  "avgUnLoadSize": {
+    "en": "Avg Unload",
+    "ar": "میانگین بارگیری",
+    "fa": "میانگین بارگیری"
+  },
+  "avgLoadSize": {
+    "en": "Avg Load",
+    "ar": "میانگین تخلیه",
+    "fa": "میانگین تلخیه"
+  },
+  "vehicles": {
+    "en": "Vehicle",
+    "ar": "مركبة",
+    "fa": "وسیله نقلیه"
+  },
+  "customer": {
+    "en": "Customer",
+    "ar": "پیرودونکی",
+    "fa": "مشتری"
+  },
+  "addressAndPhone": {
+    "en": "Address & Phone: ",
+    "ar": "آدرس و تماس: ",
+    "fa": "آدرس و تماس: "
+  },
+  "shippingRent": {
+    "en": "Rent",
+    "ar": "إيجار",
+    "fa": "کرایه"
+  },
+  "loadingSize": {
+    "en": "LD Weight",
+    "ar": "حجم التحميل",
+    "fa": "اندازه بارگیری"
+  },
+  "unloadingSize": {
+    "en": "ULD Weight",
+    "ar": "حجم التفريغ",
+    "fa": "اندازه تخلیه"
+  },
+  "completedTitle": {
+    "en": "Completed",
+    "ar": "مكتمل",
+    "fa": "تکمیل"
+  },
+  "pendingTitle": {
+    "en": "Pending",
+    "ar": "قيد الانتظار",
+    "fa": "در انتظار"
+  },
+  "termsAndConditions": {
+    "en": "Terms & Conditions",
+    "ar": "شرایط و ضوابط",
+    "fa": "شرایط و ضوابط"
+  },
+  "customerSignature": {
+    "en": "Customer Signature",
+    "ar": "امضاء العميل",
+    "fa": "امضای مشتری"
+  },
+  "totalPayment": {
+    "en": "Total Payment",
+    "ar": "المبلغ الإجمالي",
+    "fa": "مجموع پرداخت"
+  },
+  "cashPayment": {
+    "en": "Cash Payment",
+    "ar": "دفع نقدي",
+    "fa": "پرداخت نقدی"
+  },
+  "accountPayment": {
+    "en": "Account Payment",
+    "ar": "دفع الحساب",
+    "fa": "پرداخت حساب"
+  },
+  "supplier": {
+    "en": "Supplier",
+    "ar": "فروشنده",
+    "fa": "فروشنده"
+  },
+  "trialBalance": {
+    "en": "Trial Balance",
+    "ar": "آزمایشی بیلانس",
+    "fa": "بیلانس آزمایشی"
+  },
+  "outOfBalance": {
+    "en": "Out of balance",
+    "ar": "عدم تعادل",
+    "fa": "عدم تعادل"
+  },
+  "difference": {
+    "en": "Difference",
+    "ar": "تفاوت",
+    "fa": "تفاوت"
+  },
+  "orderDate": {
+    "en": "Order Date",
+    "ar": "تاريخ الطلب",
+    "fa": "تاریخ سفارش"
+  },
+  "quantity": {
+    "en": "Qty",
+    "ar": "الكمية",
+    "fa": "تعداد"
+  },
+  "batch": {
+    "en": "Batch",
+    "ar": "مقدار",
+    "fa": "مقدار"
+  },
+  "actualBalance": {
+    "en": "Actual Balance",
+    "ar": "بیلانس اصلی",
+    "fa": "بیلانس اصلی"
+  },
+  "storage": {
+    "en": "Storage",
+    "ar": "گدام",
+    "fa": "انبار"
+  },
+  "description": {
+    "en": "Description",
+    "ar": "شرح",
+    "fa": "توضیحات"
+  },
+  "assets": {
+    "en": "ASSETS",
+    "ar": "دارایی ها",
+    "fa": "دارایی ها"
+  },
+  "liabilitiesEquity": {
+    "en": "LIABILITIES AND EQUITY",
+    "ar": "بدهی ها و سرمایه",
+    "fa": "بدهی ها و سرمایه"
+  },
+  "copy": {
+    "en": "Copy",
+    "ar": "کاپی نسخه",
+    "fa": "نسخه کاپی"
+  },
+  "currentAssets": {
+    "en": "Current Assets",
+    "ar": "دارایی های جاری",
+    "fa": "دارایی های جاری"
+  },
+  "fixedAssets": {
+    "en": "Fixed Assets",
+    "ar": "دارایی های ثابت",
+    "fa": "دارایی های ثابت"
+  },
+  "intangibleAssets": {
+    "en": "Intangible Assets",
+    "ar": "الأصول غير الملموسة",
+    "fa": "دارایی های نامشهود"
+  },
+  "currentLiabilities": {
+    "en": "Current Liabilities",
+    "ar": "الالتزامات المتداولة",
+    "fa": "بدهی های جاری"
+  },
+  "ownerEquity": {
+    "en": "Owner's Equity",
+    "ar": "حقوق الملكية",
+    "fa": "حقوق صاحبان سهام"
+  },
+  "stakeholders": {
+    "en": "Stakeholders",
+    "ar": "أصحاب المصلحة",
+    "fa": "ذینفعان"
+  },
+  "totalAssets": {
+    "en": "TOTAL ASSETS",
+    "ar": "إجمالي الأصول",
+    "fa": "کل دارایی ها"
+  },
+  "totalLiabilitiesEquity": {
+    "en": "TOTAL LIABILITIES & EQUITY",
+    "ar": "إجمالي الالتزامات وحقوق الملكية",
+    "fa": "کل بدهی ها و سرمایه"
+  },
+  "currentYear": {
+    "en": "Current Year",
+    "ar": "السنة الحالية",
+    "fa": "سال جاری"
+  },
+  "lastYear": {
+    "en": "Prior Year",
+    "ar": "السنة السابقة",
+    "fa": "سال گذشته"
+  },
+  "totalTitle": {
+    "en": "Total",
+    "ar": "المجموع",
+    "fa": "مجموع"
+  },
+  "shippingReport": {
+    "en": "Shipping Report",
+    "ar": "راپور ترانسپورت",
+    "fa": "راپور ترانسپورت"
+  },
+  "appliedFilters": {
+    "en": "Applied Filters",
+    "ar": "فیلترهای اعمال شده",
+    "fa": "فیلترهای اعمال شده"
+  },
+  "dateRange": {
+    "en": "Date Range",
+    "ar": "محدوده تاریخ",
+    "fa": "محدوده تاریخ"
+  },
+  "vehicle": {
+    "en": "Vehicle",
+    "ar": "وسله نقلیه",
+    "fa": "وسله نقلیه"
+  },
+  "shippingReportSummary": {
+    "en": "Shipping Report Summary",
+    "ar": "خلاصه راپور ترانسپورت",
+    "fa": "خلاصه راپور ترانسپورت"
+  },
+  "totalLoadSize": {
+    "en": "Total Load Size",
+    "ar": "مجموع حجم بارگیری",
+    "fa": "مجموع حجم بارگیری"
+  },
+  "totalUnLoadSize": {
+    "en": "Total Unload Size",
+    "ar": "مجموع حجم تخلیه",
+    "fa": "مجموع حجم تخلیه"
+  },
+  "avgDifference": {
+    "en": "Avg Difference",
+    "ar": "متوسط تفاوت",
+    "fa": "متوسط تفاوت"
+  },
+  "cashReceipt": {
+    "en": "Cash Receipt",
+    "ar": "نقدي رسید",
+    "fa": "دریافت نقدی"
+  },
+  "totalQty": {
+    "en": "Total Items",
+    "ar": "کل تعداد",
+    "fa": "کل تعداد"
+  },
+  "avgRentPerUnit": {
+    "en": "Avg Rent Per Unit",
+    "ar": "متوسط کرایه فی واحد",
+    "fa": "متوسط کرایه فی واحد"
+  },
+  "product": {
+    "en": "Product",
+    "ar": "محصول",
+    "fa": "محصول"
+  },
+  "from": {
+    "en": "From",
+    "ar": "از",
+    "fa": "از"
+  },
+  "to": {
+    "en": "To",
+    "ar": "به",
+    "fa": "به"
+  },
+  "loadSize": {
+    "en": "Load Size",
+    "ar": "حجم بارگیری",
+    "fa": "حجم بارگیری"
+  },
+  "unloadSize": {
+    "en": "Unload Size",
+    "ar": "حجم تخلیه",
+    "fa": "حجم تخلیه"
+  },
+  "rent": {
+    "en": "Rent",
+    "ar": "کرایه",
+    "fa": "کرایه"
+  },
+  "no": {
+    "en": "#",
+    "ar": "شمیرہ",
+    "fa": "شماره"
+  },
+  "thisTransaction": {
+    "en": "Current Invoice",
+    "ar": "دا راکړه ورکړه",
+    "fa": "این معامله"
+  },
+  "newBalance": {
+    "en": "Total Amount Due",
+    "ar": "صورتحساب بیلانس",
+    "fa": "صورتحساب نهایی"
+  },
+  "usd": {
+    "en": "USD",
+    "ar": "دالر",
+    "fa": "دالر"
+  },
+  "afn": {
+    "en": "AFN",
+    "ar": "افغانی",
+    "fa": "افغانی"
+  },
+  "settled": {
+    "en": "Settled",
+    "ar": "تصفیه شوی",
+    "fa": "تسویه شده"
+  },
+  "projectId": {
+    "en": "Project ID",
+    "ar": "د پروژې پېژند",
+    "fa": "شناسه پروژه"
+  },
+  "projectName": {
+    "en": "Project Name",
+    "ar": "د پروژې نوم",
+    "fa": "نام پروژه"
+  },
+  "customerName": {
+    "en": "Customer Name",
+    "ar": "د پیرودونکي نوم",
+    "fa": "نام مشتری"
+  },
+  "location": {
+    "en": "Location",
+    "ar": "ځای",
+    "fa": "موقعیت"
+  },
+  "projectDetails": {
+    "en": "Project Details",
+    "ar": "د پروژې تفصیلات",
+    "fa": "جزئیات پروژه"
+  },
+  "deadline": {
+    "en": "Deadline",
+    "ar": "ټاکل شوې نېټه",
+    "fa": "مهلت"
+  },
+  "paymentType": {
+    "en": "Payment Type",
+    "ar": "د تادیې ډول",
+    "fa": "نوع پرداخت"
+  },
+  "projectStatus": {
+    "en": "Project Status",
+    "ar": "د پروژې حالت",
+    "fa": "وضعیت پروژه"
+  },
+  "projectReport": {
+    "en": "Project Report",
+    "ar": "د پروژې راپور",
+    "fa": "گزارش پروژه"
+  },
+  "financialSummary": {
+    "en": "Financial Summary",
+    "ar": "مالي لنډیز",
+    "fa": "خلاصه مالی"
+  },
+  "totalServices": {
+    "en": "Total Services",
+    "ar": "ټول خدمات",
+    "fa": "کل خدمات"
+  },
+  "totalServicesValue": {
+    "en": "Total Services Value",
+    "ar": "د خدماتو ټول ارزښت",
+    "fa": "ارزش کل خدمات"
+  },
+  "totalTransactions": {
+    "en": "Total Transactions",
+    "ar": "ټولې راکړې ورکړې",
+    "fa": "کل تراکنش ‌ها"
+  },
+  "currentPhase": {
+    "en": "Current Phase",
+    "ar": "اوسنی پړاو",
+    "fa": "مرحله فعلی"
+  },
+  "projectInformation": {
+    "en": "Project Information",
+    "ar": "د پروژې معلومات",
+    "fa": "اطلاعات پروژه"
+  },
+  "ownerInformation": {
+    "en": "Client Information",
+    "ar": "د مالک معلومات",
+    "fa": "اطلاعات مالک"
+  },
+  "entryDate": {
+    "en": "Entry Date",
+    "ar": "د ثبت نیته",
+    "fa": "تاریخ ثبت"
+  },
+  "clientTitle": {
+    "en": "Client",
+    "ar": "پیرودونکی",
+    "fa": "مشتری"
+  },
+  "currencyTitle": {
+    "en": "Currency",
+    "ar": "اسعار",
+    "fa": "واحد پول"
+  },
+  "serviceName": {
+    "en": "Service Name",
+    "ar": "د خدمت نوم",
+    "fa": "نام خدمت"
+  },
+  "transactions": {
+    "en": "Transactions",
+    "ar": "راکړې ورکړې",
+    "fa": "معاملات"
+  },
+  "incomeAndExpenses": {
+    "en": "Income & Expenses",
+    "ar": "عواید او لګښتونه",
+    "fa": "درآمد و هزینه"
+  },
+  "inProgress": {
+    "en": "In Progress",
+    "ar": "په پرمختګ کې",
+    "fa": "در حال اجرا"
+  },
+  "overview": {
+    "en": "Overview",
+    "ar": "کتنه",
+    "fa": "بررسی کلی"
+  },
+  "services": {
+    "en": "Services",
+    "ar": "خدمتونه",
+    "fa": "خدمات"
+  },
+  "noServicesTitle": {
+    "en": "No Services",
+    "ar": "خدمتونه نشته",
+    "fa": "بدون خدمات"
+  },
+  "noServicesMessage": {
+    "en": "No services found for this project",
+    "ar": "د دې پروژې لپاره کوم خدمت ونه موندل شو",
+    "fa": "خدماتی برای این پروژه یافت نشد"
+  },
+  "preparedBy": {
+    "en": "Prepared By",
+    "ar": "چمتو شوی د",
+    "fa": "تهیه شده توسط"
+  },
+  "approvedBy": {
+    "en": "Approved By",
+    "ar": "تایید شوی د",
+    "fa": "تایید شده توسط"
+  },
+  "activeServices": {
+    "en": "Active Services",
+    "ar": "فعال خدمتونه",
+    "fa": "خدمات فعال"
+  },
+  "allBalances": {
+    "en": "All Balances",
+    "ar": "جميع الأرصدة",
+    "fa": "همه حساب‌ها"
+  },
+  "summary": {
+    "en": "Summary",
+    "ar": "ملخص",
+    "fa": "خلاصه"
+  },
+  "asOf": {
+    "en": "as of",
+    "ar": "اعتباراً من",
+    "fa": "تا تاریخ"
+  },
+  "account": {
+    "en": "Account Details",
+    "ar": "حساب طرف",
+    "fa": "طرف حساب"
+  },
+  "name": {
+    "en": "Name",
+    "ar": "نوم",
+    "fa": "نام"
+  },
+  "ccy": {
+    "en": "Ccy",
+    "ar": "العملة",
+    "fa": "ارز"
+  },
+  "stockReport": {
+    "en": "Stock Report",
+    "ar": "تقرير المخزون",
+    "fa": "گزارش انبار"
+  },
+  "totalItems": {
+    "en": "Total Items",
+    "ar": "إجمالي العناصر",
+    "fa": "تعداد کالاها"
+  },
+  "totalQuantity": {
+    "en": "Total Qty",
+    "ar": "کل مقدار",
+    "fa": "مجموعه مقدار"
+  },
+  "totalValue": {
+    "en": "Total Value",
+    "ar": "القيمة الإجمالية",
+    "fa": "ارزش کل"
+  },
+  "cashBalances": {
+    "en": "Cash Balances",
+    "ar": "نقدی موجودی",
+    "fa": "موجودی نقدی"
+  },
+  "allBranches": {
+    "en": "All Branches",
+    "ar": "ټول څانګې",
+    "fa": "تمام شعب"
+  },
+  "cashFlow": {
+    "en": "Cash Flow",
+    "ar": "نقدی جریان",
+    "fa": "جریان نقدی"
+  },
+  "phone": {
+    "en": "Phone",
+    "ar": "تلیفون",
+    "fa": "تلفن"
+  },
+  "branchWiseDetails": {
+    "en": "Branch-wise Details",
+    "ar": "د څانګو تفصیلات",
+    "fa": "جزئیات هر شعبه"
+  },
+  "noRecords": {
+    "en": "No records found",
+    "ar": "هیڅ ریکارډ ونه موندل شو",
+    "fa": "رکوردی یافت نشد"
+  },
+  "branchTotal": {
+    "en": "Branch Total",
+    "ar": "د څانګې مجموعه",
+    "fa": "مجموع شعبه"
+  },
+  "opening": {
+    "en": "Opening",
+    "ar": "پرانیستل",
+    "fa": "افتتاحیه"
+  },
+  "closing": {
+    "en": "Closing",
+    "ar": "تړل",
+    "fa": "اختتامیه"
+  },
+  "arrivalDate": {
+    "en": "Arrival Date",
+    "ar": "د رسیدو نیټه",
+    "fa": "تاریخ ورود"
+  },
+  "loadingDate": {
+    "en": "Loading Date",
+    "ar": "د بارگیری نیټه",
+    "fa": "تاریخ بارگیری"
+  },
+  "route": {
+    "en": "Route",
+    "ar": "لاره",
+    "fa": "مسیر"
+  },
+  "cardPayment": {
+    "en": "Card Payment",
+    "ar": "د کارت کریدت",
+    "fa": "پرداخت کریدت"
+  },
+  "totalCash": {
+    "en": "Total Cash",
+    "ar": "ټول نغد",
+    "fa": "مجموع نقد"
+  },
+  "packing": {
+    "en": "Pack",
+    "ar": "کڅوړه",
+    "fa": "بسته"
+  },
+  "totalCard": {
+    "en": "Total Credit",
+    "ar": "ټول کریدت",
+    "fa": "مجموع کریدت"
+  },
+  "expenses": {
+    "en": "Expenses",
+    "ar": "لګښتونه",
+    "fa": "مصارف"
+  },
+  "remarks": {
+    "en": "Remarks",
+    "ar": "ملاحظات",
+    "fa": "توضیحات"
+  },
+  "shippingDetails": {
+    "en": "Shipping Details",
+    "ar": "محموله جزئیات",
+    "fa": "جزئیات محموله"
+  },
+  "cash": {
+    "en": "Cash",
+    "ar": "نقدی",
+    "fa": "نقدی"
+  },
+  "executedBy": {
+    "en": "Executed By",
+    "ar": "اجراء کونکی",
+    "fa": "اجراء کننده"
+  },
+  "driverName": {
+    "en": "Transporter",
+    "ar": "بار وړونکی",
+    "fa": "راننده باربری"
+  },
+  "stockPaper": {
+    "en": "Stock Paper",
+    "ar": "گدام خروجی سند",
+    "fa": "سند خروجی گدام"
+  },
+  "documentNumber": {
+    "en": "INV",
+    "ar": "سند شمیره",
+    "fa": "نمبر سند"
+  },
+  "totalBox": {
+    "en": "Total Items",
+    "ar": "کل تعداد",
+    "fa": "کل تعداد"
+  },
+  "subtotal": {
+    "en": "Subtotal",
+    "ar": "لنډ مجموع",
+    "fa": "مجموعه فرعی"
+  },
+  "totalDiscount": {
+    "en": "Total Discounts",
+    "ar": "تول تخفیف",
+    "fa": "مجموعه تخفیف"
+  },
+  "afterItemDiscount": {
+    "en": "After Item Discount",
+    "ar": "د توکو له تخفیف وروسته",
+    "fa": "بعد از تخفیف اقلام"
+  },
+  "generalDiscount": {
+    "en": "General Discount",
+    "ar": "عمومي تخفیف",
+    "fa": "تخفیف عمومی"
+  },
+  "generalDiscountAmount": {
+    "en": "General Discount Amount",
+    "ar": "د عمومي تخفیف اندازه",
+    "fa": "مقدار تخفیف عمومی"
+  },
+  "extraCharges": {
+    "en": "Extra Charges",
+    "ar": "اضافي لګښتونه",
+    "fa": "هزینه های متفرقه"
+  },
+  "thankYou": {
+    "en": "THANK YOU",
+    "ar": "ستاسو څخه مننه",
+    "fa": "متشکرم از شما"
+  },
+  "creditPayment": {
+    "en": "Credit Payment",
+    "ar": "پور تادیه",
+    "fa": "پرداخت اعتباری"
+  }
+}

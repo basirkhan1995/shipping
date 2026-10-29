@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' hide MultipartFile;
@@ -10,10 +12,12 @@ import '../Routes/Home/View/Finance/View/GlAccounts/model/gl_model.dart';
 import '../Routes/Home/View/Finance/View/Reminder/model/reminder_model.dart';
 import '../Routes/Home/View/HR/View/Users/model/user_model.dart';
 import '../Routes/Home/View/HR/View/Users/model/usr_report_model.dart';
+import '../Routes/Home/View/Report/AccountStatement/model/stmt_model.dart';
 import '../Routes/Home/View/Settings/View/Company/Branch/Ui/BranchLimits/model/limit_model.dart';
 import '../Routes/Home/View/Settings/View/Company/Branches/model/branch_model.dart';
 import '../Routes/Home/View/Settings/View/Company/CompanyProfile/model/com_model.dart';
 import '../Routes/Home/View/Settings/View/Company/Storage/model/storage_model.dart';
+import '../Routes/Home/View/Settings/View/General/DefaultPermissions/model/permission_settings_model.dart';
 import '../Routes/Home/View/Settings/View/General/UserRole/model/role_model.dart';
 import '../Routes/Home/View/Stakeholder/model/stk_model.dart';
 import '../Routes/Home/View/Transactions/View/Exchange/model/ex_model.dart';
@@ -1668,40 +1672,68 @@ class Repositories {
   }
 
   ///User Role Settings ........................................................
-  // Future<List<UserRolePermissionSettingModel>> getPermissionSettings({CancelToken? cancelToken,}) async {
-  //   final response = await _api.get(
-  //     endpoint: "/setting/userRoles.php",
-  //     cancelToken: cancelToken,
-  //   );
-  //
-  //   // Handle error messages from server
-  //   if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
-  //     throw Exception(response.data['msg']);
-  //   }
-  //
-  //   // If data is null or empty, return empty list
-  //   if (response.data == null ||
-  //       (response.data is List && response.data.isEmpty)) {
-  //     return [];
-  //   }
-  //
-  //   // Parse list of stakeholders safely
-  //   if (response.data is List) {
-  //     return (response.data as List)
-  //         .whereType<Map<String, dynamic>>() // ensure map type
-  //         .map((json) => UserRolePermissionSettingModel.fromMap(json))
-  //         .toList();
-  //   }
-  //
-  //   return [];
-  // }
-  // Future<Map<String, dynamic>> updatePermissionSettings({required PermissionActionModel permissions,}) async {
-  //
-  //   final response = await _api.put(
-  //     endpoint: "/setting/userRoles.php",
-  //     data: permissions.toMap(),
-  //   );
-  //   return response.data;
-  // }
+  Future<List<UserRolePermissionSettingModel>> getPermissionSettings({CancelToken? cancelToken,}) async {
+    final response = await _api.get(
+      endpoint: "/setting/userRoles.php",
+      cancelToken: cancelToken,
+    );
+
+    // Handle error messages from server
+    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+      throw Exception(response.data['msg']);
+    }
+
+    // If data is null or empty, return empty list
+    if (response.data == null ||
+        (response.data is List && response.data.isEmpty)) {
+      return [];
+    }
+
+    // Parse list of stakeholders safely
+    if (response.data is List) {
+      return (response.data as List)
+          .whereType<Map<String, dynamic>>() // ensure map type
+          .map((json) => UserRolePermissionSettingModel.fromMap(json))
+          .toList();
+    }
+
+    return [];
+  }
+  Future<Map<String, dynamic>> updatePermissionSettings({required PermissionActionModel permissions,}) async {
+
+    final response = await _api.put(
+      endpoint: "/setting/userRoles.php",
+      data: permissions.toMap(),
+    );
+    return response.data;
+  }
+
+  // Account Statement
+  Future<AccountStatementModel> getAccountStatement({
+    required int account,
+    required String fromDate,
+    required String toDate,
+  }) async {
+    final response = await _api.post(
+      endpoint: "/reports/accountStatement.php",
+      data: {"account": account, "fromDate": fromDate, "toDate": toDate},
+    );
+
+    // Handle message response
+    if (response.data is Map && response.data['msg'] != null) {
+      throw response.data['msg'];
+    }
+
+    // Handle empty response
+    if (response.data == null || response.data.isEmpty) {
+      throw "No data received";
+    }
+
+    // Convert response to string and back to ensure proper typing
+    final jsonString = json.encode(response.data);
+    final decodedData = json.decode(jsonString) as dynamic;
+
+    return AccountStatementModel.fromApiResponse(decodedData);
+  }
 
 }

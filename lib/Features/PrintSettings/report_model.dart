@@ -1,6 +1,8 @@
 
 import 'dart:typed_data';
-import '../../../../Visibility/bloc/settings_visible_bloc.dart';
+
+import '../../Routes/Home/View/Settings/Visibility/bloc/settings_visible_bloc.dart';
+
 
 class ReportModel {
   String? comName;
@@ -79,29 +81,29 @@ class ReportModel {
     String? usrMaker,
     String? usrPrintedBy,
     SettingsVisibilityState? visible
-  }) => ReportModel(
-    comName: comName ?? this.comName,
-    compPhone: compPhone ?? this.compPhone,
-    comEmail: comEmail ?? this.comEmail,
-    comLogo: comLogo ?? this.comLogo,
-    slogan: slogan ?? this.slogan,
-    comWhatsApp: comWhatsApp ?? this.comWhatsApp,
-    comFacebook: comFacebook ?? this.comFacebook,
-    comInstagram: comInstagram ?? this.comInstagram,
-    comWebsite: comWebsite ?? this.comWebsite,
-    comAddress: comAddress ?? this.comAddress,
-    invoiceNumber: invoiceNumber ?? this.invoiceNumber,
-    statementDate: statementDate ?? this.statementDate,
-    startDate: startDate ?? this.startDate,
-    statementPeriod: statementPeriod ?? this.statementPeriod,
-    endDate: endDate ?? this.endDate,
-    baseCurrency: baseCurrency ?? this.baseCurrency,
-    partyAddress: partyAddress ?? this.partyAddress,
-    partyPhone:  partyPhone ?? this.partyPhone,
-    partyCity: partyCity ?? this.partyCity,
-    partyProvince: partyProvince ?? this.partyProvince,
-    usrMaker: usrMaker ?? this.usrMaker,
-    usrPrintedBy: usrPrintedBy ?? this.usrPrintedBy,
-    visible: visible ?? this.visible,
-  );
+    }) => ReportModel(
+        comName: comName ?? this.comName,
+        compPhone: compPhone ?? this.compPhone,
+        comEmail: comEmail ?? this.comEmail,
+        comLogo: comLogo ?? this.comLogo,
+        slogan: slogan ?? this.slogan,
+        comWhatsApp: comWhatsApp ?? this.comWhatsApp,
+        comFacebook: comFacebook ?? this.comFacebook,
+        comInstagram: comInstagram ?? this.comInstagram,
+        comWebsite: comWebsite ?? this.comWebsite,
+        comAddress: comAddress ?? this.comAddress,
+        invoiceNumber: invoiceNumber ?? this.invoiceNumber,
+        statementDate: statementDate ?? this.statementDate,
+        startDate: startDate ?? this.startDate,
+        statementPeriod: statementPeriod ?? this.statementPeriod,
+        endDate: endDate ?? this.endDate,
+        baseCurrency: baseCurrency ?? this.baseCurrency,
+        partyAddress: partyAddress ?? this.partyAddress,
+        partyPhone:  partyPhone ?? this.partyPhone,
+        partyCity: partyCity ?? this.partyCity,
+        partyProvince: partyProvince ?? this.partyProvince,
+        usrMaker: usrMaker ?? this.usrMaker,
+        usrPrintedBy: usrPrintedBy ?? this.usrPrintedBy,
+        visible: visible ?? this.visible,
+      );
 }

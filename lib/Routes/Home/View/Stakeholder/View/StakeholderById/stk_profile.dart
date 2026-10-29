@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/extensions.dart';
 import 'package:shipping/Features/Widgets/toast.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
+import 'package:shipping/Features/Widgets/znavigator.dart';
+import 'package:shipping/Routes/Home/View/Report/AccountStatement/acc_statement.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/bloc/stakeholder_bloc.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/stk_form.dart';
 import 'package:shipping/l10n/app_localizations.dart';
@@ -70,6 +72,13 @@ class _StakeholderByIdDesktop extends StatefulWidget {
 class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
   IndividualsModel? individual;
   String? fullName;
+
+  /// Set to `true` whenever an action on this screen modifies data that the
+  /// stakeholders list (StakeholderBloc) displays — i.e. account balances.
+  ///
+  /// When `true`, the screen pops with `true` so the caller (StakeholderView)
+  /// can refresh its list without a manual pull-to-refresh.
+  bool _listNeedsRefresh = false;
 
   static Widget _buildHeroShuttle(
       BuildContext flightContext,
@@ -152,11 +161,6 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
   }
 
   // ── Cash specs for CHDP / CHWL ──────────────────────────────────
-  //
-  // `perId: _stkId` scopes the account picker to this stakeholder.
-  // The cash form forwards it to every LoadStkAccountsEvent it
-  // dispatches (initial + search), so the dropdown never spills over
-  // to other stakeholders' accounts.
   CashTxnSpec _cashSpecFor(BuildContext context, String code) {
     final tr = AppLocalizations.of(context)!;
     switch (code) {
@@ -167,7 +171,7 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
           title: (_) => tr.cashDeposit,
           accountInclude: '8',
           allowReminder: true,
-          perId: _stkId, // ← scope to this stakeholder
+          perId: _stkId,
         );
       case 'CHWL':
         return CashTxnSpec(
@@ -176,7 +180,7 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
           title: (_) => tr.cashWithdraw,
           accountInclude: '8',
           allowReminder: true,
-          perId: _stkId, // ← scope to this stakeholder
+          perId: _stkId,
         );
       default:
         throw ArgumentError('Unsupported cash type: $code');
@@ -197,6 +201,7 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
 
     if (!mounted) return;
     if (saved == true) {
+      _listNeedsRefresh = true; // ← balances changed → list needs refresh
       _reloadProfile();
       final tr = AppLocalizations.of(context)!;
       ToastManager.show(
@@ -221,6 +226,7 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
 
     if (!mounted) return;
     if (saved == true) {
+      _listNeedsRefresh = true; // ← balances changed → list needs refresh
       _reloadProfile();
       final tr = AppLocalizations.of(context)!;
       ToastManager.show(
@@ -263,6 +269,7 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
         builder: (_) => StkAccountFormDialog(perId: _stkId!),
       );
       if (!mounted) return;
+      _listNeedsRefresh = true; // ← account list may have changed
       context
           .read<StkAccountsBloc>()
           .add(LoadStkAccountsEvent(perId: _stkId!));
@@ -285,6 +292,8 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
           account: account,
         ),
       );
+      if (!mounted) return;
+      _listNeedsRefresh = true; // ← balance / limit may have changed
     } catch (e) {
       _showError('Edit account', e);
     }
@@ -296,7 +305,11 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
       _showError('Statement', 'accNumber is null');
       return;
     }
-    _showError('Statement', 'Not implemented yet for ${account.accNumber}');
+
+    ZNavigator.goto(
+      context: context,
+      AccountStatementView(initialAccountNumber: account.accNumber),
+    );
   }
 
   // ── Delete account ──────────────────────────────────────────────
@@ -330,6 +343,7 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
         ),
       );
       if (ok == true && mounted) {
+        _listNeedsRefresh = true; // ← account removed from totals
         context.read<StkAccountsBloc>().add(
           DeleteStkAccountEvent(_stkId!, account.accNumber!),
         );
@@ -344,145 +358,156 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
     final color = Theme.of(context).colorScheme;
     final tr = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      appBar: AppBar(
-        titleSpacing: 0,
-        title: Text(tr.profileOverview),
-        actions: [
-          _AppBarAction(
-            icon: Icons.arrow_downward_rounded,
-            tooltip: tr.cashDeposit,
-            onPressed: () => _openCashDialog('CHDP'),
-          ),
-          _AppBarAction(
-            icon: Icons.arrow_upward_rounded,
-            tooltip: tr.cashWithdraw,
-            onPressed: () => _openCashDialog('CHWL'),
-          ),
-          _AppBarAction(
-            icon: Icons.swap_horiz_rounded,
-            tooltip: tr.fundTransfer,
-            onPressed: _openFundTransferDialog,
-          ),
-          const SizedBox(width: 4),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
-            child: ZOutlineButton(
-              onPressed: _onAddAccount,
-              height: 36,
-              icon: Icons.add,
-              isActive: true,
-              label: Text(tr.addAccount),
+    // Intercept the pop so we can return whether the stakeholder list needs
+    // a refresh (i.e. whether any balance-affecting action happened here).
+    return PopScope<bool>(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Navigator.of(context).pop(_listNeedsRefresh);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          titleSpacing: 0,
+          title: Text(tr.profileOverview),
+          actions: [
+            _AppBarAction(
+              icon: Icons.arrow_downward_rounded,
+              tooltip: tr.cashDeposit,
+              onPressed: () => _openCashDialog('CHDP'),
             ),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: BlocListener<StakeholderBloc, StakeholderState>(
-        listenWhen: (p, c) =>
-        c is UpdateStakeholderSuccessState ||
-            c is UpdateStakeholderFailureState,
-        listener: (context, state) {
-          if (state is UpdateStakeholderSuccessState) {
-            _reloadProfile();
-          } else if (state is UpdateStakeholderFailureState) {
-            ToastManager.show(
-              context: context,
-              title: tr.failed,
-              message: 'Update failed: ${state.message}',
-              type: ToastType.error,
-            );
-          }
-        },
-        child: BlocListener<StkAccountsBloc, StkAccountsState>(
+            _AppBarAction(
+              icon: Icons.arrow_upward_rounded,
+              tooltip: tr.cashWithdraw,
+              onPressed: () => _openCashDialog('CHWL'),
+            ),
+            _AppBarAction(
+              icon: Icons.swap_horiz_rounded,
+              tooltip: tr.fundTransfer,
+              onPressed: _openFundTransferDialog,
+            ),
+            const SizedBox(width: 4),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+              child: ZOutlineButton(
+                onPressed: _onAddAccount,
+                height: 36,
+                icon: Icons.add,
+                isActive: true,
+                label: Text(tr.addAccount),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
+        body: BlocListener<StakeholderBloc, StakeholderState>(
           listenWhen: (p, c) =>
-          (c is StkAccountsLoadedState && c.successMessage != null) ||
-              (c is StkAccountsFailureState && c.errorMessage != null),
+          c is UpdateStakeholderSuccessState ||
+              c is UpdateStakeholderFailureState,
           listener: (context, state) {
-            if (state is StkAccountsLoadedState &&
-                state.successMessage != null) {
+            if (state is UpdateStakeholderSuccessState) {
+              _listNeedsRefresh = true; // ← profile edit → list needs refresh
               _reloadProfile();
-              ToastManager.show(
-                context: context,
-                title: tr.successTitle,
-                message: '${state.successMessage}',
-                type: ToastType.success,
-              );
-            } else if (state is StkAccountsFailureState) {
+            } else if (state is UpdateStakeholderFailureState) {
               ToastManager.show(
                 context: context,
                 title: tr.failed,
-                message: '${state.errorMessage}',
+                message: 'Update failed: ${state.message}',
                 type: ToastType.error,
               );
             }
-            context
-                .read<StkAccountsBloc>()
-                .add(const ClearStkAccountMessagesEvent());
           },
-          child: BlocBuilder<StakeholderByIdBloc, StakeholderByIdState>(
-            builder: (context, state) {
-              if (state is StakeholderByIdLoadedState) {
-                individual = state.stk;
-                fullName = _composeName(state.stk);
+          child: BlocListener<StkAccountsBloc, StkAccountsState>(
+            listenWhen: (p, c) =>
+            (c is StkAccountsLoadedState && c.successMessage != null) ||
+                (c is StkAccountsFailureState && c.errorMessage != null),
+            listener: (context, state) {
+              if (state is StkAccountsLoadedState &&
+                  state.successMessage != null) {
+                _listNeedsRefresh = true; // ← account mutation succeeded
+                _reloadProfile();
+                ToastManager.show(
+                  context: context,
+                  title: tr.successTitle,
+                  message: '${state.successMessage}',
+                  type: ToastType.success,
+                );
+              } else if (state is StkAccountsFailureState) {
+                ToastManager.show(
+                  context: context,
+                  title: tr.failed,
+                  message: '${state.errorMessage}',
+                  type: ToastType.error,
+                );
               }
+              context
+                  .read<StkAccountsBloc>()
+                  .add(const ClearStkAccountMessagesEvent());
+            },
+            child: BlocBuilder<StakeholderByIdBloc, StakeholderByIdState>(
+              builder: (context, state) {
+                if (state is StakeholderByIdLoadedState) {
+                  individual = state.stk;
+                  fullName = _composeName(state.stk);
+                }
 
-              final data = individual ?? widget.ind;
-              final accounts = data.accounts;
-              final recent = data.recentTransactions;
+                final data = individual ?? widget.ind;
+                final accounts = data.accounts;
+                final recent = data.recentTransactions;
 
-              return Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
-                        child: _buildProfileContent(context, color, data),
-                      ),
-                    ),
-                    Container(
-                      width: 1,
-                      color: color.outlineVariant.withValues(alpha: 0.5),
-                    ),
-                    Expanded(
-                      flex: 8,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            SizedBox(
-                              height: 250,
-                              child: _AccountsSection(
-                                accounts: accounts,
-                                ownerName: fullName ?? '—',
-                                isLoading:
-                                state is StakeholderByIdLoadingState,
-                                onEdit: _onEditAccount,
-                                onDelete: _onDeleteAccount,
-                                onStatement: _onStatement,
-                              ),
-                            ),
-                            if (recent.isNotEmpty) ...[
-                              const SizedBox(height: 12),
-                              Expanded(
-                                child: _RecentTransactionsPanel(
-                                  transactions: recent,
-                                ),
-                              ),
-                            ],
-                          ],
+                return Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+                          child: _buildProfileContent(context, color, data),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            },
+                      Container(
+                        width: 1,
+                        color: color.outlineVariant.withValues(alpha: 0.5),
+                      ),
+                      Expanded(
+                        flex: 8,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              SizedBox(
+                                height: 250,
+                                child: _AccountsSection(
+                                  accounts: accounts,
+                                  ownerName: fullName ?? '—',
+                                  isLoading:
+                                  state is StakeholderByIdLoadingState,
+                                  onEdit: _onEditAccount,
+                                  onDelete: _onDeleteAccount,
+                                  onStatement: _onStatement,
+                                ),
+                              ),
+                              if (recent.isNotEmpty) ...[
+                                const SizedBox(height: 12),
+                                Expanded(
+                                  child: _RecentTransactionsPanel(
+                                    transactions: recent,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ),

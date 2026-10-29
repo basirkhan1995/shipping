@@ -64,5 +64,13 @@ class UserRoleBloc extends Bloc<UserRoleEvent, UserRoleState> {
         emit(UserRoleErrorState(e.toString()));
       }
     });
+
+    on<ClearUserRoleMessagesEvent>((event, emit) async {
+      if (state is UserRoleErrorState) {
+        // Restore the previously loaded list if we have one, otherwise Initial.
+        // Simplest: emit Initial; the list view re-triggers Load on rebuild anyway.
+        emit(UserRoleInitial());
+      }
+    });
   }
 }

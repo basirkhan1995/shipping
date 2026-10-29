@@ -1863,6 +1863,564 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Activate'**
   String get unblock;
+
+  /// No description provided for @transport.
+  ///
+  /// In en, this message translates to:
+  /// **'Transport'**
+  String get transport;
+
+  /// No description provided for @inventory.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory'**
+  String get inventory;
+
+  /// No description provided for @reports.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports'**
+  String get reports;
+
+  /// No description provided for @actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get actions;
+
+  /// No description provided for @roleActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Role Actions'**
+  String get roleActions;
+
+  /// No description provided for @grantAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Grant All'**
+  String get grantAll;
+
+  /// No description provided for @revokeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke All'**
+  String get revokeAll;
+
+  /// No description provided for @restoreDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore Default'**
+  String get restoreDefault;
+
+  /// No description provided for @counts.
+  ///
+  /// In en, this message translates to:
+  /// **'Counts'**
+  String get counts;
+
+  /// No description provided for @exchangeRateGraph.
+  ///
+  /// In en, this message translates to:
+  /// **'Exchange Rate Graph'**
+  String get exchangeRateGraph;
+
+  /// No description provided for @dailyTransactionsGraph.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Transactions Graph'**
+  String get dailyTransactionsGraph;
+
+  /// No description provided for @dailyTransactionTotals.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Transaction Totals'**
+  String get dailyTransactionTotals;
+
+  /// No description provided for @digitalClock.
+  ///
+  /// In en, this message translates to:
+  /// **'Digital Clock'**
+  String get digitalClock;
+
+  /// No description provided for @exchangeRates.
+  ///
+  /// In en, this message translates to:
+  /// **'Exchange Rates'**
+  String get exchangeRates;
+
+  /// No description provided for @profitLossGraph.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit Loss Graph'**
+  String get profitLossGraph;
+
+  /// No description provided for @reminderNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder Notifications'**
+  String get reminderNotifications;
+
+  /// No description provided for @currencyTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency Tab'**
+  String get currencyTab;
+
+  /// No description provided for @currency.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get currency;
+
+  /// No description provided for @glAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'GL Accounts'**
+  String get glAccounts;
+
+  /// No description provided for @allTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'All Transactions'**
+  String get allTransactions;
+
+  /// No description provided for @authorizedTransaction.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorized Transaction'**
+  String get authorizedTransaction;
+
+  /// No description provided for @pendingTransaction.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Transaction'**
+  String get pendingTransaction;
+
+  /// No description provided for @incomeEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Income Entry'**
+  String get incomeEntry;
+
+  /// No description provided for @expenseEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Expense Entry'**
+  String get expenseEntry;
+
+  /// No description provided for @ftSingleAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'FT Single Account'**
+  String get ftSingleAccount;
+
+  /// No description provided for @ftMultiAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'FT Multi Account'**
+  String get ftMultiAccount;
+
+  /// No description provided for @fxTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'FX Transactions'**
+  String get fxTransactions;
+
+  /// No description provided for @individuals.
+  ///
+  /// In en, this message translates to:
+  /// **'Individuals'**
+  String get individuals;
+
+  /// No description provided for @allUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'All Users'**
+  String get allUsers;
+
+  /// No description provided for @userLog.
+  ///
+  /// In en, this message translates to:
+  /// **'User Log'**
+  String get userLog;
+
+  /// No description provided for @shipping.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipping'**
+  String get shipping;
+
+  /// No description provided for @drivers.
+  ///
+  /// In en, this message translates to:
+  /// **'Drivers'**
+  String get drivers;
+
+  /// No description provided for @vehicles.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicles'**
+  String get vehicles;
+
+  /// No description provided for @ordersTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders Tab'**
+  String get ordersTab;
+
+  /// No description provided for @estimateTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimate Tab'**
+  String get estimateTab;
+
+  /// No description provided for @goodsShiftTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Goods Shift Tab'**
+  String get goodsShiftTab;
+
+  /// No description provided for @adjustmentTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjustment Tab'**
+  String get adjustmentTab;
+
+  /// No description provided for @purchase.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase'**
+  String get purchase;
+
+  /// No description provided for @sale.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale'**
+  String get sale;
+
+  /// No description provided for @estimate.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimate'**
+  String get estimate;
+
+  /// No description provided for @goodsShift.
+  ///
+  /// In en, this message translates to:
+  /// **'Goods Shift'**
+  String get goodsShift;
+
+  /// No description provided for @adjustment.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjustment'**
+  String get adjustment;
+
+  /// No description provided for @findInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Find Invoice'**
+  String get findInvoice;
+
+  /// No description provided for @generalTab.
+  ///
+  /// In en, this message translates to:
+  /// **'General Tab'**
+  String get generalTab;
+
+  /// No description provided for @passwordChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Password Change'**
+  String get passwordChange;
+
+  /// No description provided for @rolesAndPermissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles and Permissions'**
+  String get rolesAndPermissions;
+
+  /// No description provided for @companyTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Company Tab'**
+  String get companyTab;
+
+  /// No description provided for @transactionType.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction Type'**
+  String get transactionType;
+
+  /// No description provided for @products.
+  ///
+  /// In en, this message translates to:
+  /// **'Products'**
+  String get products;
+
+  /// No description provided for @about.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get about;
+
+  /// No description provided for @accountStatementSingleDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Statement Single Date'**
+  String get accountStatementSingleDate;
+
+  /// No description provided for @glStatementSingleDate.
+  ///
+  /// In en, this message translates to:
+  /// **'GL Statement Single Date'**
+  String get glStatementSingleDate;
+
+  /// No description provided for @glStatementPeriodicDate.
+  ///
+  /// In en, this message translates to:
+  /// **'GL Statement Periodic Date'**
+  String get glStatementPeriodicDate;
+
+  /// No description provided for @creditors.
+  ///
+  /// In en, this message translates to:
+  /// **'Creditors'**
+  String get creditors;
+
+  /// No description provided for @debtors.
+  ///
+  /// In en, this message translates to:
+  /// **'Debtors'**
+  String get debtors;
+
+  /// No description provided for @stockAvailability.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock Availability'**
+  String get stockAvailability;
+
+  /// No description provided for @productMovement.
+  ///
+  /// In en, this message translates to:
+  /// **'Product Movement'**
+  String get productMovement;
+
+  /// No description provided for @purchaseInvoices.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Invoices'**
+  String get purchaseInvoices;
+
+  /// No description provided for @saleInvoices.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale Invoices'**
+  String get saleInvoices;
+
+  /// No description provided for @allInvoices.
+  ///
+  /// In en, this message translates to:
+  /// **'All Invoices'**
+  String get allInvoices;
+
+  /// No description provided for @cashBalanceAllBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash Balance All Branch'**
+  String get cashBalanceAllBranch;
+
+  /// No description provided for @cashBalanceSingleBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash Balance Single Branch'**
+  String get cashBalanceSingleBranch;
+
+  /// No description provided for @trialBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Trial Balance'**
+  String get trialBalance;
+
+  /// No description provided for @transactionDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction Details'**
+  String get transactionDetails;
+
+  /// No description provided for @transactionsReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Transactions Report'**
+  String get transactionsReport;
+
+  /// No description provided for @allBalances.
+  ///
+  /// In en, this message translates to:
+  /// **'All Balances'**
+  String get allBalances;
+
+  /// No description provided for @userRoleAndPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'User Role and Permission'**
+  String get userRoleAndPermission;
+
+  /// No description provided for @stakeholderAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Stakeholder Account'**
+  String get stakeholderAccount;
+
+  /// No description provided for @currencies.
+  ///
+  /// In en, this message translates to:
+  /// **'Currencies'**
+  String get currencies;
+
+  /// No description provided for @balanceSheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance Sheet'**
+  String get balanceSheet;
+
+  /// No description provided for @read.
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get read;
+
+  /// No description provided for @language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get language;
+
+  /// No description provided for @printers.
+  ///
+  /// In en, this message translates to:
+  /// **'Printers'**
+  String get printers;
+
+  /// No description provided for @portrait.
+  ///
+  /// In en, this message translates to:
+  /// **'Portrait'**
+  String get portrait;
+
+  /// No description provided for @landscape.
+  ///
+  /// In en, this message translates to:
+  /// **'Landscape'**
+  String get landscape;
+
+  /// No description provided for @orientation.
+  ///
+  /// In en, this message translates to:
+  /// **'Orientation'**
+  String get orientation;
+
+  /// No description provided for @paper.
+  ///
+  /// In en, this message translates to:
+  /// **'Paper'**
+  String get paper;
+
+  /// No description provided for @printPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Print Preview'**
+  String get printPreview;
+
+  /// No description provided for @copies.
+  ///
+  /// In en, this message translates to:
+  /// **'Copies'**
+  String get copies;
+
+  /// No description provided for @share.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get share;
+
+  /// No description provided for @fromDate.
+  ///
+  /// In en, this message translates to:
+  /// **'From date'**
+  String get fromDate;
+
+  /// No description provided for @toDate.
+  ///
+  /// In en, this message translates to:
+  /// **'To date'**
+  String get toDate;
+
+  /// No description provided for @currentBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Balance'**
+  String get currentBalance;
+
+  /// No description provided for @availableBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Available Balance'**
+  String get availableBalance;
+
+  /// No description provided for @accountStatement.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Statement'**
+  String get accountStatement;
+
+  /// No description provided for @copied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get copied;
+
+  /// No description provided for @copyClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy clipboard'**
+  String get copyClipboard;
+
+  /// No description provided for @typeMessageHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Type message here'**
+  String get typeMessageHere;
+
+  /// No description provided for @signatory.
+  ///
+  /// In en, this message translates to:
+  /// **'Signatory'**
+  String get signatory;
+
+  /// No description provided for @dearCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Dear Customer'**
+  String get dearCustomer;
+
+  /// No description provided for @regardsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Regards,'**
+  String get regardsTitle;
+
+  /// No description provided for @balanceMessageShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Please find your balance here'**
+  String get balanceMessageShare;
+
+  /// No description provided for @accountPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Position'**
+  String get accountPosition;
 }
 
 class _AppLocalizationsDelegate

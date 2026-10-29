@@ -24,6 +24,11 @@ class UpdateUserRoleEvent extends UserRoleEvent {
   List<Object> get props => [newRole];
 }
 
+class ClearUserRoleMessagesEvent extends UserRoleEvent {
+  @override
+  List<Object?> get props => [];
+}
+
 class DeleteUserRolesEvent extends UserRoleEvent{
   final int roleId;
   const DeleteUserRolesEvent(this.roleId);

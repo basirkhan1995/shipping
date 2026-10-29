@@ -39,10 +39,20 @@ class _StakeholderController {
     context.read<StakeholderBloc>().add(SearchStakeholdersEvent(query));
   }
 
-  static Future<void> openView(BuildContext context, IndividualsModel model) {
-    return Navigator.of(context).push(
+  /// Opens the stakeholder detail screen.
+  ///
+  /// The detail screen pops with `true` when a transaction (cash deposit,
+  /// cash withdrawal, fund transfer) — or any other balance-affecting
+  /// mutation — occurred. In that case we refresh the list so account
+  /// totals shown on the cards are up-to-date when the user comes back.
+  static Future<void> openView(
+      BuildContext context, IndividualsModel model) async {
+    final changed = await Navigator.of(context).push<bool>(
       MaterialPageRoute(builder: (_) => StakeholderByIdView(ind: model)),
     );
+    if (changed == true && context.mounted) {
+      context.read<StakeholderBloc>().add(const GetStakeholdersEvent());
+    }
   }
 
   static Future<void> openAddDialog(BuildContext context) async {
@@ -264,8 +274,19 @@ class _StakeholderTablet extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════
 // DESKTOP
 // ═══════════════════════════════════════════════════════════════════
-class _StakeholderDesktop extends StatelessWidget {
+class _StakeholderDesktop extends StatefulWidget {
   const _StakeholderDesktop();
+
+  @override
+  State<_StakeholderDesktop> createState() => _StakeholderDesktopState();
+}
+
+class _StakeholderDesktopState extends State<_StakeholderDesktop> {
+  @override
+  void initState() {
+    context.read<StakeholderBloc>().add(GetStakeholdersEvent());
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {

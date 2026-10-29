@@ -905,4 +905,283 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get unblock => 'فعال کردن';
+
+  @override
+  String get transport => 'ترانسپورت';
+
+  @override
+  String get inventory => 'ګدام';
+
+  @override
+  String get reports => 'راپورونه';
+
+  @override
+  String get actions => 'کړنې';
+
+  @override
+  String get roleActions => 'د رول کړنې';
+
+  @override
+  String get grantAll => 'ټولو ته اجازه ورکول';
+
+  @override
+  String get revokeAll => 'ټولې اجازې لغوه کول';
+
+  @override
+  String get restoreDefault => 'اصلي حالت ته راګرځول';
+
+  @override
+  String get counts => 'Counts';
+
+  @override
+  String get exchangeRateGraph => 'Exchange Rate Graph';
+
+  @override
+  String get dailyTransactionsGraph => 'Daily Transactions Graph';
+
+  @override
+  String get dailyTransactionTotals => 'Daily Transaction Totals';
+
+  @override
+  String get digitalClock => 'Digital Clock';
+
+  @override
+  String get exchangeRates => 'Exchange Rates';
+
+  @override
+  String get profitLossGraph => 'Profit Loss Graph';
+
+  @override
+  String get reminderNotifications => 'Reminder Notifications';
+
+  @override
+  String get currencyTab => 'Currency Tab';
+
+  @override
+  String get currency => 'Currency';
+
+  @override
+  String get glAccounts => 'GL Accounts';
+
+  @override
+  String get allTransactions => 'All Transactions';
+
+  @override
+  String get authorizedTransaction => 'Authorized Transaction';
+
+  @override
+  String get pendingTransaction => 'Pending Transaction';
+
+  @override
+  String get incomeEntry => 'Income Entry';
+
+  @override
+  String get expenseEntry => 'Expense Entry';
+
+  @override
+  String get ftSingleAccount => 'FT Single Account';
+
+  @override
+  String get ftMultiAccount => 'FT Multi Account';
+
+  @override
+  String get fxTransactions => 'FX Transactions';
+
+  @override
+  String get individuals => 'Individuals';
+
+  @override
+  String get allUsers => 'All Users';
+
+  @override
+  String get userLog => 'User Log';
+
+  @override
+  String get shipping => 'Shipping';
+
+  @override
+  String get drivers => 'Drivers';
+
+  @override
+  String get vehicles => 'Vehicles';
+
+  @override
+  String get ordersTab => 'Orders Tab';
+
+  @override
+  String get estimateTab => 'Estimate Tab';
+
+  @override
+  String get goodsShiftTab => 'Goods Shift Tab';
+
+  @override
+  String get adjustmentTab => 'Adjustment Tab';
+
+  @override
+  String get purchase => 'Purchase';
+
+  @override
+  String get sale => 'Sale';
+
+  @override
+  String get estimate => 'Estimate';
+
+  @override
+  String get goodsShift => 'Goods Shift';
+
+  @override
+  String get adjustment => 'Adjustment';
+
+  @override
+  String get findInvoice => 'Find Invoice';
+
+  @override
+  String get generalTab => 'General Tab';
+
+  @override
+  String get passwordChange => 'Password Change';
+
+  @override
+  String get rolesAndPermissions => 'Roles and Permissions';
+
+  @override
+  String get companyTab => 'Company Tab';
+
+  @override
+  String get transactionType => 'Transaction Type';
+
+  @override
+  String get products => 'Products';
+
+  @override
+  String get about => 'About';
+
+  @override
+  String get accountStatementSingleDate => 'Account Statement Single Date';
+
+  @override
+  String get glStatementSingleDate => 'GL Statement Single Date';
+
+  @override
+  String get glStatementPeriodicDate => 'GL Statement Periodic Date';
+
+  @override
+  String get creditors => 'Creditors';
+
+  @override
+  String get debtors => 'Debtors';
+
+  @override
+  String get stockAvailability => 'Stock Availability';
+
+  @override
+  String get productMovement => 'Product Movement';
+
+  @override
+  String get purchaseInvoices => 'Purchase Invoices';
+
+  @override
+  String get saleInvoices => 'Sale Invoices';
+
+  @override
+  String get allInvoices => 'All Invoices';
+
+  @override
+  String get cashBalanceAllBranch => 'Cash Balance All Branch';
+
+  @override
+  String get cashBalanceSingleBranch => 'Cash Balance Single Branch';
+
+  @override
+  String get trialBalance => 'Trial Balance';
+
+  @override
+  String get transactionDetails => 'Transaction Details';
+
+  @override
+  String get transactionsReport => 'Transactions Report';
+
+  @override
+  String get allBalances => 'All Balances';
+
+  @override
+  String get userRoleAndPermission => 'User Role and Permission';
+
+  @override
+  String get stakeholderAccount => 'Stakeholder Account';
+
+  @override
+  String get currencies => 'Currencies';
+
+  @override
+  String get balanceSheet => 'Balance Sheet';
+
+  @override
+  String get read => 'Read';
+
+  @override
+  String get language => 'ژبه';
+
+  @override
+  String get printers => 'دستگاه چاپ';
+
+  @override
+  String get portrait => 'عمودی';
+
+  @override
+  String get landscape => 'افقی';
+
+  @override
+  String get orientation => 'حالت صفحه';
+
+  @override
+  String get paper => 'کاغذ';
+
+  @override
+  String get printPreview => 'نمایش چاپ';
+
+  @override
+  String get copies => 'تعداد';
+
+  @override
+  String get share => 'اشتراک گذاشتن';
+
+  @override
+  String get fromDate => 'له نیته';
+
+  @override
+  String get toDate => 'به تاریخ';
+
+  @override
+  String get currentBalance => 'بیلانس کلی';
+
+  @override
+  String get availableBalance => 'بیلانس موجود';
+
+  @override
+  String get accountStatement => 'صورتحساب';
+
+  @override
+  String get copied => 'کاپی شد';
+
+  @override
+  String get copyClipboard => 'کاپی';
+
+  @override
+  String get typeMessageHere => 'متن را اینجا بنویسید';
+
+  @override
+  String get signatory => 'صلاحیت دار';
+
+  @override
+  String get dearCustomer => 'مشتری عزیز';
+
+  @override
+  String get regardsTitle => 'بااحترام';
+
+  @override
+  String get balanceMessageShare => 'صورتحساب شما';
+
+  @override
+  String get accountPosition => 'وضعیت حساب';
 }

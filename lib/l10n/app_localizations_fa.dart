@@ -907,4 +907,283 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get unblock => 'فعال کردن';
+
+  @override
+  String get transport => 'ترانسپورت';
+
+  @override
+  String get inventory => 'انبار';
+
+  @override
+  String get reports => 'راپورها';
+
+  @override
+  String get actions => 'عملیات';
+
+  @override
+  String get roleActions => 'عملیات نقش';
+
+  @override
+  String get grantAll => 'اعطای همه';
+
+  @override
+  String get revokeAll => 'لغو همه';
+
+  @override
+  String get restoreDefault => 'بازگردانی به حالت اولیه';
+
+  @override
+  String get counts => 'شمارش‌ها';
+
+  @override
+  String get exchangeRateGraph => 'نمودار نرخ تبادله';
+
+  @override
+  String get dailyTransactionsGraph => 'نمودار معاملات روزانه';
+
+  @override
+  String get dailyTransactionTotals => 'مجموع معاملات روزانه';
+
+  @override
+  String get digitalClock => 'ساعت دیجیتال';
+
+  @override
+  String get exchangeRates => 'نرخ‌های تبادله';
+
+  @override
+  String get profitLossGraph => 'نمودار سود و زیان';
+
+  @override
+  String get reminderNotifications => 'اطلاعیه‌های یادآوری';
+
+  @override
+  String get currencyTab => 'تب اسعار';
+
+  @override
+  String get currency => 'اسعار';
+
+  @override
+  String get glAccounts => 'حساب‌های دفتر کل';
+
+  @override
+  String get allTransactions => 'همه معاملات';
+
+  @override
+  String get authorizedTransaction => 'معاملات مجاز';
+
+  @override
+  String get pendingTransaction => 'معاملات در انتظار';
+
+  @override
+  String get incomeEntry => 'ثبت عواید';
+
+  @override
+  String get expenseEntry => 'ثبت مصارف';
+
+  @override
+  String get ftSingleAccount => 'انتقال وجه تک‌حسابی';
+
+  @override
+  String get ftMultiAccount => 'انتقال وجه چندحسابی';
+
+  @override
+  String get fxTransactions => 'معاملات ارزی';
+
+  @override
+  String get individuals => 'افراد';
+
+  @override
+  String get allUsers => 'همه کاربران';
+
+  @override
+  String get userLog => 'سابقه کاربر';
+
+  @override
+  String get shipping => 'حمل و نقل';
+
+  @override
+  String get drivers => 'رانندگان';
+
+  @override
+  String get vehicles => 'وسایط';
+
+  @override
+  String get ordersTab => 'تب سفارشات';
+
+  @override
+  String get estimateTab => 'تب پیش‌بینی';
+
+  @override
+  String get goodsShiftTab => 'تب جابجایی اموال';
+
+  @override
+  String get adjustmentTab => 'تب تعدیلات';
+
+  @override
+  String get purchase => 'خرید';
+
+  @override
+  String get sale => 'فروش';
+
+  @override
+  String get estimate => 'پیش‌بینی';
+
+  @override
+  String get goodsShift => 'جابجایی اموال';
+
+  @override
+  String get adjustment => 'تعدیل';
+
+  @override
+  String get findInvoice => 'یافتن بل';
+
+  @override
+  String get generalTab => 'تب عمومی';
+
+  @override
+  String get passwordChange => 'تغییر رمز';
+
+  @override
+  String get rolesAndPermissions => 'نقش‌ها و دسترسی‌ها';
+
+  @override
+  String get companyTab => 'تب شرکت';
+
+  @override
+  String get transactionType => 'نوع معامله';
+
+  @override
+  String get products => 'محصولات';
+
+  @override
+  String get about => 'درباره';
+
+  @override
+  String get accountStatementSingleDate => 'صورت‌حساب تاریخ واحد';
+
+  @override
+  String get glStatementSingleDate => 'صورت‌حساب دفتر کل تاریخ واحد';
+
+  @override
+  String get glStatementPeriodicDate => 'صورت‌حساب دفتر کل دوره‌ای';
+
+  @override
+  String get creditors => 'طلبکاران';
+
+  @override
+  String get debtors => 'بدهکاران';
+
+  @override
+  String get stockAvailability => 'موجودی اموال';
+
+  @override
+  String get productMovement => 'حرکت محصولات';
+
+  @override
+  String get purchaseInvoices => 'بل‌های خرید';
+
+  @override
+  String get saleInvoices => 'بل‌های فروش';
+
+  @override
+  String get allInvoices => 'همه بل‌ها';
+
+  @override
+  String get cashBalanceAllBranch => 'بیلانس نقدی همه شعبات';
+
+  @override
+  String get cashBalanceSingleBranch => 'بیلانس نقدی شعبه واحد';
+
+  @override
+  String get trialBalance => 'بیلانس آزمایشی';
+
+  @override
+  String get transactionDetails => 'جزئیات معامله';
+
+  @override
+  String get transactionsReport => 'راپور معاملات';
+
+  @override
+  String get allBalances => 'همه بیلانس‌ها';
+
+  @override
+  String get userRoleAndPermission => 'نقش کاربر و دسترسی';
+
+  @override
+  String get stakeholderAccount => 'حساب سهامدار';
+
+  @override
+  String get currencies => 'اسعار';
+
+  @override
+  String get balanceSheet => 'بیلانس شیت';
+
+  @override
+  String get read => 'خواندن';
+
+  @override
+  String get language => 'زبان';
+
+  @override
+  String get printers => 'دستگاه چاپ';
+
+  @override
+  String get portrait => 'عمودی';
+
+  @override
+  String get landscape => 'افقی';
+
+  @override
+  String get orientation => 'حالت صفحه';
+
+  @override
+  String get paper => 'کاغذ';
+
+  @override
+  String get printPreview => 'نمایش چاپ';
+
+  @override
+  String get copies => 'تعداد';
+
+  @override
+  String get share => 'اشتراک گذاشتن';
+
+  @override
+  String get fromDate => 'از تاریخ';
+
+  @override
+  String get toDate => 'به تاریخ';
+
+  @override
+  String get currentBalance => 'بیلانس کلی';
+
+  @override
+  String get availableBalance => 'بیلانس موجود';
+
+  @override
+  String get accountStatement => 'صورتحساب';
+
+  @override
+  String get copied => 'کاپی شد';
+
+  @override
+  String get copyClipboard => 'کاپی';
+
+  @override
+  String get typeMessageHere => 'متن را اینجا بنویسید';
+
+  @override
+  String get signatory => 'صلاحیت دار';
+
+  @override
+  String get dearCustomer => 'مشتری عزیز';
+
+  @override
+  String get regardsTitle => 'بااحترام';
+
+  @override
+  String get balanceMessageShare => 'صورتحساب شما';
+
+  @override
+  String get accountPosition => 'وضعیت حساب';
 }

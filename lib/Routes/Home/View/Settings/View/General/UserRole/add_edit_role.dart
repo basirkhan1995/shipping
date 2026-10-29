@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../../../../../Features/Other/form_dialog.dart';
 import '../../../../../../../Features/Other/responsive_widget.dart';
 import '../../../../../../../Features/Widgets/ztextfield.dart';
@@ -22,7 +23,6 @@ class AddEditUserRoleSettingsView extends StatelessWidget {
   }
 }
 
-// Mobile Version - Full screen dialog
 class _Mobile extends StatelessWidget {
   final UserRoleModel? model;
   const _Mobile({this.model});
@@ -40,7 +40,6 @@ class _Mobile extends StatelessWidget {
   }
 }
 
-// Tablet Version - Medium sized dialog
 class _Tablet extends StatelessWidget {
   final UserRoleModel? model;
   const _Tablet({this.model});
@@ -49,15 +48,11 @@ class _Tablet extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dialog(
       insetPadding: const EdgeInsets.all(24),
-      child: SizedBox(
-        width: 500,
-        child: _AddEditForm(model: model),
-      ),
+      child: SizedBox(width: 500, child: _AddEditForm(model: model)),
     );
   }
 }
 
-// Desktop Version - Using ZFormDialog
 class _Desktop extends StatelessWidget {
   final UserRoleModel? model;
   const _Desktop(this.model);
@@ -68,15 +63,11 @@ class _Desktop extends StatelessWidget {
   }
 }
 
-// Shared Form Widget
 class _AddEditForm extends StatefulWidget {
   final UserRoleModel? model;
   final bool isDesktop;
 
-  const _AddEditForm({
-    this.model,
-    this.isDesktop = false,
-  });
+  const _AddEditForm({this.model, this.isDesktop = false});
 
   @override
   State<_AddEditForm> createState() => _AddEditFormState();
@@ -85,16 +76,26 @@ class _AddEditForm extends StatefulWidget {
 class _AddEditFormState extends State<_AddEditForm> {
   final formKey = GlobalKey<FormState>();
   final roleNameController = TextEditingController();
+  final _roleNameFocus = FocusNode();
+
   bool isActive = true;
   String? usrName;
+
+  bool get _isEdit => widget.model != null;
 
   @override
   void initState() {
     super.initState();
+
+    // Load actor + reset any stale bloc state left by a previous attempt.
     _loadUserData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<UserRoleBloc>().add(ClearUserRoleMessagesEvent());
+    });
 
     if (widget.model != null) {
-      roleNameController.text = widget.model?.rolName ?? "";
+      roleNameController.text = widget.model?.rolName ?? '';
       isActive = widget.model?.rolStatus == 1;
     }
   }
@@ -102,26 +103,43 @@ class _AddEditFormState extends State<_AddEditForm> {
   Future<void> _loadUserData() async {
     final authState = context.read<AuthBloc>().state;
     if (authState is AuthenticatedState) {
-      setState(() {
-        usrName = authState.loginData.usrName;
-      });
+      setState(() => usrName = authState.loginData.usrName);
     }
+  }
+
+  @override
+  void dispose() {
+    roleNameController.dispose();
+    _roleNameFocus.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
-    final bool isEdit = widget.model != null;
 
-    // For desktop, use ZFormDialog
-    if (widget.isDesktop) {
-      return BlocBuilder<UserRoleBloc, UserRoleState>(
-        builder: (context, roleState) {
+    // Listen for success → close. Errors stay visible via builder.
+    return BlocConsumer<UserRoleBloc, UserRoleState>(
+      listenWhen: (p, c) =>
+      c is UserRoleSuccessState || c is UserRoleErrorState,
+      listener: (context, state) {
+        if (state is UserRoleSuccessState) {
+          final nav = Navigator.of(context);
+          if (nav.canPop()) nav.pop();
+          // Note: the bloc reloads roles for the parent list; the dialog's
+          // success triggers only a pop here.
+        }
+      },
+      builder: (context, roleState) {
+        final isLoading = roleState is UserRoleLoadingState;
+
+        if (widget.isDesktop) {
           return ZFormDialog(
-            onAction: _onSubmit,
-            padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
-            actionLabel: roleState is UserRoleLoadingState
+            onAction: isLoading ? null : _onSubmit,
+            padding:
+            const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
+            actionLabel: isLoading
                 ? SizedBox(
               height: 16,
               width: 16,
@@ -130,17 +148,12 @@ class _AddEditFormState extends State<_AddEditForm> {
                 strokeWidth: 2,
               ),
             )
-                : Text(isEdit ? tr.update : tr.create),
-            title: isEdit ? tr.editRole : tr.addRole,
+                : Text(_isEdit ? tr.update : tr.create),
+            title: _isEdit ? tr.editRole : tr.addRole,
             child: _buildFormContent(context, roleState),
           );
-        },
-      );
-    }
+        }
 
-    // For mobile and tablet, use regular dialog with custom buttons
-    return BlocBuilder<UserRoleBloc, UserRoleState>(
-      builder: (context, roleState) {
         return Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -151,7 +164,6 @@ class _AddEditFormState extends State<_AddEditForm> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
               Row(
                 children: [
                   Icon(
@@ -161,7 +173,7 @@ class _AddEditFormState extends State<_AddEditForm> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    isEdit ? tr.editRole : tr.addRole,
+                    _isEdit ? tr.editRole : tr.addRole,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -170,12 +182,10 @@ class _AddEditFormState extends State<_AddEditForm> {
               ),
               const SizedBox(height: 20),
 
-              // Form Content
               _buildFormContent(context, roleState),
 
               const SizedBox(height: 24),
 
-              // Action Buttons
               Row(
                 children: [
                   Expanded(
@@ -199,9 +209,7 @@ class _AddEditFormState extends State<_AddEditForm> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: roleState is UserRoleLoadingState
-                          ? null
-                          : _onSubmit,
+                      onPressed: isLoading ? null : _onSubmit,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         backgroundColor: colorScheme.primary,
@@ -210,7 +218,7 @@ class _AddEditFormState extends State<_AddEditForm> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: roleState is UserRoleLoadingState
+                      child: isLoading
                           ? SizedBox(
                         height: 20,
                         width: 20,
@@ -219,7 +227,7 @@ class _AddEditFormState extends State<_AddEditForm> {
                           strokeWidth: 2,
                         ),
                       )
-                          : Text(isEdit ? tr.update : tr.create),
+                          : Text(_isEdit ? tr.update : tr.create),
                     ),
                   ),
                 ],
@@ -231,7 +239,6 @@ class _AddEditFormState extends State<_AddEditForm> {
     );
   }
 
-  // Shared form content
   Widget _buildFormContent(BuildContext context, UserRoleState roleState) {
     final tr = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
@@ -244,7 +251,14 @@ class _AddEditFormState extends State<_AddEditForm> {
           ZTextFieldEntitled(
             title: tr.roleName,
             controller: roleNameController,
+            focusNode: _roleNameFocus,
             isRequired: true,
+            autoFocus: true,
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) {
+              _roleNameFocus.unfocus();
+              _onSubmit();
+            },
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return tr.required(tr.roleName);
@@ -254,70 +268,51 @@ class _AddEditFormState extends State<_AddEditForm> {
           ),
           const SizedBox(height: 16),
 
-          // Status Toggle
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: colorScheme.outline.withValues(alpha: .2),
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    tr.status,
-                    style: const TextStyle(fontWeight: FontWeight.w500),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => setState(() => isActive = !isActive),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
                   ),
-                ),
-                const SizedBox(width: 16),
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      isActive = !isActive;
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? Colors.green.withValues(alpha: .1)
+                        : Colors.red.withValues(alpha: .1),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: isActive ? Colors.green : Colors.red,
+                      width: 1,
                     ),
-                    decoration: BoxDecoration(
-                      color: isActive
-                          ? Colors.green.withValues(alpha: .1)
-                          : Colors.red.withValues(alpha: .1),
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isActive ? Icons.check_circle : Icons.cancel,
                         color: isActive ? Colors.green : Colors.red,
-                        width: 1,
+                        size: 16,
                       ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isActive ? Icons.check_circle : Icons.cancel,
+                      const SizedBox(width: 8),
+                      Text(
+                        isActive ? tr.active : tr.inactive,
+                        style: TextStyle(
                           color: isActive ? Colors.green : Colors.red,
-                          size: 16,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 13,
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          isActive ? tr.active : tr.inactive,
-                          style: TextStyle(
-                            color: isActive ? Colors.green : Colors.red,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
 
+          // Error banner — only rendered for the current attempt because
+          // the bloc state was cleared before submitting.
           if (roleState is UserRoleErrorState) ...[
             const SizedBox(height: 16),
             Container(
@@ -355,52 +350,46 @@ class _AddEditFormState extends State<_AddEditForm> {
     );
   }
 
-  void _onSubmit() async {
-    if (!formKey.currentState!.validate()) return;
+  void _onSubmit() {
+    if (!(formKey.currentState?.validate() ?? false)) return;
 
-    // Get fresh username from AuthBloc
-    String? userName;
     final authState = context.read<AuthBloc>().state;
-    if (authState is AuthenticatedState) {
-      userName = authState.loginData.usrName;
-    }
-
-    if (userName == null || userName.isEmpty) {
-      // Show error if username is not available
+    if (authState is! AuthenticatedState) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('User not authenticated'),
+          content: const Text('User not authenticated'),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
       return;
     }
 
+    final userName = authState.loginData.usrName ?? '';
+    if (userName.isEmpty) return;
+
     final bloc = context.read<UserRoleBloc>();
 
-    if (widget.model != null) {
-      // Update existing role
-      final updatedRole = UserRoleModel(
-        usrName: userName,
-        rolId: widget.model?.rolId,
-        rolName: roleNameController.text,
-        rolStatus: isActive ? 1 : 0,
+    // Clear any stale error from a previous attempt before dispatching.
+    bloc.add(ClearUserRoleMessagesEvent());
+
+    if (_isEdit) {
+      bloc.add(
+        UpdateUserRoleEvent(
+          newRole: UserRoleModel(
+            usrName: userName,
+            rolId: widget.model?.rolId,
+            rolName: roleNameController.text.trim(),
+            rolStatus: isActive ? 1 : 0,
+          ),
+        ),
       );
-      bloc.add(UpdateUserRoleEvent(newRole: updatedRole));
     } else {
-      // Add new role
       bloc.add(
         AddUserRoleEvent(
           usrName: userName,
-          roleName: roleNameController.text,
+          roleName: roleNameController.text.trim(),
         ),
       );
     }
-  }
-
-  @override
-  void dispose() {
-    roleNameController.dispose();
-    super.dispose();
   }
 }

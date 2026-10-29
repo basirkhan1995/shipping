@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/Company/company_tab.dart';
+import 'package:shipping/Routes/Home/View/Settings/View/General/general.dart';
 import '../../../../Features/Other/responsive_widget.dart';
 import '../../../../Features/Widgets/tab_bar.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'View/About/about.dart';
 import 'View/Backup/backup.dart';
-import 'View/System/system.dart';
 import 'bloc/settings_tab_bloc.dart';
 
 class SettingsView extends StatelessWidget {
@@ -71,7 +71,7 @@ class _DesktopView extends StatelessWidget {
       ZTabItem(
         value: SettingsTabName.system,
         label: AppLocalizations.of(context)!.generalSettings,
-        screen: const SystemView(),
+        screen: const GeneralView(),
       ),
       ZTabItem(
         value: SettingsTabName.company,
