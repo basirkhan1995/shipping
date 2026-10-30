@@ -2511,6 +2511,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No data available'**
   String get noData;
+
+  /// No description provided for @totalCredit.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Credit'**
+  String get totalCredit;
+
+  /// No description provided for @totalDebit.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Debit'**
+  String get totalDebit;
+
+  /// No description provided for @difference.
+  ///
+  /// In en, this message translates to:
+  /// **'Difference'**
+  String get difference;
+
+  /// No description provided for @actualBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual Balance'**
+  String get actualBalance;
+
+  /// No description provided for @outOfBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of balance'**
+  String get outOfBalance;
+
+  /// No description provided for @authorizer.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorizer'**
+  String get authorizer;
+
+  /// No description provided for @cashBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash Balance'**
+  String get cashBalance;
+
+  /// No description provided for @branchId.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch ID'**
+  String get branchId;
+
+  /// No description provided for @currencyBalances.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency Balances'**
+  String get currencyBalances;
+
+  /// No description provided for @openingBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening Balance'**
+  String get openingBalance;
+
+  /// No description provided for @closingBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Closing Balance'**
+  String get closingBalance;
+
+  /// No description provided for @systemEquivalent.
+  ///
+  /// In en, this message translates to:
+  /// **'System Equivalent'**
+  String get systemEquivalent;
+
+  /// No description provided for @grandTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Grand Total'**
+  String get grandTotal;
+
+  /// No description provided for @grandTotalCashFlow.
+  ///
+  /// In en, this message translates to:
+  /// **'Grand Total Cash flow'**
+  String get grandTotalCashFlow;
+
+  /// No description provided for @incomeStatement.
+  ///
+  /// In en, this message translates to:
+  /// **'Income Statement'**
+  String get incomeStatement;
+
+  /// No description provided for @totalIncome.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Income'**
+  String get totalIncome;
+
+  /// No description provided for @totalExpense.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Expense'**
+  String get totalExpense;
+
+  /// No description provided for @applyFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply Filter'**
+  String get applyFilter;
+
+  /// No description provided for @expenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses'**
+  String get expenses;
+
+  /// No description provided for @profit.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit'**
+  String get profit;
+
+  /// No description provided for @loss.
+  ///
+  /// In en, this message translates to:
+  /// **'Loss'**
+  String get loss;
+
+  /// No description provided for @financialPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Financial Period'**
+  String get financialPeriod;
+
+  /// No description provided for @loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading...'**
+  String get loading;
 }
 
 class _AppLocalizationsDelegate

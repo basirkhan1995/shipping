@@ -15,6 +15,10 @@ import '../Routes/Home/View/HR/View/Users/model/usr_report_model.dart';
 import '../Routes/Home/View/Report/AccountStatement/model/stmt_model.dart';
 import '../Routes/Home/View/Report/BalanceSheet/model/bs_model.dart';
 import '../Routes/Home/View/Report/GLStatement/model/gl_statement_model.dart';
+import '../Routes/Home/View/Report/CashBalances/model/cash_balance_model.dart';
+import '../Routes/Home/View/Report/IncomeStatement/model/income_stmt_model.dart';
+import '../Routes/Home/View/Report/TrialBalance/model/trial_balance_model.dart';
+import '../Routes/Home/View/Report/TxnByReference/model/txn_report_model.dart';
 import '../Routes/Home/View/Settings/View/Company/Branch/Ui/BranchLimits/model/limit_model.dart';
 import '../Routes/Home/View/Settings/View/Company/Branches/model/branch_model.dart';
 import '../Routes/Home/View/Settings/View/Company/CompanyProfile/model/com_model.dart';
@@ -1773,6 +1777,34 @@ class Repositories {
     return GlStatementModel.fromApiResponse(decodedData);
   }
 
+  Future<List<TrialBalanceModel>> getTrialBalance({
+    required String date,
+    int? branchCode,
+  }) async {
+    final response = await _api.post(
+      endpoint: "/reports/trialBalance.php",
+      data: {"date": date, "branch": branchCode},
+    );
+
+    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+      throw Exception(response.data['msg']);
+    }
+
+    if (response.data == null ||
+        (response.data is List && response.data.isEmpty)) {
+      return [];
+    }
+
+    if (response.data is List) {
+      return (response.data as List)
+          .whereType<Map<String, dynamic>>()
+          .map((json) => TrialBalanceModel.fromMap(json))
+          .toList();
+    }
+
+    return [];
+  }
+
   Future<BalanceSheetModel> balanceSheet({int? branchCode, CancelToken? cancelToken}) async {
     final response = await _api.get(
       endpoint: "/reports/balanceSheet.php",
@@ -1822,5 +1854,129 @@ class Repositories {
     }
     return DashboardStatsModel.fromMap(body);
   }
+
+  //Get Transaction Details By Ref
+  Future<TxnReportByRefModel> getTransactionByRefReport({
+    required String ref,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.get(
+      endpoint: "/reports/referenceHistory.php",
+      queryParams: {"ref": ref},
+      cancelToken: cancelToken,
+    );
+
+    // Handle message response
+    if (response.data is Map && response.data['msg'] != null) {
+      throw response.data['msg'];
+    }
+
+    // Handle empty response
+    if (response.data == null || response.data.isEmpty) {
+      throw "No data received";
+    }
+
+    // Convert response to string and back to ensure proper typing
+    final jsonString = json.encode(response.data);
+    final decodedData = json.decode(jsonString) as dynamic;
+
+    return TxnReportByRefModel.fromMap(decodedData);
+  }
+
+  Future<CashBalancesModel?> cashBalances({
+    int? branchId,
+    String? from,
+    String? to,
+    CancelToken? cancelToken,
+  }) async {
+    final queryParams = <String, dynamic>{
+      'brcID': branchId,
+    };
+
+    if (from != null && from.isNotEmpty) queryParams['fromDate'] = from;
+    if (to   != null && to.isNotEmpty)   queryParams['toDate']   = to;
+
+    final response = await _api.get(
+      endpoint: "/reports/cashBalance.php",
+      queryParams: queryParams,
+      cancelToken: cancelToken,
+    );
+
+    if (response.data == null) return null;
+    if (response.data is Map<String, dynamic>) {
+      if (response.data['msg'] != null) return null;
+      return CashBalancesModel.fromMap(response.data);
+    }
+    if (response.data is List) {
+      final list = response.data as List;
+      if (list.isEmpty) return null;
+      return CashBalancesModel.fromMap(list.first);
+    }
+    return null;
+  }
+
+  Future<List<CashBalancesModel>> allCashBalances({
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.get(
+      endpoint: "/reports/cashBalance.php",
+      cancelToken: cancelToken,
+    );
+
+    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+      throw Exception(response.data['msg']);
+    }
+
+    if (response.data == null) {
+      throw Exception("No data found");
+    }
+
+    // Parse as list
+    if (response.data is List) {
+      return List<CashBalancesModel>.from(
+        response.data.map((x) => CashBalancesModel.fromMap(x)),
+      );
+    }
+
+    // If single object, wrap in list
+    if (response.data is Map<String, dynamic>) {
+      return [CashBalancesModel.fromMap(response.data)];
+    }
+
+    throw Exception("Unexpected response format");
+  }
+
+  Future<List<IncomeStatementModel>> getIncomeStatement({String? startDate, String? endDate}) async {
+    final response = await _api.post(
+      endpoint: "/reports/incomeStatement.php",
+      data: {
+        "startDate": startDate,
+        "endDate": endDate
+      },
+    );
+
+    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+      // If no records found, return empty list
+      if (response.data['msg'] == 'failed') {
+        return [];
+      }
+      throw Exception(response.data['msg']);
+    }
+
+    // Parse as list
+    if (response.data is List) {
+      return List<IncomeStatementModel>.from(
+        response.data.map((x) => IncomeStatementModel.fromMap(x)),
+      );
+    }
+
+    // If single object, wrap in list
+    if (response.data is Map<String, dynamic> && response.data.isNotEmpty) {
+      return [IncomeStatementModel.fromMap(response.data)];
+    }
+
+    return [];
+  }
+
 
 }

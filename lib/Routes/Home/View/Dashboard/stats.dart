@@ -88,28 +88,28 @@ class DashboardStatsView extends StatelessWidget {
                 return _Grid(
                   cols: cols,
                   children: [
-                    _StatCard(
+                    _CountCard(
                       icon: Icons.account_balance_wallet_outlined,
                       label: 'Accounts',
                       value: loading ? null : '${stats!.counts.accounts}',
                       accent: const Color(0xFF2563EB),
                       bg: const Color(0xFFDBEAFE),
                     ),
-                    _StatCard(
+                    _CountCard(
                       icon: Icons.people_alt_outlined,
                       label: 'Stakeholders',
                       value: loading ? null : '${stats!.counts.stakeholders}',
                       accent: const Color(0xFF0D9488),
                       bg: const Color(0xFFCCFBF1),
                     ),
-                    _StatCard(
+                    _CountCard(
                       icon: Icons.person_outline,
                       label: 'Users',
                       value: loading ? null : '${stats!.counts.users}',
                       accent: const Color(0xFF7C3AED),
                       bg: const Color(0xFFEDE9FE),
                     ),
-                    _StatCard(
+                    _CountCard(
                       icon: Icons.badge_outlined,
                       label: 'Employees',
                       value: loading ? null : '${stats!.counts.employees}',
@@ -132,37 +132,37 @@ class DashboardStatsView extends StatelessWidget {
                 return _Grid(
                   cols: cols,
                   children: [
-                    _StatCard(
-                      icon: Icons.arrow_downward_rounded,
+                    _MoneyCard(
+                      icon: Icons.south_west_rounded,
                       label: 'Cash In',
-                      value: loading
-                          ? null
-                          : _money(stats!.cash.inAmount, stats.currency),
+                      amount: loading ? null : stats!.cash.inAmount,
+                      currency: stats?.currency,
                       accent: const Color(0xFF059669),
                       bg: const Color(0xFFD1FAE5),
+                      direction: _Direction.inflow,
                     ),
-                    _StatCard(
-                      icon: Icons.arrow_upward_rounded,
+                    _MoneyCard(
+                      icon: Icons.north_east_rounded,
                       label: 'Cash Out',
-                      value: loading
-                          ? null
-                          : _money(stats!.cash.outAmount, stats.currency),
+                      amount: loading ? null : stats!.cash.outAmount,
+                      currency: stats?.currency,
                       accent: const Color(0xFFDC2626),
                       bg: const Color(0xFFFEE2E2),
+                      direction: _Direction.outflow,
                     ),
-                    _StatCard(
+                    _MoneyCard(
                       icon: Icons.account_balance_wallet_outlined,
                       label: 'Net Cash',
-                      value: loading
-                          ? null
-                          : _money(stats!.cash.net, stats.currency),
-                      accent: stats != null && stats.cash.net < 0
+                      amount: loading ? null : stats!.cash.net,
+                      currency: stats?.currency,
+                      accent: (stats?.cash.net ?? 0) < 0
                           ? const Color(0xFFDC2626)
                           : const Color(0xFF2563EB),
-                      bg: stats != null && stats.cash.net < 0
+                      bg: (stats?.cash.net ?? 0) < 0
                           ? const Color(0xFFFEE2E2)
                           : const Color(0xFFDBEAFE),
-                      subtitle: stats?.currency,
+                      highlight: true,
+                      direction: _Direction.net,
                     ),
                   ],
                 );
@@ -180,37 +180,39 @@ class DashboardStatsView extends StatelessWidget {
                 return _Grid(
                   cols: cols,
                   children: [
-                    _StatCard(
-                      icon: Icons.add_circle_outline,
+                    _MoneyCard(
+                      icon: Icons.trending_up_rounded,
                       label: 'Income',
-                      value: loading
-                          ? null
-                          : _money(stats!.finance.income, stats.currency),
+                      amount: loading ? null : stats!.finance.income,
+                      currency: stats?.currency,
                       accent: const Color(0xFF059669),
                       bg: const Color(0xFFD1FAE5),
+                      direction: _Direction.inflow,
                     ),
-                    _StatCard(
-                      icon: Icons.remove_circle_outline,
+                    _MoneyCard(
+                      icon: Icons.trending_down_rounded,
                       label: 'Expense',
-                      value: loading
-                          ? null
-                          : _money(stats!.finance.expense, stats.currency),
+                      amount: loading ? null : stats!.finance.expense,
+                      currency: stats?.currency,
                       accent: const Color(0xFFDC2626),
                       bg: const Color(0xFFFEE2E2),
+                      direction: _Direction.outflow,
                     ),
-                    _StatCard(
-                      icon: Icons.trending_up,
+                    _MoneyCard(
+                      icon: (stats?.finance.profit ?? 0) < 0
+                          ? Icons.trending_down_rounded
+                          : Icons.trending_up_rounded,
                       label: 'Profit',
-                      value: loading
-                          ? null
-                          : _money(stats!.finance.profit, stats.currency),
-                      accent: stats != null && stats.finance.profit < 0
+                      amount: loading ? null : stats!.finance.profit,
+                      currency: stats?.currency,
+                      accent: (stats?.finance.profit ?? 0) < 0
                           ? const Color(0xFFDC2626)
                           : const Color(0xFF059669),
-                      bg: stats != null && stats.finance.profit < 0
+                      bg: (stats?.finance.profit ?? 0) < 0
                           ? const Color(0xFFFEE2E2)
                           : const Color(0xFFD1FAE5),
-                      subtitle: stats?.currency,
+                      highlight: true,
+                      direction: _Direction.net,
                     ),
                   ],
                 );
@@ -226,19 +228,6 @@ class DashboardStatsView extends StatelessWidget {
     if (width >= 900) return 4;
     if (width >= 560) return 2;
     return 1;
-  }
-
-  String _money(double v, String ccy) {
-    final neg = v < 0;
-    final s = v.abs().toStringAsFixed(2);
-    final parts = s.split('.');
-    final intPart = parts[0];
-    final buf = StringBuffer();
-    for (int i = 0; i < intPart.length; i++) {
-      if (i > 0 && (intPart.length - i) % 3 == 0) buf.write(',');
-      buf.write(intPart[i]);
-    }
-    return '${neg ? '-' : ''}${buf.toString()}.${parts[1]}';
   }
 }
 
@@ -290,150 +279,299 @@ class _Grid extends StatelessWidget {
 }
 
 // =====================================================================
-// Stat card — value null → shimmer
+// COUNT card (unchanged)
 // =====================================================================
-class _StatCard extends StatefulWidget {
+class _CountCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final String? value;
   final Color accent;
   final Color bg;
-  final VoidCallback? onTap;
-  final String? subtitle;
 
-  const _StatCard({
+  const _CountCard({
     required this.icon,
     required this.label,
     required this.value,
     required this.accent,
     required this.bg,
-    this.subtitle,
-  }) : onTap = null;
-
-  @override
-  State<_StatCard> createState() => _StatCardState();
-}
-
-class _StatCardState extends State<_StatCard> {
-  bool _hovered = false;
+  });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final interactive = widget.onTap != null;
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      cursor:
-      interactive ? SystemMouseCursors.click : SystemMouseCursors.basic,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        decoration: BoxDecoration(
-          color: scheme.surface,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: _hovered && interactive
-                ? widget.accent.withValues(alpha: 0.5)
-                : scheme.outline.withValues(alpha: 0.18),
-            width: _hovered && interactive ? 1.3 : 1,
-          ),
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: widget.onTap,
-            borderRadius: BorderRadius.circular(10),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: widget.bg.withValues(alpha: .5),
-                          border: Border.all(color: widget.bg),
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        alignment: Alignment.center,
-                        child: Icon(widget.icon,
-                            size: 23, color: widget.accent),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          widget.label,
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            color: scheme.onSurfaceVariant,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 2,
-                        ),
-                      ),
-                      if (interactive)
-                        AnimatedSlide(
-                          duration: const Duration(milliseconds: 150),
-                          offset:
-                          _hovered ? const Offset(0.15, 0) : Offset.zero,
-                          child: Icon(
-                            Icons.arrow_forward_ios_outlined,
-                            size: 12,
-                            color: _hovered
-                                ? widget.accent
-                                : scheme.onSurfaceVariant
-                                .withValues(alpha: 0.5),
-                          ),
-                        ),
-                    ],
+    return Container(
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: scheme.outline.withValues(alpha: 0.18)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: bg.withValues(alpha: .5),
+                    border: Border.all(color: bg),
+                    borderRadius: BorderRadius.circular(5),
                   ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    height: 26,
-                    child: widget.value == null
-                        ? const _ShimmerNumber()
-                        : Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            widget.value!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              height: 1.1,
-                              color: widget.accent,
-                            ),
-                          ),
-                        ),
-                        if (widget.subtitle != null) ...[
-                          const SizedBox(width: 8),
-                          Text(
-                            widget.subtitle!,
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w500,
-                              color: scheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ],
+                  alignment: Alignment.center,
+                  child: Icon(icon, size: 23, color: accent),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 26,
+              child: value == null
+                  ? const _ShimmerNumber()
+                  : Text(
+                value!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  height: 1.1,
+                  color: accent,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// =====================================================================
+// Direction — drives the small arrow pill next to the amount
+// =====================================================================
+enum _Direction { inflow, outflow, net }
+
+// =====================================================================
+// MONEY card — polished, directional, highlighted when it's a total
+// =====================================================================
+class _MoneyCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final double? amount;
+  final String? currency;
+  final Color accent;
+  final Color bg;
+  final bool highlight;
+  final _Direction direction;
+
+  const _MoneyCard({
+    required this.icon,
+    required this.label,
+    required this.amount,
+    required this.currency,
+    required this.accent,
+    required this.bg,
+    this.highlight = false,
+    required this.direction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isNegative = (amount ?? 0) < 0;
+
+    return Container(
+      decoration: BoxDecoration(
+        // Solid-ish tint for highlight cards, soft wash for others
+        color: highlight
+            ? bg.withValues(alpha: 0.55)
+            : bg.withValues(alpha: 0.30),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: accent.withValues(alpha: highlight ? 0.55 : 0.25),
+          width: highlight ? 1.6 : 1,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Top row — icon + label + currency pill
+            Row(
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(icon, size: 17, color: accent),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.1,
+                      color: scheme.onSurface.withValues(alpha: 0.85),
                     ),
                   ),
+                ),
+                if (currency != null && currency!.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: scheme.surface.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: accent.withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: Text(
+                      currency!,
+                      style: TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                        color: accent,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // ── Amount row — directional pill + money
+            SizedBox(
+              height: 36,
+              child: amount == null
+                  ? const Align(
+                alignment: Alignment.centerLeft,
+                child: _ShimmerNumber(width: 130, height: 26),
+              )
+                  : Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (direction != _Direction.net)
+                    _DirectionPill(
+                      direction: direction,
+                      accent: accent,
+                    ),
+                  if (direction != _Direction.net)
+                    const SizedBox(width: 6),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          _formatMoney(amount!, isNegative),
+                          maxLines: 1,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            height: 1.05,
+                            letterSpacing: -0.4,
+                            color: accent,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (highlight)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        isNegative ? 'LOSS' : 'TOTAL',
+                        style: TextStyle(
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.6,
+                          color: accent,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
-          ),
+          ],
         ),
       ),
+    );
+  }
+
+  String _formatMoney(double v, bool neg) {
+    final s = v.abs().toStringAsFixed(2);
+    final parts = s.split('.');
+    final intPart = parts[0];
+    final buf = StringBuffer();
+    for (int i = 0; i < intPart.length; i++) {
+      if (i > 0 && (intPart.length - i) % 3 == 0) buf.write(',');
+      buf.write(intPart[i]);
+    }
+    return '${neg ? '-' : ''}${buf.toString()}.${parts[1]}';
+  }
+}
+
+// =====================================================================
+// Small directional pill next to the amount
+// =====================================================================
+class _DirectionPill extends StatelessWidget {
+  final _Direction direction;
+  final Color accent;
+
+  const _DirectionPill({required this.direction, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = direction == _Direction.inflow
+        ? Icons.arrow_downward_rounded
+        : Icons.arrow_upward_rounded;
+
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      alignment: Alignment.center,
+      child: Icon(icon, size: 15, color: accent),
     );
   }
 }
@@ -442,7 +580,10 @@ class _StatCardState extends State<_StatCard> {
 // Shimmer strip
 // =====================================================================
 class _ShimmerNumber extends StatefulWidget {
-  const _ShimmerNumber();
+  final double width;
+  final double height;
+
+  const _ShimmerNumber({this.width = 72, this.height = 22});
 
   @override
   State<_ShimmerNumber> createState() => _ShimmerNumberState();
@@ -477,8 +618,8 @@ class _ShimmerNumberState extends State<_ShimmerNumber>
       animation: _ctrl,
       builder: (context, _) {
         return Container(
-          width: 72,
-          height: 22,
+          width: widget.width,
+          height: widget.height,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(6),
             gradient: LinearGradient(

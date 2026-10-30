@@ -1232,4 +1232,73 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noData => 'No data available';
+
+  @override
+  String get totalCredit => 'Total Credit';
+
+  @override
+  String get totalDebit => 'Total Debit';
+
+  @override
+  String get difference => 'Difference';
+
+  @override
+  String get actualBalance => 'Actual Balance';
+
+  @override
+  String get outOfBalance => 'Out of balance';
+
+  @override
+  String get authorizer => 'Authorizer';
+
+  @override
+  String get cashBalance => 'Cash Balance';
+
+  @override
+  String get branchId => 'Branch ID';
+
+  @override
+  String get currencyBalances => 'Currency Balances';
+
+  @override
+  String get openingBalance => 'Opening Balance';
+
+  @override
+  String get closingBalance => 'Closing Balance';
+
+  @override
+  String get systemEquivalent => 'System Equivalent';
+
+  @override
+  String get grandTotal => 'Grand Total';
+
+  @override
+  String get grandTotalCashFlow => 'Grand Total Cash flow';
+
+  @override
+  String get incomeStatement => 'Income Statement';
+
+  @override
+  String get totalIncome => 'Total Income';
+
+  @override
+  String get totalExpense => 'Total Expense';
+
+  @override
+  String get applyFilter => 'Apply Filter';
+
+  @override
+  String get expenses => 'Expenses';
+
+  @override
+  String get profit => 'Profit';
+
+  @override
+  String get loss => 'Loss';
+
+  @override
+  String get financialPeriod => 'Financial Period';
+
+  @override
+  String get loading => 'Loading...';
 }

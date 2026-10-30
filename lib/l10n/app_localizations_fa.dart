@@ -1231,4 +1231,73 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get noData => 'هیچ معلوماتی موجود نیست';
+
+  @override
+  String get totalCredit => 'مجموعه کریدت';
+
+  @override
+  String get totalDebit => 'مجموعه دبت';
+
+  @override
+  String get difference => 'تفاوت';
+
+  @override
+  String get actualBalance => 'بیلانس حقیقی';
+
+  @override
+  String get outOfBalance => 'عدم تعادل';
+
+  @override
+  String get authorizer => 'تایید کننده';
+
+  @override
+  String get cashBalance => 'صندوق';
+
+  @override
+  String get branchId => 'شناسه نمایندگی';
+
+  @override
+  String get currencyBalances => 'موجودی اسعار';
+
+  @override
+  String get openingBalance => 'بیلانس افتتاحیه';
+
+  @override
+  String get closingBalance => 'بیلانس اختتامیه';
+
+  @override
+  String get systemEquivalent => 'معادل سیستم';
+
+  @override
+  String get grandTotal => 'جمع کل';
+
+  @override
+  String get grandTotalCashFlow => 'جمع کل جریان نقدی';
+
+  @override
+  String get incomeStatement => 'سود و زیان';
+
+  @override
+  String get totalIncome => 'کل مفاد';
+
+  @override
+  String get totalExpense => 'کل مصارف';
+
+  @override
+  String get applyFilter => 'اعمال فلتر';
+
+  @override
+  String get expenses => 'مصارف';
+
+  @override
+  String get profit => 'مفاد';
+
+  @override
+  String get loss => 'زیان';
+
+  @override
+  String get financialPeriod => 'دوره مالی';
+
+  @override
+  String get loading => 'درحال بارگیری...';
 }

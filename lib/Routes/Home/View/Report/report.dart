@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:shipping/Features/Widgets/znavigator.dart';
+import 'package:shipping/Routes/Home/View/Report/CashBalances/all_cash.dart';
+import 'package:shipping/Routes/Home/View/Report/IncomeStatement/income_statement.dart';
+import 'package:shipping/Routes/Home/View/Report/TrialBalance/trial_balance.dart';
 import '../../../../Features/Other/responsive_widget.dart';
 import 'AccountStatement/acc_statement.dart';
 import 'BalanceSheet/balance_sheet.dart';
 import 'GLStatement/gl_statement.dart';
+import 'CashBalances/cash_branch.dart';
+import 'TxnByReference/transaction_ref.dart';
 
 class ReportView extends StatelessWidget {
   const ReportView({super.key});
@@ -135,50 +140,121 @@ class _ReportBody extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // ── Statement ────────────────────────────────────────
+          // ── Account Statement ────────────────────────────
           _ReportCard(
             icon: Icons.receipt_long_outlined,
             title: 'Account Statement',
             description:
-            'Transaction history for a single account with opening '
-                'balance, running balance, and debit / credit breakdown. '
-                'Printable as PDF and exportable to Excel.',
+            'Ledger activity for a single account with running balance.',
             accent: scheme.primary,
             bg: scheme.primaryContainer,
             onTap: () {
-              ZNavigator.goto(context: context,AccountStatementView());
+              ZNavigator.goto(context: context, AccountStatementView());
             },
           ),
 
           const SizedBox(height: 6),
-          // ── GL ────────────────────────────────────────
+
+          // ── GL Statement ─────────────────────────────────
           _ReportCard(
-            icon: Icons.receipt_long_outlined,
+            icon: Icons.account_balance_outlined,
             title: 'GL Statement',
             description:
-            'Transaction history for a single account with opening '
-                'balance, running balance, and debit / credit breakdown. '
-                'Printable as PDF and exportable to Excel.',
+            'General ledger activity and balances for a chosen account.',
             accent: scheme.primary,
             bg: scheme.primaryContainer,
             onTap: () {
-              ZNavigator.goto(context: context,GlStatementView());
+              ZNavigator.goto(context: context, GlStatementView());
             },
           ),
 
           const SizedBox(height: 6),
-          // ── GL ────────────────────────────────────────
+
+          // ── Balance Sheet ────────────────────────────────
           _ReportCard(
-            icon: Icons.receipt_long_outlined,
+            icon: Icons.balance_outlined,
             title: 'Balance Sheet',
             description:
-            'Transaction history for a single account with opening '
-                'balance, running balance, and debit / credit breakdown. '
-                'Printable as PDF and exportable to Excel.',
+            'Assets, liabilities and equity as of a chosen date.',
             accent: scheme.primary,
             bg: scheme.primaryContainer,
             onTap: () {
-              ZNavigator.goto(context: context,BalanceSheetView());
+              ZNavigator.goto(context: context, BalanceSheetView());
+            },
+          ),
+
+          const SizedBox(height: 6),
+
+          // ── Trial Balance ────────────────────────────────
+          _ReportCard(
+            icon: Icons.rule_folder_outlined,
+            title: 'Trial Balance',
+            description:
+            'Debit and credit totals with automatic balance check.',
+            accent: scheme.primary,
+            bg: scheme.primaryContainer,
+            onTap: () {
+              ZNavigator.goto(context: context, TrialBalanceView());
+            },
+          ),
+
+          const SizedBox(height: 6),
+
+          // ── Transaction Details ──────────────────────────
+          _ReportCard(
+            icon: Icons.manage_search_outlined,
+            title: 'Transaction Details',
+            description:
+            'Look up any transaction by its reference number.',
+            accent: scheme.primary,
+            bg: scheme.primaryContainer,
+            onTap: () {
+              ZNavigator.goto(context: context, TxnByReferenceView());
+            },
+          ),
+
+          const SizedBox(height: 6),
+
+          // ── Branch Cash Balance ──────────────────────────
+          _ReportCard(
+            icon: Icons.point_of_sale_outlined,
+            title: 'Branch Cash Balance',
+            description:
+            'Cash position for the current branch.',
+            accent: scheme.primary,
+            bg: scheme.primaryContainer,
+            onTap: () {
+              ZNavigator.goto(context: context, CashBalancesBranchWiseView());
+            },
+          ),
+
+          const SizedBox(height: 6),
+
+          // ── Cash Balances (all branches) ─────────────────
+          _ReportCard(
+            icon: Icons.account_balance_wallet_outlined,
+            title: 'Cash Balances',
+            description:
+            'Cash position across all branches.',
+            accent: scheme.primary,
+            bg: scheme.primaryContainer,
+            onTap: () {
+              ZNavigator.goto(context: context, TreasuryView());
+            },
+          ),
+
+          const SizedBox(height: 6),
+
+          // ── Income Statement ─────────────────
+          _ReportCard(
+            icon: Icons.line_axis_rounded,
+            title: 'Profit & Loss',
+            description:
+            'Income & Expense statement',
+            accent: scheme.primary,
+            bg: scheme.primaryContainer,
+            onTap: () {
+              ZNavigator.goto(context: context, IncomeStatementView());
             },
           ),
         ],
@@ -245,7 +321,6 @@ class _ReportCardState extends State<_ReportCard> {
               padding: const EdgeInsets.all(8),
               child: Row(
                 children: [
-                  // Icon badge
                   Container(
                     width: 52,
                     height: 52,
@@ -263,7 +338,6 @@ class _ReportCardState extends State<_ReportCard> {
                   ),
                   const SizedBox(width: 16),
 
-                  // Text
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -290,7 +364,6 @@ class _ReportCardState extends State<_ReportCard> {
 
                   const SizedBox(width: 12),
 
-                  // Arrow
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: AnimatedSlide(
