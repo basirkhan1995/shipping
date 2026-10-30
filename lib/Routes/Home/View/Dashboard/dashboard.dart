@@ -8,16 +8,198 @@ import 'package:shipping/Services/api_services.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../Features/Other/responsive_widget.dart';
 import '../Finance/View/ExchangeRate/Ui/exchange_rate.dart';
+import 'bloc/dashboard_stats_bloc.dart';
 
-class DashboardView extends StatelessWidget {
+class DashboardView extends StatefulWidget {
   const DashboardView({super.key});
+
+  @override
+  State<DashboardView> createState() => _DashboardViewState();
+}
+
+class _DashboardViewState extends State<DashboardView> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _refreshSilentlyIfReady();
+    });
+  }
+
+  void _refreshSilentlyIfReady() {
+    final statsBloc = context.read<DashboardStatsBloc>();
+    final hasStats = statsBloc.state is DashboardStatsLoaded;
+    statsBloc.add(DashboardStatsLoadRequested(silent: hasStats));
+  }
+
+  void _manualRefresh() {
+    context
+        .read<DashboardStatsBloc>()
+        .add(const DashboardStatsLoadRequested());
+  }
 
   @override
   Widget build(BuildContext context) {
     return ResponsiveLayout(
-      mobile: const _MobileDashboard(),
-      tablet: const _TabletDashboard(),
-      desktop: const _DesktopDashboard(),
+      mobile: _MobileDashboard(onRefresh: _manualRefresh),
+      tablet: _TabletDashboard(onRefresh: _manualRefresh),
+      desktop: _DesktopDashboard(onRefresh: _manualRefresh),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SHARED: Stats section — grid + cash + finance cards
+// ═══════════════════════════════════════════════════════════════════
+class _StatsSection extends StatelessWidget {
+  final int gridColumns;
+  final bool stackFinancials;
+
+  const _StatsSection({
+    required this.gridColumns,
+    this.stackFinancials = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context)!;
+    return BlocBuilder<DashboardStatsBloc, DashboardStatsState>(
+      builder: (context, state) {
+        if (state is DashboardStatsFailure) {
+          return _ErrorTile(
+            message: state.message,
+            onRetry: () => context
+                .read<DashboardStatsBloc>()
+                .add(const DashboardStatsLoadRequested()),
+          );
+        }
+
+        // Loading flag — shimmer while we don't yet have a loaded snapshot
+        final loading =
+            state is DashboardStatsInitial || state is DashboardStatsLoading;
+        final s = state is DashboardStatsLoaded ? state.stats : null;
+
+        final countCards = <Widget>[
+          _CountCard(
+            label: tr.accounts,
+            value: loading ? null : '${s!.counts.accounts}',
+            icon: Icons.account_balance_wallet_outlined,
+            color: Colors.blue,
+          ),
+          _CountCard(
+            label: tr.stakeholders,
+            value: loading ? null : '${s!.counts.stakeholders}',
+            icon: Icons.people_alt_outlined,
+            color: Colors.teal,
+          ),
+          _CountCard(
+            label: tr.users,
+            value: loading ? null : '${s!.counts.users}',
+            icon: Icons.person_outline,
+            color: Colors.deepPurple,
+          ),
+          _CountCard(
+            label: tr.employees,
+            value: loading ? null : '${s!.counts.employees}',
+            icon: Icons.badge_outlined,
+            color: Colors.orange,
+          ),
+        ];
+
+        final cashCard = _SectionCard(
+          title: 'Cash',
+          subtitle: loading ? null : s!.currency,
+          icon: Icons.payments_outlined,
+          accent: Colors.green,
+          children: [
+            _RowLine(
+              label: 'Cash In',
+              value: loading ? null : s!.cash.inAmount,
+              icon: Icons.arrow_downward,
+              iconColor: Colors.green,
+            ),
+            _RowLine(
+              label: 'Cash Out',
+              value: loading ? null : s!.cash.outAmount,
+              icon: Icons.arrow_upward,
+              iconColor: Colors.red,
+            ),
+            const Divider(height: 16),
+            _RowLine(
+              label: 'Net Cash',
+              value: loading ? null : s!.cash.net,
+              bold: true,
+              positive: !loading && s!.cash.net >= 0,
+              showSign: true,
+            ),
+          ],
+        );
+
+        final financeCard = _SectionCard(
+          title: 'Finance',
+          subtitle: loading ? null : s!.currency,
+          icon: Icons.trending_up,
+          accent: Colors.indigo,
+          children: [
+            _RowLine(
+              label: 'Income',
+              value: loading ? null : s!.finance.income,
+              icon: Icons.add_circle_outline,
+              iconColor: Colors.green,
+            ),
+            _RowLine(
+              label: 'Expense',
+              value: loading ? null : s!.finance.expense,
+              icon: Icons.remove_circle_outline,
+              iconColor: Colors.red,
+            ),
+            const Divider(height: 16),
+            _RowLine(
+              label: 'Profit',
+              value: loading ? null : s!.finance.profit,
+              bold: true,
+              positive: !loading && s!.finance.profit >= 0,
+              showSign: true,
+            ),
+          ],
+        );
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final cols = gridColumns;
+                final spacing = 12.0;
+                final cardWidth =
+                    (constraints.maxWidth - spacing * (cols - 1)) / cols;
+                return Wrap(
+                  spacing: spacing,
+                  runSpacing: spacing,
+                  children: countCards
+                      .map((c) => SizedBox(width: cardWidth, child: c))
+                      .toList(),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+            if (stackFinancials) ...[
+              cashCard,
+              const SizedBox(height: 12),
+              financeCard,
+            ] else
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: cashCard),
+                  const SizedBox(width: 12),
+                  Expanded(child: financeCard),
+                ],
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -26,44 +208,23 @@ class DashboardView extends StatelessWidget {
 // MOBILE — single column, everything stacks vertically
 // ═══════════════════════════════════════════════════════════════════
 class _MobileDashboard extends StatelessWidget {
-  const _MobileDashboard();
+  final VoidCallback onRefresh;
+  const _MobileDashboard({required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: const [],
+      appBar: AppBar(
+        title: Text(AppLocalizations.of(context)!.dashboard),
+        titleSpacing: 0,
       ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// TABLET — two-column body (main + side), stats as 3-up grid
-// ═══════════════════════════════════════════════════════════════════
-class _TabletDashboard extends StatelessWidget {
-  const _TabletDashboard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: RefreshIndicator(
+        onRefresh: () async => onRefresh(),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
           children: const [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: Column(children: []),
-                ),
-              ],
-            ),
+            _StatsSection(gridColumns: 2, stackFinancials: true),
           ],
         ),
       ),
@@ -72,35 +233,68 @@ class _TabletDashboard extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// DESKTOP — full sidebar + main + right rail, stats as 4-up grid
+// TABLET — stats as 4-up grid, side-by-side cash / finance
 // ═══════════════════════════════════════════════════════════════════
-class _DesktopDashboard extends StatelessWidget {
-  const _DesktopDashboard();
+class _TabletDashboard extends StatelessWidget {
+  final VoidCallback onRefresh;
+  const _TabletDashboard({required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
-    double rightSideWidth = 350;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(AppLocalizations.of(context)!.dashboard),
+        titleSpacing: 0,
+      ),
+      body: RefreshIndicator(
+        onRefresh: () async => onRefresh(),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(24),
+          child: const _StatsSection(
+            gridColumns: 4,
+            stackFinancials: false,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DESKTOP — main + right rail, stats as 4-up grid
+// ═══════════════════════════════════════════════════════════════════
+class _DesktopDashboard extends StatelessWidget {
+  final VoidCallback onRefresh;
+  const _DesktopDashboard({required this.onRefresh});
+
+  @override
+  Widget build(BuildContext context) {
+    const rightSideWidth = 350.0;
 
     return Scaffold(
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children:  [
+        children: [
           Expanded(
             child: Column(
               children: [
-                _DesktopTopBar(),
+                const _DesktopTopBar(),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: EdgeInsets.all(32),
+                    padding: const EdgeInsets.all(32),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
+                        const Expanded(
                           flex: 3,
-                          child: Column(children: []),
+                          child: _StatsSection(
+                            gridColumns: 4,
+                            stackFinancials: false,
+                          ),
                         ),
-                        SizedBox(width: 20),
-                        Column(
+                        const SizedBox(width: 20),
+                        const Column(
                           spacing: 8,
                           children: [
                             SizedBox(
@@ -108,16 +302,16 @@ class _DesktopDashboard extends StatelessWidget {
                               child: DigitalClock(),
                             ),
                             ExchangeRateView(
-                                width: rightSideWidth,
-                                settingButton: true,
-                                newRateButton: true,
+                              width: rightSideWidth,
+                              settingButton: true,
+                              newRateButton: true,
                             ),
-
                             SizedBox(
-                                width: rightSideWidth,
-                                child: DashboardAlertReminder())
+                              width: rightSideWidth,
+                              child: DashboardAlertReminder(),
+                            ),
                           ],
-                        )
+                        ),
                       ],
                     ),
                   ),
@@ -131,7 +325,9 @@ class _DesktopDashboard extends StatelessWidget {
   }
 }
 
-/// Desktop-only top bar with greeting + signed-in user's details + logout.
+// ═══════════════════════════════════════════════════════════════════
+// Top bar (unchanged)
+// ═══════════════════════════════════════════════════════════════════
 class _DesktopTopBar extends StatelessWidget {
   const _DesktopTopBar();
 
@@ -140,14 +336,12 @@ class _DesktopTopBar extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    // Read the authenticated user from the bloc.
     final authState = context.watch<AuthBloc>().state;
     final user = authState is AuthenticatedState ? authState.loginData : null;
 
     final fullName = user?.usrFullName ?? user?.usrName ?? 'Guest';
     final username = user?.usrName ?? '';
 
-// Only build the URL if we actually have a filename.
     final rawPhoto = user?.usrPhoto?.trim();
     final hasPhoto = rawPhoto != null &&
         rawPhoto.isNotEmpty &&
@@ -160,7 +354,6 @@ class _DesktopTopBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Row(
         children: [
-          // ── Dashboard title + greeting block ──
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
@@ -183,10 +376,7 @@ class _DesktopTopBar extends StatelessWidget {
               ),
             ],
           ),
-
           const Spacer(),
-
-          // Notifications + settings icons
           ZCover(
             radius: 50,
             padding: const EdgeInsets.all(8),
@@ -207,8 +397,6 @@ class _DesktopTopBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-
-          // ── User block: avatar + name + username + logout ──
           ZCover(
             radius: 50,
             padding: const EdgeInsets.all(5),
@@ -260,13 +448,13 @@ class _DesktopTopBar extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Avatar (photo with fallback to initials)
                   CircleAvatar(
                     radius: 15,
                     backgroundColor: scheme.primaryContainer,
-                    backgroundImage:
-                    photoUrl!=null && photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
-                    child: photoUrl!=null && photoUrl.isEmpty
+                    backgroundImage: photoUrl != null && photoUrl.isNotEmpty
+                        ? NetworkImage(photoUrl)
+                        : null,
+                    child: photoUrl == null || photoUrl.isEmpty
                         ? Text(
                       _initials(fullName),
                       style: TextStyle(
@@ -274,7 +462,8 @@ class _DesktopTopBar extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                         color: scheme.onPrimaryContainer,
                       ),
-                    ) : null,
+                    )
+                        : null,
                   ),
                   const SizedBox(width: 10),
                   Column(
@@ -316,7 +505,6 @@ class _DesktopTopBar extends StatelessWidget {
     );
   }
 
-  /// Time-of-day greeting based on the device's local clock.
   String _greeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) return 'Good morning';
@@ -325,12 +513,319 @@ class _DesktopTopBar extends StatelessWidget {
     return 'Good night';
   }
 
-  /// First letter of first + last name, for the avatar fallback.
   String _initials(String name) {
     final parts = name.trim().split(RegExp(r'\s+'));
     if (parts.isEmpty || parts.first.isEmpty) return '?';
     if (parts.length == 1) return parts.first.characters.first.toUpperCase();
     return (parts.first.characters.first + parts.last.characters.first)
         .toUpperCase();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Stats widgets
+// ═══════════════════════════════════════════════════════════════════
+
+class _CountCard extends StatelessWidget {
+  final String label;
+  final String? value; // null = shimmer
+  final IconData icon;
+  final Color color;
+
+  const _CountCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return ZCover(
+      radius: 5,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withAlpha(25),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 30,
+              child: value == null
+                  ? const _ShimmerBar(width: 60, height: 24)
+                  : Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value!,
+                  style: Theme.of(context)
+                      .textTheme
+                      .headlineSmall
+                      ?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    height: 1.1,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final IconData icon;
+  final Color accent;
+  final List<Widget> children;
+
+  const _SectionCard({
+    required this.title,
+    this.subtitle,
+    required this.icon,
+    required this.accent,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return ZCover(
+      radius: 5,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: accent.withAlpha(25),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: accent, size: 18),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                if (subtitle != null && subtitle!.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: scheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      subtitle!,
+                      style:
+                      Theme.of(context).textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RowLine extends StatelessWidget {
+  final String label;
+  final double? value; // null = shimmer
+  final bool positive;
+  final bool bold;
+  final bool showSign;
+  final IconData? icon;
+  final Color? iconColor;
+
+  const _RowLine({
+    required this.label,
+    required this.value,
+    this.positive = true,
+    this.bold = false,
+    this.showSign = false,
+    this.icon,
+    this.iconColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textColor = bold
+        ? (positive ? Colors.green.shade700 : Colors.red.shade700)
+        : Theme.of(context).colorScheme.onSurface;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 16, color: iconColor),
+            const SizedBox(width: 6),
+          ],
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ),
+          if (value == null)
+            const _ShimmerBar(width: 60, height: 14)
+          else
+            Text(
+              '${showSign && value! > 0 ? '+' : ''}${_fmt(value!)}',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
+                color: bold ? textColor : null,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _fmt(double v) {
+    final neg = v < 0;
+    final s = v.abs().toStringAsFixed(2);
+    final parts = s.split('.');
+    final intPart = parts[0];
+    final buf = StringBuffer();
+    for (int i = 0; i < intPart.length; i++) {
+      if (i > 0 && (intPart.length - i) % 3 == 0) buf.write(',');
+      buf.write(intPart[i]);
+    }
+    return '${neg ? '-' : ''}${buf.toString()}.${parts[1]}';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Shimmer bar
+// ═══════════════════════════════════════════════════════════════════
+class _ShimmerBar extends StatefulWidget {
+  final double width;
+  final double height;
+  const _ShimmerBar({required this.width, required this.height});
+
+  @override
+  State<_ShimmerBar> createState() => _ShimmerBarState();
+}
+
+class _ShimmerBarState extends State<_ShimmerBar>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final base = scheme.surfaceContainerHighest.withValues(alpha: 0.55);
+    final highlight = scheme.surfaceContainerLowest.withValues(alpha: 0.95);
+
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        return Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(6),
+            gradient: LinearGradient(
+              begin: Alignment(-1.5 + _ctrl.value * 3, 0),
+              end: Alignment(-0.5 + _ctrl.value * 3, 0),
+              colors: [base, highlight, base],
+              stops: const [0.35, 0.5, 0.65],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ErrorTile extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+  const _ErrorTile({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return ZCover(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, size: 42, color: scheme.error),
+            const SizedBox(height: 10),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

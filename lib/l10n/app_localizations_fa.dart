@@ -1186,4 +1186,49 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get accountPosition => 'وضعیت حساب';
+
+  @override
+  String get yes => 'بلی';
+
+  @override
+  String get glStatement => 'صورتحساب جی ال';
+
+  @override
+  String get assets => 'دارایی ها';
+
+  @override
+  String get liabilitiesEquity => 'بدهی ها و سرمایه';
+
+  @override
+  String get currentAssets => 'دارایی های جاری';
+
+  @override
+  String get fixedAssets => 'دارایی های ثابت';
+
+  @override
+  String get intangibleAssets => 'دارایی های نامشهود';
+
+  @override
+  String get currentLiabilities => 'بدهی های جاری';
+
+  @override
+  String get ownerEquity => 'حقوق صاحبان سهام';
+
+  @override
+  String get netProfit => 'سود خالص';
+
+  @override
+  String get totalAssets => 'کل دارایی ها';
+
+  @override
+  String get totalLiabilitiesEquity => 'کل بدهی ها و سرمایه';
+
+  @override
+  String get totalTitle => 'مجموع';
+
+  @override
+  String get currentYear => 'سال جاری';
+
+  @override
+  String get noData => 'هیچ معلوماتی موجود نیست';
 }

@@ -46,7 +46,7 @@
   },
   "invoiceDate": {
     "en": "Invoice Date",
-    "ar": "بل نیته",
+    "ar": "د بل نیټه",
     "fa": "تاریخ بل"
   },
   "printedBy": {
@@ -721,7 +721,7 @@
   },
   "invDate": {
     "en": "Invoice Date",
-    "ar": "بل نیته",
+    "ar": "د بل نیټه",
     "fa": "تاریخ بل"
   },
   "SEL": {
@@ -831,7 +831,7 @@
   },
   "expense": {
     "en": "Expense",
-    "ar": "لگشت",
+    "ar": "لګښت",
     "fa": "مصرف"
   },
   "entry": {
@@ -876,42 +876,42 @@
   },
   "allShipping": {
     "en": "All Shipping Records",
-    "ar": "جميع سجلات الشحن",
+    "ar": "د ټولو لېږد ریکارډونه",
     "fa": "همه سوابق حمل و نقل"
   },
   "shippingSummary": {
     "en": "Shipping Summary",
-    "ar": "ملخص الشحن",
+    "ar": "د لېږد لنډیز",
     "fa": "خلاصه حمل و نقل"
   },
   "totalShipments": {
     "en": "Total Shipments",
-    "ar": "إجمالي الشحنات",
+    "ar": "ټول لېږدونه",
     "fa": "کل حمل و نقل"
   },
   "completed": {
     "en": "Completed",
-    "ar": "مكتمل",
+    "ar": "بشپړ شوی",
     "fa": "تکمیل شده"
   },
   "totalRent": {
     "en": "Total Rent",
-    "ar": "الإيجار الكلي",
+    "ar": "ټوله کرایه",
     "fa": "کرایه کل"
   },
   "avgUnLoadSize": {
     "en": "Avg Unload",
-    "ar": "میانگین بارگیری",
+    "ar": "د تخلیې منځنی",
     "fa": "میانگین بارگیری"
   },
   "avgLoadSize": {
     "en": "Avg Load",
-    "ar": "میانگین تخلیه",
+    "ar": "د بارگیری منځنی",
     "fa": "میانگین تلخیه"
   },
   "vehicles": {
     "en": "Vehicle",
-    "ar": "مركبة",
+    "ar": "موټر",
     "fa": "وسیله نقلیه"
   },
   "customer": {
@@ -921,87 +921,87 @@
   },
   "addressAndPhone": {
     "en": "Address & Phone: ",
-    "ar": "آدرس و تماس: ",
+    "ar": "پته او تلیفون: ",
     "fa": "آدرس و تماس: "
   },
   "shippingRent": {
     "en": "Rent",
-    "ar": "إيجار",
+    "ar": "کرایه",
     "fa": "کرایه"
   },
   "loadingSize": {
     "en": "LD Weight",
-    "ar": "حجم التحميل",
+    "ar": "د بارگیری وزن",
     "fa": "اندازه بارگیری"
   },
   "unloadingSize": {
     "en": "ULD Weight",
-    "ar": "حجم التفريغ",
+    "ar": "د تخلیې وزن",
     "fa": "اندازه تخلیه"
   },
   "completedTitle": {
     "en": "Completed",
-    "ar": "مكتمل",
+    "ar": "بشپړ شوی",
     "fa": "تکمیل"
   },
   "pendingTitle": {
     "en": "Pending",
-    "ar": "قيد الانتظار",
+    "ar": "په تمه",
     "fa": "در انتظار"
   },
   "termsAndConditions": {
     "en": "Terms & Conditions",
-    "ar": "شرایط و ضوابط",
+    "ar": "شرایط او مقررات",
     "fa": "شرایط و ضوابط"
   },
   "customerSignature": {
     "en": "Customer Signature",
-    "ar": "امضاء العميل",
+    "ar": "د پیرودونکي لاسلیک",
     "fa": "امضای مشتری"
   },
   "totalPayment": {
     "en": "Total Payment",
-    "ar": "المبلغ الإجمالي",
+    "ar": "ټوله تادیه",
     "fa": "مجموع پرداخت"
   },
   "cashPayment": {
     "en": "Cash Payment",
-    "ar": "دفع نقدي",
+    "ar": "نقدي تادیه",
     "fa": "پرداخت نقدی"
   },
   "accountPayment": {
     "en": "Account Payment",
-    "ar": "دفع الحساب",
+    "ar": "د حساب تادیه",
     "fa": "پرداخت حساب"
   },
   "supplier": {
     "en": "Supplier",
-    "ar": "فروشنده",
+    "ar": "عرضه کوونکی",
     "fa": "فروشنده"
   },
   "trialBalance": {
     "en": "Trial Balance",
-    "ar": "آزمایشی بیلانس",
+    "ar": "آزمایښي بیلانس",
     "fa": "بیلانس آزمایشی"
   },
   "outOfBalance": {
     "en": "Out of balance",
-    "ar": "عدم تعادل",
+    "ar": "بې تعادله",
     "fa": "عدم تعادل"
   },
   "difference": {
     "en": "Difference",
-    "ar": "تفاوت",
+    "ar": "توپیر",
     "fa": "تفاوت"
   },
   "orderDate": {
     "en": "Order Date",
-    "ar": "تاريخ الطلب",
+    "ar": "د فرمایش نیټه",
     "fa": "تاریخ سفارش"
   },
   "quantity": {
     "en": "Qty",
-    "ar": "الكمية",
+    "ar": "مقدار",
     "fa": "تعداد"
   },
   "batch": {
@@ -1011,127 +1011,127 @@
   },
   "actualBalance": {
     "en": "Actual Balance",
-    "ar": "بیلانس اصلی",
+    "ar": "اصلي بیلانس",
     "fa": "بیلانس اصلی"
   },
   "storage": {
     "en": "Storage",
-    "ar": "گدام",
+    "ar": "ګدام",
     "fa": "انبار"
   },
   "description": {
     "en": "Description",
-    "ar": "شرح",
+    "ar": "تشریح",
     "fa": "توضیحات"
   },
   "assets": {
     "en": "ASSETS",
-    "ar": "دارایی ها",
+    "ar": "دارایی ګانې",
     "fa": "دارایی ها"
   },
   "liabilitiesEquity": {
     "en": "LIABILITIES AND EQUITY",
-    "ar": "بدهی ها و سرمایه",
+    "ar": "بدهی ګانې او سرمایه",
     "fa": "بدهی ها و سرمایه"
   },
   "copy": {
     "en": "Copy",
-    "ar": "کاپی نسخه",
+    "ar": "کاپي",
     "fa": "نسخه کاپی"
   },
   "currentAssets": {
     "en": "Current Assets",
-    "ar": "دارایی های جاری",
+    "ar": "روانې دارایی ګانې",
     "fa": "دارایی های جاری"
   },
   "fixedAssets": {
     "en": "Fixed Assets",
-    "ar": "دارایی های ثابت",
+    "ar": "ثابتې دارایی ګانې",
     "fa": "دارایی های ثابت"
   },
   "intangibleAssets": {
     "en": "Intangible Assets",
-    "ar": "الأصول غير الملموسة",
+    "ar": "ناسمه دارایی ګانې",
     "fa": "دارایی های نامشهود"
   },
   "currentLiabilities": {
     "en": "Current Liabilities",
-    "ar": "الالتزامات المتداولة",
+    "ar": "روانې بدهی ګانې",
     "fa": "بدهی های جاری"
   },
   "ownerEquity": {
     "en": "Owner's Equity",
-    "ar": "حقوق الملكية",
+    "ar": "د مالک سرمایه",
     "fa": "حقوق صاحبان سهام"
   },
   "stakeholders": {
     "en": "Stakeholders",
-    "ar": "أصحاب المصلحة",
+    "ar": "ګټه اخیستونکي",
     "fa": "ذینفعان"
   },
   "totalAssets": {
     "en": "TOTAL ASSETS",
-    "ar": "إجمالي الأصول",
+    "ar": "ټولې دارایی ګانې",
     "fa": "کل دارایی ها"
   },
   "totalLiabilitiesEquity": {
     "en": "TOTAL LIABILITIES & EQUITY",
-    "ar": "إجمالي الالتزامات وحقوق الملكية",
+    "ar": "ټولې بدهی ګانې او سرمایه",
     "fa": "کل بدهی ها و سرمایه"
   },
   "currentYear": {
     "en": "Current Year",
-    "ar": "السنة الحالية",
+    "ar": "روان کال",
     "fa": "سال جاری"
   },
   "lastYear": {
     "en": "Prior Year",
-    "ar": "السنة السابقة",
+    "ar": "تېر کال",
     "fa": "سال گذشته"
   },
   "totalTitle": {
     "en": "Total",
-    "ar": "المجموع",
+    "ar": "ټول",
     "fa": "مجموع"
   },
   "shippingReport": {
     "en": "Shipping Report",
-    "ar": "راپور ترانسپورت",
+    "ar": "د لېږد راپور",
     "fa": "راپور ترانسپورت"
   },
   "appliedFilters": {
     "en": "Applied Filters",
-    "ar": "فیلترهای اعمال شده",
+    "ar": "تطبیق شوي فلټرونه",
     "fa": "فیلترهای اعمال شده"
   },
   "dateRange": {
     "en": "Date Range",
-    "ar": "محدوده تاریخ",
+    "ar": "د نیټو حد",
     "fa": "محدوده تاریخ"
   },
   "vehicle": {
     "en": "Vehicle",
-    "ar": "وسله نقلیه",
+    "ar": "موټر",
     "fa": "وسله نقلیه"
   },
   "shippingReportSummary": {
     "en": "Shipping Report Summary",
-    "ar": "خلاصه راپور ترانسپورت",
+    "ar": "د لېږد راپور لنډیز",
     "fa": "خلاصه راپور ترانسپورت"
   },
   "totalLoadSize": {
     "en": "Total Load Size",
-    "ar": "مجموع حجم بارگیری",
+    "ar": "ټول بارگیری حجم",
     "fa": "مجموع حجم بارگیری"
   },
   "totalUnLoadSize": {
     "en": "Total Unload Size",
-    "ar": "مجموع حجم تخلیه",
+    "ar": "ټول تخلیې حجم",
     "fa": "مجموع حجم تخلیه"
   },
   "avgDifference": {
     "en": "Avg Difference",
-    "ar": "متوسط تفاوت",
+    "ar": "منځنی توپیر",
     "fa": "متوسط تفاوت"
   },
   "cashReceipt": {
@@ -1141,12 +1141,12 @@
   },
   "totalQty": {
     "en": "Total Items",
-    "ar": "کل تعداد",
+    "ar": "ټول تعداد",
     "fa": "کل تعداد"
   },
   "avgRentPerUnit": {
     "en": "Avg Rent Per Unit",
-    "ar": "متوسط کرایه فی واحد",
+    "ar": "د هر واحد منځنۍ کرایه",
     "fa": "متوسط کرایه فی واحد"
   },
   "product": {
@@ -1156,22 +1156,22 @@
   },
   "from": {
     "en": "From",
-    "ar": "از",
+    "ar": "له",
     "fa": "از"
   },
   "to": {
     "en": "To",
-    "ar": "به",
+    "ar": "ته",
     "fa": "به"
   },
   "loadSize": {
     "en": "Load Size",
-    "ar": "حجم بارگیری",
+    "ar": "د بارگیری حجم",
     "fa": "حجم بارگیری"
   },
   "unloadSize": {
     "en": "Unload Size",
-    "ar": "حجم تخلیه",
+    "ar": "د تخلیې حجم",
     "fa": "حجم تخلیه"
   },
   "rent": {
@@ -1181,7 +1181,7 @@
   },
   "no": {
     "en": "#",
-    "ar": "شمیرہ",
+    "ar": "شمېره",
     "fa": "شماره"
   },
   "thisTransaction": {
@@ -1291,7 +1291,7 @@
   },
   "entryDate": {
     "en": "Entry Date",
-    "ar": "د ثبت نیته",
+    "ar": "د ثبت نیټه",
     "fa": "تاریخ ثبت"
   },
   "clientTitle": {
@@ -1361,22 +1361,22 @@
   },
   "allBalances": {
     "en": "All Balances",
-    "ar": "جميع الأرصدة",
+    "ar": "ټول بیلانسونه",
     "fa": "همه حساب‌ها"
   },
   "summary": {
     "en": "Summary",
-    "ar": "ملخص",
+    "ar": "لنډیز",
     "fa": "خلاصه"
   },
   "asOf": {
     "en": "as of",
-    "ar": "اعتباراً من",
+    "ar": "د دې نیټې پورې",
     "fa": "تا تاریخ"
   },
   "account": {
     "en": "Account Details",
-    "ar": "حساب طرف",
+    "ar": "د حساب تفصیلات",
     "fa": "طرف حساب"
   },
   "name": {
@@ -1386,42 +1386,42 @@
   },
   "ccy": {
     "en": "Ccy",
-    "ar": "العملة",
+    "ar": "اسعار",
     "fa": "ارز"
   },
   "stockReport": {
     "en": "Stock Report",
-    "ar": "تقرير المخزون",
+    "ar": "د ګدام راپور",
     "fa": "گزارش انبار"
   },
   "totalItems": {
     "en": "Total Items",
-    "ar": "إجمالي العناصر",
+    "ar": "ټول توکي",
     "fa": "تعداد کالاها"
   },
   "totalQuantity": {
     "en": "Total Qty",
-    "ar": "کل مقدار",
+    "ar": "ټوله اندازه",
     "fa": "مجموعه مقدار"
   },
   "totalValue": {
     "en": "Total Value",
-    "ar": "القيمة الإجمالية",
+    "ar": "ټول ارزښت",
     "fa": "ارزش کل"
   },
   "cashBalances": {
     "en": "Cash Balances",
-    "ar": "نقدی موجودی",
+    "ar": "نقدي بیلانسونه",
     "fa": "موجودی نقدی"
   },
   "allBranches": {
     "en": "All Branches",
-    "ar": "ټول څانګې",
+    "ar": "ټولې څانګې",
     "fa": "تمام شعب"
   },
   "cashFlow": {
     "en": "Cash Flow",
-    "ar": "نقدی جریان",
+    "ar": "نقدي جریان",
     "fa": "جریان نقدی"
   },
   "phone": {
@@ -1501,7 +1501,7 @@
   },
   "shippingDetails": {
     "en": "Shipping Details",
-    "ar": "محموله جزئیات",
+    "ar": "د محمولې جزئیات",
     "fa": "جزئیات محموله"
   },
   "cash": {
@@ -1521,27 +1521,27 @@
   },
   "stockPaper": {
     "en": "Stock Paper",
-    "ar": "گدام خروجی سند",
+    "ar": "د ګدام د خروج سند",
     "fa": "سند خروجی گدام"
   },
   "documentNumber": {
     "en": "INV",
-    "ar": "سند شمیره",
+    "ar": "د سند شمېره",
     "fa": "نمبر سند"
   },
   "totalBox": {
     "en": "Total Items",
-    "ar": "کل تعداد",
+    "ar": "ټول تعداد",
     "fa": "کل تعداد"
   },
   "subtotal": {
     "en": "Subtotal",
-    "ar": "لنډ مجموع",
+    "ar": "لنډه مجموعه",
     "fa": "مجموعه فرعی"
   },
   "totalDiscount": {
     "en": "Total Discounts",
-    "ar": "تول تخفیف",
+    "ar": "ټول تخفیفونه",
     "fa": "مجموعه تخفیف"
   },
   "afterItemDiscount": {

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shipping/Features/Widgets/znavigator.dart';
 import '../../../../Features/Other/responsive_widget.dart';
 import 'AccountStatement/acc_statement.dart';
+import 'BalanceSheet/balance_sheet.dart';
+import 'GLStatement/gl_statement.dart';
 
 class ReportView extends StatelessWidget {
   const ReportView({super.key});
@@ -81,10 +83,10 @@ class _ReportBody extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 50,
-                height: 50,
+                width: 45,
+                height: 45,
                 decoration: BoxDecoration(
-                  color: scheme.primary.withValues(alpha: .1),
+                  color: scheme.primary.withValues(alpha: .07),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 alignment: Alignment.center,
@@ -119,7 +121,7 @@ class _ReportBody extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: 15),
 
           // ── Section title ────────────────────────────────
           Text(
@@ -133,7 +135,7 @@ class _ReportBody extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // ── Cards ────────────────────────────────────────
+          // ── Statement ────────────────────────────────────────
           _ReportCard(
             icon: Icons.receipt_long_outlined,
             title: 'Account Statement',
@@ -145,6 +147,38 @@ class _ReportBody extends StatelessWidget {
             bg: scheme.primaryContainer,
             onTap: () {
               ZNavigator.goto(context: context,AccountStatementView());
+            },
+          ),
+
+          const SizedBox(height: 6),
+          // ── GL ────────────────────────────────────────
+          _ReportCard(
+            icon: Icons.receipt_long_outlined,
+            title: 'GL Statement',
+            description:
+            'Transaction history for a single account with opening '
+                'balance, running balance, and debit / credit breakdown. '
+                'Printable as PDF and exportable to Excel.',
+            accent: scheme.primary,
+            bg: scheme.primaryContainer,
+            onTap: () {
+              ZNavigator.goto(context: context,GlStatementView());
+            },
+          ),
+
+          const SizedBox(height: 6),
+          // ── GL ────────────────────────────────────────
+          _ReportCard(
+            icon: Icons.receipt_long_outlined,
+            title: 'Balance Sheet',
+            description:
+            'Transaction history for a single account with opening '
+                'balance, running balance, and debit / credit breakdown. '
+                'Printable as PDF and exportable to Excel.',
+            accent: scheme.primary,
+            bg: scheme.primaryContainer,
+            onTap: () {
+              ZNavigator.goto(context: context,BalanceSheetView());
             },
           ),
         ],

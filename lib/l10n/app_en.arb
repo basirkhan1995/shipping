@@ -399,5 +399,20 @@
   "dearCustomer": "Dear Customer",
   "regardsTitle": "Regards,",
   "balanceMessageShare": "Please find your balance here",
-  "accountPosition": "Account Position"
+  "accountPosition": "Account Position",
+  "yes": "Yes",
+  "glStatement": "GL Statement",
+  "assets": "ASSETS",
+  "liabilitiesEquity": "LIABILITIES AND EQUITY",
+  "currentAssets": "Current Assets",
+  "fixedAssets": "Fixed Assets",
+  "intangibleAssets": "Intangible Assets",
+  "currentLiabilities": "Current Liabilities",
+  "ownerEquity": "Owner's Equity",
+  "netProfit": "Net Profit",
+  "totalAssets": "TOTAL ASSETS",
+  "totalLiabilitiesEquity": "TOTAL LIABILITIES & EQUITY",
+  "totalTitle": "Total",
+  "currentYear": "Current Year",
+  "noData": "No data available"
 }

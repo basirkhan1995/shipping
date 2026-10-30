@@ -1114,7 +1114,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get currencies => 'Currencies';
 
   @override
-  String get balanceSheet => 'Balance Sheet';
+  String get balanceSheet => 'د بیلانس شیټ';
 
   @override
   String get read => 'Read';
@@ -1184,4 +1184,49 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get accountPosition => 'وضعیت حساب';
+
+  @override
+  String get yes => 'هو';
+
+  @override
+  String get glStatement => 'صورتحساب جی ال';
+
+  @override
+  String get assets => 'دارایی ګانې';
+
+  @override
+  String get liabilitiesEquity => 'بدهی ګانې او سرمایه';
+
+  @override
+  String get currentAssets => 'روانې دارایی ګانې';
+
+  @override
+  String get fixedAssets => 'ثابتې دارایی ګانې';
+
+  @override
+  String get intangibleAssets => 'ناسمه دارایی ګانې';
+
+  @override
+  String get currentLiabilities => 'روانې بدهی ګانې';
+
+  @override
+  String get ownerEquity => 'د مالک سرمایه';
+
+  @override
+  String get netProfit => 'خالصه ګټه';
+
+  @override
+  String get totalAssets => 'ټولې دارایی ګانې';
+
+  @override
+  String get totalLiabilitiesEquity => 'ټولې بدهی ګانې او سرمایه';
+
+  @override
+  String get totalTitle => 'ټول';
+
+  @override
+  String get currentYear => 'روان کال';
+
+  @override
+  String get noData => 'هیڅ معلومات نشته';
 }

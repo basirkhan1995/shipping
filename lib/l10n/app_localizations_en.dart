@@ -1187,4 +1187,49 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountPosition => 'Account Position';
+
+  @override
+  String get yes => 'Yes';
+
+  @override
+  String get glStatement => 'GL Statement';
+
+  @override
+  String get assets => 'ASSETS';
+
+  @override
+  String get liabilitiesEquity => 'LIABILITIES AND EQUITY';
+
+  @override
+  String get currentAssets => 'Current Assets';
+
+  @override
+  String get fixedAssets => 'Fixed Assets';
+
+  @override
+  String get intangibleAssets => 'Intangible Assets';
+
+  @override
+  String get currentLiabilities => 'Current Liabilities';
+
+  @override
+  String get ownerEquity => 'Owner\'s Equity';
+
+  @override
+  String get netProfit => 'Net Profit';
+
+  @override
+  String get totalAssets => 'TOTAL ASSETS';
+
+  @override
+  String get totalLiabilitiesEquity => 'TOTAL LIABILITIES & EQUITY';
+
+  @override
+  String get totalTitle => 'Total';
+
+  @override
+  String get currentYear => 'Current Year';
+
+  @override
+  String get noData => 'No data available';
 }

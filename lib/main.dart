@@ -33,6 +33,9 @@ import 'package:shipping/Routes/Home/View/Transactions/bloc/transactions_bloc.da
 import 'Features/PrintSettings/bloc/PageOrientation/page_orientation_cubit.dart';
 import 'Features/PrintSettings/bloc/PageSize/paper_size_cubit.dart';
 import 'Features/PrintSettings/bloc/Printer/printer_cubit.dart';
+import 'Routes/Home/View/Dashboard/bloc/dashboard_stats_bloc.dart';
+import 'Routes/Home/View/Report/BalanceSheet/bloc/balance_sheet_bloc.dart';
+import 'Routes/Home/View/Report/GLStatement/bloc/gl_statement_bloc.dart';
 import 'Routes/Home/View/Settings/bloc/settings_tab_bloc.dart';
 import 'Routes/Home/View/Stakeholder/View/StakeholderById/bloc/stakeholder_by_id_bloc.dart';
 import 'Routes/Home/bloc/menu_bloc.dart';
@@ -109,6 +112,10 @@ class MyApp extends StatelessWidget {
 
           ///Report
           BlocProvider(create: (_) => AccStatementBloc(Repositories(ApiServices()))),
+          BlocProvider(create: (_) => GlStatementBloc(Repositories(ApiServices()))),
+          BlocProvider(create: (_) => DashboardStatsBloc(Repositories(ApiServices()))..add(DashboardStatsLoadRequested())),
+          BlocProvider(create: (_) => BalanceSheetBloc(Repositories(ApiServices()))..add(LoadBalanceSheet())),
+
         ],
         child: BlocBuilder<LocalizationBloc, Locale>(
           builder: (context, locale) {

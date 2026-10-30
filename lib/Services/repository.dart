@@ -1,9 +1,9 @@
 import 'dart:convert';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' hide MultipartFile;
 import 'package:flutter/services.dart';
+import '../Routes/Home/View/Dashboard/model/ds_model.dart';
 import '../Routes/Home/View/Finance/View/Currencies/model/ccy_model.dart';
 import '../Routes/Home/View/Finance/View/EOY/model/eoy_model.dart';
 import '../Routes/Home/View/Finance/View/ExchangeRate/model/ex_rate_model.dart';
@@ -13,6 +13,8 @@ import '../Routes/Home/View/Finance/View/Reminder/model/reminder_model.dart';
 import '../Routes/Home/View/HR/View/Users/model/user_model.dart';
 import '../Routes/Home/View/HR/View/Users/model/usr_report_model.dart';
 import '../Routes/Home/View/Report/AccountStatement/model/stmt_model.dart';
+import '../Routes/Home/View/Report/BalanceSheet/model/bs_model.dart';
+import '../Routes/Home/View/Report/GLStatement/model/gl_statement_model.dart';
 import '../Routes/Home/View/Settings/View/Company/Branch/Ui/BranchLimits/model/limit_model.dart';
 import '../Routes/Home/View/Settings/View/Company/Branches/model/branch_model.dart';
 import '../Routes/Home/View/Settings/View/Company/CompanyProfile/model/com_model.dart';
@@ -1616,7 +1618,6 @@ class Repositories {
 
   ///Roles .....................................................................
   Future<List<UserRoleModel>> getUserRole({int? usrOwner, CancelToken? cancelToken,}) async {
-
     // Fetch data from API
     final response = await _api.get(
       endpoint: "/setting/roles.php",
@@ -1708,6 +1709,7 @@ class Repositories {
     return response.data;
   }
 
+  ///Reports ...................................................................
   // Account Statement
   Future<AccountStatementModel> getAccountStatement({
     required int account,
@@ -1734,6 +1736,91 @@ class Repositories {
     final decodedData = json.decode(jsonString) as dynamic;
 
     return AccountStatementModel.fromApiResponse(decodedData);
+  }
+
+  Future<GlStatementModel> getGlStatement({
+    required int account,
+    required String currency,
+    required int branchCode,
+    required String fromDate,
+    required String toDate,
+  }) async {
+    final response = await _api.post(
+      endpoint: "/reports/glStatement.php",
+      data: {
+        "ccy": currency,
+        "branch": branchCode,
+        "account": account,
+        "fromDate": fromDate,
+        "toDate": toDate,
+      },
+    );
+
+    // Handle message response
+    if (response.data is Map && response.data['msg'] != null) {
+      throw response.data['msg'];
+    }
+
+    // Handle empty response
+    if (response.data == null || response.data.isEmpty) {
+      throw "No data received";
+    }
+
+    // Convert response to string and back to ensure proper typing
+    final jsonString = json.encode(response.data);
+    final decodedData = json.decode(jsonString) as dynamic;
+
+    return GlStatementModel.fromApiResponse(decodedData);
+  }
+
+  Future<BalanceSheetModel> balanceSheet({int? branchCode, CancelToken? cancelToken}) async {
+    final response = await _api.get(
+      endpoint: "/reports/balanceSheet.php",
+      queryParams: {"branch": branchCode},
+      cancelToken: cancelToken,
+    );
+
+    // Check if API returned a message
+    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+      throw Exception(response.data['msg']);
+    }
+
+    // If response is null
+    if (response.data == null) {
+      throw Exception("No data found");
+    }
+
+    // Convert the JSON to BalanceSheetModel
+    if (response.data is Map<String, dynamic>) {
+      return BalanceSheetModel.fromMap(response.data);
+    }
+
+    throw Exception("Unexpected response format");
+  }
+
+
+  Future<DashboardStatsModel> getDashboardStats({
+    String? fromDate,
+    String? toDate,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.post(
+      endpoint: '/reports/counts.php',
+      data: {
+        if (fromDate != null && fromDate.isNotEmpty) 'fromDate': fromDate,
+        if (toDate != null && toDate.isNotEmpty) 'toDate': toDate,
+      },
+      cancelToken: cancelToken,
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) {
+      throw ApiException('Invalid server response');
+    }
+    if (body['status']?.toString().toLowerCase() != 'success') {
+      _fail(body, fallback: 'Failed to load dashboard stats');
+    }
+    return DashboardStatsModel.fromMap(body);
   }
 
 }

@@ -336,5 +336,21 @@
   "dearCustomer": "مشتری عزیز",
   "regardsTitle": "بااحترام",
   "balanceMessageShare": "صورتحساب شما",
-  "accountPosition": "وضعیت حساب"
+  "accountPosition": "وضعیت حساب",
+  "yes": "هو",
+  "glStatement": "صورتحساب جی ال",
+  "balanceSheet": "د بیلانس شیټ",
+  "assets": "دارایی ګانې",
+  "liabilitiesEquity": "بدهی ګانې او سرمایه",
+  "currentAssets": "روانې دارایی ګانې",
+  "fixedAssets": "ثابتې دارایی ګانې",
+  "intangibleAssets": "ناسمه دارایی ګانې",
+  "currentLiabilities": "روانې بدهی ګانې",
+  "ownerEquity": "د مالک سرمایه",
+  "netProfit": "خالصه ګټه",
+  "totalAssets": "ټولې دارایی ګانې",
+  "totalLiabilitiesEquity": "ټولې بدهی ګانې او سرمایه",
+  "totalTitle": "ټول",
+  "currentYear": "روان کال",
+  "noData": "هیڅ معلومات نشته"
 }

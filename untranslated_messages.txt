@@ -61,7 +61,6 @@
     "userRoleAndPermission",
     "stakeholderAccount",
     "currencies",
-    "balanceSheet",
     "read"
   ]
 }

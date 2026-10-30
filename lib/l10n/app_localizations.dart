@@ -2421,6 +2421,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Account Position'**
   String get accountPosition;
+
+  /// No description provided for @yes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get yes;
+
+  /// No description provided for @glStatement.
+  ///
+  /// In en, this message translates to:
+  /// **'GL Statement'**
+  String get glStatement;
+
+  /// No description provided for @assets.
+  ///
+  /// In en, this message translates to:
+  /// **'ASSETS'**
+  String get assets;
+
+  /// No description provided for @liabilitiesEquity.
+  ///
+  /// In en, this message translates to:
+  /// **'LIABILITIES AND EQUITY'**
+  String get liabilitiesEquity;
+
+  /// No description provided for @currentAssets.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Assets'**
+  String get currentAssets;
+
+  /// No description provided for @fixedAssets.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixed Assets'**
+  String get fixedAssets;
+
+  /// No description provided for @intangibleAssets.
+  ///
+  /// In en, this message translates to:
+  /// **'Intangible Assets'**
+  String get intangibleAssets;
+
+  /// No description provided for @currentLiabilities.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Liabilities'**
+  String get currentLiabilities;
+
+  /// No description provided for @ownerEquity.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner\'s Equity'**
+  String get ownerEquity;
+
+  /// No description provided for @netProfit.
+  ///
+  /// In en, this message translates to:
+  /// **'Net Profit'**
+  String get netProfit;
+
+  /// No description provided for @totalAssets.
+  ///
+  /// In en, this message translates to:
+  /// **'TOTAL ASSETS'**
+  String get totalAssets;
+
+  /// No description provided for @totalLiabilitiesEquity.
+  ///
+  /// In en, this message translates to:
+  /// **'TOTAL LIABILITIES & EQUITY'**
+  String get totalLiabilitiesEquity;
+
+  /// No description provided for @totalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get totalTitle;
+
+  /// No description provided for @currentYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Year'**
+  String get currentYear;
+
+  /// No description provided for @noData.
+  ///
+  /// In en, this message translates to:
+  /// **'No data available'**
+  String get noData;
 }
 
 class _AppLocalizationsDelegate
