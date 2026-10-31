@@ -93,6 +93,13 @@ class ExchangeFormState extends State<ExchangeForm> {
   String? _debitCcy;
   String? _creditCcy;
 
+  // When a GL currency is changed, reload the exact account/currency row
+  // so the balance card uses the balance returned for that currency.
+  int? _pendingDebitAccountNo;
+  String? _pendingDebitCurrency;
+  int? _pendingCreditAccountNo;
+  String? _pendingCreditCurrency;
+
   /// Current rate (1 debit unit = `_rate` credit units).
   double? _rate;
 
@@ -183,6 +190,113 @@ class ExchangeFormState extends State<ExchangeForm> {
         context.read<StkAccountsBloc>().add(
           LoadStkAccountsEvent(query: '${cr.account}'),
         );
+      }
+    });
+  }
+
+  void _changeSelectedCurrency({
+    required bool isDebit,
+    required String currencyCode,
+  }) {
+    final selected = isDebit ? _debitAcc : _creditAcc;
+    final accountNo = selected?.accNumber;
+    if (selected == null || accountNo == null) return;
+
+    setState(() {
+      if (isDebit) {
+        _debitCcy = currencyCode;
+        _pendingDebitAccountNo = accountNo;
+        _pendingDebitCurrency = currencyCode;
+      } else {
+        _creditCcy = currencyCode;
+        _pendingCreditAccountNo = accountNo;
+        _pendingCreditCurrency = currencyCode;
+      }
+      _rate = null;
+    });
+
+    // The account list may already contain the requested currency row.
+    // Use it immediately; otherwise request the account rows again.
+    final currentState = context.read<StkAccountsBloc>().state;
+    if (currentState is StkAccountsLoadedState) {
+      StakeholderAccount? matching;
+      for (final account in currentState.accounts) {
+        if (account.accNumber == accountNo &&
+            account.accCurrency == currencyCode) {
+          matching = account;
+          break;
+        }
+      }
+      if (matching != null) {
+        _applyCurrencyAccountRow(
+          isDebit: isDebit,
+          account: matching,
+          accountNo: accountNo,
+          currencyCode: currencyCode,
+        );
+        _maybeFetchRate();
+        return;
+      }
+    }
+
+    context.read<StkAccountsBloc>().add(
+      LoadStkAccountsEvent(query: '$accountNo'),
+    );
+    _maybeFetchRate();
+  }
+
+  void _applyCurrencyAccountRow({
+    required bool isDebit,
+    required StakeholderAccount account,
+    required int accountNo,
+    required String currencyCode,
+  }) {
+    if (account.accNumber != accountNo || account.accCurrency != currencyCode) {
+      return;
+    }
+    setState(() {
+      if (isDebit) {
+        _debitAcc = account;
+        _pendingDebitAccountNo = null;
+        _pendingDebitCurrency = null;
+      } else {
+        _creditAcc = account;
+        _pendingCreditAccountNo = null;
+        _pendingCreditCurrency = null;
+      }
+    });
+  }
+
+  void _syncPendingCurrencyRows(List<StakeholderAccount> rows) {
+    final debitNo = _pendingDebitAccountNo;
+    final debitCcy = _pendingDebitCurrency;
+    final creditNo = _pendingCreditAccountNo;
+    final creditCcy = _pendingCreditCurrency;
+
+    StakeholderAccount? debitMatch;
+    StakeholderAccount? creditMatch;
+    for (final account in rows) {
+      if (debitNo != null && debitCcy != null &&
+          account.accNumber == debitNo && account.accCurrency == debitCcy) {
+        debitMatch = account;
+      }
+      if (creditNo != null && creditCcy != null &&
+          account.accNumber == creditNo && account.accCurrency == creditCcy) {
+        creditMatch = account;
+      }
+    }
+
+    if (debitMatch == null && creditMatch == null) return;
+    setState(() {
+      if (debitMatch != null) {
+        _debitAcc = debitMatch;
+        _pendingDebitAccountNo = null;
+        _pendingDebitCurrency = null;
+      }
+      if (creditMatch != null) {
+        _creditAcc = creditMatch;
+        _pendingCreditAccountNo = null;
+        _pendingCreditCurrency = null;
       }
     });
   }
@@ -372,40 +486,50 @@ class ExchangeFormState extends State<ExchangeForm> {
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
 
-    return Form(
-      key: _formKey,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          spacing: 12,
-          children: [
-            _buildDebitPicker(),
-            if (_debitAcc != null)
-              _AccountDetailsCard(
-                account: _debitAcc!,
-                fallbackCurrency: widget.baseCurrency,
-                label: tr.debitAccount,
-                effectiveCurrency: _debitCcyEffective,
-              )
-            else if (_debitLeg != null)
-              _LegDetailsCard(leg: _debitLeg!, label: tr.debitAccount),
+    return BlocListener<StkAccountsBloc, StkAccountsState>(
+      listenWhen: (previous, next) =>
+      next is StkAccountsLoadedState &&
+          (_pendingDebitAccountNo != null || _pendingCreditAccountNo != null),
+      listener: (context, state) {
+        if (state is StkAccountsLoadedState) {
+          _syncPendingCurrencyRows(state.accounts);
+        }
+      },
+      child: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 12,
+            children: [
+              _buildDebitPicker(),
+              if (_debitAcc != null)
+                _AccountDetailsCard(
+                  account: _debitAcc!,
+                  fallbackCurrency: widget.baseCurrency,
+                  label: tr.debitAccount,
+                  effectiveCurrency: _debitCcyEffective,
+                )
+              else if (_debitLeg != null)
+                _LegDetailsCard(leg: _debitLeg!, label: tr.debitAccount),
 
-            _buildCreditPicker(),
-            if (_creditAcc != null)
-              _AccountDetailsCard(
-                account: _creditAcc!,
-                fallbackCurrency: widget.baseCurrency,
-                label: tr.creditAccount,
-                effectiveCurrency: _creditCcyEffective,
-              )
-            else if (_creditLeg != null)
-              _LegDetailsCard(leg: _creditLeg!, label: tr.creditAccount),
+              _buildCreditPicker(),
+              if (_creditAcc != null)
+                _AccountDetailsCard(
+                  account: _creditAcc!,
+                  fallbackCurrency: widget.baseCurrency,
+                  label: tr.creditAccount,
+                  effectiveCurrency: _creditCcyEffective,
+                )
+              else if (_creditLeg != null)
+                _LegDetailsCard(leg: _creditLeg!, label: tr.creditAccount),
 
-            _buildAmountRow(),
-            _buildNarrationField(),
-            if (_isEditable) _buildToggles(),
-          ],
+              _buildAmountRow(),
+              _buildNarrationField(),
+              if (_isEditable) _buildToggles(),
+            ],
+          ),
         ),
       ),
     );
@@ -492,26 +616,15 @@ class ExchangeFormState extends State<ExchangeForm> {
           children: [
             Text(
               '${account.accNumber} | ${account.accName}',
-              style: Theme.of(context).textTheme.bodyLarge,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             if (account.accCurrency != null)
-              Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: .08),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-                child: Text(
-                  account.accCurrency!,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+              Text(
+                "${account.accBalance} | ${account.accCurrency!}",
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.outline,
                 ),
               ),
           ],
@@ -521,7 +634,7 @@ class ExchangeFormState extends State<ExchangeForm> {
       // rows. Include currency in the selection identity so the picker does
       // not resolve every row to the first matching account.
       itemToString: (a) =>
-      '${a.accNumber} | ${a.accName} | ${a.accCurrency ?? ''}',
+      '${a.accNumber} | ${a.accName}',
       stateToItems: (s) {
         if (s is! StkAccountsLoadedState) {
           return const <StakeholderAccount>[];
@@ -546,15 +659,7 @@ class ExchangeFormState extends State<ExchangeForm> {
       onCurrencySelectorChanged: (CurrenciesModel? currency) {
         final code = currency?.ccyCode;
         if (code == null || code.isEmpty || selected == null) return;
-        setState(() {
-          if (isDebit) {
-            _debitCcy = code;
-          } else {
-            _creditCcy = code;
-          }
-          _rate = null;
-        });
-        _maybeFetchRate();
+        _changeSelectedCurrency(isDebit: isDebit, currencyCode: code);
       },
       validator: (_) {
         if (!_isEditable) return null;
@@ -993,7 +1098,7 @@ class _ExchangeDialog extends StatelessWidget {
           if (isEditing && loaded == null && state is! ExchangeError) {
             return ZFormDialog(
               width: 720,
-              icon: Icons.currency_exchange_rounded,
+              icon: Icons.swap_horiz_rounded,
               title: 'Exchange · $reference',
               isActionTrue: false,
               onAction: null,
@@ -1006,10 +1111,10 @@ class _ExchangeDialog extends StatelessWidget {
 
           return ZFormDialog(
             width: 720,
-            icon: Icons.currency_exchange_rounded,
+            icon: Icons.swap_horiz_rounded,
             title: isEditing
                 ? 'Exchange · $reference'
-                : 'New Cross-Currency Transfer',
+                : 'New Exchange',
             isActionTrue: false,
             onAction: null,
             child: ConstrainedBox(
