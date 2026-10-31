@@ -137,7 +137,6 @@ class FundTransferFormState extends State<FundTransferForm> {
         _toLeg?.currency ??
         widget.baseCurrency;
   }
-
   @override
   void initState() {
     super.initState();
@@ -194,7 +193,47 @@ class FundTransferFormState extends State<FundTransferForm> {
       }
     });
   }
+  void _applyPendingAccountSync(List<StakeholderAccount> rows) {
+    bool changed = false;
+    StakeholderAccount? newFrom = _fromAcc;
+    StakeholderAccount? newTo = _toAcc;
 
+    final fromNo = _pendingFromAccountNo;
+    final fromCcy = _pendingFromCcy;
+    if (fromNo != null && fromCcy != null) {
+      for (final a in rows) {
+        if (a.accNumber == fromNo && a.accCurrency == fromCcy) {
+          newFrom = a;
+          changed = true;
+          break;
+        }
+      }
+    }
+
+    final toNo = _pendingToAccountNo;
+    final toCcy = _pendingToCcy;
+    if (toNo != null && toCcy != null) {
+      for (final a in rows) {
+        if (a.accNumber == toNo && a.accCurrency == toCcy) {
+          newTo = a;
+          changed = true;
+          break;
+        }
+      }
+    }
+
+    // Clear the pending requests either way so we don't loop forever.
+    _pendingFromAccountNo = null;
+    _pendingFromCcy = null;
+    _pendingToAccountNo = null;
+    _pendingToCcy = null;
+
+    if (!changed) return;
+    setState(() {
+      _fromAcc = newFrom;
+      _toAcc = newTo;
+    });
+  }
   @override
   void dispose() {
     _fromCtrl.dispose();
@@ -257,12 +296,26 @@ class FundTransferFormState extends State<FundTransferForm> {
     message: msg,
     type: ToastType.error,
   );
+  /// Pending refresh request for the debit / credit card, set when the
+  /// user changes the GL currency and cleared once we've synced the row.
+  int? _pendingFromAccountNo;
+  String? _pendingFromCcy;
 
+  int? _pendingToAccountNo;
+  String? _pendingToCcy;
   @override
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
 
-    return Form(
+    return BlocListener<StkAccountsBloc, StkAccountsState>(
+      listenWhen: (prev, next) =>
+      next is StkAccountsLoadedState &&
+          (_pendingFromAccountNo != null || _pendingToAccountNo != null),
+      listener: (context, state) {
+        if (state is! StkAccountsLoadedState) return;
+        _applyPendingAccountSync(state.accounts);
+      },
+  child: Form(
       key: _formKey,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(8),
@@ -306,7 +359,8 @@ class FundTransferFormState extends State<FundTransferForm> {
           ],
         ),
       ),
-    );
+    ),
+);
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -316,13 +370,13 @@ class FundTransferFormState extends State<FundTransferForm> {
   // always re-select the first (top) row.
   // ═══════════════════════════════════════════════════════════════
   String _rowKey(StakeholderAccount a) =>
-      '${a.accNumber} | ${a.accName} | ${a.accCurrency ?? ""}';
+      '${a.accNumber} | ${a.accName}';
 
   String _rowLabel(StakeholderAccount a) {
     final ccy = a.accCurrency;
     return ccy == null || ccy.isEmpty
         ? '${a.accNumber} | ${a.accName}'
-        : '${a.accNumber} | ${a.accName} · $ccy';
+        : '${a.accNumber} | ${a.accName}';
   }
 
   // ── Account pickers ──────────────────────────────────────────
@@ -336,24 +390,20 @@ class FundTransferFormState extends State<FundTransferForm> {
     currentCurrency: _fromCcyEffective,
     currencyOverride: _fromCcyOverride,
     onCurrencySelected: (ccy) {
+      final code = ccy?.ccyCode ?? widget.baseCurrency;
+      final accountNo = _fromAcc?.accNumber;
+
       setState(() {
-        final code = ccy?.ccyCode ?? widget.baseCurrency;
         _fromCcyOverride = code;
-        // Keep the details card in sync when the user changes the
-        // currency via the dropdown for a GL account.
-        final a = _fromAcc;
-        if (a != null && a.accCategory != _stakeholderCategory) {
-          _fromAcc = StakeholderAccount(
-            accNumber: a.accNumber,
-            accName: a.accName,
-            accCategory: a.accCategory,
-            accCurrency: code,
-            accLimit: a.accLimit,
-            accStatus: a.accStatus,
-            accBalance: a.accBalance,
-          );
-        }
       });
+
+      if (accountNo == null || _fromIsStakeholder) return;
+
+      // Remember what we want, then reload.
+      _pendingFromAccountNo = accountNo;
+      _pendingFromCcy = code;
+
+      context.read<StkAccountsBloc>().add(LoadStkAccountsEvent(query: '$accountNo'));
     },
     onSelected: (a) {
       setState(() {
@@ -380,22 +430,21 @@ class FundTransferFormState extends State<FundTransferForm> {
     currentCurrency: _toCcyEffective,
     currencyOverride: _toCcyOverride,
     onCurrencySelected: (ccy) {
+      final code = ccy?.ccyCode ?? widget.baseCurrency;
+      final accountNo = _toAcc?.accNumber;
+
       setState(() {
-        final code = ccy?.ccyCode ?? widget.baseCurrency;
         _toCcyOverride = code;
-        final a = _toAcc;
-        if (a != null && a.accCategory != _stakeholderCategory) {
-          _toAcc = StakeholderAccount(
-            accNumber: a.accNumber,
-            accName: a.accName,
-            accCategory: a.accCategory,
-            accCurrency: code,
-            accLimit: a.accLimit,
-            accStatus: a.accStatus,
-            accBalance: a.accBalance,
-          );
-        }
       });
+
+      if (accountNo == null || _toIsStakeholder) return;
+
+      _pendingToAccountNo = accountNo;
+      _pendingToCcy = code;
+
+      context
+          .read<StkAccountsBloc>()
+          .add(LoadStkAccountsEvent(query: '$accountNo'));
     },
     onSelected: (a) {
       setState(() {
@@ -1025,8 +1074,10 @@ class _AccountDetailsCard extends StatelessWidget {
           const Divider(),
           row(tr.accountNumber, account.accNumber?.toString() ?? ''),
           row(tr.accountName, account.accName ?? ''),
-          row(tr.balance,
-              '${account.accBalance.toAmount()} $effectiveCcy'),
+          row(
+            tr.balance,
+            '${account.accBalance.toAmount()} ${account.accCurrency ?? effectiveCcy}',
+          ),
           if (isStakeholder && status != null)
             row(tr.status, status == 1 ? tr.active : tr.blocked),
         ],
