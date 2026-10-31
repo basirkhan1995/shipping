@@ -24,11 +24,11 @@ import 'bloc/bulk_transfer_state.dart';
 import 'model/bulk_model.dart';
 
 Future<bool?> showBulkTransferDialog(
-    BuildContext context, {
-      required String usrName,
-      required String baseCurrency,
-      String? reference,
-    }) {
+  BuildContext context, {
+  required String usrName,
+  required String baseCurrency,
+  String? reference,
+}) {
   return showDialog<bool>(
     context: context,
     barrierDismissible: false,
@@ -98,8 +98,10 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
     context.read<BulkTransferBloc>().add(event);
   }
 
-  // ✅ FIX: only push the new currency to non-stakeholder rows.
-  // Stakeholder accounts (category 8) keep their own accCurrency.
+  // ✅ Only push the new currency to rows that do not already carry their
+  // own per-row currency. Stakeholders are skipped (fixed by account), and
+  // multi-ccy GL rows (e.g. 10101010 picked as USD) keep what the user
+  // chose. Rows without an explicit ccy inherit the header.
   void _changeHeaderCurrency(String ccy) {
     setState(() {
       _headerCurrency = ccy;
@@ -110,10 +112,12 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
 
     for (final row in cur.rows) {
       if (_isStakeholderAccount(row)) continue;
-      context.read<BulkTransferBloc>().add(BulkTransferUpdateRow(
-        rowId: row.rowId,
-        currency: ccy,
-      ));
+      // Don't overwrite a row that already has an explicit currency.
+      if (row.currency != null && row.currency!.isNotEmpty) continue;
+
+      context.read<BulkTransferBloc>().add(
+        BulkTransferUpdateRow(rowId: row.rowId, currency: ccy),
+      );
     }
   }
 
@@ -132,8 +136,6 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
 
     final state = context.read<BulkTransferBloc>().state;
     if (state is BulkTransferEditing) {
-      // 🔎 Debug: show exactly what will be POSTed. If `ccy` is empty
-      // for any row, PHP will return {"msg":"empty"} and nothing saves.
       final preview = state.rows.map((r) => r.toRecord()).toList();
       debugPrint('BULK POST records=$preview');
     }
@@ -159,10 +161,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
     if (ref == null || ref.isEmpty) return;
     if (_errorMessage != null) setState(() => _errorMessage = null);
     context.read<TransactionsBloc>().add(
-      AuthorizeTransactionEvent(
-        reference: ref,
-        userName: _currentUserName(),
-      ),
+      AuthorizeTransactionEvent(reference: ref, userName: _currentUserName()),
     );
   }
 
@@ -171,10 +170,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
     if (ref == null || ref.isEmpty) return;
     if (_errorMessage != null) setState(() => _errorMessage = null);
     context.read<TransactionsBloc>().add(
-      UnauthorizeTransactionEvent(
-        reference: ref,
-        userName: _currentUserName(),
-      ),
+      UnauthorizeTransactionEvent(reference: ref, userName: _currentUserName()),
     );
   }
 
@@ -183,10 +179,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
     if (ref == null || ref.isEmpty) return;
     if (_errorMessage != null) setState(() => _errorMessage = null);
     context.read<TransactionsBloc>().add(
-      ReverseTransactionEvent(
-        reference: ref,
-        userName: _currentUserName(),
-      ),
+      ReverseTransactionEvent(reference: ref, userName: _currentUserName()),
     );
   }
 
@@ -201,7 +194,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
         title: Text(tr.delete),
         content: Text(
           'Permanently delete transaction $ref?\n\n'
-              'This removes the header and every line. It cannot be undone.',
+          'This removes the header and every line. It cannot be undone.',
         ),
         actions: [
           TextButton(
@@ -225,10 +218,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
     if (_errorMessage != null) setState(() => _errorMessage = null);
 
     context.read<TransactionsBloc>().add(
-      DeleteTransactionEvent(
-        reference: ref,
-        userName: _currentUserName(),
-      ),
+      DeleteTransactionEvent(reference: ref, userName: _currentUserName()),
     );
   }
 
@@ -254,8 +244,8 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
           final editing = _toEditing(bulkState);
           final busy = bulkState is BulkTransferSubmitting;
           final isActionBusy = context.select<TransactionsBloc, bool>(
-                (b) =>
-            b.state is TransactionsLoadedState &&
+            (b) =>
+                b.state is TransactionsLoadedState &&
                 (b.state as TransactionsLoadedState).actionInProgress != null,
           );
 
@@ -358,28 +348,43 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
       );
     }
     if (state is BulkTransferLoadingForEdit) {
-      return const BulkTransferEditing(
-        rows: [],
-        totalDebit: 0,
-        totalCredit: 0,
-      );
+      return const BulkTransferEditing(rows: [], totalDebit: 0, totalCredit: 0);
     }
     return const BulkTransferEditing(rows: [], totalDebit: 0, totalCredit: 0);
   }
 
+  /// ✅ Build the set of `"accNumber::ccy"` keys already used by *other*
+  /// rows. For the multi-ccy cash account (10101010) this means picking
+  /// AFN in row 1 hides AFN in row 2+ but keeps USD and EUR available.
+  Set<String> _usedAccountCcyKeys(int currentRowId) {
+    final state = context.read<BulkTransferBloc>().state;
+    if (state is! BulkTransferEditing) return const {};
+    final keys = <String>{};
+    for (final r in state.rows) {
+      if (r.rowId == currentRowId) continue;
+      final n = r.accountNumber;
+      final c = r.currency;
+      if (n == null || c == null || c.isEmpty) continue;
+      keys.add('$n::$c');
+    }
+    return keys;
+  }
+
   Widget _buildBody(
-      BuildContext context,
-      BulkTransferEditing state,
-      bool busy,
-      bool isActionBusy,
-      ) {
+    BuildContext context,
+    BulkTransferEditing state,
+    bool busy,
+    bool isActionBusy,
+  ) {
     final isPending = state.isPending;
     final isAuthorized = state.isAuthorized;
 
     final auth = context.read<AuthBloc>().state;
-    final loginName =
-    auth is AuthenticatedState ? auth.loginData.usrName : null;
-    final isMaker = state.isEditing &&
+    final loginName = auth is AuthenticatedState
+        ? auth.loginData.usrName
+        : null;
+    final isMaker =
+        state.isEditing &&
         state.makerName != null &&
         loginName != null &&
         state.makerName == loginName;
@@ -398,8 +403,9 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                   isMulti: false,
                   height: 35,
                   disableAction: busy,
-                  initiallySelectedSingle:
-                  CurrenciesModel(ccyCode: _headerCurrency),
+                  initiallySelectedSingle: CurrenciesModel(
+                    ccyCode: _headerCurrency,
+                  ),
                   onSingleChanged: (ccy) {
                     if (ccy?.ccyCode == null) return;
                     _changeHeaderCurrency(ccy!.ccyCode!);
@@ -420,13 +426,13 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
               if (!state.isEmpty) ...[
                 _pill(
                   '${AppLocalizations.of(context)!.debit} '
-                      '${state.totalDebit.toStringAsFixed(2)}',
+                  '${state.totalDebit.toStringAsFixed(2)}',
                   Colors.green,
                 ),
                 const SizedBox(width: 8),
                 _pill(
                   '${AppLocalizations.of(context)!.credit} '
-                      '${state.totalCredit.toStringAsFixed(2)}',
+                  '${state.totalCredit.toStringAsFixed(2)}',
                   Colors.blue,
                 ),
                 const SizedBox(width: 8),
@@ -457,27 +463,34 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
           child: state.isEmpty
               ? _emptyState()
               : ListView.separated(
-            padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            itemCount: state.rows.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 6),
-            itemBuilder: (_, i) {
-              final row = state.rows[i];
-              final isLast = i == state.rows.length - 1;
-              return _BulkRowWidget(
-                key: ValueKey(row.rowId),
-                index: i,
-                row: row,
-                controllers: _ctrlFor(row),
-                headerCurrency: _headerCurrency,
-                enabled:
-                !busy && (!state.isEditing || (isPending && isMaker)),
-                isLast: isLast,
-                onRowComplete: isLast ? _onRowComplete : null,
-                onChanged: _dispatch,
-              );
-            },
-          ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  itemCount: state.rows.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 6),
+                  itemBuilder: (_, i) {
+                    final row = state.rows[i];
+                    final isLast = i == state.rows.length - 1;
+                    final usedKeys = _usedAccountCcyKeys(row.rowId);
+                    return _BulkRowWidget(
+                      key: ValueKey(
+                        'row-${row.rowId}-'
+                        '${(usedKeys.toList()..sort()).join("|")}',
+                      ),
+                      index: i,
+                      row: row,
+                      controllers: _ctrlFor(row),
+                      headerCurrency: _headerCurrency,
+                      enabled:
+                          !busy && (!state.isEditing || (isPending && isMaker)),
+                      isLast: isLast,
+                      onRowComplete: isLast ? _onRowComplete : null,
+                      onChanged: _dispatch,
+                      usedAccountCcyKeys: usedKeys,
+                    );
+                  },
+                ),
         ),
 
         // ── Footer ───────────────────────────────────────────────
@@ -537,13 +550,15 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                   onPressed: !state.canSubmit || busy ? null : _onSubmit,
                   label: busy || isActionBusy
                       ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                      : Text(state.isEditing
-                      ? AppLocalizations.of(context)!.update
-                      : AppLocalizations.of(context)!.save),
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(
+                          state.isEditing
+                              ? AppLocalizations.of(context)!.update
+                              : AppLocalizations.of(context)!.save,
+                        ),
                 ),
             ],
           ),
@@ -556,10 +571,10 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
     child: widget.reference != null && widget.reference!.isNotEmpty
         ? const CircularProgressIndicator()
         : const Text(
-      'Add at least two rows — one debit and one credit — '
-          'with the same total.',
-      textAlign: TextAlign.center,
-    ),
+            'Add at least two rows — one debit and one credit — '
+            'with the same total.',
+            textAlign: TextAlign.center,
+          ),
   );
 
   Widget _pill(String label, Color color) => Container(
@@ -610,20 +625,26 @@ class _RowControllers {
   final FocusNode narrationFocus = FocusNode();
 
   _RowControllers(BulkTransferRow row)
-      : account = TextEditingController(
-    text: _initialAccountText(row),
-  ),
-        debit = TextEditingController(
-          text: row.debit > 0 ? row.debit.toStringAsFixed(2) : '',
-        ),
-        credit = TextEditingController(
-          text: row.credit > 0 ? row.credit.toStringAsFixed(2) : '',
-        ),
-        narration = TextEditingController(text: row.narration);
+    : account = TextEditingController(text: _initialAccountText(row)),
+      debit = TextEditingController(
+        text: row.debit > 0 ? row.debit.toStringAsFixed(2) : '',
+      ),
+      credit = TextEditingController(
+        text: row.credit > 0 ? row.credit.toStringAsFixed(2) : '',
+      ),
+      narration = TextEditingController(text: row.narration);
 
+  // ✅ Matches the picker's `itemToString` format, which includes the
+  // currency. Without this, load-for-edit produces text that no picker
+  // item matches (because the picker stringifies with the ccy) and the
+  // validator rejects it.
   static String _initialAccountText(BulkTransferRow row) {
     final hasName = row.accountName != null && row.accountName!.isNotEmpty;
     final hasNumber = row.accountNumber != null;
+    final ccy = row.currency ?? '';
+    if (hasNumber && hasName && ccy.isNotEmpty) {
+      return '${row.accountNumber} | ${row.accountName} | $ccy';
+    }
     if (hasNumber && hasName) {
       return '${row.accountNumber} | ${row.accountName}';
     }
@@ -655,6 +676,7 @@ class _BulkRowWidget extends StatefulWidget {
   final bool isLast;
   final VoidCallback? onRowComplete;
   final void Function(BulkTransferUpdateRow) onChanged;
+  final Set<String> usedAccountCcyKeys;
 
   const _BulkRowWidget({
     super.key,
@@ -665,6 +687,7 @@ class _BulkRowWidget extends StatefulWidget {
     required this.enabled,
     required this.isLast,
     required this.onChanged,
+    required this.usedAccountCcyKeys,
     this.onRowComplete,
   });
 
@@ -692,7 +715,6 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
     widget.onRowComplete?.call();
   }
 
-  /// Stakeholder accounts (category 8) live in 500000–9999999 in this API.
   bool get _rowIsStakeholder {
     final n = widget.row.accountNumber;
     if (n == null) return false;
@@ -704,10 +726,8 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
     final color = Theme.of(context).colorScheme;
     final c = widget.controllers;
 
-    // Currency drop only shows once a GL account is picked.
-    // Stakeholder currency is fixed by accountDetails, so no drop.
     final showCurrencyDrop =
-        widget.row.accountNumber != null && !_rowIsStakeholder;
+        widget.row.accountNumber != null && widget.row.currency != null;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
@@ -737,150 +757,183 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
           // ── account picker + currency drop ─────────────────────
           Expanded(
             flex: 3,
-            child: GenericTextField<StakeholderAccount, StkAccountsBloc,
-                StkAccountsState>(
-              controller: c.account,
-              title: '',
-              hintText: AppLocalizations.of(context)!.accNameOrNumber,
-              isRequired: true,
-              bloc: context.read<StkAccountsBloc>(),
-              focusNode: c.accountFocus,
-              textInputAction: TextInputAction.none,
-              showAllOnFocus: true,
-              fetchAllFunction: (bloc) =>
-                  bloc.add(const LoadStkAccountsEvent()),
-              searchFunction: (bloc, q) {
-                if (q.trim().isEmpty) return;
-                bloc.add(LoadStkAccountsEvent(query: q));
-              },
+            child:
+                GenericTextField<
+                  StakeholderAccount,
+                  StkAccountsBloc,
+                  StkAccountsState
+                >(
+                  controller: c.account,
+                  title: '',
+                  hintText: AppLocalizations.of(context)!.accNameOrNumber,
+                  isRequired: true,
+                  bloc: context.read<StkAccountsBloc>(),
+                  focusNode: c.accountFocus,
+                  textInputAction: TextInputAction.none,
+                  showAllOnFocus: true,
+                  fetchAllFunction: (bloc) =>
+                      bloc.add(const LoadStkAccountsEvent()),
+                  searchFunction: (bloc, q) {
+                    if (q.trim().isEmpty) return;
+                    bloc.add(LoadStkAccountsEvent(query: q));
+                  },
 
-              // ✅ FIX: currency-aware list badge.
-              //  - Stakeholder → its own accCurrency (red if != header)
-              //  - GL         → headerCurrency (always matches because
-              //                 stateToItems already filtered to header)
-              itemBuilder: (context, account) {
-                final isStakeholder = account.accCategory == 8;
-                final effectiveCcy = isStakeholder
-                    ? (account.accCurrency ?? '')
-                    : widget.headerCurrency;
-                final matchesHeader = isStakeholder
-                    ? effectiveCcy == widget.headerCurrency
-                    : true;
+                  // ✅ Currency-aware list badge.
+                  itemBuilder: (context, account) {
+                    final ownCcy = account.accCurrency;
+                    final effectiveCcy = (ownCcy != null && ownCcy.isNotEmpty)
+                        ? ownCcy
+                        : widget.headerCurrency;
+                    final matchesHeader = effectiveCcy == widget.headerCurrency;
 
-                return Padding(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '${account.accNumber} · ${account.accName ?? ''}',
-                          style: const TextStyle(fontSize: 13),
-                        ),
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 4,
                       ),
-                      Row(
-                        spacing: 5,
+                      child: Row(
                         children: [
-                          Text(account.accBalance.toAmount()),
-                          Text(
-                            effectiveCcy,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color:
-                              matchesHeader ? color.primary : color.error,
-                              fontWeight: FontWeight.w600,
+                          Expanded(
+                            child: Text(
+                              '${account.accNumber} · ${account.accName ?? ''}',
+                              style: const TextStyle(fontSize: 13),
                             ),
+                          ),
+                          Row(
+                            spacing: 5,
+                            children: [
+                              Text(account.accBalance.toAmount()),
+                              Text(
+                                effectiveCcy,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: matchesHeader
+                                      ? color.primary
+                                      : color.error,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                );
-              },
-              itemToString: (a) => '${a.accNumber} | ${a.accName}',
+                    );
+                  },
 
-              // ✅ FIX: filter by header currency.
-              //   • 10101011 → excluded entirely
-              //   • stakeholder (cat 8) → always shown, own currency
-              //   • GL with accCurrency == null → shown (inherits header)
-              //   • GL with accCurrency == header → shown
-              //   • GL with other accCurrency → hidden
-              //   • De-dupe by (account + currency)
-              stateToItems: (s) {
-                if (s is! StkAccountsLoadedState) {
-                  return const <StakeholderAccount>[];
-                }
+                  // ✅ Currency is part of the item identity. A single GL
+                  // account (e.g. 10101010) has AFN, EUR, USD rows with the
+                  // same number and name. Without the currency in the string,
+                  // picking a different variant produces identical text and
+                  // the field never re-resolves the currency. This is the
+                  // same pattern used in the exchange form.
+                  itemToString: (a) =>
+                      '${a.accNumber} | ${a.accName} | '
+                      '${a.accCurrency ?? widget.headerCurrency}',
 
-                const excluded = <int>{10101011};
+                  // ✅ Filter by header currency, keep multi-ccy GL variants,
+                  //    AND hide pairs already used by other rows.
+                  stateToItems: (s) {
+                    if (s is! StkAccountsLoadedState) {
+                      return const <StakeholderAccount>[];
+                    }
 
-                final filtered = <StakeholderAccount>[];
-                for (final a in s.accounts) {
-                  if (excluded.contains(a.accNumber)) continue;
+                    const excluded = <int>{10101011};
 
-                  final isStakeholder = a.accCategory == 8;
-                  if (isStakeholder) {
-                    filtered.add(a);
-                    continue;
-                  }
+                    // Count distinct currencies per account number.
+                    final ccyByAcc = <int, Set<String>>{};
+                    for (final a in s.accounts) {
+                      final n = a.accNumber;
+                      if (n == null) continue;
+                      final c = a.accCurrency;
+                      if (c == null || c.isEmpty) continue;
+                      ccyByAcc.putIfAbsent(n, () => <String>{}).add(c);
+                    }
 
-                  if (a.accCurrency == null ||
-                      a.accCurrency == widget.headerCurrency) {
-                    filtered.add(a);
-                  }
-                }
+                    final filtered = <StakeholderAccount>[];
+                    for (final a in s.accounts) {
+                      if (excluded.contains(a.accNumber)) continue;
 
-                final seen = <String>{};
-                return filtered.where((a) {
-                  final key = '${a.accNumber}::${a.accCurrency ?? ''}';
-                  if (seen.contains(key)) return false;
-                  seen.add(key);
-                  return true;
-                }).toList();
-              },
-              stateToLoading: (s) => s is StkAccountsLoadingState,
+                      // Hide (account, ccy) already used by another row, but
+                      // never hide the pair this row is currently showing.
+                      final key = '${a.accNumber}::${a.accCurrency ?? ''}';
+                      final ownKey =
+                          '${widget.row.accountNumber ?? ''}::'
+                          '${widget.row.currency ?? ''}';
+                      if (key != ownKey &&
+                          widget.usedAccountCcyKeys.contains(key)) {
+                        continue;
+                      }
 
-              // ✅ FIX: correct currency resolution on selection.
-              //   Stakeholder → its own accCurrency
-              //   GL          → headerCurrency (always)
-              onSelected: (a) {
-                if (!widget.enabled) return;
-                c.account.text = '${a.accNumber} | ${a.accName ?? ''}';
+                      if (a.accCategory == 8) {
+                        filtered.add(a);
+                        continue;
+                      }
 
-                final isStakeholder = a.accCategory == 8;
-                final effectiveCcy = isStakeholder
-                    ? (a.accCurrency ?? widget.headerCurrency)
-                    : widget.headerCurrency;
+                      final n = a.accNumber;
+                      final isMultiCcy =
+                          n != null && (ccyByAcc[n]?.length ?? 0) > 1;
+                      if (isMultiCcy) {
+                        filtered.add(a);
+                        continue;
+                      }
 
-                widget.onChanged(BulkTransferUpdateRow(
-                  rowId: widget.row.rowId,
-                  accountNumber: a.accNumber,
-                  accountName: a.accName,
-                  currency: effectiveCcy,
-                ));
+                      if (a.accCurrency == null ||
+                          a.accCurrency == widget.headerCurrency) {
+                        filtered.add(a);
+                      }
+                    }
 
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) c.debitFocus.requestFocus();
-                });
-              },
-              validator: (v) =>
-              (widget.row.accountNumber == null) ? 'Required' : null,
+                    final seen = <String>{};
+                    return filtered.where((a) {
+                      final k = '${a.accNumber}::${a.accCurrency ?? ''}';
+                      if (seen.contains(k)) return false;
+                      seen.add(k);
+                      return true;
+                    }).toList();
+                  },
+                  stateToLoading: (s) => s is StkAccountsLoadingState,
 
-              // ✅ FIX: expose the currency dropdown on GL rows so the
-              // user can see (and change) the row currency.
-              showCurrencySelector: showCurrencyDrop,
-              isCurrencySelectorEnabled: widget.enabled,
-              selectedCurrencyCodeOverride: _rowIsStakeholder
-                  ? widget.row.currency
-                  : widget.headerCurrency,
-              onCurrencySelectorChanged: (ccy) {
-                if (!widget.enabled) return;
-                if (ccy?.ccyCode == null) return;
-                widget.onChanged(BulkTransferUpdateRow(
-                  rowId: widget.row.rowId,
-                  currency: ccy!.ccyCode,
-                ));
-              },
-            ),
+                  // ✅ Trust the picked row's accCurrency first.
+                  onSelected: (a) {
+                    if (!widget.enabled) return;
+                    final effectiveCcy = (a.accCurrency?.isNotEmpty == true)
+                        ? a.accCurrency!
+                        : widget.headerCurrency;
+                    c.account.text =
+                        '${a.accNumber} | ${a.accName ?? ''} | $effectiveCcy';
+
+                    widget.onChanged(
+                      BulkTransferUpdateRow(
+                        rowId: widget.row.rowId,
+                        accountNumber: a.accNumber,
+                        accountName: a.accName,
+                        currency: effectiveCcy,
+                      ),
+                    );
+
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) c.debitFocus.requestFocus();
+                    });
+                  },
+                  validator: (v) =>
+                      (widget.row.accountNumber == null) ? 'Required' : null,
+
+                  showCurrencySelector: showCurrencyDrop,
+                  isCurrencySelectorEnabled:
+                      widget.enabled && !_rowIsStakeholder,
+                  selectedCurrencyCodeOverride:
+                      widget.row.currency ?? widget.headerCurrency,
+                  onCurrencySelectorChanged: (ccy) {
+                    if (!widget.enabled) return;
+                    if (ccy?.ccyCode == null) return;
+                    widget.onChanged(
+                      BulkTransferUpdateRow(
+                        rowId: widget.row.rowId,
+                        currency: ccy!.ccyCode,
+                      ),
+                    );
+                  },
+                ),
           ),
 
           // ── debit ─────────────────────────────────────────────
@@ -894,8 +947,9 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
               focusNode: c.debitFocus,
               textInputAction: TextInputAction.none,
               hint: AppLocalizations.of(context)!.debit,
-              keyboardType:
-              const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormat: [
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
               ],
@@ -904,11 +958,13 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
                 if (!widget.enabled) return;
                 final d = double.tryParse(v) ?? 0;
                 if (d > 0) c.credit.clear();
-                widget.onChanged(BulkTransferUpdateRow(
-                  rowId: widget.row.rowId,
-                  debit: d,
-                  credit: d > 0 ? 0 : widget.row.credit,
-                ));
+                widget.onChanged(
+                  BulkTransferUpdateRow(
+                    rowId: widget.row.rowId,
+                    debit: d,
+                    credit: d > 0 ? 0 : widget.row.credit,
+                  ),
+                );
               },
             ),
           ),
@@ -924,8 +980,9 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
               isEnabled: widget.enabled,
               focusNode: c.creditFocus,
               textInputAction: TextInputAction.none,
-              keyboardType:
-              const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormat: [
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
               ],
@@ -934,11 +991,13 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
                 if (!widget.enabled) return;
                 final cr = double.tryParse(v) ?? 0;
                 if (cr > 0) c.debit.clear();
-                widget.onChanged(BulkTransferUpdateRow(
-                  rowId: widget.row.rowId,
-                  credit: cr,
-                  debit: cr > 0 ? 0 : widget.row.debit,
-                ));
+                widget.onChanged(
+                  BulkTransferUpdateRow(
+                    rowId: widget.row.rowId,
+                    credit: cr,
+                    debit: cr > 0 ? 0 : widget.row.debit,
+                  ),
+                );
               },
             ),
           ),
@@ -956,18 +1015,19 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
               textInputAction: TextInputAction.none,
               onFieldSubmitted: (_) {
                 if (!widget.enabled) return;
-                widget.onChanged(BulkTransferUpdateRow(
-                  rowId: widget.row.rowId,
-                  narration: c.narration.text,
-                ));
+                widget.onChanged(
+                  BulkTransferUpdateRow(
+                    rowId: widget.row.rowId,
+                    narration: c.narration.text,
+                  ),
+                );
                 _onNarrationDone();
               },
               onChanged: (v) {
                 if (!widget.enabled) return;
-                widget.onChanged(BulkTransferUpdateRow(
-                  rowId: widget.row.rowId,
-                  narration: v,
-                ));
+                widget.onChanged(
+                  BulkTransferUpdateRow(rowId: widget.row.rowId, narration: v),
+                );
               },
             ),
           ),
@@ -994,8 +1054,7 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
             ? color.error.withValues(alpha: hovering ? .45 : .20)
             : color.error.withValues(alpha: .08);
 
-        final fg =
-        !enabled ? color.error.withValues(alpha: .4) : color.error;
+        final fg = !enabled ? color.error.withValues(alpha: .4) : color.error;
 
         return Tooltip(
           message: 'Remove row',
@@ -1011,9 +1070,9 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
             },
             child: GestureDetector(
               onTap: enabled
-                  ? () => context
-                  .read<BulkTransferBloc>()
-                  .add(BulkTransferRemoveRow(widget.row.rowId))
+                  ? () => context.read<BulkTransferBloc>().add(
+                      BulkTransferRemoveRow(widget.row.rowId),
+                    )
                   : null,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
@@ -1026,19 +1085,15 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
                   border: Border.all(color: borderColor, width: 1),
                   boxShadow: enabled && hovering
                       ? [
-                    BoxShadow(
-                      color: color.error.withValues(alpha: .18),
-                      blurRadius: 8,
-                      spreadRadius: 1,
-                    ),
-                  ]
+                          BoxShadow(
+                            color: color.error.withValues(alpha: .18),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          ),
+                        ]
                       : null,
                 ),
-                child: Icon(
-                  Icons.delete_outline_rounded,
-                  size: 18,
-                  color: fg,
-                ),
+                child: Icon(Icons.delete_outline_rounded, size: 18, color: fg),
               ),
             ),
           ),

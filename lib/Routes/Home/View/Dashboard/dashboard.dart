@@ -75,7 +75,6 @@ class _StatsSection extends StatelessWidget {
           );
         }
 
-        // Loading flag — shimmer while we don't yet have a loaded snapshot
         final loading =
             state is DashboardStatsInitial || state is DashboardStatsLoading;
         final s = state is DashboardStatsLoaded ? state.stats : null;
@@ -107,60 +106,78 @@ class _StatsSection extends StatelessWidget {
           ),
         ];
 
-        final cashCard = _SectionCard(
-          title: 'Cash',
-          subtitle: loading ? null : s!.currency,
+        // ═══════════════════════════════════════════════════════════
+        // CASH — Net Cash card (main) + In/Out breakdown row.
+        // Same visual language as count cards:
+        //   icon box + label + big colored number + subtitle line.
+        // ═══════════════════════════════════════════════════════════
+        final netCash = s?.cash.net ?? 0;
+        final netCashPos = !loading && netCash >= 0;
+
+        final cashCard = _FinCard(
           icon: Icons.payments_outlined,
-          accent: Colors.green,
-          children: [
-            _RowLine(
-              label: 'Cash In',
-              value: loading ? null : s!.cash.inAmount,
-              icon: Icons.arrow_downward,
-              iconColor: Colors.green,
+          label: 'Net Cash',
+          value: loading ? null : netCash,
+          currency: loading ? null : s!.currency,
+          accent: netCashPos
+              ? const Color(0xFF059669)
+              : const Color(0xFFDC2626),
+          bg: netCashPos
+              ? const Color(0xFFD1FAE5)
+              : const Color(0xFFFEE2E2),
+          showSign: true,
+          breakdown: loading
+              ? null
+              : [
+            _BreakdownItem(
+              label: 'In',
+              value: s!.cash.inAmount,
+              icon: Icons.arrow_downward_rounded,
+              color: const Color(0xFF059669),
             ),
-            _RowLine(
-              label: 'Cash Out',
-              value: loading ? null : s!.cash.outAmount,
-              icon: Icons.arrow_upward,
-              iconColor: Colors.red,
-            ),
-            const Divider(height: 16),
-            _RowLine(
-              label: 'Net Cash',
-              value: loading ? null : s!.cash.net,
-              bold: true,
-              positive: !loading && s!.cash.net >= 0,
-              showSign: true,
+            _BreakdownItem(
+              label: 'Out',
+              value: s.cash.outAmount,
+              icon: Icons.arrow_upward_rounded,
+              color: const Color(0xFFDC2626),
             ),
           ],
         );
 
-        final financeCard = _SectionCard(
-          title: 'Finance',
-          subtitle: loading ? null : s!.currency,
-          icon: Icons.trending_up,
-          accent: Colors.indigo,
-          children: [
-            _RowLine(
+        // ═══════════════════════════════════════════════════════════
+        // FINANCE — Profit card (main) + Income/Expense breakdown row.
+        // ═══════════════════════════════════════════════════════════
+        final profit = s?.finance.profit ?? 0;
+        final profitPos = !loading && profit >= 0;
+
+        final financeCard = _FinCard(
+          icon: profitPos
+              ? Icons.trending_up_rounded
+              : Icons.trending_down_rounded,
+          label: 'Profit',
+          value: loading ? null : profit,
+          currency: loading ? null : s!.currency,
+          accent: profitPos
+              ? const Color(0xFF059669)
+              : const Color(0xFFDC2626),
+          bg: profitPos
+              ? const Color(0xFFD1FAE5)
+              : const Color(0xFFFEE2E2),
+          showSign: true,
+          breakdown: loading
+              ? null
+              : [
+            _BreakdownItem(
               label: 'Income',
-              value: loading ? null : s!.finance.income,
+              value: s!.finance.income,
               icon: Icons.add_circle_outline,
-              iconColor: Colors.green,
+              color: const Color(0xFF059669),
             ),
-            _RowLine(
+            _BreakdownItem(
               label: 'Expense',
-              value: loading ? null : s!.finance.expense,
+              value: s.finance.expense,
               icon: Icons.remove_circle_outline,
-              iconColor: Colors.red,
-            ),
-            const Divider(height: 16),
-            _RowLine(
-              label: 'Profit',
-              value: loading ? null : s!.finance.profit,
-              bold: true,
-              positive: !loading && s!.finance.profit >= 0,
-              showSign: true,
+              color: const Color(0xFFDC2626),
             ),
           ],
         );
@@ -279,7 +296,7 @@ class _DesktopDashboard extends StatelessWidget {
           Expanded(
             child: Column(
               children: [
-                const _DesktopTopBar(),
+                _DesktopTopBar(onRefresh: onRefresh),
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(32),
@@ -326,10 +343,11 @@ class _DesktopDashboard extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Top bar (unchanged)
+// Top bar
 // ═══════════════════════════════════════════════════════════════════
 class _DesktopTopBar extends StatelessWidget {
-  const _DesktopTopBar();
+  final VoidCallback onRefresh;
+  const _DesktopTopBar({required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
@@ -382,9 +400,7 @@ class _DesktopTopBar extends StatelessWidget {
             tooltip: 'Refresh',
             size: 40,
             iconSize: 22,
-            onPressed: () {
-
-            },
+            onPressed: onRefresh,
           ),
           const SizedBox(width: 8),
           _CircleIconButton(
@@ -533,12 +549,11 @@ class _DesktopTopBar extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Stats widgets
+// Count card
 // ═══════════════════════════════════════════════════════════════════
-
 class _CountCard extends StatelessWidget {
   final String label;
-  final String? value; // null = shimmer
+  final String? value;
   final IconData icon;
   final Color color;
 
@@ -604,65 +619,84 @@ class _CountCard extends StatelessWidget {
   }
 }
 
-class _SectionCard extends StatelessWidget {
-  final String title;
-  final String? subtitle;
+// ═══════════════════════════════════════════════════════════════════
+// Finance / Cash card — same visual language as _CountCard:
+//   icon box + label + currency pill + big colored number +
+//   breakdown chips row (In/Out or Income/Expense).
+// ═══════════════════════════════════════════════════════════════════
+class _FinCard extends StatelessWidget {
   final IconData icon;
+  final String label;
+  final double? value;
+  final String? currency;
   final Color accent;
-  final List<Widget> children;
+  final Color bg;
+  final bool showSign;
+  final List<_BreakdownItem>? breakdown;
 
-  const _SectionCard({
-    required this.title,
-    this.subtitle,
+  const _FinCard({
     required this.icon,
+    required this.label,
+    required this.value,
+    required this.currency,
     required this.accent,
-    required this.children,
+    required this.bg,
+    this.showSign = false,
+    this.breakdown,
   });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final neg = (value ?? 0) < 0;
+
     return ZCover(
       radius: 5,
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header — icon box + label + currency pill
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(6),
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
-                    color: accent.withAlpha(25),
-                    borderRadius: BorderRadius.circular(8),
+                    color: bg.withAlpha(80),
+                    border: Border.all(color: bg),
+                    borderRadius: BorderRadius.circular(5),
                   ),
-                  child: Icon(icon, color: accent, size: 18),
+                  alignment: Alignment.center,
+                  child: Icon(icon, size: 22, color: accent),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    label,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w700,
+                      color: scheme.onSurface,
                     ),
                   ),
                 ),
-                if (subtitle != null && subtitle!.isNotEmpty)
+                if (currency != null && currency!.isNotEmpty)
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
+                      horizontal: 6,
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
                       color: scheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(5),
                     ),
                     child: Text(
-                      subtitle!,
-                      style:
-                      Theme.of(context).textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
+                      currency!,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.4,
                         color: scheme.onSurfaceVariant,
                       ),
                     ),
@@ -670,65 +704,118 @@ class _SectionCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            ...children,
+
+            // Big amount — same colored number as count cards
+            SizedBox(
+              height: 30,
+              child: value == null
+                  ? const _ShimmerBar(width: 100, height: 24)
+                  : Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _fmt(value!, neg, showSign),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    height: 1.1,
+                    color: accent,
+                  ),
+                ),
+              ),
+            ),
+
+            // Breakdown chips
+            if (breakdown != null && breakdown!.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  for (int i = 0; i < breakdown!.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 10),
+                    Expanded(child: _BreakdownChip(item: breakdown![i])),
+                  ],
+                ],
+              ),
+            ],
           ],
         ),
       ),
     );
   }
+
+  String _fmt(double v, bool neg, bool showSign) {
+    final s = v.abs().toStringAsFixed(2);
+    final parts = s.split('.');
+    final intPart = parts[0];
+    final buf = StringBuffer();
+    for (int i = 0; i < intPart.length; i++) {
+      if (i > 0 && (intPart.length - i) % 3 == 0) buf.write(',');
+      buf.write(intPart[i]);
+    }
+    final sign = neg ? '-' : (showSign && v > 0 ? '+' : '');
+    return '$sign${buf.toString()}.${parts[1]}';
+  }
 }
 
-class _RowLine extends StatelessWidget {
+class _BreakdownItem {
   final String label;
-  final double? value; // null = shimmer
-  final bool positive;
-  final bool bold;
-  final bool showSign;
-  final IconData? icon;
-  final Color? iconColor;
+  final double value;
+  final IconData icon;
+  final Color color;
 
-  const _RowLine({
+  const _BreakdownItem({
     required this.label,
     required this.value,
-    this.positive = true,
-    this.bold = false,
-    this.showSign = false,
-    this.icon,
-    this.iconColor,
+    required this.icon,
+    required this.color,
   });
+}
+
+class _BreakdownChip extends StatelessWidget {
+  final _BreakdownItem item;
+  const _BreakdownChip({required this.item});
 
   @override
   Widget build(BuildContext context) {
-    final textColor = bold
-        ? (positive ? Colors.green.shade700 : Colors.red.shade700)
-        : Theme.of(context).colorScheme.onSurface;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: item.color.withAlpha(20),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: item.color.withAlpha(50)),
+      ),
       child: Row(
         children: [
-          if (icon != null) ...[
-            Icon(icon, size: 16, color: iconColor),
-            const SizedBox(width: 6),
-          ],
+          Icon(item.icon, size: 14, color: item.color),
+          const SizedBox(width: 5),
           Expanded(
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  item.label,
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w600,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+                Text(
+                  _fmt(item.value),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: item.color,
+                  ),
+                ),
+              ],
             ),
           ),
-          if (value == null)
-            const _ShimmerBar(width: 60, height: 14)
-          else
-            Text(
-              '${showSign && value! > 0 ? '+' : ''}${_fmt(value!)}',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
-                color: bold ? textColor : null,
-              ),
-            ),
         ],
       ),
     );
@@ -806,6 +893,9 @@ class _ShimmerBarState extends State<_ShimmerBar>
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// Error tile
+// ═══════════════════════════════════════════════════════════════════
 class _ErrorTile extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
@@ -840,12 +930,15 @@ class _ErrorTile extends StatelessWidget {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// Circle icon button (top bar)
+// ═══════════════════════════════════════════════════════════════════
 class _CircleIconButton extends StatefulWidget {
   final IconData icon;
   final VoidCallback? onPressed;
   final String? tooltip;
-  final Color? color;       // icon color override
-  final double size;        // total diameter
+  final Color? color;
+  final double size;
   final double iconSize;
 
   const _CircleIconButton({
@@ -871,18 +964,13 @@ class _CircleIconButtonState extends State<_CircleIconButton> {
     final scheme = Theme.of(context).colorScheme;
     final baseIconColor = widget.color ?? scheme.onPrimaryContainer;
 
-    // Active state → transparent bg, accent border/icon
-    // Hover   state → transparent bg, accent border/icon  (same as active)
-    // Idle    state → transparent bg, subtle border
     final borderColor = _active
         ? scheme.primary
         : scheme.outline.withValues(alpha: 0.25);
 
-    final iconColor = _active
-        ? scheme.primary
-        : baseIconColor;
+    final iconColor = _active ? scheme.primary : baseIconColor;
 
-    final bgColor = Colors.transparent; // always transparent per your request
+    final bgColor = Colors.transparent;
 
     final button = MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
