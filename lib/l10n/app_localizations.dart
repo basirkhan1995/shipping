@@ -2649,6 +2649,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Loading...'**
   String get loading;
+
+  /// No description provided for @searchAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Search accounts'**
+  String get searchAccounts;
+
+  /// No description provided for @balanceFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance Filter'**
+  String get balanceFilter;
 }
 
 class _AppLocalizationsDelegate

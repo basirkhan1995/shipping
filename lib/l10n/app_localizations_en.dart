@@ -1301,4 +1301,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loading => 'Loading...';
+
+  @override
+  String get searchAccounts => 'Search accounts';
+
+  @override
+  String get balanceFilter => 'Balance Filter';
 }

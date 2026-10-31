@@ -335,6 +335,11 @@ class FundTransferFormState extends State<FundTransferForm> {
               '${account.accNumber} | ${account.accName}',
               style: Theme.of(context).textTheme.bodyLarge,
             ),
+
+            Text(
+              '${account.accBalance} | ${account.accCurrency}',
+              style: Theme.of(context).textTheme.bodyLarge,
+            )
           ],
         ),
       ),
@@ -674,6 +679,8 @@ class _FundTransferDialog extends StatelessWidget {
                             EditFundTransferEvent(
                               reference: result.reference!,
                               usrName: result.usrName,
+                              fromAccCcy: result.fromAccCcy,
+                              toAccCcy: result.toAccCcy,
                               fromAccount: result.fromAccount,
                               toAccount: result.toAccount,
                               amount: result.amount,

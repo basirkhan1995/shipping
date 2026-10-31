@@ -13,6 +13,7 @@ import '../Routes/Home/View/Finance/View/Reminder/model/reminder_model.dart';
 import '../Routes/Home/View/HR/View/Users/model/user_model.dart';
 import '../Routes/Home/View/HR/View/Users/model/usr_report_model.dart';
 import '../Routes/Home/View/Report/AccountStatement/model/stmt_model.dart';
+import '../Routes/Home/View/Report/ArAndAp/model/ar_ap_model.dart';
 import '../Routes/Home/View/Report/BalanceSheet/model/bs_model.dart';
 import '../Routes/Home/View/Report/GLStatement/model/gl_statement_model.dart';
 import '../Routes/Home/View/Report/CashBalances/model/cash_balance_model.dart';
@@ -1322,6 +1323,8 @@ class Repositories {
   Future<void> editFundTransfer({
     required String reference,
     required String usrName,
+    required String fromAccCcy,
+    required String toAccCcy,
     required int fromAccount,
     required int toAccount,
     required double amount,
@@ -1334,6 +1337,8 @@ class Repositories {
         'usrName': usrName,
         'fromAccount': fromAccount,
         'toAccount': toAccount,
+        'fromAccCcy': fromAccCcy,
+        'toAccCcy': toAccCcy,
         'amount': amount,
         'narration': narration,
       },
@@ -1978,5 +1983,42 @@ class Repositories {
     return [];
   }
 
+// ═════════════════════════════════════════════════════════════════
+// AR / AP Report
+// ═════════════════════════════════════════════════════════════════
+  Future<ArApReportModel> getArApReport({
+    String? name,
+    String? ccy,
+    String? type, // '' | 'ar' | 'ap'
+    bool includeZero = false,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.post(
+      endpoint: "/reports/stakeholderBalances.php", // adjust to your server path
+      data: {
+        'name': name ?? '',
+        'ccy': ccy ?? '',
+        'type': type ?? '',
+        'include_zero': includeZero,
+      },
+      cancelToken: cancelToken,
+    );
+
+    // Handle message response
+    if (response.data is Map && response.data['msg'] != null) {
+      throw response.data['msg'];
+    }
+
+    // Handle empty response
+    if (response.data == null || response.data.isEmpty) {
+      throw "No data received";
+    }
+
+    // Convert response to string and back to ensure proper typing
+    final jsonString = json.encode(response.data);
+    final decodedData = json.decode(jsonString) as dynamic;
+
+    return ArApReportModel.fromApiResponse(decodedData);
+  }
 
 }

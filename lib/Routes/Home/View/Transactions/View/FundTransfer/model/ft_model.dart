@@ -1,4 +1,4 @@
-// lib/features/fund_transfer/model/fund_transfer_model.dart
+// lib/features/fund_transfer/model/ft_model.dart
 import 'package:equatable/equatable.dart';
 
 /// One leg of a fund transfer (Dr or Cr side).
@@ -10,6 +10,9 @@ class FundTransferLeg extends Equatable {
   final String drCr;
   final String narration;
 
+  /// 8 = stakeholder (own currency). Anything else = GL.
+  final int accCategory;
+
   const FundTransferLeg({
     required this.account,
     required this.accountName,
@@ -17,6 +20,7 @@ class FundTransferLeg extends Equatable {
     required this.amount,
     required this.drCr,
     this.narration = '',
+    this.accCategory = 8,
   });
 
   factory FundTransferLeg.fromMap(Map<String, dynamic> j) => FundTransferLeg(
@@ -26,11 +30,22 @@ class FundTransferLeg extends Equatable {
     amount: _toDouble(j['trdAmount']),
     drCr: '${j['trdDrCr'] ?? ''}',
     narration: '${j['trdNarration'] ?? ''}',
+    accCategory: _toInt(j['accCategory'] ?? 8),
   );
 
+  bool get isGl => accCategory != 8;
+  bool get isStakeholder => accCategory == 8;
+
   @override
-  List<Object?> get props =>
-      [account, accountName, currency, amount, drCr, narration];
+  List<Object?> get props => [
+    account,
+    accountName,
+    currency,
+    amount,
+    drCr,
+    narration,
+    accCategory,
+  ];
 }
 
 /// A row in the fund-transfer list.
@@ -94,9 +109,20 @@ class FundTransferListItem extends Equatable {
 
   @override
   List<Object?> get props => [
-    reference, status, stateText, maker, checker, entryDate,
-    fromAccount, fromAccountName, fromCcy,
-    toAccount, toAccountName, toCcy, amount, narration,
+    reference,
+    status,
+    stateText,
+    maker,
+    checker,
+    entryDate,
+    fromAccount,
+    fromAccountName,
+    fromCcy,
+    toAccount,
+    toAccountName,
+    toCcy,
+    amount,
+    narration,
   ];
 }
 
@@ -110,8 +136,6 @@ class FundTransferDetail extends Equatable {
   final DateTime entryDate;
   final List<FundTransferLeg> debit;
   final List<FundTransferLeg> credit;
-
-  /// Shared narration — both legs carry the same value for ATAT.
   final String narration;
 
   const FundTransferDetail({
@@ -139,7 +163,6 @@ class FundTransferDetail extends Equatable {
         .map((m) => FundTransferLeg.fromMap(Map<String, dynamic>.from(m)))
         .toList();
 
-    // Narration lives on the legs. Prefer the debit leg, then credit.
     String narration = '';
     if (debitRaw.isNotEmpty) {
       narration = '${debitRaw.first['trdNarration'] ?? ''}';
@@ -165,12 +188,19 @@ class FundTransferDetail extends Equatable {
   bool get isPending => stateText == 'Pending';
 
   FundTransferLeg? get fromLeg => debit.isNotEmpty ? debit.first : null;
-  FundTransferLeg? get toLeg   => credit.isNotEmpty ? credit.first : null;
+  FundTransferLeg? get toLeg => credit.isNotEmpty ? credit.first : null;
 
   @override
   List<Object?> get props => [
-    reference, status, stateText, maker, checker, entryDate,
-    debit, credit, narration,
+    reference,
+    status,
+    stateText,
+    maker,
+    checker,
+    entryDate,
+    debit,
+    credit,
+    narration,
   ];
 }
 

@@ -377,24 +377,34 @@ class _DesktopTopBar extends StatelessWidget {
             ],
           ),
           const Spacer(),
-          ZCover(
-            radius: 50,
-            padding: const EdgeInsets.all(8),
-            child: Icon(
-              Icons.notifications_outlined,
-              size: 22,
-              color: scheme.onPrimaryContainer,
-            ),
+          _CircleIconButton(
+            icon: Icons.refresh,
+            tooltip: 'Refresh',
+            size: 40,
+            iconSize: 22,
+            onPressed: () {
+
+            },
           ),
           const SizedBox(width: 8),
-          ZCover(
-            radius: 50,
-            padding: const EdgeInsets.all(8),
-            child: Icon(
-              Icons.settings,
-              size: 22,
-              color: scheme.onPrimaryContainer,
-            ),
+          _CircleIconButton(
+            icon: Icons.notifications_outlined,
+            tooltip: 'Notifications',
+            size: 40,
+            iconSize: 22,
+            onPressed: () {
+              // open notifications
+            },
+          ),
+          const SizedBox(width: 8),
+          _CircleIconButton(
+            icon: Icons.settings,
+            tooltip: 'Settings',
+            size: 40,
+            iconSize: 22,
+            onPressed: () {
+              // open settings
+            },
           ),
           const SizedBox(width: 8),
           ZCover(
@@ -827,5 +837,96 @@ class _ErrorTile extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _CircleIconButton extends StatefulWidget {
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final String? tooltip;
+  final Color? color;       // icon color override
+  final double size;        // total diameter
+  final double iconSize;
+
+  const _CircleIconButton({
+    required this.icon,
+    this.onPressed,
+    this.tooltip,
+    this.size = 40,
+    this.iconSize = 22,
+  }) : color = null;
+
+  @override
+  State<_CircleIconButton> createState() => _CircleIconButtonState();
+}
+
+class _CircleIconButtonState extends State<_CircleIconButton> {
+  bool _hovered = false;
+  bool _pressed = false;
+
+  bool get _active => _hovered || _pressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final baseIconColor = widget.color ?? scheme.onPrimaryContainer;
+
+    // Active state → transparent bg, accent border/icon
+    // Hover   state → transparent bg, accent border/icon  (same as active)
+    // Idle    state → transparent bg, subtle border
+    final borderColor = _active
+        ? scheme.primary
+        : scheme.outline.withValues(alpha: 0.25);
+
+    final iconColor = _active
+        ? scheme.primary
+        : baseIconColor;
+
+    final bgColor = Colors.transparent; // always transparent per your request
+
+    final button = MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: widget.onPressed == null
+          ? SystemMouseCursors.basic
+          : SystemMouseCursors.click,
+      child: GestureDetector(
+        onTapDown: widget.onPressed == null
+            ? null
+            : (_) => setState(() => _pressed = true),
+        onTapUp: widget.onPressed == null
+            ? null
+            : (_) => setState(() => _pressed = false),
+        onTapCancel: widget.onPressed == null
+            ? null
+            : () => setState(() => _pressed = false),
+        onTap: widget.onPressed,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          width: widget.size,
+          height: widget.size,
+          decoration: BoxDecoration(
+            color: bgColor,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: borderColor,
+              width: _active ? 1.4 : 1.0,
+            ),
+          ),
+          child: Center(
+            child: Icon(
+              widget.icon,
+              size: widget.iconSize,
+              color: iconColor,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (widget.tooltip != null) {
+      return Tooltip(message: widget.tooltip!, child: button);
+    }
+    return button;
   }
 }

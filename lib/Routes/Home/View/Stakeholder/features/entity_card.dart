@@ -162,7 +162,7 @@ class EntityWidget extends StatelessWidget {
               const SizedBox(width: 6),
 
               // ── Menu ──
-              _menu(scheme),
+              _menu(scheme,AppLocalizations.of(context)!),
             ],
           ),
         ),
@@ -177,7 +177,7 @@ class EntityWidget extends StatelessWidget {
       flightShuttleBuilder: _buildHeroShuttle,
       child: ImageHelper.stakeholderProfile(
         imageName: stakeholder.imageProfile,
-        size: 36,
+        size: 40,
         shapeStyle: ShapeStyle.circle,
         placeholderColor: scheme.primaryContainer,
         placeholderIcon: Icons.person,
@@ -265,7 +265,7 @@ class EntityWidget extends StatelessWidget {
   }
 
   // ── ⋯ menu ────────────────────────────────────────────────────────
-  Widget _menu(ColorScheme scheme) {
+  Widget _menu(ColorScheme scheme,AppLocalizations tr) {
     return PopupMenuButton<String>(
       tooltip: 'Options',
       padding: EdgeInsets.zero,
@@ -285,7 +285,7 @@ class EntityWidget extends StatelessWidget {
             break;
         }
       },
-      itemBuilder: (_) => const [
+      itemBuilder: (_) => [
         PopupMenuItem(
           value: 'view',
           height: 40,
@@ -293,7 +293,7 @@ class EntityWidget extends StatelessWidget {
             children: [
               Icon(Icons.visibility_outlined, size: 16),
               SizedBox(width: 10),
-              Text('model', style: TextStyle(fontSize: 13)),
+              Text(tr.view, style: TextStyle(fontSize: 13)),
             ],
           ),
         ),
@@ -304,7 +304,7 @@ class EntityWidget extends StatelessWidget {
             children: [
               Icon(Icons.edit_outlined, size: 16),
               SizedBox(width: 10),
-              Text('Edit', style: TextStyle(fontSize: 13)),
+              Text(tr.edit, style: TextStyle(fontSize: 13)),
             ],
           ),
         ),

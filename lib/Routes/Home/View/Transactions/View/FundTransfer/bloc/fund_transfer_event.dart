@@ -60,7 +60,9 @@ class EditFundTransferEvent extends FundTransferEvent {
   final String reference;
   final String usrName;
   final int fromAccount;
+  final String fromAccCcy;   // NEW — needed for GL source legs
   final int toAccount;
+  final String toAccCcy;     // NEW — needed for GL target legs
   final double amount;
   final String narration;
 
@@ -68,14 +70,19 @@ class EditFundTransferEvent extends FundTransferEvent {
     required this.reference,
     required this.usrName,
     required this.fromAccount,
+    required this.fromAccCcy,
     required this.toAccount,
+    required this.toAccCcy,
     required this.amount,
     required this.narration,
   });
 
   @override
   List<Object?> get props => [
-    reference, usrName, fromAccount, toAccount, amount, narration,
+    reference, usrName,
+    fromAccount, fromAccCcy,
+    toAccount, toAccCcy,
+    amount, narration,
   ];
 }
 

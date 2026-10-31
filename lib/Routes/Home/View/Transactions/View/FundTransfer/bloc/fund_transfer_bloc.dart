@@ -1,3 +1,4 @@
+// lib/features/fund_transfer/bloc/fund_transfer_bloc.dart
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../../../../../../Services/api_exception.dart';
@@ -90,7 +91,9 @@ class FundTransferBloc extends Bloc<FundTransferEvent, FundTransferState> {
           reference: event.reference,
           usrName: event.usrName,
           fromAccount: event.fromAccount,
+          fromAccCcy: event.fromAccCcy,
           toAccount: event.toAccount,
+          toAccCcy: event.toAccCcy,
           amount: event.amount,
           narration: event.narration,
         );

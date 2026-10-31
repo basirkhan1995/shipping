@@ -437,5 +437,7 @@
   "profit": "Profit",
   "loss": "Loss",
   "financialPeriod": "Financial Period",
-  "loading": "Loading..."
+  "loading": "Loading...",
+  "searchAccounts": "Search accounts",
+  "balanceFilter": "Balance Filter"
 }

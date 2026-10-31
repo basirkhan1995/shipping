@@ -1,3 +1,4 @@
+// lib/Routes/Home/View/Finance/View/Currencies/features/currency_drop.dart
 import 'package:flag/flag_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,6 +19,11 @@ class CurrencyDropdown extends StatefulWidget {
   final List<CurrenciesModel>? initiallySelected;
   final CurrenciesModel? initiallySelectedSingle;
 
+  /// 👇 NEW: when true, the list gains an "All currencies" entry
+  /// whose `ccyCode` is `''`. The widget also defaults to that entry
+  /// when `initiallySelectedSingle` is null.
+  final bool allowAll;
+
   const CurrencyDropdown({
     super.key,
     this.isMulti = false,
@@ -29,14 +35,11 @@ class CurrencyDropdown extends StatefulWidget {
     this.title,
     this.initiallySelected,
     this.initiallySelectedSingle,
-  }) : assert(
-  !isMulti || onMultiChanged != null,
-  'onMultiChanged must be provided when isMulti is true'
-  ),
-        assert(
-        isMulti || onSingleChanged != null,
-        'onSingleChanged must be provided when isMulti is false'
-        );
+    this.allowAll = false,
+  })  : assert(!isMulti || onMultiChanged != null,
+  'onMultiChanged must be provided when isMulti is true'),
+        assert(isMulti || onSingleChanged != null,
+        'onSingleChanged must be provided when isMulti is false');
 
   @override
   State<CurrencyDropdown> createState() => _CurrencyDropdownState();
@@ -52,7 +55,7 @@ class _CurrencyDropdownState extends State<CurrencyDropdown> {
     super.initState();
 
     final authState = context.read<AuthBloc>().state;
-    if(authState is AuthenticatedState){
+    if (authState is AuthenticatedState) {
       defaultCcy = authState.loginData.company?.comLocalCcy ?? "";
     }
 
@@ -61,9 +64,15 @@ class _CurrencyDropdownState extends State<CurrencyDropdown> {
     if (widget.isMulti) {
       _selectedMulti = widget.initiallySelected ?? [];
     } else {
-      // Set default from auth, then override if widget provides one
-      _selectedSingle = CurrenciesModel(ccyCode: defaultCcy);
-      _selectedSingle = widget.initiallySelectedSingle ?? _selectedSingle;
+      if (widget.allowAll) {
+        // Default to "All currencies".
+        _selectedSingle =
+            widget.initiallySelectedSingle ?? CurrenciesModel(ccyCode: '');
+      } else {
+        _selectedSingle = CurrenciesModel(ccyCode: defaultCcy);
+        _selectedSingle =
+            widget.initiallySelectedSingle ?? _selectedSingle;
+      }
     }
   }
 
@@ -77,10 +86,26 @@ class _CurrencyDropdownState extends State<CurrencyDropdown> {
           return Text('Error: ${state.message}');
         }
 
-        // Safely cast the list to List<CurrenciesModel>
         List<CurrenciesModel> currencies = [];
         if (state is CurrenciesLoadedState) {
           currencies = state.active.cast<CurrenciesModel>();
+        }
+
+        // ── NEW: prepend "All currencies" when allowed ────────
+        final items = widget.allowAll
+            ? [CurrenciesModel(ccyCode: ''), ...currencies]
+            : currencies;
+
+        // ── NEW: safe value — never pass a ccy the list doesn't have ──
+        CurrenciesModel? safeSelected = _selectedSingle;
+        if (!widget.isMulti) {
+          if (safeSelected == null) {
+            safeSelected =
+            widget.allowAll ? CurrenciesModel(ccyCode: '') : null;
+          } else if (!items.any((c) => c.ccyCode == safeSelected!.ccyCode)) {
+            safeSelected =
+            widget.allowAll ? CurrenciesModel(ccyCode: '') : null;
+          }
         }
 
         return ZDropdown<CurrenciesModel>(
@@ -88,9 +113,18 @@ class _CurrencyDropdownState extends State<CurrencyDropdown> {
           title: widget.title,
           height: widget.height,
           leadingBuilder: (CurrenciesModel ccy) {
-            if(widget.flag) {
+            // "All currencies" gets a globe icon instead of a flag.
+            if (ccy.ccyCode == '' && widget.allowAll) {
               return Container(
-                margin: EdgeInsets.symmetric(horizontal: 5),
+                margin: const EdgeInsets.symmetric(horizontal: 5),
+                width: 30,
+                alignment: Alignment.center,
+                child: const Icon(Icons.public, size: 18),
+              );
+            }
+            if (widget.flag) {
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 5),
                 width: 30,
                 child: Flag.fromString(
                   ccy.ccyCountryCode ?? "",
@@ -103,12 +137,17 @@ class _CurrencyDropdownState extends State<CurrencyDropdown> {
             }
             return const SizedBox.shrink();
           },
-          items: currencies,
+          items: items,
           multiSelect: widget.isMulti,
           selectedItems: widget.isMulti ? _selectedMulti : [],
-          selectedItem: widget.isMulti ? null : _selectedSingle,
-          itemLabel: (item) => item.ccyCode ?? "",
-          initialValue: defaultCcy ?? AppLocalizations.of(context)!.currencyTitle,
+          selectedItem: widget.isMulti ? null : safeSelected,
+          itemLabel: (item) =>
+          item.ccyCode == '' && widget.allowAll
+              ? 'All currencies'
+              : (item.ccyCode ?? ""),
+          initialValue: widget.allowAll
+              ? 'All currencies'
+              : (defaultCcy ?? AppLocalizations.of(context)!.currencyTitle),
           onMultiSelectChanged: widget.isMulti
               ? (selected) {
             setState(() => _selectedMulti = selected);

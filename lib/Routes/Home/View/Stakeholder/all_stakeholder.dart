@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shipping/Features/Widgets/toast.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/stk_form.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/View/StakeholderById/stk_profile.dart';
 import '../../../../Features/Other/responsive_widget.dart';
@@ -148,12 +149,8 @@ class _StakeholderListener extends StatelessWidget {
         }
 
         if (message != null && color != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(message), backgroundColor: color),
-          );
-          context
-              .read<StakeholderBloc>()
-              .add(const ClearStakeholderMessagesEvent());
+          ToastManager.show(context: context, message: message, type: ToastType.success);
+          context.read<StakeholderBloc>().add(const ClearStakeholderMessagesEvent());
         }
       },
       child: child,
@@ -200,10 +197,8 @@ class _StakeholderMobile extends StatelessWidget {
             Expanded(
               child: _StakeholderList(
                 onTapView: (m) => _StakeholderController.openView(context, m),
-                onTapEdit: (m) =>
-                    _StakeholderController.openEditDialog(context, m),
-                onTapDelete: (m) =>
-                    _StakeholderController.confirmDelete(context, m),
+                onTapEdit: (m) => _StakeholderController.openEditDialog(context, m),
+                onTapDelete: (m) => _StakeholderController.confirmDelete(context, m),
               ),
             ),
           ],
@@ -274,19 +269,8 @@ class _StakeholderTablet extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════
 // DESKTOP
 // ═══════════════════════════════════════════════════════════════════
-class _StakeholderDesktop extends StatefulWidget {
+class _StakeholderDesktop extends StatelessWidget {
   const _StakeholderDesktop();
-
-  @override
-  State<_StakeholderDesktop> createState() => _StakeholderDesktopState();
-}
-
-class _StakeholderDesktopState extends State<_StakeholderDesktop> {
-  @override
-  void initState() {
-    context.read<StakeholderBloc>().add(GetStakeholdersEvent());
-    super.initState();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -318,8 +302,7 @@ class _StakeholderDesktopState extends State<_StakeholderDesktop> {
                       contentPadding:
                       const EdgeInsets.symmetric(horizontal: 4),
                       hintText: 'Search stakeholder',
-                      onChanged: (q) =>
-                          _StakeholderController.search(context, q),
+                      onChanged: (q) => _StakeholderController.search(context, q),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -338,8 +321,7 @@ class _StakeholderDesktopState extends State<_StakeholderDesktop> {
                     isActive: true,
                     iconSize: 18,
                     height: 45,
-                    onPressed: () =>
-                        _StakeholderController.openAddDialog(context),
+                    onPressed: () => _StakeholderController.openAddDialog(context),
                   ),
                 ],
               ),
@@ -347,10 +329,8 @@ class _StakeholderDesktopState extends State<_StakeholderDesktop> {
             Expanded(
               child: _StakeholderList(
                 onTapView: (m) => _StakeholderController.openView(context, m),
-                onTapEdit: (m) =>
-                    _StakeholderController.openEditDialog(context, m),
-                onTapDelete: (m) =>
-                    _StakeholderController.confirmDelete(context, m),
+                onTapEdit: (m) => _StakeholderController.openEditDialog(context, m),
+                onTapDelete: (m) => _StakeholderController.confirmDelete(context, m),
               ),
             ),
           ],

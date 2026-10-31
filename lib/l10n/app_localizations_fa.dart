@@ -1300,4 +1300,10 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get loading => 'درحال بارگیری...';
+
+  @override
+  String get searchAccounts => 'جستجو حسابها';
+
+  @override
+  String get balanceFilter => 'فلتر بیلانس';
 }

@@ -375,5 +375,7 @@
   "profit": "مفاد",
   "loss": "زیان",
   "financialPeriod": "دوره مالی",
-  "loading": "درحال بارگیری..."
+  "loading": "درحال بارگیری...",
+  "searchAccounts": "جستجو حسابها",
+  "balanceFilter": "فلتر بیلانس"
 }
