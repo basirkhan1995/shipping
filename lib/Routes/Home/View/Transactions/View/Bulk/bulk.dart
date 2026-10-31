@@ -1,5 +1,3 @@
-// features/journal/bulk/view/bulk_transfer_dialog.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -100,26 +98,46 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
     context.read<BulkTransferBloc>().add(event);
   }
 
+  // ✅ FIX: only push the new currency to non-stakeholder rows.
+  // Stakeholder accounts (category 8) keep their own accCurrency.
   void _changeHeaderCurrency(String ccy) {
     setState(() {
       _headerCurrency = ccy;
       _errorMessage = null;
     });
     final cur = context.read<BulkTransferBloc>().state;
-    if (cur is BulkTransferEditing) {
-      for (final row in cur.rows) {
-        context.read<BulkTransferBloc>().add(BulkTransferUpdateRow(
-          rowId: row.rowId,
-          currency: ccy,
-        ));
-      }
+    if (cur is! BulkTransferEditing) return;
+
+    for (final row in cur.rows) {
+      if (_isStakeholderAccount(row)) continue;
+      context.read<BulkTransferBloc>().add(BulkTransferUpdateRow(
+        rowId: row.rowId,
+        currency: ccy,
+      ));
     }
+  }
+
+  /// Heuristic — stakeholder accounts live in 500000–9999999 in this API,
+  /// GL accounts are >= 10_000_000.
+  bool _isStakeholderAccount(BulkTransferRow row) {
+    final n = row.accountNumber;
+    if (n == null) return false;
+    return n >= 500000 && n < 10000000;
   }
 
   void _onRowComplete() => _dispatch(const BulkTransferAddRow());
 
   void _onSubmit() {
     if (_errorMessage != null) setState(() => _errorMessage = null);
+
+    final state = context.read<BulkTransferBloc>().state;
+    if (state is BulkTransferEditing) {
+      // 🔎 Debug: show exactly what will be POSTed. If `ccy` is empty
+      // for any row, PHP will return {"msg":"empty"} and nothing saves.
+      final preview = state.rows.map((r) => r.toRecord()).toList();
+      debugPrint('BULK POST records=$preview');
+    }
+
     context.read<BulkTransferBloc>().add(
       BulkTransferSubmitted(userName: widget.usrName),
     );
@@ -206,7 +224,6 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
     if (!mounted) return;
     if (_errorMessage != null) setState(() => _errorMessage = null);
 
-    // Dispatch to TransactionsBloc so the row disappears from the list too.
     context.read<TransactionsBloc>().add(
       DeleteTransactionEvent(
         reference: ref,
@@ -453,8 +470,8 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                 row: row,
                 controllers: _ctrlFor(row),
                 headerCurrency: _headerCurrency,
-                // Rows editable only when maker + pending.
-                enabled: !busy && (!state.isEditing || (isPending && isMaker)),
+                enabled:
+                !busy && (!state.isEditing || (isPending && isMaker)),
                 isLast: isLast,
                 onRowComplete: isLast ? _onRowComplete : null,
                 onChanged: _dispatch,
@@ -476,7 +493,11 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
               ),
 
               // Pending + maker → Delete + Authorize
-              if (state.isEditing && isPending && isMaker && !busy && !isActionBusy) ...[
+              if (state.isEditing &&
+                  isPending &&
+                  isMaker &&
+                  !busy &&
+                  !isActionBusy) ...[
                 ZOutlineButton(
                   onPressed: _dispatchDelete,
                   backgroundHover: Theme.of(context).colorScheme.error,
@@ -492,7 +513,10 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
               ],
 
               // Authorized → Unauthorize + Reverse
-              if (state.isEditing && isAuthorized && !busy && !isActionBusy) ...[
+              if (state.isEditing &&
+                  isAuthorized &&
+                  !busy &&
+                  !isActionBusy) ...[
                 ZOutlineButton(
                   onPressed: _dispatchUnauthorize,
                   icon: Icons.undo_rounded,
@@ -565,8 +589,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
         Icon(Icons.warning_amber_rounded, color: color, size: 16),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(text,
-              style: TextStyle(color: color, fontSize: 12)),
+          child: Text(text, style: TextStyle(color: color, fontSize: 12)),
         ),
       ],
     ),
@@ -669,10 +692,22 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
     widget.onRowComplete?.call();
   }
 
+  /// Stakeholder accounts (category 8) live in 500000–9999999 in this API.
+  bool get _rowIsStakeholder {
+    final n = widget.row.accountNumber;
+    if (n == null) return false;
+    return n >= 500000 && n < 10000000;
+  }
+
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme;
     final c = widget.controllers;
+
+    // Currency drop only shows once a GL account is picked.
+    // Stakeholder currency is fixed by accountDetails, so no drop.
+    final showCurrencyDrop =
+        widget.row.accountNumber != null && !_rowIsStakeholder;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
@@ -680,6 +715,7 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
         crossAxisAlignment: CrossAxisAlignment.center,
         spacing: 8,
         children: [
+          // ── index badge ────────────────────────────────────────
           Container(
             width: 30,
             height: 30,
@@ -698,9 +734,11 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
             ),
           ),
 
+          // ── account picker + currency drop ─────────────────────
           Expanded(
             flex: 3,
-            child: GenericTextField<StakeholderAccount, StkAccountsBloc, StkAccountsState>(
+            child: GenericTextField<StakeholderAccount, StkAccountsBloc,
+                StkAccountsState>(
               controller: c.account,
               title: '',
               hintText: AppLocalizations.of(context)!.accNameOrNumber,
@@ -708,25 +746,30 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
               bloc: context.read<StkAccountsBloc>(),
               focusNode: c.accountFocus,
               textInputAction: TextInputAction.none,
-
               showAllOnFocus: true,
-              fetchAllFunction: (bloc) => bloc.add(const LoadStkAccountsEvent()),
-
+              fetchAllFunction: (bloc) =>
+                  bloc.add(const LoadStkAccountsEvent()),
               searchFunction: (bloc, q) {
                 if (q.trim().isEmpty) return;
                 bloc.add(LoadStkAccountsEvent(query: q));
               },
+
+              // ✅ FIX: currency-aware list badge.
+              //  - Stakeholder → its own accCurrency (red if != header)
+              //  - GL         → headerCurrency (always matches because
+              //                 stateToItems already filtered to header)
               itemBuilder: (context, account) {
-                // GL accounts have no accCurrency → they inherit the header currency.
-                // Stakeholder accounts keep their own accCurrency.
                 final isStakeholder = account.accCategory == 8;
-                final effectiveCcy = account.accCurrency ??
-                    (isStakeholder ? '' : widget.headerCurrency);
-                final matchesHeader =
-                    effectiveCcy.isNotEmpty && effectiveCcy == widget.headerCurrency;
+                final effectiveCcy = isStakeholder
+                    ? (account.accCurrency ?? '')
+                    : widget.headerCurrency;
+                final matchesHeader = isStakeholder
+                    ? effectiveCcy == widget.headerCurrency
+                    : true;
 
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                   child: Row(
                     children: [
                       Expanded(
@@ -743,7 +786,8 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
                             effectiveCcy,
                             style: TextStyle(
                               fontSize: 11,
-                              color: matchesHeader ? color.primary : color.error,
+                              color:
+                              matchesHeader ? color.primary : color.error,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -755,38 +799,91 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
               },
               itemToString: (a) => '${a.accNumber} | ${a.accName}',
 
-              // ✅ NO category filter — return every account from the bloc's state.
+              // ✅ FIX: filter by header currency.
+              //   • 10101011 → excluded entirely
+              //   • stakeholder (cat 8) → always shown, own currency
+              //   • GL with accCurrency == null → shown (inherits header)
+              //   • GL with accCurrency == header → shown
+              //   • GL with other accCurrency → hidden
+              //   • De-dupe by (account + currency)
               stateToItems: (s) {
                 if (s is! StkAccountsLoadedState) {
                   return const <StakeholderAccount>[];
                 }
 
-                // Accounts that must never appear in the bulk transfer picker.
                 const excluded = <int>{10101011};
 
-                return s.accounts
-                    .where((a) => !excluded.contains(a.accNumber))
-                    .toList();
+                final filtered = <StakeholderAccount>[];
+                for (final a in s.accounts) {
+                  if (excluded.contains(a.accNumber)) continue;
+
+                  final isStakeholder = a.accCategory == 8;
+                  if (isStakeholder) {
+                    filtered.add(a);
+                    continue;
+                  }
+
+                  if (a.accCurrency == null ||
+                      a.accCurrency == widget.headerCurrency) {
+                    filtered.add(a);
+                  }
+                }
+
+                final seen = <String>{};
+                return filtered.where((a) {
+                  final key = '${a.accNumber}::${a.accCurrency ?? ''}';
+                  if (seen.contains(key)) return false;
+                  seen.add(key);
+                  return true;
+                }).toList();
               },
               stateToLoading: (s) => s is StkAccountsLoadingState,
+
+              // ✅ FIX: correct currency resolution on selection.
+              //   Stakeholder → its own accCurrency
+              //   GL          → headerCurrency (always)
               onSelected: (a) {
                 if (!widget.enabled) return;
                 c.account.text = '${a.accNumber} | ${a.accName ?? ''}';
+
+                final isStakeholder = a.accCategory == 8;
+                final effectiveCcy = isStakeholder
+                    ? (a.accCurrency ?? widget.headerCurrency)
+                    : widget.headerCurrency;
+
                 widget.onChanged(BulkTransferUpdateRow(
                   rowId: widget.row.rowId,
                   accountNumber: a.accNumber,
                   accountName: a.accName,
-                  currency: widget.headerCurrency,
+                  currency: effectiveCcy,
                 ));
+
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted) c.debitFocus.requestFocus();
                 });
               },
               validator: (v) =>
               (widget.row.accountNumber == null) ? 'Required' : null,
+
+              // ✅ FIX: expose the currency dropdown on GL rows so the
+              // user can see (and change) the row currency.
+              showCurrencySelector: showCurrencyDrop,
+              isCurrencySelectorEnabled: widget.enabled,
+              selectedCurrencyCodeOverride: _rowIsStakeholder
+                  ? widget.row.currency
+                  : widget.headerCurrency,
+              onCurrencySelectorChanged: (ccy) {
+                if (!widget.enabled) return;
+                if (ccy?.ccyCode == null) return;
+                widget.onChanged(BulkTransferUpdateRow(
+                  rowId: widget.row.rowId,
+                  currency: ccy!.ccyCode,
+                ));
+              },
             ),
           ),
 
+          // ── debit ─────────────────────────────────────────────
           SizedBox(
             width: 130,
             child: ZTextFieldEntitled(
@@ -816,6 +913,7 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
             ),
           ),
 
+          // ── credit ────────────────────────────────────────────
           SizedBox(
             width: 130,
             child: ZTextFieldEntitled(
@@ -845,6 +943,7 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
             ),
           ),
 
+          // ── narration ─────────────────────────────────────────
           Expanded(
             flex: 2,
             child: ZTextFieldEntitled(
@@ -873,81 +972,78 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
             ),
           ),
 
-          Builder(
-            builder: (context) {
-              final enabled = widget.enabled;
-              bool hovering = false;
-              return StatefulBuilder(
-                builder: (context, setLocal) {
-                  final bg = !enabled
-                      ? color.error.withValues(alpha: .04)
-                      : hovering
-                      ? color.error.withValues(alpha: .20)
-                      : color.error.withValues(alpha: .08);
-
-                  final borderColor = enabled
-                      ? color.error
-                      .withValues(alpha: hovering ? .45 : .20)
-                      : color.error.withValues(alpha: .08);
-
-                  final fg = !enabled
-                      ? color.error.withValues(alpha: .4)
-                      : color.error;
-
-                  return Tooltip(
-                    message: 'Remove row',
-                    child: MouseRegion(
-                      cursor: enabled
-                          ? SystemMouseCursors.click
-                          : SystemMouseCursors.basic,
-                      onEnter: (_) {
-                        if (enabled) setLocal(() => hovering = true);
-                      },
-                      onExit: (_) {
-                        if (enabled) setLocal(() => hovering = false);
-                      },
-                      child: GestureDetector(
-                        onTap: enabled
-                            ? () => context
-                            .read<BulkTransferBloc>()
-                            .add(BulkTransferRemoveRow(widget.row.rowId))
-                            : null,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          curve: Curves.easeOut,
-                          width: 34,
-                          height: 34,
-                          decoration: BoxDecoration(
-                            color: bg,
-                            shape: BoxShape.circle,
-                            border:
-                            Border.all(color: borderColor, width: 1),
-                            boxShadow: enabled && hovering
-                                ? [
-                              BoxShadow(
-                                color: color.error
-                                    .withValues(alpha: .18),
-                                blurRadius: 8,
-                                spreadRadius: 1,
-                              ),
-                            ]
-                                : null,
-                          ),
-                          child: Icon(
-                            Icons.delete_outline_rounded,
-                            size: 18,
-                            color: fg,
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
+          // ── delete ────────────────────────────────────────────
+          _deleteButton(color),
         ],
       ),
+    );
+  }
+
+  Widget _deleteButton(ColorScheme color) {
+    final enabled = widget.enabled;
+    bool hovering = false;
+    return StatefulBuilder(
+      builder: (context, setLocal) {
+        final bg = !enabled
+            ? color.error.withValues(alpha: .04)
+            : hovering
+            ? color.error.withValues(alpha: .20)
+            : color.error.withValues(alpha: .08);
+
+        final borderColor = enabled
+            ? color.error.withValues(alpha: hovering ? .45 : .20)
+            : color.error.withValues(alpha: .08);
+
+        final fg =
+        !enabled ? color.error.withValues(alpha: .4) : color.error;
+
+        return Tooltip(
+          message: 'Remove row',
+          child: MouseRegion(
+            cursor: enabled
+                ? SystemMouseCursors.click
+                : SystemMouseCursors.basic,
+            onEnter: (_) {
+              if (enabled) setLocal(() => hovering = true);
+            },
+            onExit: (_) {
+              if (enabled) setLocal(() => hovering = false);
+            },
+            child: GestureDetector(
+              onTap: enabled
+                  ? () => context
+                  .read<BulkTransferBloc>()
+                  .add(BulkTransferRemoveRow(widget.row.rowId))
+                  : null,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                curve: Curves.easeOut,
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: bg,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: borderColor, width: 1),
+                  boxShadow: enabled && hovering
+                      ? [
+                    BoxShadow(
+                      color: color.error.withValues(alpha: .18),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                      : null,
+                ),
+                child: Icon(
+                  Icons.delete_outline_rounded,
+                  size: 18,
+                  color: fg,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
