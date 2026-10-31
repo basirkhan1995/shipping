@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,27 +9,21 @@ import 'extensions.dart';
 // ============================================
 // ENUMS
 // ============================================
-enum ZTextFieldBorderType {
-  rounded,
-  underline,
-}
+enum ZTextFieldBorderType { rounded, underline }
 
 enum ZTextFieldType {
-  text,      // Regular text input
-  numeric,   // Numbers only (integers)
-  amount,    // Decimal numbers with currency symbol
-  currency,  // Currency selector with dropdown
-  email,     // Email input
-  phone,     // Phone number input
-  password,  // Password input
-  multiline, // Multi-line text
-  currencyWithAmount, // Combined currency + amount field
+  text,
+  numeric,
+  amount,
+  currency,
+  email,
+  phone,
+  password,
+  multiline,
+  currencyWithAmount,
 }
 
-enum CurrencyPosition {
-  prefix,  // Currency symbol on left
-  suffix,  // Currency symbol on right
-}
+enum CurrencyPosition { prefix, suffix }
 
 // ============================================
 // MODELS
@@ -55,8 +48,7 @@ class CurrencyItem {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is CurrencyItem &&
-        other.code == code;
+    return other is CurrencyItem && other.code == code;
   }
 
   @override
@@ -76,34 +68,21 @@ class _ThousandSeparatorFormatter extends TextInputFormatter {
       TextEditingValue oldValue,
       TextEditingValue newValue,
       ) {
-    // If the new value is empty, return it
-    if (newValue.text.isEmpty) {
-      return newValue;
-    }
+    if (newValue.text.isEmpty) return newValue;
 
-    // Remove existing separators
     final rawText = newValue.text.replaceAll(',', '');
+    if (rawText.isEmpty || rawText == '.') return newValue;
 
-    // Allow empty or just decimal point
-    if (rawText.isEmpty || rawText == '.') {
-      return newValue;
-    }
+    final decimalRegex =
+    RegExp(r'^\d*\.?\d{0,' + decimalPlaces.toString() + r'}$');
+    if (!decimalRegex.hasMatch(rawText)) return oldValue;
 
-    // Check if it matches the decimal pattern
-    final decimalRegex = RegExp(r'^\d*\.?\d{0,' + decimalPlaces.toString() + r'}$');
-    if (!decimalRegex.hasMatch(rawText)) {
-      // If invalid, return the old value
-      return oldValue;
-    }
-
-    // Format with thousand separators
     String formattedText;
     if (rawText.contains('.')) {
       final parts = rawText.split('.');
       final integerPart = parts[0];
       final decimalPart = parts.length > 1 ? parts[1] : '';
 
-      // Format integer part with commas
       String formattedInteger = integerPart;
       if (integerPart.isNotEmpty) {
         final intValue = int.tryParse(integerPart);
@@ -120,7 +99,6 @@ class _ThousandSeparatorFormatter extends TextInputFormatter {
       formattedText = intValue != null ? _formatWithCommas(intValue) : rawText;
     }
 
-    // Preserve cursor position at the end
     return TextEditingValue(
       text: formattedText,
       selection: TextSelection.collapsed(offset: formattedText.length),
@@ -131,22 +109,21 @@ class _ThousandSeparatorFormatter extends TextInputFormatter {
     final chars = value.toString().split('');
     final result = StringBuffer();
     for (int i = 0; i < chars.length; i++) {
-      if (i > 0 && (chars.length - i) % 3 == 0) {
-        result.write(',');
-      }
+      if (i > 0 && (chars.length - i) % 3 == 0) result.write(',');
       result.write(chars[i]);
     }
     return result.toString();
   }
 }
 
-// Helper function to clean amount (remove commas and formatting)
+// ============================================
+// HELPERS
+// ============================================
 String cleanAmount(String formattedAmount) {
   if (formattedAmount.isEmpty) return '';
   return formattedAmount.replaceAll(',', '');
 }
 
-// Helper function to get double value from formatted amount
 double? getAmountValue(String formattedAmount) {
   final clean = cleanAmount(formattedAmount);
   return double.tryParse(clean);
@@ -156,7 +133,6 @@ double? getAmountValue(String formattedAmount) {
 // MAIN WIDGET
 // ============================================
 class ZGenericTextField extends StatefulWidget {
-  // Basic properties
   final String title;
   final String? hint;
   final ZTextFieldType fieldType;
@@ -186,7 +162,7 @@ class ZGenericTextField extends StatefulWidget {
   final int? minLines;
   final List<TextInputFormatter>? inputFormat;
 
-  // Currency specific properties
+  // Currency specific
   final ValueChanged<CurrenciesModel?>? onCurrencyChanged;
   final ValueChanged<(CurrenciesModel?, String)>? onCurrencyAmountChanged;
   final String? defaultCurrencyCode;
@@ -197,15 +173,27 @@ class ZGenericTextField extends StatefulWidget {
   final bool showCurrencySymbol;
   final CurrencyPosition currencyPosition;
 
-  // Numeric specific properties
+  // Inline currency selector
+  final bool showCurrencySelector;
+  final String? selectedCurrencyCodeOverride;
+  final ValueChanged<CurrenciesModel?>? onCurrencySelectorChanged;
+  final bool isCurrencySelectorEnabled;
+
+  /// NEW: when `true` this widget becomes a "currency selector only" —
+  /// no text input is rendered, just the flag+symbol+code dropdown.
+  /// Designed to be embedded inside another field via
+  /// `GenericTextField.currencySelector`.
+  final bool currencySelectorOnly;
+
+  // Numeric
   final double? minValue;
   final double? maxValue;
   final bool allowNegative;
 
-  // Thousand separator feature
-  final bool useThousandSeparator; // NEW: Enable thousand separator
+  // Thousand separator
+  final bool useThousandSeparator;
 
-  // Email/Phone specific
+  // Phone
   final String? countryCode;
 
   const ZGenericTextField({
@@ -238,8 +226,6 @@ class ZGenericTextField extends StatefulWidget {
     this.maxLines,
     this.minLines,
     this.inputFormat,
-
-    // Currency params
     this.onCurrencyChanged,
     this.onCurrencyAmountChanged,
     this.defaultCurrencyCode,
@@ -249,16 +235,15 @@ class ZGenericTextField extends StatefulWidget {
     this.fixedCurrencySymbol,
     this.showCurrencySymbol = true,
     this.currencyPosition = CurrencyPosition.prefix,
-
-    // Numeric params
+    this.showCurrencySelector = false,
+    this.selectedCurrencyCodeOverride,
+    this.onCurrencySelectorChanged,
+    this.isCurrencySelectorEnabled = true,
+    this.currencySelectorOnly = false,
     this.minValue,
     this.maxValue,
     this.allowNegative = false,
-
-    // Thousand separator
-    this.useThousandSeparator = false, // Default to false
-
-    // Phone params
+    this.useThousandSeparator = false,
     this.countryCode,
   });
 
@@ -274,6 +259,13 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
   List<CurrencyItem> _currencyItems = [];
   bool _isLoading = true;
 
+  /// True when this widget should pull currencies from the bloc.
+  bool get _needsCurrencies =>
+      widget.fieldType == ZTextFieldType.currency ||
+          widget.fieldType == ZTextFieldType.currencyWithAmount ||
+          widget.showCurrencySelector ||
+          widget.currencySelectorOnly;
+
   @override
   void initState() {
     super.initState();
@@ -285,22 +277,29 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
       _controller.addListener(_onAmountChanged);
     }
   }
+
   @override
   void didUpdateWidget(covariant ZGenericTextField oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.defaultCurrencyCode != widget.defaultCurrencyCode) {
+
+    if (oldWidget.defaultCurrencyCode != widget.defaultCurrencyCode ||
+        oldWidget.selectedCurrencyCodeOverride !=
+            widget.selectedCurrencyCodeOverride) {
       _selectedCurrency = null;
       setState(() {});
     }
+
+    if (oldWidget.fieldType != widget.fieldType ||
+        oldWidget.useThousandSeparator != widget.useThousandSeparator ||
+        oldWidget.decimalPlaces != widget.decimalPlaces) {
+      _setupInputFormatters();
+    }
   }
+
   @override
   void dispose() {
-    if (widget.controller == null) {
-      _controller.dispose();
-    }
-    if (widget.focusNode == null) {
-      _focusNode.dispose();
-    }
+    if (widget.controller == null) _controller.dispose();
+    if (widget.focusNode == null) _focusNode.dispose();
     if (widget.fieldType == ZTextFieldType.currencyWithAmount) {
       _controller.removeListener(_onAmountChanged);
     }
@@ -309,9 +308,8 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
 
   void _onAmountChanged() {
     if (widget.onCurrencyAmountChanged != null && _selectedCurrency != null) {
-      // Send clean amount without commas
-      final cleanAmount = _controller.text.cleanAmount;
-      widget.onCurrencyAmountChanged!((_selectedCurrency, cleanAmount));
+      final clean = _controller.text.cleanAmount;
+      widget.onCurrencyAmountChanged!((_selectedCurrency, clean));
     }
   }
 
@@ -321,21 +319,27 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
     switch (widget.fieldType) {
       case ZTextFieldType.numeric:
         _formatters.add(
-          FilteringTextInputFormatter.allow(RegExp(widget.allowNegative ? r'^-?\d*$' : r'^\d*$')),
+          FilteringTextInputFormatter.allow(
+            RegExp(widget.allowNegative ? r'^-?\d*$' : r'^\d*$'),
+          ),
         );
         break;
 
       case ZTextFieldType.amount:
       case ZTextFieldType.currencyWithAmount:
-      // Add thousand separator formatter if enabled
         if (widget.useThousandSeparator) {
-          _formatters.add(_ThousandSeparatorFormatter(decimalPlaces: widget.decimalPlaces));
+          _formatters.add(
+            _ThousandSeparatorFormatter(decimalPlaces: widget.decimalPlaces),
+          );
         } else {
           _formatters.add(
-            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,' + widget.decimalPlaces.toString() + r'}')),
+            FilteringTextInputFormatter.allow(
+              RegExp(r'^\d+\.?\d{0,' +
+                  widget.decimalPlaces.toString() +
+                  r'}'),
+            ),
           );
         }
-
         if (widget.minValue != null || widget.maxValue != null) {
           _formatters.add(_NumericRangeFormatter(
             minValue: widget.minValue,
@@ -349,19 +353,19 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
         break;
 
       case ZTextFieldType.phone:
-        _formatters.add(FilteringTextInputFormatter.allow(RegExp(r'^[\d+\-\(\)\s]+$')));
+        _formatters.add(
+          FilteringTextInputFormatter.allow(RegExp(r'^[\d+\-\(\)\s]+$')),
+        );
         break;
 
-      case ZTextFieldType.password:
       case ZTextFieldType.text:
+      case ZTextFieldType.password:
       case ZTextFieldType.multiline:
       case ZTextFieldType.currency:
         break;
     }
 
-    if (widget.inputFormat != null) {
-      _formatters.addAll(widget.inputFormat!);
-    }
+    if (widget.inputFormat != null) _formatters.addAll(widget.inputFormat!);
   }
 
   TextInputType _getKeyboardType() {
@@ -383,9 +387,7 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
     }
   }
 
-  bool _isObscure() {
-    return widget.fieldType == ZTextFieldType.password;
-  }
+  bool _isObscure() => widget.fieldType == ZTextFieldType.password;
 
   List<CurrencyItem> _convertToCurrencyItems(List<CurrenciesModel> currencies) {
     return currencies.map((currency) {
@@ -415,12 +417,13 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
   CurrenciesModel? _getDefaultCurrency(List<CurrenciesModel> currencies) {
     if (currencies.isEmpty) return null;
 
-    if (widget.defaultCurrencyCode != null && widget.defaultCurrencyCode!.isNotEmpty) {
+    final code =
+        widget.selectedCurrencyCodeOverride ?? widget.defaultCurrencyCode;
+
+    if (code != null && code.isNotEmpty) {
       try {
-        return currencies.firstWhere(
-              (c) => c.ccyCode == widget.defaultCurrencyCode,
-        );
-      } catch (e) {
+        return currencies.firstWhere((c) => c.ccyCode == code);
+      } catch (_) {
         return currencies.first;
       }
     }
@@ -428,16 +431,13 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
   }
 
   String? _validateInput(String? value) {
-    if (widget.validator != null) {
-      return widget.validator!(value);
-    }
+    if (widget.validator != null) return widget.validator!(value);
 
     if (widget.isRequired && (value == null || value.isEmpty)) {
       return 'This field is required';
     }
 
     if (value != null && value.isNotEmpty) {
-      // Clean the value for validation (remove commas)
       final cleanValue = cleanAmount(value);
 
       switch (widget.fieldType) {
@@ -450,9 +450,7 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
         case ZTextFieldType.amount:
         case ZTextFieldType.currencyWithAmount:
           final amount = double.tryParse(cleanValue);
-          if (amount == null) {
-            return 'Please enter a valid amount';
-          }
+          if (amount == null) return 'Please enter a valid amount';
           if (widget.minValue != null && amount < widget.minValue!) {
             return 'Amount must be at least ${widget.minValue}';
           }
@@ -462,15 +460,14 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
           break;
 
         case ZTextFieldType.email:
-          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+          if (!RegExp(r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}$')
+              .hasMatch(value)) {
             return 'Please enter a valid email address';
           }
           break;
 
         case ZTextFieldType.phone:
-          if (value.length < 8) {
-            return 'Please enter a valid phone number';
-          }
+          if (value.length < 8) return 'Please enter a valid phone number';
           break;
 
         default:
@@ -484,12 +481,49 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
   Widget _buildCurrencyContent(List<CurrenciesModel> currencies) {
     _isLoading = false;
 
-    if (currencies.isEmpty) {
-      return _buildTextField();
+    // Currency-selector-only mode: never render the text field at all.
+    // Show the dropdown alone (or spinner while currencies load).
+    if (widget.currencySelectorOnly) {
+      if (currencies.isEmpty) {
+        return const SizedBox(
+          height: 32,
+          width: 32,
+          child: Center(
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        );
+      }
+      _currencyItems = _convertToCurrencyItems(currencies);
+      _selectedCurrency ??= _getDefaultCurrency(currencies);
+
+      final selectedCurrencyItem = _currencyItems.firstWhere(
+            (item) => item.code == _selectedCurrency!.ccyCode,
+        orElse: () => _currencyItems.first,
+      );
+
+      return _buildCurrencySelector(
+        _currencyItems,
+        selectedCurrencyItem,
+            (currencyItem) {
+          final newCurrency = currencyItem.originalModel;
+          setState(() => _selectedCurrency = newCurrency);
+
+          if (widget.onCurrencySelectorChanged != null) {
+            widget.onCurrencySelectorChanged!(newCurrency);
+          } else {
+            widget.onCurrencyChanged?.call(newCurrency);
+          }
+        },
+      );
     }
 
-    _currencyItems = _convertToCurrencyItems(currencies);
+    if (currencies.isEmpty) return _buildTextField();
 
+    _currencyItems = _convertToCurrencyItems(currencies);
     _selectedCurrency ??= _getDefaultCurrency(currencies);
 
     final selectedCurrencyItem = _selectedCurrency != null
@@ -504,15 +538,21 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
       selectedCurrencyItem: selectedCurrencyItem,
       onCurrencySelected: (currencyItem) {
         final newCurrency = currencyItem.originalModel;
-        setState(() {
-          _selectedCurrency = newCurrency;
-        });
-        if (widget.onCurrencyChanged != null) {
-          widget.onCurrencyChanged!(newCurrency);
+        setState(() => _selectedCurrency = newCurrency);
+
+        if (widget.showCurrencySelector &&
+            widget.onCurrencySelectorChanged != null) {
+          widget.onCurrencySelectorChanged!(newCurrency);
+        } else {
+          widget.onCurrencyChanged?.call(newCurrency);
         }
-        if (widget.onCurrencyAmountChanged != null && _controller.text.isNotEmpty) {
-          final cleanAmount = _controller.text.cleanAmount;
-          widget.onCurrencyAmountChanged!((newCurrency, cleanAmount));
+
+        if (widget.fieldType == ZTextFieldType.currencyWithAmount &&
+            widget.onCurrencyAmountChanged != null &&
+            _controller.text.isNotEmpty) {
+          widget.onCurrencyAmountChanged!(
+            (newCurrency, _controller.text.cleanAmount),
+          );
         }
       },
     );
@@ -536,16 +576,15 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
                   children: [
                     Text(
                       widget.title,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      style:
+                      Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontSize: 12,
                         color: Theme.of(context).colorScheme.outline,
                       ),
                     ),
                     if (widget.isRequired)
-                      Text(
-                        " *",
-                        style: TextStyle(color: Colors.red.shade900),
-                      ),
+                      Text(" *",
+                          style: TextStyle(color: Colors.red.shade900)),
                   ],
                 ),
               if (widget.title.isNotEmpty) const SizedBox(height: 4),
@@ -557,16 +596,14 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
                 enabled: widget.isEnabled,
                 validator: _validateInput,
                 onChanged: (text) {
-                  if (widget.onChanged != null) {
-                    // Send clean amount without commas
-                    final cleanText = cleanAmount(text);
-                    widget.onChanged!(cleanText);
-                  }
-                  if (widget.fieldType == ZTextFieldType.currencyWithAmount &&
+                  widget.onChanged?.call(cleanAmount(text));
+                  if (widget.fieldType ==
+                      ZTextFieldType.currencyWithAmount &&
                       widget.onCurrencyAmountChanged != null &&
                       _selectedCurrency != null) {
-                    final cleanAmount = text.cleanAmount;
-                    widget.onCurrencyAmountChanged!((_selectedCurrency, cleanAmount));
+                    widget.onCurrencyAmountChanged!(
+                      (_selectedCurrency, text.cleanAmount),
+                    );
                   }
                 },
                 onFieldSubmitted: widget.onSubmit,
@@ -583,14 +620,27 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
                     : 1,
                 decoration: InputDecoration(
                   filled: !widget.isEnabled,
-                  prefixIcon: _buildPrefix(currencyItems, selectedCurrencyItem, onCurrencySelected),
+                  prefixIcon: _buildPrefix(
+                    currencyItems,
+                    selectedCurrencyItem,
+                    onCurrencySelected,
+                  ),
                   suffixIcon: widget.fieldType == ZTextFieldType.amount
                       ? Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _buildClearButton(value.text),
-                      if (_buildSuffix(currencyItems, selectedCurrencyItem, onCurrencySelected) != null)
-                        _buildSuffix(currencyItems, selectedCurrencyItem, onCurrencySelected)!,
+                      if (_buildSuffix(
+                        currencyItems,
+                        selectedCurrencyItem,
+                        onCurrencySelected,
+                      ) !=
+                          null)
+                        _buildSuffix(
+                          currencyItems,
+                          selectedCurrencyItem,
+                          onCurrencySelected,
+                        )!,
                       if (widget.trailing != null)
                         Padding(
                           padding: const EdgeInsets.only(right: 4),
@@ -611,36 +661,40 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
                   ),
                   suffix: widget.end,
                   counterText: '',
-                  suffixIconConstraints: const BoxConstraints(maxWidth: 80, maxHeight: 40),
+                  suffixIconConstraints:
+                  const BoxConstraints(maxWidth: 80, maxHeight: 40),
                   disabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(3),
                     borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.secondary.withValues(alpha: .3),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .secondary
+                          .withValues(alpha: .3),
                     ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(3),
                     borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.secondary.withValues(alpha: .3),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .secondary
+                          .withValues(alpha: .3),
                     ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(3),
-                    borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                    borderSide:
+                    BorderSide(color: Theme.of(context).colorScheme.primary),
                   ),
                   focusedErrorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(5),
-                    borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+                    borderSide:
+                    BorderSide(color: Theme.of(context).colorScheme.error),
                   ),
                   errorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(3),
-                    borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+                    borderSide:
+                    BorderSide(color: Theme.of(context).colorScheme.error),
                   ),
                   hintText: widget.hint,
                   hintStyle: TextStyle(
@@ -661,7 +715,8 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
                   child: Text(
                     widget.errorMessage,
                     style: TextStyle(
-                      color: widget.infoColor ?? Theme.of(context).colorScheme.primary,
+                      color: widget.infoColor ??
+                          Theme.of(context).colorScheme.primary,
                       fontSize: 13,
                     ),
                   ),
@@ -678,8 +733,10 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
       CurrencyItem? selectedCurrencyItem,
       Function(CurrencyItem)? onCurrencySelected,
       ) {
-    if (_isLoading && (widget.fieldType == ZTextFieldType.currency ||
-        widget.fieldType == ZTextFieldType.currencyWithAmount)) {
+    if (_isLoading &&
+        (widget.fieldType == ZTextFieldType.currency ||
+            widget.fieldType == ZTextFieldType.currencyWithAmount ||
+            widget.showCurrencySelector)) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: const SizedBox(
@@ -690,20 +747,39 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
       );
     }
 
-    if (widget.fieldType == ZTextFieldType.currency && currencyItems != null) {
-      return _buildCurrencySelector(currencyItems, selectedCurrencyItem, onCurrencySelected);
+    if (widget.showCurrencySelector && currencyItems != null) {
+      return _buildCurrencySelector(
+        currencyItems,
+        selectedCurrencyItem,
+        onCurrencySelected,
+      );
     }
 
-    if (widget.fieldType == ZTextFieldType.currencyWithAmount && currencyItems != null) {
-      return _buildCurrencySelector(currencyItems, selectedCurrencyItem, onCurrencySelected);
+    if (widget.fieldType == ZTextFieldType.currency &&
+        currencyItems != null) {
+      return _buildCurrencySelector(
+        currencyItems,
+        selectedCurrencyItem,
+        onCurrencySelected,
+      );
     }
 
-    if ((widget.fieldType == ZTextFieldType.amount) &&
+    if (widget.fieldType == ZTextFieldType.currencyWithAmount &&
+        currencyItems != null) {
+      return _buildCurrencySelector(
+        currencyItems,
+        selectedCurrencyItem,
+        onCurrencySelected,
+      );
+    }
+
+    if (widget.fieldType == ZTextFieldType.amount &&
         widget.showCurrencySymbol &&
         widget.showSymbol &&
         (widget.fixedCurrencySymbol != null || selectedCurrencyItem != null) &&
         widget.currencyPosition == CurrencyPosition.prefix) {
-      final symbol = selectedCurrencyItem?.symbol ?? widget.fixedCurrencySymbol;
+      final symbol =
+          selectedCurrencyItem?.symbol ?? widget.fixedCurrencySymbol;
       return Padding(
         padding: const EdgeInsets.only(right: 4),
         child: Text(
@@ -716,9 +792,7 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
       );
     }
 
-    if (widget.icon != null) {
-      return Icon(widget.icon, size: 18);
-    }
+    if (widget.icon != null) return Icon(widget.icon, size: 18);
 
     return null;
   }
@@ -728,20 +802,19 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
       CurrencyItem? selectedCurrencyItem,
       Function(CurrencyItem)? onCurrencySelected,
       ) {
-    if (widget.fieldType == ZTextFieldType.currency) {
+    if (widget.fieldType == ZTextFieldType.currency) return null;
+    if (widget.fieldType == ZTextFieldType.currencyWithAmount &&
+        currencyItems != null) {
       return null;
     }
 
-    if (widget.fieldType == ZTextFieldType.currencyWithAmount && currencyItems != null) {
-      return null;
-    }
-
-    if ((widget.fieldType == ZTextFieldType.amount) &&
+    if (widget.fieldType == ZTextFieldType.amount &&
         widget.showCurrencySymbol &&
         widget.showSymbol &&
         (widget.fixedCurrencySymbol != null || selectedCurrencyItem != null) &&
         widget.currencyPosition == CurrencyPosition.suffix) {
-      final symbol = selectedCurrencyItem?.symbol ?? widget.fixedCurrencySymbol;
+      final symbol =
+          selectedCurrencyItem?.symbol ?? widget.fixedCurrencySymbol;
       return Padding(
         padding: const EdgeInsets.only(left: 4),
         child: Text(
@@ -757,17 +830,23 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
     return null;
   }
 
-  Widget _buildCurrencySelector(List<CurrencyItem> currencyItems, CurrencyItem? selectedCurrencyItem, Function(CurrencyItem)? onCurrencySelected) {
-    if (currencyItems.isEmpty) {
-      return const SizedBox.shrink();
-    }
+  Widget _buildCurrencySelector(
+      List<CurrencyItem> currencyItems,
+      CurrencyItem? selectedCurrencyItem,
+      Function(CurrencyItem)? onCurrencySelected,
+      ) {
+    if (currencyItems.isEmpty) return const SizedBox.shrink();
 
     final validSelectedItem = selectedCurrencyItem ?? currencyItems.first;
+    final enabled = widget.isEnabled && widget.isCurrencySelectorEnabled;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(0),
         border: Border.all(
           color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
@@ -776,6 +855,36 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<CurrencyItem>(
           value: validSelectedItem,
+          // Show flag + symbol + code in the closed state too.
+          selectedItemBuilder: (context) => currencyItems.map((currency) {
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.showFlag && currency.flagIcon != null) ...[
+                  currency.flagIcon!,
+                  const SizedBox(width: 6),
+                ],
+                if (widget.showSymbol) ...[
+                  Text(
+                    currency.symbol,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                ],
+                Text(
+                  currency.code,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+              ],
+            );
+          }).toList(),
           items: currencyItems.map((currency) {
             return DropdownMenuItem<CurrencyItem>(
               value: currency,
@@ -808,12 +917,13 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
               ),
             );
           }).toList(),
-
-          onChanged: (CurrencyItem? newCurrency) {
+          onChanged: enabled
+              ? (CurrencyItem? newCurrency) {
             if (newCurrency != null && onCurrencySelected != null) {
               onCurrencySelected(newCurrency);
             }
-          },
+          }
+              : null,
           isDense: true,
           style: TextStyle(
             fontSize: 14,
@@ -836,7 +946,7 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
     return GestureDetector(
       onTap: () {
         _controller.clear();
-        if (widget.onChanged != null) widget.onChanged!('');
+        widget.onChanged?.call('');
         if (widget.fieldType == ZTextFieldType.currencyWithAmount &&
             widget.onCurrencyAmountChanged != null) {
           widget.onCurrencyAmountChanged!((_selectedCurrency, ''));
@@ -851,19 +961,31 @@ class _ZGenericTextFieldState extends State<ZGenericTextField> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.fieldType == ZTextFieldType.currency ||
-        widget.fieldType == ZTextFieldType.currencyWithAmount) {
+    if (_needsCurrencies) {
       return BlocBuilder<CurrenciesBloc, CurrenciesState>(
         builder: (context, state) {
           if (state is CurrenciesInitial ||
               (state is CurrenciesLoadedState && state.active.isEmpty)) {
-            // Only dispatch if we need to load currencies
-            context.read<CurrenciesBloc>().add(
-                LoadCurrenciesEvent(status: 1)
-            );
+            context
+                .read<CurrenciesBloc>()
+                .add(LoadCurrenciesEvent(status: widget.currencyStatus ?? 1));
           }
           if (state is CurrenciesLoadedState) {
             return _buildCurrencyContent(state.active);
+          }
+          // Currency-selector-only mode shows just a spinner while loading.
+          if (widget.currencySelectorOnly) {
+            return const SizedBox(
+              height: 32,
+              width: 32,
+              child: Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            );
           }
           return _buildTextField();
         },
@@ -881,10 +1003,7 @@ class _NumericRangeFormatter extends TextInputFormatter {
   final double? minValue;
   final double? maxValue;
 
-  const _NumericRangeFormatter({
-    this.minValue,
-    this.maxValue,
-  });
+  const _NumericRangeFormatter({this.minValue, this.maxValue});
 
   @override
   TextEditingValue formatEditUpdate(
@@ -892,13 +1011,10 @@ class _NumericRangeFormatter extends TextInputFormatter {
       TextEditingValue newValue,
       ) {
     if (newValue.text.isEmpty) return newValue;
-
     final value = double.tryParse(newValue.text);
     if (value == null) return oldValue;
-
     if (minValue != null && value < minValue!) return oldValue;
     if (maxValue != null && value > maxValue!) return oldValue;
-
     return newValue;
   }
 }

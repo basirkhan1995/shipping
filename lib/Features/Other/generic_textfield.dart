@@ -2,6 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flag/flag_widget.dart';
+import '../../Routes/Home/View/Finance/View/Currencies/bloc/currencies_bloc.dart';
+import '../../Routes/Home/View/Finance/View/Currencies/model/ccy_model.dart';
 import '../../l10n/app_localizations.dart';
 
 typedef LoadingBuilder = Widget Function(BuildContext context);
@@ -12,10 +15,31 @@ typedef BlocSearchFunction<B> = void Function(B bloc, String query);
 typedef BlocFetchAllFunction<B> = void Function(B bloc);
 typedef OnFieldSubmitFunction = void Function({required String name});
 
-enum TextFieldStyle {
-  roundedBorder,
-  underline,
-  noBorder,
+enum TextFieldStyle { roundedBorder, underline, noBorder }
+
+// Local mirror of the ZTextField currency model so this file doesn't
+// depend on `ztextfield.dart`.
+class _CcyItem {
+  final String code;
+  final String symbol;
+  final String? name;
+  final Widget? flagIcon;
+  final CurrenciesModel? originalModel;
+
+  const _CcyItem({
+    required this.code,
+    required this.symbol,
+    this.name,
+    this.flagIcon,
+    this.originalModel,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || (other is _CcyItem && other.code == code);
+
+  @override
+  int get hashCode => code.hashCode;
 }
 
 class GenericTextField<T, B extends BlocBase<S>, S> extends StatefulWidget {
@@ -57,6 +81,28 @@ class GenericTextField<T, B extends BlocBase<S>, S> extends StatefulWidget {
   final String allOptionText;
   final TextFieldStyle textFieldStyle;
 
+  // ── Currency selector (built-in) ─────────────────────────────
+  /// When `true`, an inline currency dropdown renders as the field's
+  /// prefix, pulling from `CurrenciesBloc`. Use for GL endpoints where
+  /// the account's currency is user-chosen, not fixed.
+  final bool showCurrencySelector;
+
+  /// Pre-select a currency code (e.g. baseCurrency or the leg's ccy).
+  final String? selectedCurrencyCodeOverride;
+
+  /// Fires when the user picks a different currency.
+  final ValueChanged<CurrenciesModel?>? onCurrencySelectorChanged;
+
+  /// Allow the user to change the currency. When false, the dropdown is
+  /// still shown but disabled (e.g. stakeholder's fixed ccy).
+  final bool isCurrencySelectorEnabled;
+
+  /// Filter to currencies with `ccyStatus == currencyStatus` (default 1).
+  final int? currencyStatus;
+
+  /// Fixed width for the currency dropdown (default 110).
+  final double currencySelectorWidth;
+
   const GenericTextField({
     super.key,
     this.focusNode,
@@ -95,6 +141,12 @@ class GenericTextField<T, B extends BlocBase<S>, S> extends StatefulWidget {
     this.showAllOption = false,
     this.allOptionText = 'All',
     this.textFieldStyle = TextFieldStyle.roundedBorder,
+    this.showCurrencySelector = false,
+    this.selectedCurrencyCodeOverride,
+    this.onCurrencySelectorChanged,
+    this.isCurrencySelectorEnabled = true,
+    this.currencyStatus = 1,
+    this.currencySelectorWidth = 110,
   }) : assert(
   bloc != null || searchFunction == null,
   'If searchFunction is provided, bloc must also be provided',
@@ -113,8 +165,6 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
 
   late FocusNode _focusNode;
 
-  // ✅ Dedicated node for the keyboard listener. Kept across rebuilds and
-  //    disposed in dispose(). skipTraversal keeps it out of Tab order.
   late final FocusNode _keyboardListenerFocus =
   FocusNode(skipTraversal: true, debugLabel: 'GenericTextFieldKeys');
 
@@ -125,12 +175,19 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
   static const double _itemHeight = 36;
   bool _showClear = false;
   bool _firstFocus = true;
-
-  /// ✅ Only `true` when the user has actually typed something into the field.
-  ///    The overlay is NEVER shown unless this is `true`.
   bool _isUserSearching = false;
 
   int _highlightedIndex = -1;
+
+  // ── Currency state ───────────────────────────────────────────
+  CurrenciesModel? _selectedCurrency;
+  List<_CcyItem> _ccyItems = [];
+
+  /// ✅ FIX: track the controller text the current `_selectedCurrency`
+  /// was resolved for. When the account row changes (even to another row
+  /// with the same currency code) we must re-resolve, otherwise the
+  /// dropdown keeps showing the first match for that code (e.g. AFN).
+  String? _resolvedForText;
 
   bool get _usingExternalFocusNode => widget.focusNode != null;
 
@@ -153,38 +210,52 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
 
     if (oldWidget.focusNode != widget.focusNode) {
       oldWidget.focusNode?.removeListener(_onFocusChange);
-
-      if (!_usingExternalFocusNode) {
-        _focusNode.dispose();
-      }
-
+      if (!_usingExternalFocusNode) _focusNode.dispose();
       _focusNode = widget.focusNode ?? FocusNode();
       _focusNode.addListener(_onFocusChange);
+    }
+
+    // ✅ FIX: re-resolve currency when:
+    //   1. the caller changes the desired code, OR
+    //   2. the selector is shown AND the controller text changed
+    //      (i.e. a different account row was picked — possibly the
+    //      same currency code, but a different account instance).
+    final overrideChanged =
+        oldWidget.selectedCurrencyCodeOverride !=
+            widget.selectedCurrencyCodeOverride;
+
+    final selectorToggled =
+        oldWidget.showCurrencySelector != widget.showCurrencySelector;
+
+    final accountTextChanged =
+        oldWidget.controller?.text != widget.controller?.text;
+
+    if (overrideChanged ||
+        selectorToggled ||
+        (widget.showCurrencySelector && accountTextChanged)) {
+      _selectedCurrency = null;
+      _resolvedForText = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() {});
+      });
     }
   }
 
   @override
   void dispose() {
     _focusNode.removeListener(_onFocusChange);
-
-    if (!_usingExternalFocusNode) {
-      _focusNode.dispose();
-    }
+    if (!_usingExternalFocusNode) _focusNode.dispose();
     _keyboardListenerFocus.dispose();
     _scrollController.dispose();
     widget.controller?.removeListener(_onControllerChanged);
-
     _debounce?.cancel();
     _removeOverlay();
-
     super.dispose();
   }
 
   void _onControllerChanged() {
     if (!mounted) return;
-    setState(() {
-      _showClear = widget.controller?.text.isNotEmpty == true;
-    });
+    setState(() => _showClear = widget.controller?.text.isNotEmpty == true);
   }
 
   void _removeOverlay() {
@@ -194,18 +265,14 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
 
   void _scrollToHighlighted() {
     if (!_scrollController.hasClients || _highlightedIndex < 0) return;
-
     final targetOffset = _highlightedIndex * _itemHeight;
     final currentOffset = _scrollController.offset;
     final maxOffset = _scrollController.position.maxScrollExtent;
     final viewport = _scrollController.position.viewportDimension;
-
     final visibleTop = currentOffset;
     final visibleBottom = currentOffset + viewport;
-
     final itemTop = targetOffset;
     final itemBottom = targetOffset + _itemHeight;
-
     if (itemBottom > visibleBottom) {
       _scrollController.animateTo(
         (itemBottom - viewport).clamp(0, maxOffset),
@@ -226,17 +293,10 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
       _removeOverlay();
       return;
     }
-
     if (_focusNode.hasFocus) {
-      // Keep keyboard listener focused alongside the text field so
-      // arrow keys work.
       if (!_keyboardListenerFocus.hasFocus) {
         _keyboardListenerFocus.requestFocus();
       }
-
-      // ✅ Do NOT auto-fetch / auto-open on focus.
-      //    Optionally prefetch "all" data for validation, but never show
-      //    the overlay unless the user is actively searching.
       if (widget.showAllOnFocus &&
           _firstFocus &&
           widget.bloc != null &&
@@ -244,37 +304,27 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
         widget.fetchAllFunction!(widget.bloc!);
         _firstFocus = false;
       }
-
-      // ✅ Only (re)show if the user is actively searching.
       if (_isUserSearching && _currentSuggestions.isNotEmpty) {
         _showOverlay();
       }
     } else {
       Future.delayed(const Duration(milliseconds: 300), () {
-        if (!_focusNode.hasFocus) {
-          _removeOverlay();
-        }
+        if (!_focusNode.hasFocus) _removeOverlay();
       });
     }
   }
 
   void _selectItem(T item) {
     final itemText = widget.itemToString(item);
-
     widget.controller?.text = itemText;
     widget.onSelected?.call(item);
     widget.onChanged?.call(itemText);
-
-    // ✅ Selecting an item ends the search session.
     _isUserSearching = false;
     _removeOverlay();
-    // Keep the field focused so downstream listeners (e.g. "account
-    // selected → move to amount") can decide what to do.
   }
 
   void _handleKeyEvent(KeyEvent event) {
     if (event is! KeyDownEvent) return;
-
     final allItems = _getAllItems();
     if (allItems.isEmpty) return;
 
@@ -320,27 +370,21 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
     return items;
   }
 
-  void _refreshOverlay() {
-    _overlayEntry?.markNeedsBuild();
-  }
+  void _refreshOverlay() => _overlayEntry?.markNeedsBuild();
 
   void _showOverlay() {
-    // ✅ Hard guard: the overlay can NEVER open unless the user is searching.
     if (!_isUserSearching) return;
-
     if (_overlayEntry != null) {
       _refreshOverlay();
       return;
     }
-
     final renderBox =
     _fieldKey.currentContext?.findRenderObject() as RenderBox?;
     final overlay =
     Overlay.of(context).context.findRenderObject() as RenderBox?;
     if (renderBox == null || overlay == null) return;
 
-    final position =
-    renderBox.localToGlobal(Offset.zero, ancestor: overlay);
+    final position = renderBox.localToGlobal(Offset.zero, ancestor: overlay);
 
     _overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
@@ -361,18 +405,15 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
         ),
       ),
     );
-
     Overlay.of(context).insert(_overlayEntry!);
   }
 
   Widget _buildSuggestionsList() {
     final allItems = _getAllItems();
-
     if (allItems.isEmpty) {
       final isLoading = widget.bloc != null &&
           widget.stateToLoading != null &&
           widget.stateToLoading!(widget.bloc!.state);
-
       return SizedBox(
         height: widget.height,
         child: Center(
@@ -395,7 +436,6 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
         ),
       );
     }
-
     return ConstrainedBox(
       constraints: const BoxConstraints(maxHeight: 200),
       child: ListView.builder(
@@ -406,7 +446,6 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
         itemBuilder: (context, index) {
           final item = allItems[index];
           final isHighlighted = index == _highlightedIndex;
-
           return Material(
             color: isHighlighted
                 ? Theme.of(context)
@@ -458,7 +497,6 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
     if (widget.isRequired && (value == null || value.isEmpty)) {
       return AppLocalizations.of(context)!.required(widget.title);
     }
-
     if (widget.itemValidator != null) {
       T? selectedItem;
       try {
@@ -468,19 +506,14 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
       } catch (_) {
         selectedItem = null;
       }
-      if (selectedItem != null) {
-        return widget.itemValidator!(selectedItem);
-      }
+      if (selectedItem != null) return widget.itemValidator!(selectedItem);
     }
-
     if (value != null &&
         value.isNotEmpty &&
-        !_currentSuggestions.any(
-              (item) => widget.itemToString(item) == value,
-        )) {
+        !_currentSuggestions
+            .any((item) => widget.itemToString(item) == value)) {
       return widget.title;
     }
-
     return null;
   }
 
@@ -488,7 +521,6 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
     final isLoading = widget.bloc != null &&
         widget.stateToLoading != null &&
         widget.stateToLoading!(widget.bloc!.state);
-
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -505,12 +537,10 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
         if (_showClear && widget.showClearButton && !isLoading)
           IconButton(
             splashRadius: 2,
-            splashColor:
-            Theme.of(context).colorScheme.primary.withAlpha(23),
+            splashColor: Theme.of(context).colorScheme.primary.withAlpha(23),
             highlightColor:
             Theme.of(context).colorScheme.primary.withAlpha(23),
-            hoverColor:
-            Theme.of(context).colorScheme.primary.withAlpha(23),
+            hoverColor: Theme.of(context).colorScheme.primary.withAlpha(23),
             icon: Icon(
               Icons.clear,
               size: 14,
@@ -519,16 +549,13 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
             onPressed: () {
               widget.controller?.clear();
               widget.onChanged?.call('');
-
               setState(() {
                 _currentSuggestions = [];
                 _showClear = false;
                 _firstFocus = true;
                 _highlightedIndex = -1;
-                // ✅ Clearing ends the search session.
                 _isUserSearching = false;
               });
-
               _removeOverlay();
             },
           ),
@@ -537,16 +564,14 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
     );
   }
 
+  // ── Borders & padding ───────────────────────────────────────
   InputBorder _getEnabledBorder() {
     switch (widget.textFieldStyle) {
       case TextFieldStyle.roundedBorder:
         return OutlineInputBorder(
           borderRadius: BorderRadius.circular(3),
           borderSide: BorderSide(
-            color: Theme.of(context)
-                .colorScheme
-                .secondary
-                .withValues(alpha: .3),
+            color: Theme.of(context).colorScheme.secondary.withValues(alpha: .3),
           ),
         );
       case TextFieldStyle.underline:
@@ -615,10 +640,7 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
         return OutlineInputBorder(
           borderRadius: BorderRadius.circular(3),
           borderSide: BorderSide(
-            color: Theme.of(context)
-                .colorScheme
-                .secondary
-                .withValues(alpha: .2),
+            color: Theme.of(context).colorScheme.secondary.withValues(alpha: .2),
           ),
         );
       case TextFieldStyle.underline:
@@ -634,7 +656,6 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
   EdgeInsets _getContentPadding() {
     switch (widget.textFieldStyle) {
       case TextFieldStyle.roundedBorder:
-        return const EdgeInsets.symmetric(horizontal: 12, vertical: 8);
       case TextFieldStyle.underline:
         return const EdgeInsets.symmetric(horizontal: 12, vertical: 8);
       case TextFieldStyle.noBorder:
@@ -643,18 +664,13 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
   }
 
   void _onFieldSubmittedInternal(String value) {
-    // 1) Notify the caller first — this is what drives "Enter = submit"
-    //    or "Enter = next field" in forms.
     widget.onFieldSubmitted?.call(value);
-
-    // 2) Legacy callback (proCode-style lookup) — kept for compatibility.
     final input = value.trim();
     widget.onSubmitted?.call(name: input);
 
     T? match;
     try {
       match = _currentSuggestions.firstWhere((item) {
-        // Match either by proCode (legacy) OR by itemToString equality.
         try {
           final dynamic dyn = item;
           final String? code = dyn.proCode?.toLowerCase();
@@ -665,7 +681,6 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
     } catch (_) {
       match = null;
     }
-
     if (match != null) {
       widget.controller?.text = widget.itemToString(match);
       widget.onChanged?.call(widget.itemToString(match));
@@ -673,6 +688,181 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
       _isUserSearching = false;
       _removeOverlay();
     }
+  }
+
+  // ── Currency selector builder ───────────────────────────────
+  List<_CcyItem> _convertCurrencies(List<CurrenciesModel> currencies) {
+    return currencies.map((c) {
+      return _CcyItem(
+        code: c.ccyCode ?? '',
+        symbol: c.ccySymbol ?? c.ccyCode ?? '',
+        name: c.ccyName,
+        originalModel: c,
+        flagIcon: c.ccyCountryCode != null
+            ? SizedBox(
+          width: 18,
+          height: 12,
+          child: Flag.fromString(
+            c.ccyCountryCode!,
+            height: 12,
+            width: 18,
+            borderRadius: 2,
+            fit: BoxFit.fill,
+          ),
+        )
+            : null,
+      );
+    }).toList();
+  }
+
+  CurrenciesModel? _resolveDefaultCurrency(List<CurrenciesModel> currencies) {
+    if (currencies.isEmpty) return null;
+    final code = widget.selectedCurrencyCodeOverride;
+    if (code != null && code.isNotEmpty) {
+      try {
+        return currencies.firstWhere((c) => c.ccyCode == code);
+      } catch (_) {
+        return currencies.first;
+      }
+    }
+    return currencies.first;
+  }
+
+  Widget _buildCurrencySelector() {
+    return BlocBuilder<CurrenciesBloc, CurrenciesState>(
+      builder: (context, state) {
+        if (state is CurrenciesInitial ||
+            (state is CurrenciesLoadedState && state.active.isEmpty)) {
+          context
+              .read<CurrenciesBloc>()
+              .add(LoadCurrenciesEvent(status: widget.currencyStatus ?? 1));
+          return const SizedBox(
+            width: 90,
+            height: 20,
+            child: Center(
+              child: SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        }
+
+        if (state is! CurrenciesLoadedState) {
+          return const SizedBox.shrink();
+        }
+
+        final currencies = state.active;
+        if (currencies.isEmpty) return const SizedBox.shrink();
+
+        _ccyItems = _convertCurrencies(currencies);
+
+        // ✅ FIX: cache which controller text the current selection was
+        // resolved for. If the account row changed (same code, different
+        // row) we re-resolve against the new code instead of keeping the
+        // first match for the old code.
+        final currentText = widget.controller?.text ?? '';
+        if (_selectedCurrency == null || _resolvedForText != currentText) {
+          _selectedCurrency = _resolveDefaultCurrency(currencies);
+          _resolvedForText = currentText;
+        }
+
+        final selectedItem = _ccyItems.firstWhere(
+              (c) => c.code == _selectedCurrency!.ccyCode,
+          orElse: () => _ccyItems.first,
+        );
+
+        final enabled =
+            widget.isEnabled && widget.isCurrencySelectorEnabled;
+
+        // Fixed width — never expands to eat the account text.
+        // Divider is added in `build()` alongside this widget.
+        return SizedBox(
+          width: widget.currencySelectorWidth - 20, // leave room for padding
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<_CcyItem>(
+              value: selectedItem,
+              isDense: true,
+              isExpanded: false,
+              selectedItemBuilder: (context) =>
+                  _ccyItems.map(_buildCcyRow).toList(),
+              items: _ccyItems
+                  .map((c) => DropdownMenuItem<_CcyItem>(
+                value: c,
+                child: _buildCcyMenuRow(c),
+              ))
+                  .toList(),
+              onChanged: enabled
+                  ? (_CcyItem? picked) {
+                if (picked == null) return;
+                setState(() => _selectedCurrency = picked.originalModel);
+                widget.onCurrencySelectorChanged
+                    ?.call(picked.originalModel);
+              }
+                  : null,
+              icon: Icon(
+                Icons.arrow_drop_down_rounded,
+                size: 18,
+                color: Theme.of(context).colorScheme.outline,
+              ),
+              elevation: 2,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Compact row for the CLOSED dropdown state (fixed 110px).
+  Widget _buildCcyRow(_CcyItem c) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        if (c.flagIcon != null) ...[
+          c.flagIcon!,
+          const SizedBox(width: 4),
+        ],
+        Flexible(
+          child: Text(
+            c.code,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Wider row for the OPENED menu — shows flag + symbol + code.
+  Widget _buildCcyMenuRow(_CcyItem c) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (c.flagIcon != null) ...[
+          c.flagIcon!,
+          const SizedBox(width: 6),
+        ],
+        Text(
+          c.symbol,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          c.code,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.outline,
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -727,10 +917,8 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
                 child: CompositedTransformTarget(
                   link: _layerLink,
                   child: TextFormField(
-                    // ✅ use the internal focus node (falls back correctly)
                     focusNode: _focusNode,
                     textInputAction: widget.textInputAction,
-                    // ✅ single merged onFieldSubmitted
                     onFieldSubmitted: _onFieldSubmittedInternal,
                     key: _fieldKey,
                     controller: widget.controller,
@@ -739,25 +927,14 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
                     validator: widget.validator ?? _customValidator,
                     onChanged: (value) {
                       if (widget.readOnly) return;
-
                       final hasQuery = value.trim().isNotEmpty;
-
                       setState(() {
                         _showClear = value.isNotEmpty;
                         _highlightedIndex = -1;
-                        // ✅ Only allow the overlay while the user has typed.
                         _isUserSearching = hasQuery;
                       });
-
-                      // If the user cleared the field, drop the overlay now.
-                      if (!hasQuery) {
-                        _removeOverlay();
-                      }
-
-                      if (_debounce?.isActive ?? false) {
-                        _debounce?.cancel();
-                      }
-
+                      if (!hasQuery) _removeOverlay();
+                      if (_debounce?.isActive ?? false) _debounce?.cancel();
                       _debounce = Timer(
                         const Duration(milliseconds: 500),
                             () {
@@ -782,13 +959,51 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
                     ),
                     decoration: InputDecoration(
                       isDense: true,
-                      prefixIcon: widget.icon != null
+
+                      // ✅ Currency selector + vertical divider, both
+                      //    rendered inside the field's prefix slot.
+                      prefixIcon: widget.showCurrencySelector
+                          ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              left: 8,
+                              right: 6,
+                            ),
+                            child: _buildCurrencySelector(),
+                          ),
+                          // Vertical divider between currency
+                          // dropdown and the account text.
+                          Container(
+                            width: 1,
+                            height: 20,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .outline
+                                .withValues(alpha: 0.25),
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+                      )
+                          : widget.icon != null
                           ? Padding(
-                        padding:
-                        const EdgeInsets.symmetric(horizontal: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                        ),
                         child: Icon(widget.icon, size: 18),
                       )
                           : null,
+                      // Fixed total width for the whole prefix block
+                      // (dropdown + gaps + divider + tail space).
+                      prefixIconConstraints: widget.showCurrencySelector
+                          ? BoxConstraints(
+                        minWidth: 0,
+                        maxWidth: widget.currencySelectorWidth + 24,
+                        minHeight: 0,
+                      )
+                          : null,
+
                       suffixIcon: _buildSuffixIcon(),
                       hintText: widget.hintText,
                       hintStyle: TextStyle(
@@ -826,17 +1041,13 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
                 bloc: widget.bloc,
                 listener: (context, state) {
                   if (widget.readOnly) return;
-
                   final items = widget.stateToItems(state);
-
                   setState(() {
                     _currentSuggestions = items;
                     if (_highlightedIndex >= items.length) {
                       _highlightedIndex = items.isEmpty ? -1 : 0;
                     }
                   });
-
-                  // ✅ Only show the overlay if the user is actively searching.
                   if (_isUserSearching && _focusNode.hasFocus) {
                     _showOverlay();
                   } else {

@@ -4,12 +4,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../../Features/Widgets/extensions.dart';
 import '../../../../../../Features/Widgets/zbutton.dart';           // ZOutlineButton
 import '../../../../../../Features/Other/generic_textfield.dart';
-import '../../../../../../Features/Widgets/ztextfield.dart';
+import '../../../../../../Features/Widgets/ztextfield.dart';        // ZTextFieldEntitled
 import '../../../../../../Features/Widgets/z_dialog.dart';
 import '../../../../../../Features/Widgets/toast.dart';
 import '../../../../../../l10n/app_localizations.dart';
 import '../../../../../../Services/repository.dart';
 import '../../../../../Auth/bloc/auth_bloc.dart';
+import '../../../Finance/View/Currencies/model/ccy_model.dart';
 import '../../../Stakeholder/model/stk_model.dart';
 import '../../../Stakeholder/View/StkAccount/bloc/stk_accounts_bloc.dart';
 import '../../../Stakeholder/View/StkAccount/bloc/stk_accounts_event.dart';
@@ -90,24 +91,52 @@ class FundTransferFormState extends State<FundTransferForm> {
   FundTransferLeg? _fromLeg;
   FundTransferLeg? _toLeg;
 
-  String? _fromCcy;
-  String? _toCcy;
+  /// GL-side currency override. Stakeholder endpoints ignore this and
+  /// always use `accCurrency` from the API row.
+  String? _fromCcyOverride;
+  String? _toCcyOverride;
+
   bool _print = true;
 
-  /// Account categories valid as a transfer endpoint (Cash/Bank + Stakeholder).
+  static const int _stakeholderCategory = 8;
   static const Set<int> _transferableCategories = {1, 8};
 
   bool get _isEditable =>
       widget.stateText == null || widget.stateText == 'Pending';
 
-  // ── Derived account numbers / currencies (pick OR leg) ────────
+  // ── Account / category resolution ─────────────────────────────
   int? get _fromAccountNo => _fromAcc?.accNumber ?? _fromLeg?.account;
-  int? get _toAccountNo   => _toAcc?.accNumber   ?? _toLeg?.account;
+  int? get _toAccountNo => _toAcc?.accNumber ?? _toLeg?.account;
 
-  String? get _fromCcyEffective =>
-      _fromCcy ?? _fromLeg?.currency ?? widget.baseCurrency;
-  String? get _toCcyEffective =>
-      _toCcy ?? _toLeg?.currency ?? widget.baseCurrency;
+  int? get _fromCategory =>
+      _fromAcc?.accCategory ?? _fromLeg?.accCategory;
+  int? get _toCategory => _toAcc?.accCategory ?? _toLeg?.accCategory;
+
+  bool get _fromIsStakeholder => _fromCategory == _stakeholderCategory;
+  bool get _toIsStakeholder => _toCategory == _stakeholderCategory;
+
+  // ── Currency resolution ──────────────────────────────────────
+  /// Stakeholder → API currency (never base).
+  /// GL → user override → API row ccy → leg ccy → base (last resort).
+  String? get _fromCcyEffective {
+    if (_fromIsStakeholder) {
+      return _fromAcc?.accCurrency ?? widget.baseCurrency;
+    }
+    return _fromCcyOverride ??
+        _fromAcc?.accCurrency ??
+        _fromLeg?.currency ??
+        widget.baseCurrency;
+  }
+
+  String? get _toCcyEffective {
+    if (_toIsStakeholder) {
+      return _toAcc?.accCurrency ?? widget.baseCurrency;
+    }
+    return _toCcyOverride ??
+        _toAcc?.accCurrency ??
+        _toLeg?.currency ??
+        widget.baseCurrency;
+  }
 
   @override
   void initState() {
@@ -137,8 +166,9 @@ class FundTransferFormState extends State<FundTransferForm> {
     _fromLeg = from;
     _toLeg = to;
 
-    _fromCcy = from?.currency ?? widget.baseCurrency;
-    _toCcy = to?.currency ?? widget.baseCurrency;
+    // Seed the override from the API leg currency (not base).
+    _fromCcyOverride = from?.currency ?? widget.baseCurrency;
+    _toCcyOverride = to?.currency ?? widget.baseCurrency;
 
     if (from != null) {
       _fromCtrl.text = '${from.account} | ${from.accountName}';
@@ -150,7 +180,6 @@ class FundTransferFormState extends State<FundTransferForm> {
     _amountCtrl.text = (from?.amount ?? 0).toStringAsFixed(2);
     _narrationCtrl.text = d.narration;
 
-    // Load the two accounts so the details cards render.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (from != null) {
@@ -179,6 +208,15 @@ class FundTransferFormState extends State<FundTransferForm> {
     super.dispose();
   }
 
+  /// Read the numeric account from a "num | name" controller text.
+  int? _accountNumberOf(TextEditingController c) {
+    final text = c.text.trim();
+    if (text.isEmpty) return null;
+    final bar = text.indexOf('|');
+    final numText = (bar == -1 ? text : text.substring(0, bar)).trim();
+    return int.tryParse(numText);
+  }
+
   void submit() {
     if (!_isEditable) return;
     if (_formKey.currentState?.validate() != true) return;
@@ -192,7 +230,7 @@ class FundTransferFormState extends State<FundTransferForm> {
     final toNo = _toAccountNo;
     if (fromNo == null || toNo == null) return;
 
-    if (fromNo == toNo) {
+    if (fromNo == toNo && _fromCcyEffective == _toCcyEffective) {
       _toastError(AppLocalizations.of(context)!.sameAccount);
       return;
     }
@@ -238,9 +276,14 @@ class FundTransferFormState extends State<FundTransferForm> {
                 account: _fromAcc!,
                 fallbackCurrency: widget.baseCurrency,
                 label: tr.debitAccount,
+                effectiveCurrencyOverride: _fromCcyEffective,
               )
             else if (_fromLeg != null)
-              _LegDetailsCard(leg: _fromLeg!, label: tr.debitAccount),
+              _LegDetailsCard(
+                leg: _fromLeg!,
+                label: tr.debitAccount,
+                effectiveCurrency: _fromCcyEffective,
+              ),
 
             _buildToPicker(),
             if (_toAcc != null)
@@ -248,9 +291,14 @@ class FundTransferFormState extends State<FundTransferForm> {
                 account: _toAcc!,
                 fallbackCurrency: widget.baseCurrency,
                 label: tr.creditAccount,
+                effectiveCurrencyOverride: _toCcyEffective,
               )
             else if (_toLeg != null)
-              _LegDetailsCard(leg: _toLeg!, label: tr.creditAccount),
+              _LegDetailsCard(
+                leg: _toLeg!,
+                label: tr.creditAccount,
+                effectiveCurrency: _toCcyEffective,
+              ),
 
             _buildAmountField(),
             _buildNarrationField(),
@@ -261,18 +309,59 @@ class FundTransferFormState extends State<FundTransferForm> {
     );
   }
 
-  // ── Account pickers ────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  // Unique row identity — the same GL account number appears
+  // multiple times (once per currency). Any identity that relies on
+  // accNumber + accName alone will collide and the picker will
+  // always re-select the first (top) row.
+  // ═══════════════════════════════════════════════════════════════
+  String _rowKey(StakeholderAccount a) =>
+      '${a.accNumber} | ${a.accName} | ${a.accCurrency ?? ""}';
+
+  String _rowLabel(StakeholderAccount a) {
+    final ccy = a.accCurrency;
+    return ccy == null || ccy.isEmpty
+        ? '${a.accNumber} | ${a.accName}'
+        : '${a.accNumber} | ${a.accName} · $ccy';
+  }
+
+  // ── Account pickers ──────────────────────────────────────────
   Widget _buildFromPicker() => _accountPicker(
     key: const ValueKey('debit'),
     controller: _fromCtrl,
     focusNode: _fromFocus,
     title: AppLocalizations.of(context)!.debitAccount,
     selected: _fromAcc,
+    isStakeholder: _fromIsStakeholder,
+    currentCurrency: _fromCcyEffective,
+    currencyOverride: _fromCcyOverride,
+    onCurrencySelected: (ccy) {
+      setState(() {
+        final code = ccy?.ccyCode ?? widget.baseCurrency;
+        _fromCcyOverride = code;
+        // Keep the details card in sync when the user changes the
+        // currency via the dropdown for a GL account.
+        final a = _fromAcc;
+        if (a != null && a.accCategory != _stakeholderCategory) {
+          _fromAcc = StakeholderAccount(
+            accNumber: a.accNumber,
+            accName: a.accName,
+            accCategory: a.accCategory,
+            accCurrency: code,
+            accLimit: a.accLimit,
+            accStatus: a.accStatus,
+            accBalance: a.accBalance,
+          );
+        }
+      });
+    },
     onSelected: (a) {
       setState(() {
         _fromAcc = a;
-        _fromLeg = null; // user overrode the loaded leg
-        _fromCcy = a.accCurrency ?? widget.baseCurrency;
+        _fromLeg = null;
+        _fromCcyOverride = a.accCategory == _stakeholderCategory
+            ? a.accCurrency
+            : (a.accCurrency ?? widget.baseCurrency);
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _toFocus.requestFocus();
@@ -287,11 +376,34 @@ class FundTransferFormState extends State<FundTransferForm> {
     focusNode: _toFocus,
     title: AppLocalizations.of(context)!.creditAccount,
     selected: _toAcc,
+    isStakeholder: _toIsStakeholder,
+    currentCurrency: _toCcyEffective,
+    currencyOverride: _toCcyOverride,
+    onCurrencySelected: (ccy) {
+      setState(() {
+        final code = ccy?.ccyCode ?? widget.baseCurrency;
+        _toCcyOverride = code;
+        final a = _toAcc;
+        if (a != null && a.accCategory != _stakeholderCategory) {
+          _toAcc = StakeholderAccount(
+            accNumber: a.accNumber,
+            accName: a.accName,
+            accCategory: a.accCategory,
+            accCurrency: code,
+            accLimit: a.accLimit,
+            accStatus: a.accStatus,
+            accBalance: a.accBalance,
+          );
+        }
+      });
+    },
     onSelected: (a) {
       setState(() {
         _toAcc = a;
         _toLeg = null;
-        _toCcy = a.accCurrency ?? widget.baseCurrency;
+        _toCcyOverride = a.accCategory == _stakeholderCategory
+            ? a.accCurrency
+            : (a.accCurrency ?? widget.baseCurrency);
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _amountFocus.requestFocus();
@@ -306,9 +418,19 @@ class FundTransferFormState extends State<FundTransferForm> {
     required FocusNode focusNode,
     required String title,
     required StakeholderAccount? selected,
+    required bool isStakeholder,
+    required String? currentCurrency,
+    required String? currencyOverride,
+    required ValueChanged<CurrenciesModel?> onCurrencySelected,
     required ValueChanged<StakeholderAccount> onSelected,
     int? excludeAccount,
   }) {
+    final accountNo =
+        _accountNumberOf(controller) ?? _fromAccountNo ?? _toAccountNo;
+
+    final showCcySelector =
+        _isEditable && !isStakeholder && accountNo != null;
+
     return GenericTextField<StakeholderAccount, StkAccountsBloc,
         StkAccountsState>(
       key: key,
@@ -332,18 +454,20 @@ class FundTransferFormState extends State<FundTransferForm> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '${account.accNumber} | ${account.accName}',
+              _rowLabel(account),
               style: Theme.of(context).textTheme.bodyLarge,
             ),
-
             Text(
-              '${account.accBalance} | ${account.accCurrency}',
+              _accountBadge(account),
               style: Theme.of(context).textTheme.bodyLarge,
-            )
+            ),
           ],
         ),
       ),
-      itemToString: (a) => '${a.accNumber} | ${a.accName}',
+
+      // ⚠️ Unique identity per API row (includes currency).
+      itemToString: _rowKey,
+
       stateToItems: (s) {
         if (s is! StkAccountsLoadedState) {
           return const <StakeholderAccount>[];
@@ -358,8 +482,13 @@ class FundTransferFormState extends State<FundTransferForm> {
       },
       stateToLoading: (s) => s is StkAccountsLoadingState,
       onSelected: onSelected,
+
+      showCurrencySelector: showCcySelector,
+      isCurrencySelectorEnabled: _isEditable,
+      selectedCurrencyCodeOverride: currencyOverride,
+      onCurrencySelectorChanged: onCurrencySelected,
+
       validator: (_) {
-        // Edit mode: legs already populate the accounts — don't re-require.
         if (!_isEditable) return null;
         if (widget.initialDetail != null) return null;
         return selected == null ? 'Required' : null;
@@ -367,16 +496,25 @@ class FundTransferFormState extends State<FundTransferForm> {
     );
   }
 
-  // ── Amount & narration ─────────────────────────────────────────
+  /// Dropdown-list trailing text: always show balance + currency from API.
+  String _accountBadge(StakeholderAccount a) {
+    final balance = a.accBalance.toAmount();
+    final ccy = a.accCurrency ?? widget.baseCurrency;
+    return '$balance $ccy'.trim();
+  }
+
+  // ── Amount & narration ───────────────────────────────────────
   Widget _buildAmountField() => ZTextFieldEntitled(
     controller: _amountCtrl,
-    title: AppLocalizations.of(context)!.amount,
+    title:
+    '${AppLocalizations.of(context)!.amount} (${_fromCcyEffective ?? widget.baseCurrency})',
     isRequired: true,
     isEnabled: _isEditable,
     focusNode: _amountFocus,
     textInputAction: TextInputAction.none,
     onFieldSubmitted: (_) => _narrationFocus.requestFocus(),
-    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+    keyboardType:
+    const TextInputType.numberWithOptions(decimal: true),
     inputFormat: [
       FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
     ],
@@ -396,8 +534,8 @@ class FundTransferFormState extends State<FundTransferForm> {
     textInputAction: TextInputAction.none,
     onFieldSubmitted: (_) => submit(),
     keyboardType: TextInputType.multiline,
-    validator: (v) =>
-    (!_isEditable || (v != null && v.trim().isNotEmpty))
+    validator: (v) => (!_isEditable ||
+        (v != null && v.trim().isNotEmpty))
         ? null
         : 'Required',
   );
@@ -469,7 +607,6 @@ class _FundTransferDialog extends StatelessWidget {
     return auth is AuthenticatedState ? auth.loginData.usrName : null;
   }
 
-  // ── Row actions → TransactionsBloc ─────────────────────────────
   void _dispatchAuthorize(BuildContext context) {
     final ref = reference;
     if (ref == null || ref.isEmpty) return;
@@ -545,7 +682,6 @@ class _FundTransferDialog extends StatelessWidget {
 
     return MultiBlocListener(
       listeners: [
-        // ── FundTransferBloc: add / edit result ─────────────────
         BlocListener<FundTransferBloc, FundTransferState>(
           listener: (context, state) {
             if (state is FundTransferSubmitSuccess) {
@@ -562,8 +698,6 @@ class _FundTransferDialog extends StatelessWidget {
             }
           },
         ),
-
-        // ── TransactionsBloc: authorize / unauthorize / reverse / delete ──
         BlocListener<TransactionsBloc, TransactionsState>(
           listenWhen: (prev, next) =>
           next is TransactionsLoadedState &&
@@ -589,7 +723,6 @@ class _FundTransferDialog extends StatelessWidget {
                   Navigator.of(context).pop(true);
                   return;
                 }
-                // Reload the transfer so stateText + footer refresh.
                 context
                     .read<FundTransferBloc>()
                     .add(LoadFundTransferDetailEvent(ref));
@@ -629,12 +762,12 @@ class _FundTransferDialog extends StatelessWidget {
 
           final isEditing = _isEditing;
 
-          // ── Loading gate ────────────────────────────────────
           if (isEditing && loaded == null && state is! FundTransferError) {
             return ZFormDialog(
               width: 640,
               icon: Icons.swap_horiz_rounded,
-              title: '${AppLocalizations.of(context)!.fundTransfer} · $reference',
+              title:
+              '${AppLocalizations.of(context)!.fundTransfer} · $reference',
               isActionTrue: false,
               onAction: null,
               child: const SizedBox(
@@ -652,19 +785,18 @@ class _FundTransferDialog extends StatelessWidget {
             isActionTrue: false,
             onAction: null,
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: double.infinity),
+              constraints:
+              const BoxConstraints(maxHeight: double.infinity),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Inline error banner ─────────────────────
-                  if (state is FundTransferError && state.message.isNotEmpty)
+                  if (state is FundTransferError &&
+                      state.message.isNotEmpty)
                     _banner(
                       state.message,
                       Theme.of(context).colorScheme.error,
                     ),
-
-                  // ── Form ────────────────────────────────────
                   Flexible(
                     child: FundTransferForm(
                       key: ValueKey(reference ?? 'new'),
@@ -703,8 +835,6 @@ class _FundTransferDialog extends StatelessWidget {
                       },
                     ),
                   ),
-
-                  // ── Footer ─────────────────────────────────
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
                     child: Wrap(
@@ -712,51 +842,51 @@ class _FundTransferDialog extends StatelessWidget {
                       runSpacing: 8,
                       children: [
                         ZOutlineButton(
-                          onPressed: () => Navigator.of(context).pop(false),
-                          label: Text(AppLocalizations.of(context)!.cancel),
+                          onPressed: () =>
+                              Navigator.of(context).pop(false),
+                          label:
+                          Text(AppLocalizations.of(context)!.cancel),
                         ),
-
-                        // Pending + maker → Delete · Authorize · Update
                         if (isEditing && isPending && isMaker && !busy) ...[
                           ZOutlineButton(
                             onPressed: () => _dispatchDelete(context),
                             backgroundHover:
                             Theme.of(context).colorScheme.error,
                             icon: Icons.delete_outline_rounded,
-                            label: Text(AppLocalizations.of(context)!.delete),
+                            label:
+                            Text(AppLocalizations.of(context)!.delete),
                           ),
                           ZOutlineButton(
                             isActive: true,
                             onPressed: () => _dispatchAuthorize(context),
                             icon: Icons.check_circle_outline_rounded,
-                            label:
-                            Text(AppLocalizations.of(context)!.authorize),
+                            label: Text(
+                                AppLocalizations.of(context)!.authorize),
                           ),
                           ZOutlineButton(
                             isActive: true,
-                            onPressed: () => formKey.currentState?.submit(),
+                            onPressed: () =>
+                                formKey.currentState?.submit(),
                             icon: Icons.save_alt_rounded,
-                            label: Text(AppLocalizations.of(context)!.update),
+                            label:
+                            Text(AppLocalizations.of(context)!.update),
                           ),
                         ],
-
-                        // Authorized → Unauthorize · Reverse
                         if (isEditing && isAuthorized && !busy) ...[
                           ZOutlineButton(
-                            onPressed: () => _dispatchUnauthorize(context),
+                            onPressed: () =>
+                                _dispatchUnauthorize(context),
                             icon: Icons.undo_rounded,
                             label: Text(
-                              AppLocalizations.of(context)!.unauthorize,
-                            ),
+                                AppLocalizations.of(context)!.unauthorize),
                           ),
                           ZOutlineButton(
                             onPressed: () => _dispatchReverse(context),
                             icon: Icons.replay_rounded,
-                            label: Text(AppLocalizations.of(context)!.reverse),
+                            label: Text(
+                                AppLocalizations.of(context)!.reverse),
                           ),
                         ],
-
-                        // Create mode → Save
                         if (!isEditing)
                           ZOutlineButton(
                             isActive: true,
@@ -764,7 +894,8 @@ class _FundTransferDialog extends StatelessWidget {
                                 ? null
                                 : () => formKey.currentState?.submit(),
                             icon: Icons.save_alt_rounded,
-                            label: Text(AppLocalizations.of(context)!.save),
+                            label:
+                            Text(AppLocalizations.of(context)!.save),
                           ),
                       ],
                     ),
@@ -833,11 +964,13 @@ class _AccountDetailsCard extends StatelessWidget {
   final StakeholderAccount account;
   final String fallbackCurrency;
   final String label;
+  final String? effectiveCurrencyOverride;
 
   const _AccountDetailsCard({
     required this.account,
     required this.fallbackCurrency,
     this.label = 'Account details',
+    this.effectiveCurrencyOverride,
   });
 
   static const int _stakeholderCategory = 8;
@@ -869,7 +1002,12 @@ class _AccountDetailsCard extends StatelessWidget {
 
     final isStakeholder = account.accCategory == _stakeholderCategory;
     final status = account.accStatus;
+
+    // API row currency first; only fall back to base if the API
+    // returned nothing (GL accounts always carry a currency in this
+    // API, so the fallback is basically never used).
     final effectiveCcy = account.accCurrency ??
+        effectiveCurrencyOverride ??
         (fallbackCurrency.isEmpty ? '' : fallbackCurrency);
 
     return Container(
@@ -887,7 +1025,8 @@ class _AccountDetailsCard extends StatelessWidget {
           const Divider(),
           row(tr.accountNumber, account.accNumber?.toString() ?? ''),
           row(tr.accountName, account.accName ?? ''),
-          row(tr.balance, '${account.accBalance.toAmount()} $effectiveCcy'),
+          row(tr.balance,
+              '${account.accBalance.toAmount()} $effectiveCcy'),
           if (isStakeholder && status != null)
             row(tr.status, status == 1 ? tr.active : tr.blocked),
         ],
@@ -901,7 +1040,12 @@ class _AccountDetailsCard extends StatelessWidget {
 class _LegDetailsCard extends StatelessWidget {
   final FundTransferLeg leg;
   final String label;
-  const _LegDetailsCard({required this.leg, required this.label});
+  final String? effectiveCurrency;
+  const _LegDetailsCard({
+    required this.leg,
+    required this.label,
+    this.effectiveCurrency,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -918,6 +1062,8 @@ class _LegDetailsCard extends StatelessWidget {
       ),
     );
 
+    final ccy = effectiveCurrency ?? leg.currency;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 2),
       padding: const EdgeInsets.all(8),
@@ -928,11 +1074,12 @@ class _LegDetailsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: title?.copyWith(fontWeight: FontWeight.bold)),
+          Text(label,
+              style: title?.copyWith(fontWeight: FontWeight.bold)),
           const Divider(),
           row(tr.accountNumber, leg.account.toString()),
           row(tr.accountName, leg.accountName),
-          row(tr.amount, '${leg.amount.toStringAsFixed(2)} ${leg.currency}'),
+          row(tr.amount, '${leg.amount.toStringAsFixed(2)} $ccy'),
         ],
       ),
     );
