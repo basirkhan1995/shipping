@@ -97,8 +97,6 @@ class ExchangeFormState extends State<ExchangeForm> {
   StreamSubscription<ExchangeRateState>? _rateSub;
   bool _print = true;
 
-  static const Set<int> _transferableCategories = {1, 8};
-
   bool get _isEditable =>
       widget.stateText == null || widget.stateText == 'Pending';
 
@@ -542,6 +540,7 @@ class ExchangeFormState extends State<ExchangeForm> {
     excludeAccount: _creditAccountNo,
     excludeCurrency: _creditCcyEffective,
     isDebit: true,
+    allowedCategories: null
   );
 
   Widget _buildCreditPicker() => _accountPicker(
@@ -564,6 +563,7 @@ class ExchangeFormState extends State<ExchangeForm> {
     excludeAccount: _debitAccountNo,
     excludeCurrency: _debitCcyEffective,
     isDebit: false,
+    allowedCategories: null
   );
 
   Widget _accountPicker({
@@ -576,6 +576,7 @@ class ExchangeFormState extends State<ExchangeForm> {
     int? excludeAccount,
     String? excludeCurrency,
     required bool isDebit,
+    Set<int>? allowedCategories = const {1, 8},
   }) {
     return GenericTextField<StakeholderAccount, StkAccountsBloc,
         StkAccountsState>(
@@ -627,10 +628,14 @@ class ExchangeFormState extends State<ExchangeForm> {
           return const <StakeholderAccount>[];
         }
         return s.accounts.where((a) {
-          if (!_transferableCategories.contains(a.accCategory)) return false;
+          // 1. Category filter — only apply when the caller asked for one.
+          if (allowedCategories != null &&
+              !allowedCategories.contains(a.accCategory)) {
+            return false;
+          }
 
-          // Exclude only the exact same account number + currency.
-          // Keep other currency rows of the same GL account selectable.
+          // 2. Exclude only the exact same account number + currency.
+          //    Keep other currency rows of the same GL account selectable.
           final rowCurrency =
           _normalizeCurrency(a.accCurrency ?? widget.baseCurrency);
           final selectedCurrency = _normalizeCurrency(excludeCurrency);

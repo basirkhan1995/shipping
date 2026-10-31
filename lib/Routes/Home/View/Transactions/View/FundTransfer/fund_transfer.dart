@@ -100,7 +100,6 @@ class FundTransferFormState extends State<FundTransferForm> {
   bool _print = true;
 
   static const int _stakeholderCategory = 8;
-  static const Set<int> _transferableCategories = {1, 8};
 
   bool get _isEditable =>
       widget.stateText == null || widget.stateText == 'Pending';
@@ -408,6 +407,7 @@ class FundTransferFormState extends State<FundTransferForm> {
     isStakeholder: _fromIsStakeholder,
     currentCurrency: _fromCcyEffective,
     currencyOverride: _fromCcyEffective,
+    allowedCategories: null,
     onCurrencySelected: (ccy) {
       final code = ccy?.ccyCode ?? widget.baseCurrency;
       final accountNo = _fromAcc?.accNumber;
@@ -451,6 +451,7 @@ class FundTransferFormState extends State<FundTransferForm> {
     isStakeholder: _toIsStakeholder,
     currentCurrency: _toCcyEffective,
     currencyOverride: _toCcyEffective,
+    allowedCategories: null,
     onCurrencySelected: (ccy) {
       final code = ccy?.ccyCode ?? widget.baseCurrency;
       final accountNo = _toAcc?.accNumber;
@@ -496,6 +497,7 @@ class FundTransferFormState extends State<FundTransferForm> {
     required String? currencyOverride,
     required ValueChanged<CurrenciesModel?> onCurrencySelected,
     required ValueChanged<StakeholderAccount> onSelected,
+    Set<int>? allowedCategories = const {1, 8},
     int? excludeAccount,
     String? excludeCurrency,
   }) {
@@ -548,10 +550,14 @@ class FundTransferFormState extends State<FundTransferForm> {
           return const <StakeholderAccount>[];
         }
         return s.accounts.where((a) {
-          if (!_transferableCategories.contains(a.accCategory)) return false;
+          // 1. Category filter — only apply when the caller asked for one.
+          if (allowedCategories != null &&
+              !allowedCategories.contains(a.accCategory)) {
+            return false;
+          }
 
-          // Exclude only the exact (account number + currency) pair.
-          // Keeps other currency rows of the same GL account selectable.
+          // 2. Exclude only the exact (account number + currency) pair.
+          //    Keeps other currency rows of the same GL account selectable.
           final rowCcy = (a.accCurrency ?? widget.baseCurrency)
               .trim()
               .toUpperCase();

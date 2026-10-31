@@ -13,6 +13,7 @@ import '../Routes/Home/View/Finance/View/Reminder/model/reminder_model.dart';
 import '../Routes/Home/View/HR/View/Users/model/user_model.dart';
 import '../Routes/Home/View/HR/View/Users/model/usr_report_model.dart';
 import '../Routes/Home/View/Report/AccountStatement/model/stmt_model.dart';
+import '../Routes/Home/View/Report/AllBalances/model/all_balances_model.dart';
 import '../Routes/Home/View/Report/ArAndAp/model/ar_ap_model.dart';
 import '../Routes/Home/View/Report/BalanceSheet/model/bs_model.dart';
 import '../Routes/Home/View/Report/GLStatement/model/gl_statement_model.dart';
@@ -2019,6 +2020,35 @@ class Repositories {
     final decodedData = json.decode(jsonString) as dynamic;
 
     return ArApReportModel.fromApiResponse(decodedData);
+  }
+
+  Future<List<AllBalancesModel>> allBalances({
+    int? catId,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.get(
+      endpoint: "/reports/allBalances.php",
+      queryParams: {"cat": catId},
+      cancelToken: cancelToken,
+    );
+
+    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+      throw Exception(response.data['msg']);
+    }
+
+    // Parse as list
+    if (response.data is List) {
+      return List<AllBalancesModel>.from(
+        response.data.map((x) => AllBalancesModel.fromMap(x)),
+      );
+    }
+
+    // If single object, wrap in list
+    if (response.data is Map<String, dynamic>) {
+      return [AllBalancesModel.fromMap(response.data)];
+    }
+
+    return [];
   }
 
 }

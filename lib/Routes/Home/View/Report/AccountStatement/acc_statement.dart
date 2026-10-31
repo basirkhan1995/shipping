@@ -7,7 +7,6 @@ import 'package:shipping/Features/Widgets/toast.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/View/StkAccount/bloc/stk_accounts_bloc.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/View/StkAccount/bloc/stk_accounts_state.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/model/stk_model.dart';
-
 import '../../../../../../../Features/Date/z_generic_date.dart';
 import '../../../../../../../Features/Date/z_range_picker.dart';
 import '../../../../../../../Features/PrintSettings/print_preview.dart';
@@ -281,10 +280,13 @@ class _MobileState extends State<_Mobile> {
                           child: CircularProgressIndicator(strokeWidth: 3),
                         ),
                         stateToItems: (state) {
-                          if (state is StkAccountsLoadedState) {
-                            return state.accounts;
+                          if (state is! StkAccountsLoadedState) {
+                            return const <StakeholderAccount>[];
                           }
-                          return [];
+                          // ✅ Show only stakeholder accounts (accCategory == 8)
+                          return state.accounts
+                              .where((a) => a.accCategory == 8)
+                              .toList();
                         },
                         onSelected: (value) {
                           setState(() {
@@ -716,10 +718,13 @@ class _DesktopState extends State<_Desktop> {
                                   child: CircularProgressIndicator(strokeWidth: 3),
                                 ),
                                 stateToItems: (state) {
-                                  if (state is StkAccountsLoadedState) {
-                                    return state.accounts;
+                                  if (state is! StkAccountsLoadedState) {
+                                    return const <StakeholderAccount>[];
                                   }
-                                  return [];
+                                  // ✅ Show only stakeholder accounts (accCategory == 8)
+                                  return state.accounts
+                                      .where((a) => a.accCategory == 8)
+                                      .toList();
                                 },
                                 onSelected: (value) {
                                   setState(() {

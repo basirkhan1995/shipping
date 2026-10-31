@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shipping/Features/Widgets/znavigator.dart';
+import 'package:shipping/Routes/Home/View/Report/AllBalances/all_balances.dart';
 import 'package:shipping/Routes/Home/View/Report/CashBalances/all_cash.dart';
 import 'package:shipping/Routes/Home/View/Report/IncomeStatement/income_statement.dart';
 import 'package:shipping/Routes/Home/View/Report/TrialBalance/trial_balance.dart';
@@ -160,6 +161,17 @@ class _ReportBody extends StatelessWidget {
         onTap: (ctx) => ZNavigator.goto(
           context: ctx,
           const ArApReportPage(initialType: 'ap'),   // ← AP only
+        ),
+      ),
+
+      // ── NEW: Payables card ────────────────────────────────────────
+      _ReportData(
+        icon: Icons.all_inclusive_rounded,
+        title: 'All Balances',
+        description:
+        'All accounts balances report',
+        onTap: (ctx) => ZNavigator.goto(context: ctx,
+          const AllBalancesView(),
         ),
       ),
     ];

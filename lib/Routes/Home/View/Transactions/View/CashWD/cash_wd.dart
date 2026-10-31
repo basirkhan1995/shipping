@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/extensions.dart';
-import 'package:shipping/Features/Widgets/zbutton.dart';                     // ZOutlineButton
+import 'package:shipping/Features/Widgets/zbutton.dart'; // ZOutlineButton
 import 'package:shipping/Routes/Home/View/Stakeholder/model/stk_model.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 
@@ -43,7 +43,7 @@ class CashTxnSpec {
     this.restrictToBaseCurrency = false,
     this.allowReminder = false,
     this.editableCurrency = false,
-    this.perId
+    this.perId,
   });
 }
 
@@ -180,7 +180,6 @@ class CashTxnFormState extends State<CashTxnForm> {
     return Form(
       key: _formKey,
       child: SingleChildScrollView(
-        // ── FIX #3 — constrain height so the dialog doesn't fill the screen
         padding: const EdgeInsets.all(8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -217,7 +216,7 @@ class CashTxnFormState extends State<CashTxnForm> {
         readOnly: !_isEditable,
         searchFunction: (bloc, q) {
           if (q.trim().isEmpty) return;
-          bloc.add(LoadStkAccountsEvent(query: q,perId: widget.spec.perId));
+          bloc.add(LoadStkAccountsEvent(query: q, perId: widget.spec.perId));
         },
         itemBuilder: (context, account) => Padding(
           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
@@ -394,7 +393,7 @@ Future<bool?> showCashTxnDialog(
   );
 }
 
-class _CashTxnDialog extends StatelessWidget {
+class _CashTxnDialog extends StatefulWidget {
   final CashTxnSpec spec;
   final String usrName;
   final String baseCurrency;
@@ -407,6 +406,20 @@ class _CashTxnDialog extends StatelessWidget {
     this.reference,
   });
 
+  @override
+  State<_CashTxnDialog> createState() => _CashTxnDialogState();
+}
+
+class _CashTxnDialogState extends State<_CashTxnDialog> {
+  /// Local error shown inside the dialog when a row action fails.
+  /// Cleared on success or when the user starts a new action.
+  String? _localError;
+
+  CashTxnSpec get spec => widget.spec;
+  String get usrName => widget.usrName;
+  String get baseCurrency => widget.baseCurrency;
+  String? get reference => widget.reference;
+
   bool get _isEditing => reference != null && reference!.isNotEmpty;
 
   String? _loginName(BuildContext context) {
@@ -414,9 +427,16 @@ class _CashTxnDialog extends StatelessWidget {
     return auth is AuthenticatedState ? auth.loginData.usrName : null;
   }
 
+  void _clearLocalError() {
+    if (_localError != null && mounted) {
+      setState(() => _localError = null);
+    }
+  }
+
   void _dispatchAuthorize(BuildContext context) {
     final ref = reference;
     if (ref == null || ref.isEmpty) return;
+    _clearLocalError();
     context.read<TransactionsBloc>().add(
       AuthorizeTransactionEvent(
         reference: ref,
@@ -428,6 +448,7 @@ class _CashTxnDialog extends StatelessWidget {
   void _dispatchUnauthorize(BuildContext context) {
     final ref = reference;
     if (ref == null || ref.isEmpty) return;
+    _clearLocalError();
     context.read<TransactionsBloc>().add(
       UnauthorizeTransactionEvent(
         reference: ref,
@@ -439,6 +460,7 @@ class _CashTxnDialog extends StatelessWidget {
   void _dispatchReverse(BuildContext context) {
     final ref = reference;
     if (ref == null || ref.isEmpty) return;
+    _clearLocalError();
     context.read<TransactionsBloc>().add(
       ReverseTransactionEvent(
         reference: ref,
@@ -478,6 +500,7 @@ class _CashTxnDialog extends StatelessWidget {
 
     if (confirmed != true) return;
     if (!context.mounted) return;
+    _clearLocalError();
 
     context.read<TransactionsBloc>().add(
       DeleteTransactionEvent(
@@ -505,15 +528,11 @@ class _CashTxnDialog extends StatelessWidget {
               );
               Navigator.of(context).pop(true);
             }
-            // Failures render as the inline banner, not a toast —
-            // keeps the dialog open so the user can retry.
+            // CashTxnFailure is shown inline by the banner below.
           },
         ),
 
         // ── Transactions bloc: row actions (auth / unauth / reverse / delete) ──
-        // FIX #4 — after every successful action, reload the transaction
-        // so `stateText` (and therefore the footer buttons) updates without
-        // requiring the user to close and reopen the dialog.
         BlocListener<TransactionsBloc, TransactionsState>(
           listenWhen: (prev, next) =>
           next is TransactionsLoadedState &&
@@ -523,6 +542,10 @@ class _CashTxnDialog extends StatelessWidget {
 
             final success = state.actionSuccess;
             if (success != null) {
+              // Success toast is fine, but also clear any inline error.
+              if (mounted && _localError != null) {
+                setState(() => _localError = null);
+              }
               ToastManager.show(
                 context: context,
                 title: 'Success',
@@ -535,24 +558,21 @@ class _CashTxnDialog extends StatelessWidget {
 
               final ref = reference;
               if (ref != null && ref.isNotEmpty) {
-                // If it was a delete, the txn is gone — close the dialog.
                 if (success.toLowerCase().contains('deleted')) {
                   Navigator.of(context).pop(true);
                   return;
                 }
-                // Otherwise reload so the stateText and the footer refresh.
                 context.read<CashTxnBloc>().add(CashTxnLoadRequested(ref));
               }
+              return;
             }
 
             final error = state.actionError;
             if (error != null) {
-              ToastManager.show(
-                context: context,
-                title: 'Failed',
-                message: error,
-                type: ToastType.error,
-              );
+              // ✅ Show inline in the dialog instead of a toast.
+              if (mounted) {
+                setState(() => _localError = error);
+              }
               context
                   .read<TransactionsBloc>()
                   .add(const ClearRowActionErrorEvent());
@@ -587,7 +607,7 @@ class _CashTxnDialog extends StatelessWidget {
               isActionTrue: false,
               onAction: null,
               child: const SizedBox(
-                height: 220,                                     // FIX #3
+                height: 220,
                 child: Center(child: CircularProgressIndicator()),
               ),
             );
@@ -601,19 +621,25 @@ class _CashTxnDialog extends StatelessWidget {
                 : spec.title(context),
             isActionTrue: false,
             onAction: null,
-            child: ConstrainedBox(                              // FIX #3
+            child: ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 520),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // ── Inline error banner ───────────────────────
+                  // Bloc failure first (form-level), then the local
+                  // action error (row-action-level).
                   if (state is CashTxnFailure && state.message.isNotEmpty)
                     _banner(state.message,
                         Theme.of(context).colorScheme.error),
 
+                  if (_localError != null && _localError!.isNotEmpty)
+                    _banner(_localError!,
+                        Theme.of(context).colorScheme.error),
+
                   // ── Form ──────────────────────────────────────
-                  Flexible(                                     // FIX #3
+                  Flexible(
                     child: CashTxnForm(
                       key: ValueKey(reference ?? 'new'),
                       formKey: formKey,
@@ -623,6 +649,7 @@ class _CashTxnDialog extends StatelessWidget {
                       initialDraft: initial,
                       stateText: stateText,
                       onSubmit: (draft) {
+                        _clearLocalError();
                         if (isEditing) {
                           context
                               .read<CashTxnBloc>()
@@ -636,7 +663,7 @@ class _CashTxnDialog extends StatelessWidget {
                     ),
                   ),
 
-                  // ── Footer with ZOutlineButton (FIX #2) ───────
+                  // ── Footer ────────────────────────────────────
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
                     child: Wrap(
@@ -648,7 +675,9 @@ class _CashTxnDialog extends StatelessWidget {
                           label: Text(AppLocalizations.of(context)!.cancel),
                         ),
 
-                        // Pending + maker → Delete · Authorize · Update
+                        // Pending + maker → Delete · Update
+                        // (Authorize is hidden for the maker —
+                        //  maker ≠ checker is enforced server-side too.)
                         if (isEditing &&
                             isPending &&
                             isMaker &&
@@ -658,14 +687,7 @@ class _CashTxnDialog extends StatelessWidget {
                             backgroundHover:
                             Theme.of(context).colorScheme.error,
                             icon: Icons.delete_outline_rounded,
-                            label:
-                            Text(AppLocalizations.of(context)!.delete),
-                          ),
-                          ZOutlineButton(
-                            isActive: true,
-                            onPressed: () => _dispatchAuthorize(context),
-                            icon: Icons.check_circle_outline_rounded,
-                            label: Text(AppLocalizations.of(context)!.authorize),
+                            label: Text(AppLocalizations.of(context)!.delete),
                           ),
                           ZOutlineButton(
                             isActive: true,
@@ -676,13 +698,24 @@ class _CashTxnDialog extends StatelessWidget {
                           ),
                         ],
 
+                        // ✅ Pending + non-maker → Authorize
+                        if (isEditing && isPending && !isMaker && !busy)
+                          ZOutlineButton(
+                            isActive: true,
+                            onPressed: () => _dispatchAuthorize(context),
+                            icon: Icons.check_circle_outline_rounded,
+                            label:
+                            Text(AppLocalizations.of(context)!.authorize),
+                          ),
+
                         // Authorized → Unauthorize · Reverse
                         if (isEditing && isAuthorized && !busy) ...[
                           ZOutlineButton(
                             onPressed: () =>
                                 _dispatchUnauthorize(context),
                             icon: Icons.undo_rounded,
-                            label: Text(AppLocalizations.of(context)!.unauthorize),
+                            label: Text(
+                                AppLocalizations.of(context)!.unauthorize),
                           ),
                           ZOutlineButton(
                             onPressed: () => _dispatchReverse(context),
@@ -699,8 +732,7 @@ class _CashTxnDialog extends StatelessWidget {
                                 ? null
                                 : () => formKey.currentState?.submit(),
                             icon: Icons.save_alt_rounded,
-                            label:
-                            Text(AppLocalizations.of(context)!.save),
+                            label: Text(AppLocalizations.of(context)!.save),
                           ),
                       ],
                     ),
@@ -728,8 +760,10 @@ class _CashTxnDialog extends StatelessWidget {
         Icon(Icons.warning_amber_rounded, color: color, size: 16),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(text,
-              style: TextStyle(color: color, fontSize: 12)),
+          child: Text(
+            text,
+            style: TextStyle(color: color, fontSize: 12),
+          ),
         ),
       ],
     ),
@@ -752,8 +786,7 @@ class _Check extends StatelessWidget {
     spacing: 5,
     children: [
       Checkbox(
-        visualDensity:
-        const VisualDensity(horizontal: -4, vertical: -4),
+        visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
         value: value,
         onChanged: (v) => onChanged(v ?? false),
       ),
@@ -819,7 +852,8 @@ class _AccountDetailsCard extends StatelessWidget {
           row('Account number', account.accNumber?.toString() ?? ''),
           row('Account name', account.accName ?? ''),
           row('Balance', "${account.accBalance.toAmount()} $effectiveCcy"),
-          if (isStakeholder && status != null) row('Status', status == 1 ? 'Active' : 'Blocked'),
+          if (isStakeholder && status != null)
+            row('Status', status == 1 ? 'Active' : 'Blocked'),
         ],
       ),
     );

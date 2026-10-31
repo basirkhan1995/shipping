@@ -649,7 +649,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get branchLimitHint => 'حد مجاز تأیید خودکار نمایندگی';
 
   @override
-  String get fxTransaction => 'تبادلۀ پول';
+  String get fxTransaction => 'تبادلۀ اسعار';
 
   @override
   String get bulkTransaction => 'معامله گروهی';

@@ -216,7 +216,7 @@
   "dateRange": "تاریخ رینچ",
   "branches": "نمایندگی ها",
   "branchLimitHint": "حد مجاز تأیید خودکار نمایندگی",
-  "fxTransaction": "تبادلۀ پول",
+  "fxTransaction": "تبادلۀ اسعار",
   "bulkTransaction": "معامله گروهی",
   "pending": "در انتظار",
   "authorized": "تایید شده",
