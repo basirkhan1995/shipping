@@ -120,7 +120,9 @@ class FundTransferFormState extends State<FundTransferForm> {
   /// GL → user override → API row ccy → leg ccy → base (last resort).
   String? get _fromCcyEffective {
     if (_fromIsStakeholder) {
-      return _fromAcc?.accCurrency ?? widget.baseCurrency;
+      return _fromAcc?.accCurrency ??
+          _fromLeg?.currency ??
+          widget.baseCurrency;
     }
     return _fromCcyOverride ??
         _fromAcc?.accCurrency ??
@@ -130,7 +132,9 @@ class FundTransferFormState extends State<FundTransferForm> {
 
   String? get _toCcyEffective {
     if (_toIsStakeholder) {
-      return _toAcc?.accCurrency ?? widget.baseCurrency;
+      return _toAcc?.accCurrency ??
+          _toLeg?.currency ??
+          widget.baseCurrency;
     }
     return _toCcyOverride ??
         _toAcc?.accCurrency ??
@@ -324,7 +328,8 @@ class FundTransferFormState extends State<FundTransferForm> {
           spacing: 12,
           children: [
             _buildFromPicker(),
-            if (_fromAcc != null)
+            if (_fromAcc != null &&
+                (_fromLeg == null || _fromAcc!.accCurrency == _fromLeg!.currency))
               _AccountDetailsCard(
                 account: _fromAcc!,
                 fallbackCurrency: widget.baseCurrency,
@@ -339,7 +344,8 @@ class FundTransferFormState extends State<FundTransferForm> {
               ),
 
             _buildToPicker(),
-            if (_toAcc != null)
+            if (_toAcc != null &&
+                (_toLeg == null || _toAcc!.accCurrency == _toLeg!.currency))
               _AccountDetailsCard(
                 account: _toAcc!,
                 fallbackCurrency: widget.baseCurrency,
@@ -1113,7 +1119,9 @@ class _LegDetailsCard extends StatelessWidget {
       ),
     );
 
-    final ccy = effectiveCurrency ?? leg.currency;
+    final ccy = leg.currency.isNotEmpty
+        ? leg.currency
+        : (effectiveCurrency ?? '');
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 2),
