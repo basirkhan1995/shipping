@@ -1,4 +1,4 @@
-// features/journal/exchange/view/exchange_form.dart
+
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -15,6 +15,7 @@ import '../../../../../../Services/api_exception.dart';
 import '../../../../../../Services/repository.dart';
 import '../../../../../Auth/bloc/auth_bloc.dart';
 import '../../../Finance/View/ExchangeRate/bloc/exchange_rate_bloc.dart';
+import '../../../Finance/View/Currencies/model/ccy_model.dart';
 import '../../../Stakeholder/model/stk_model.dart';
 import '../../../Stakeholder/View/StkAccount/bloc/stk_accounts_bloc.dart';
 import '../../../Stakeholder/View/StkAccount/bloc/stk_accounts_event.dart';
@@ -116,10 +117,13 @@ class ExchangeFormState extends State<ExchangeForm> {
   int? get _debitAccountNo => _debitAcc?.accNumber ?? _debitLeg?.account;
   int? get _creditAccountNo => _creditAcc?.accNumber ?? _creditLeg?.account;
 
+  // Use the currency supplied by the API for the selected account.
+  // The base currency is only a fallback when neither the API nor the
+  // loaded transaction leg contains a currency.
   String? get _debitCcyEffective =>
-      _debitCcy ?? _debitLeg?.currency ?? widget.baseCurrency;
+      _debitCcy ?? _debitAcc?.accCurrency ?? _debitLeg?.currency ?? widget.baseCurrency;
   String? get _creditCcyEffective =>
-      _creditCcy ?? _creditLeg?.currency ?? widget.baseCurrency;
+      _creditCcy ?? _creditAcc?.accCurrency ?? _creditLeg?.currency ?? widget.baseCurrency;
 
   @override
   void initState() {
@@ -147,8 +151,11 @@ class ExchangeFormState extends State<ExchangeForm> {
     _debitLeg = dr;
     _creditLeg = cr;
 
-    _debitCcy = dr?.currency ?? widget.baseCurrency;
-    _creditCcy = cr?.currency ?? widget.baseCurrency;
+    // Preserve the currency stored on the transaction. If it is absent,
+    // the account API row will supply it after the account is selected;
+    // baseCurrency is only the final fallback in the effective getters.
+    _debitCcy = dr?.currency;
+    _creditCcy = cr?.currency;
 
     if (dr != null) {
       _debitCtrl.text = '${dr.account} | ${dr.accountName}';
@@ -379,6 +386,7 @@ class ExchangeFormState extends State<ExchangeForm> {
                 account: _debitAcc!,
                 fallbackCurrency: widget.baseCurrency,
                 label: tr.debitAccount,
+                effectiveCurrency: _debitCcyEffective,
               )
             else if (_debitLeg != null)
               _LegDetailsCard(leg: _debitLeg!, label: tr.debitAccount),
@@ -389,6 +397,7 @@ class ExchangeFormState extends State<ExchangeForm> {
                 account: _creditAcc!,
                 fallbackCurrency: widget.baseCurrency,
                 label: tr.creditAccount,
+                effectiveCurrency: _creditCcyEffective,
               )
             else if (_creditLeg != null)
               _LegDetailsCard(leg: _creditLeg!, label: tr.creditAccount),
@@ -413,6 +422,8 @@ class ExchangeFormState extends State<ExchangeForm> {
       setState(() {
         _debitAcc = a;
         _debitLeg = null;
+        // API currency is the default for every account category.
+        // The currency selector can override it for GL accounts.
         _debitCcy = a.accCurrency ?? widget.baseCurrency;
       });
       _maybeFetchRate();
@@ -421,6 +432,7 @@ class ExchangeFormState extends State<ExchangeForm> {
       });
     },
     excludeAccount: _creditAccountNo,
+    isDebit: true,
   );
 
   Widget _buildCreditPicker() => _accountPicker(
@@ -433,6 +445,8 @@ class ExchangeFormState extends State<ExchangeForm> {
       setState(() {
         _creditAcc = a;
         _creditLeg = null;
+        // API currency is the default for every account category.
+        // The currency selector can override it for GL accounts.
         _creditCcy = a.accCurrency ?? widget.baseCurrency;
       });
       _maybeFetchRate();
@@ -441,6 +455,7 @@ class ExchangeFormState extends State<ExchangeForm> {
       });
     },
     excludeAccount: _debitAccountNo,
+    isDebit: false,
   );
 
   Widget _accountPicker({
@@ -451,6 +466,7 @@ class ExchangeFormState extends State<ExchangeForm> {
     required StakeholderAccount? selected,
     required ValueChanged<StakeholderAccount> onSelected,
     int? excludeAccount,
+    required bool isDebit,
   }) {
     return GenericTextField<StakeholderAccount, StkAccountsBloc,
         StkAccountsState>(
@@ -501,7 +517,11 @@ class ExchangeFormState extends State<ExchangeForm> {
           ],
         ),
       ),
-      itemToString: (a) => '${a.accNumber} | ${a.accName}',
+      // Account number alone is not unique: 10101010 has AFN, EUR and USD
+      // rows. Include currency in the selection identity so the picker does
+      // not resolve every row to the first matching account.
+      itemToString: (a) =>
+      '${a.accNumber} | ${a.accName} | ${a.accCurrency ?? ''}',
       stateToItems: (s) {
         if (s is! StkAccountsLoadedState) {
           return const <StakeholderAccount>[];
@@ -516,6 +536,26 @@ class ExchangeFormState extends State<ExchangeForm> {
       },
       stateToLoading: (s) => s is StkAccountsLoadingState,
       onSelected: onSelected,
+      // The selector is visible only for GL accounts (category 1).
+      // Stakeholder accounts (category 8) always use their account currency.
+      showCurrencySelector: selected?.accCategory == 1 && _isEditable,
+      isCurrencySelectorEnabled: selected?.accCategory == 1 && _isEditable,
+      selectedCurrencyCodeOverride: isDebit
+          ? _debitCcyEffective
+          : _creditCcyEffective,
+      onCurrencySelectorChanged: (CurrenciesModel? currency) {
+        final code = currency?.ccyCode;
+        if (code == null || code.isEmpty || selected == null) return;
+        setState(() {
+          if (isDebit) {
+            _debitCcy = code;
+          } else {
+            _creditCcy = code;
+          }
+          _rate = null;
+        });
+        _maybeFetchRate();
+      },
       validator: (_) {
         if (!_isEditable) return null;
         if (widget.initialDetail != null) return null;
@@ -1146,11 +1186,13 @@ class _AccountDetailsCard extends StatelessWidget {
   final StakeholderAccount account;
   final String fallbackCurrency;
   final String label;
+  final String? effectiveCurrency;
 
   const _AccountDetailsCard({
     required this.account,
     required this.fallbackCurrency,
     this.label = 'Account details',
+    this.effectiveCurrency,
   });
 
   static const int _stakeholderCategory = 8;
@@ -1172,8 +1214,10 @@ class _AccountDetailsCard extends StatelessWidget {
 
     final isStakeholder = account.accCategory == _stakeholderCategory;
     final status = account.accStatus;
-    final effectiveCcy = account.accCurrency ??
-        (fallbackCurrency.isEmpty ? '' : fallbackCurrency);
+    final effectiveCcy = account.accCategory == 1
+        ? (effectiveCurrency ?? account.accCurrency ?? fallbackCurrency)
+        : (account.accCurrency ??
+        (fallbackCurrency.isEmpty ? '' : fallbackCurrency));
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 2),
@@ -1238,3 +1282,4 @@ class _LegDetailsCard extends StatelessWidget {
     );
   }
 }
+ 
