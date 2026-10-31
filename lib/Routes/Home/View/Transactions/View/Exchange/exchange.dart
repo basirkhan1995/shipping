@@ -1,5 +1,3 @@
-
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -24,9 +22,7 @@ import '../../bloc/transactions_bloc.dart';
 import 'bloc/exchange_bloc.dart';
 import 'model/ex_model.dart';
 
-// ═════════════════════════════════════════════════════════════════
 // FORM — add / edit a cross-currency exchange
-// ═════════════════════════════════════════════════════════════════
 
 class ExchangeForm extends StatefulWidget {
   final String usrName;
@@ -34,7 +30,6 @@ class ExchangeForm extends StatefulWidget {
   final ExchangeDetail? initialDetail;
   final String? stateText;
   final GlobalKey<ExchangeFormState>? formKey;
-
   final void Function(ExchangeFormResult result) onSubmit;
 
   const ExchangeForm({
@@ -85,35 +80,21 @@ class ExchangeFormState extends State<ExchangeForm> {
 
   StakeholderAccount? _debitAcc;
   StakeholderAccount? _creditAcc;
-
-  /// Fallback legs from the loaded detail (edit mode).
   ExchangeLeg? _debitLeg;
   ExchangeLeg? _creditLeg;
 
   String? _debitCcy;
   String? _creditCcy;
 
-  // When a GL currency is changed, reload the exact account/currency row
-  // so the balance card uses the balance returned for that currency.
   int? _pendingDebitAccountNo;
   String? _pendingDebitCurrency;
   int? _pendingCreditAccountNo;
   String? _pendingCreditCurrency;
 
-  /// Current rate (1 debit unit = `_rate` credit units).
   double? _rate;
-
-  /// True while the rate is being fetched from the API.
   bool _loadingRate = false;
-
-  /// Bumped each time we dispatch a new rate request so we ignore
-  /// responses for pairs we no longer care about.
   int _rateRequestId = 0;
-
-  /// Cancelled on dispose — stops `_awaitRate` from completing after
-  /// the widget is gone.
   StreamSubscription<ExchangeRateState>? _rateSub;
-
   bool _print = true;
 
   static const Set<int> _transferableCategories = {1, 8};
@@ -124,13 +105,17 @@ class ExchangeFormState extends State<ExchangeForm> {
   int? get _debitAccountNo => _debitAcc?.accNumber ?? _debitLeg?.account;
   int? get _creditAccountNo => _creditAcc?.accNumber ?? _creditLeg?.account;
 
-  // Use the currency supplied by the API for the selected account.
-  // The base currency is only a fallback when neither the API nor the
-  // loaded transaction leg contains a currency.
   String? get _debitCcyEffective =>
-      _debitCcy ?? _debitAcc?.accCurrency ?? _debitLeg?.currency ?? widget.baseCurrency;
+      _debitCcy ??
+          _debitAcc?.accCurrency ??
+          _debitLeg?.currency ??
+          widget.baseCurrency;
+
   String? get _creditCcyEffective =>
-      _creditCcy ?? _creditAcc?.accCurrency ?? _creditLeg?.currency ?? widget.baseCurrency;
+      _creditCcy ??
+          _creditAcc?.accCurrency ??
+          _creditLeg?.currency ??
+          widget.baseCurrency;
 
   @override
   void initState() {
@@ -144,7 +129,8 @@ class ExchangeFormState extends State<ExchangeForm> {
   @override
   void didUpdateWidget(covariant ExchangeForm oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.initialDetail?.reference != widget.initialDetail?.reference) {
+    if (oldWidget.initialDetail?.reference !=
+        widget.initialDetail?.reference) {
       setState(() => _applyDetail(widget.initialDetail));
     }
   }
@@ -154,13 +140,8 @@ class ExchangeFormState extends State<ExchangeForm> {
 
     final dr = d.debit;
     final cr = d.credit;
-
     _debitLeg = dr;
     _creditLeg = cr;
-
-    // Preserve the currency stored on the transaction. If it is absent,
-    // the account API row will supply it after the account is selected;
-    // baseCurrency is only the final fallback in the effective getters.
     _debitCcy = dr?.currency;
     _creditCcy = cr?.currency;
 
@@ -176,7 +157,6 @@ class ExchangeFormState extends State<ExchangeForm> {
     final r = d.rate;
     _rate = r;
     _rateCtrl.text = (r ?? 1).toStringAsFixed(6);
-
     _narrationCtrl.text = dr?.narration ?? cr?.narration ?? '';
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -215,8 +195,6 @@ class ExchangeFormState extends State<ExchangeForm> {
       _rate = null;
     });
 
-    // The account list may already contain the requested currency row.
-    // Use it immediately; otherwise request the account rows again.
     final currentState = context.read<StkAccountsBloc>().state;
     if (currentState is StkAccountsLoadedState) {
       StakeholderAccount? matching;
@@ -251,7 +229,8 @@ class ExchangeFormState extends State<ExchangeForm> {
     required int accountNo,
     required String currencyCode,
   }) {
-    if (account.accNumber != accountNo || account.accCurrency != currencyCode) {
+    if (account.accNumber != accountNo ||
+        account.accCurrency != currencyCode) {
       return;
     }
     setState(() {
@@ -276,12 +255,16 @@ class ExchangeFormState extends State<ExchangeForm> {
     StakeholderAccount? debitMatch;
     StakeholderAccount? creditMatch;
     for (final account in rows) {
-      if (debitNo != null && debitCcy != null &&
-          account.accNumber == debitNo && account.accCurrency == debitCcy) {
+      if (debitNo != null &&
+          debitCcy != null &&
+          account.accNumber == debitNo &&
+          account.accCurrency == debitCcy) {
         debitMatch = account;
       }
-      if (creditNo != null && creditCcy != null &&
-          account.accNumber == creditNo && account.accCurrency == creditCcy) {
+      if (creditNo != null &&
+          creditCcy != null &&
+          account.accNumber == creditNo &&
+          account.accCurrency == creditCcy) {
         creditMatch = account;
       }
     }
@@ -319,7 +302,7 @@ class ExchangeFormState extends State<ExchangeForm> {
     super.dispose();
   }
 
-  // ── Rate fetching ────────────────────────────────────────────
+  // Rate fetching
   Future<void> _fetchRate(String fromCcy, String toCcy) async {
     if (fromCcy == toCcy) {
       _setRate(1.0);
@@ -332,7 +315,6 @@ class ExchangeFormState extends State<ExchangeForm> {
         : 0;
 
     setState(() => _loadingRate = true);
-
     bloc.add(GetExchangeRateEvent(fromCcy: fromCcy, toCcy: toCcy));
 
     try {
@@ -363,9 +345,7 @@ class ExchangeFormState extends State<ExchangeForm> {
     required String fromCcy,
     required String toCcy,
   }) {
-    // If a previous listener is still open, cancel it first.
     _rateSub?.cancel();
-
     final completer = Completer<double>();
     _rateSub = bloc.stream.listen((s) {
       if (s is ExchangeRateLoadedState &&
@@ -387,14 +367,11 @@ class ExchangeFormState extends State<ExchangeForm> {
       }
     });
 
-    // Safety net: if the widget goes away before the API answers,
-    // complete the future so `_fetchRate` doesn't hang forever.
     if (!mounted) {
       _rateSub?.cancel();
       _rateSub = null;
       if (!completer.isCompleted) completer.complete(1.0);
     }
-
     return completer.future;
   }
 
@@ -410,15 +387,16 @@ class ExchangeFormState extends State<ExchangeForm> {
     final amount = double.tryParse(_amountCtrl.text.replaceAll(',', ''));
     final rate = _rate;
     if (amount == null || amount <= 0 || rate == null) return;
-    final credit = amount * rate;
-    _creditAmountCtrl.text = credit.toStringAsFixed(2);
+    _creditAmountCtrl.text = (amount * rate).toStringAsFixed(2);
   }
 
   void _recalcRateFromCredit() {
     final amount = double.tryParse(_amountCtrl.text.replaceAll(',', ''));
     final credit =
     double.tryParse(_creditAmountCtrl.text.replaceAll(',', ''));
-    if (amount == null || amount <= 0 || credit == null || credit <= 0) return;
+    if (amount == null || amount <= 0 || credit == null || credit <= 0) {
+      return;
+    }
     final rate = credit / amount;
     setState(() {
       _rate = rate;
@@ -426,7 +404,7 @@ class ExchangeFormState extends State<ExchangeForm> {
     });
   }
 
-  // ── Submit ───────────────────────────────────────────────────
+  // Submit
   void submit() {
     if (!_isEditable) return;
     if (_formKey.currentState?.validate() != true) return;
@@ -441,17 +419,23 @@ class ExchangeFormState extends State<ExchangeForm> {
     final creditNo = _creditAccountNo;
     if (debitNo == null || creditNo == null) return;
 
-    if (debitNo == creditNo) {
+    // Same GL account is valid when the currency differs.
+    // Reject only the identical account + currency combination.
+    final sameAccountAndCurrency = debitNo == creditNo &&
+        _normalizeCurrency(_debitCcyEffective) ==
+            _normalizeCurrency(_creditCcyEffective);
+
+    if (sameAccountAndCurrency) {
       _toastError(AppLocalizations.of(context)!.sameAccount);
       return;
     }
-    if (_debitCcyEffective == _creditCcyEffective) {
+    if (_normalizeCurrency(_debitCcyEffective) ==
+        _normalizeCurrency(_creditCcyEffective)) {
       _toastError(AppLocalizations.of(context)!.sameCurrencyForExchange);
       return;
     }
 
     final narration = _narrationCtrl.text.trim();
-
     widget.onSubmit(ExchangeFormResult(
       reference: widget.initialDetail?.reference,
       usrName: widget.usrName,
@@ -474,6 +458,9 @@ class ExchangeFormState extends State<ExchangeForm> {
     ));
   }
 
+  String _normalizeCurrency(String? currency) =>
+      (currency ?? '').trim().toUpperCase();
+
   void _toastError(String msg) => ToastManager.show(
     context: context,
     title: 'Check form',
@@ -481,7 +468,7 @@ class ExchangeFormState extends State<ExchangeForm> {
     type: ToastType.error,
   );
 
-  // ── Build ────────────────────────────────────────────────────
+  // Build
   @override
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
@@ -489,7 +476,8 @@ class ExchangeFormState extends State<ExchangeForm> {
     return BlocListener<StkAccountsBloc, StkAccountsState>(
       listenWhen: (previous, next) =>
       next is StkAccountsLoadedState &&
-          (_pendingDebitAccountNo != null || _pendingCreditAccountNo != null),
+          (_pendingDebitAccountNo != null ||
+              _pendingCreditAccountNo != null),
       listener: (context, state) {
         if (state is StkAccountsLoadedState) {
           _syncPendingCurrencyRows(state.accounts);
@@ -513,7 +501,6 @@ class ExchangeFormState extends State<ExchangeForm> {
                 )
               else if (_debitLeg != null)
                 _LegDetailsCard(leg: _debitLeg!, label: tr.debitAccount),
-
               _buildCreditPicker(),
               if (_creditAcc != null)
                 _AccountDetailsCard(
@@ -524,7 +511,6 @@ class ExchangeFormState extends State<ExchangeForm> {
                 )
               else if (_creditLeg != null)
                 _LegDetailsCard(leg: _creditLeg!, label: tr.creditAccount),
-
               _buildAmountRow(),
               _buildNarrationField(),
               if (_isEditable) _buildToggles(),
@@ -535,7 +521,7 @@ class ExchangeFormState extends State<ExchangeForm> {
     );
   }
 
-  // ── Pickers ──────────────────────────────────────────────────
+  // Pickers
   Widget _buildDebitPicker() => _accountPicker(
     key: const ValueKey('debit'),
     controller: _debitCtrl,
@@ -546,8 +532,6 @@ class ExchangeFormState extends State<ExchangeForm> {
       setState(() {
         _debitAcc = a;
         _debitLeg = null;
-        // API currency is the default for every account category.
-        // The currency selector can override it for GL accounts.
         _debitCcy = a.accCurrency ?? widget.baseCurrency;
       });
       _maybeFetchRate();
@@ -556,6 +540,7 @@ class ExchangeFormState extends State<ExchangeForm> {
       });
     },
     excludeAccount: _creditAccountNo,
+    excludeCurrency: _creditCcyEffective,
     isDebit: true,
   );
 
@@ -569,8 +554,6 @@ class ExchangeFormState extends State<ExchangeForm> {
       setState(() {
         _creditAcc = a;
         _creditLeg = null;
-        // API currency is the default for every account category.
-        // The currency selector can override it for GL accounts.
         _creditCcy = a.accCurrency ?? widget.baseCurrency;
       });
       _maybeFetchRate();
@@ -579,6 +562,7 @@ class ExchangeFormState extends State<ExchangeForm> {
       });
     },
     excludeAccount: _debitAccountNo,
+    excludeCurrency: _debitCcyEffective,
     isDebit: false,
   );
 
@@ -590,6 +574,7 @@ class ExchangeFormState extends State<ExchangeForm> {
     required StakeholderAccount? selected,
     required ValueChanged<StakeholderAccount> onSelected,
     int? excludeAccount,
+    String? excludeCurrency,
     required bool isDebit,
   }) {
     return GenericTextField<StakeholderAccount, StkAccountsBloc,
@@ -616,11 +601,14 @@ class ExchangeFormState extends State<ExchangeForm> {
           children: [
             Text(
               '${account.accNumber} | ${account.accName}',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             if (account.accCurrency != null)
               Text(
-                "${account.accBalance} | ${account.accCurrency!}",
+                '${account.accBalance} | ${account.accCurrency!}',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -630,18 +618,26 @@ class ExchangeFormState extends State<ExchangeForm> {
           ],
         ),
       ),
-      // Account number alone is not unique: 10101010 has AFN, EUR and USD
-      // rows. Include currency in the selection identity so the picker does
-      // not resolve every row to the first matching account.
+      // Currency is part of the item identity because one GL account
+      // can have AFN, EUR and USD rows with the same account number/name.
       itemToString: (a) =>
-      '${a.accNumber} | ${a.accName}',
+      '${a.accNumber} | ${a.accName} | ${a.accCurrency ?? widget.baseCurrency}',
       stateToItems: (s) {
         if (s is! StkAccountsLoadedState) {
           return const <StakeholderAccount>[];
         }
         return s.accounts.where((a) {
           if (!_transferableCategories.contains(a.accCategory)) return false;
-          if (excludeAccount != null && a.accNumber == excludeAccount) {
+
+          // Exclude only the exact same account number + currency.
+          // Keep other currency rows of the same GL account selectable.
+          final rowCurrency =
+          _normalizeCurrency(a.accCurrency ?? widget.baseCurrency);
+          final selectedCurrency = _normalizeCurrency(excludeCurrency);
+
+          if (excludeAccount != null &&
+              a.accNumber == excludeAccount &&
+              rowCurrency == selectedCurrency) {
             return false;
           }
           return true;
@@ -649,13 +645,10 @@ class ExchangeFormState extends State<ExchangeForm> {
       },
       stateToLoading: (s) => s is StkAccountsLoadingState,
       onSelected: onSelected,
-      // The selector is visible only for GL accounts (category 1).
-      // Stakeholder accounts (category 8) always use their account currency.
       showCurrencySelector: selected?.accCategory == 1 && _isEditable,
       isCurrencySelectorEnabled: selected?.accCategory == 1 && _isEditable,
-      selectedCurrencyCodeOverride: isDebit
-          ? _debitCcyEffective
-          : _creditCcyEffective,
+      selectedCurrencyCodeOverride:
+      isDebit ? _debitCcyEffective : _creditCcyEffective,
       onCurrencySelectorChanged: (CurrenciesModel? currency) {
         final code = currency?.ccyCode;
         if (code == null || code.isEmpty || selected == null) return;
@@ -669,7 +662,7 @@ class ExchangeFormState extends State<ExchangeForm> {
     );
   }
 
-  // ── Amount / rate / credit ───────────────────────────────────
+  // Amount / rate / credit
   Widget _buildAmountRow() {
     final tr = AppLocalizations.of(context)!;
     final debitCcy = _debitCcyEffective ?? '';
@@ -703,14 +696,14 @@ class ExchangeFormState extends State<ExchangeForm> {
                 validator: (v) {
                   if (!_isEditable) return null;
                   final n = double.tryParse((v ?? '').replaceAll(',', ''));
-                  if (n == null || n <= 0) return 'Must be greater than zero';
+                  if (n == null || n <= 0) {
+                    return 'Must be greater than zero';
+                  }
                   return null;
                 },
               ),
             ),
-            Expanded(
-              child: _buildRateField(debitCcy, creditCcy),
-            ),
+            Expanded(child: _buildRateField(debitCcy, creditCcy)),
             Expanded(
               child: ZTextFieldEntitled(
                 controller: _creditAmountCtrl,
@@ -729,14 +722,18 @@ class ExchangeFormState extends State<ExchangeForm> {
                 validator: (v) {
                   if (!_isEditable) return null;
                   final n = double.tryParse((v ?? '').replaceAll(',', ''));
-                  if (n == null || n <= 0) return 'Must be greater than zero';
+                  if (n == null || n <= 0) {
+                    return 'Must be greater than zero';
+                  }
                   return null;
                 },
               ),
             ),
           ],
         ),
-        if (debitCcy.isNotEmpty && creditCcy.isNotEmpty && debitCcy != creditCcy)
+        if (debitCcy.isNotEmpty &&
+            creditCcy.isNotEmpty &&
+            debitCcy != creditCcy)
           Padding(
             padding: const EdgeInsets.only(left: 4),
             child: Align(
@@ -848,11 +845,10 @@ class ExchangeFormState extends State<ExchangeForm> {
     ],
   );
 
-  // ── Rate retrigger ───────────────────────────────────────────
+  // Rate retrigger
   void _maybeFetchRate() {
     final from = _debitCcyEffective;
     final to = _creditCcyEffective;
-
     if (from == null || to == null || from.isEmpty || to.isEmpty) return;
 
     if (from == to) {
@@ -860,23 +856,22 @@ class ExchangeFormState extends State<ExchangeForm> {
       return;
     }
 
-    // Edit mode: the detail already carries a rate — don't re-fetch
-    // unless the user actually changed an account.
-    if (_rate != null && widget.initialDetail != null && _debitAcc == null && _creditAcc == null) {
+    if (_rate != null &&
+        widget.initialDetail != null &&
+        _debitAcc == null &&
+        _creditAcc == null) {
       return;
     }
 
     _rateRequestId++;
     final myId = _rateRequestId;
     _fetchRate(from, to).then((_) {
-      if (myId != _rateRequestId) return; // stale
+      if (myId != _rateRequestId) return;
     });
   }
 }
 
-// ═════════════════════════════════════════════════════════════════
 // DIALOG — provisions ExchangeBloc, reuses TransactionsBloc
-// ═════════════════════════════════════════════════════════════════
 
 Future<bool?> showExchangeDialog(
     BuildContext context, {
@@ -932,7 +927,6 @@ class _ExchangeDialog extends StatelessWidget {
     return auth is AuthenticatedState ? auth.loginData.usrName : null;
   }
 
-  // ── Row actions → TransactionsBloc ─────────────────────────────
   void _dispatchAuthorize(BuildContext context) {
     final ref = reference;
     if (ref == null || ref.isEmpty) return;
@@ -1011,7 +1005,6 @@ class _ExchangeDialog extends StatelessWidget {
 
     return MultiBlocListener(
       listeners: [
-        // ── ExchangeBloc: add / edit result ─────────────────
         BlocListener<ExchangeBloc, ExchangeState>(
           listener: (context, state) {
             if (state is ExchangeSubmitSuccess) {
@@ -1028,8 +1021,6 @@ class _ExchangeDialog extends StatelessWidget {
             }
           },
         ),
-
-        // ── TransactionsBloc: authorize / unauthorize / reverse / delete ──
         BlocListener<TransactionsBloc, TransactionsState>(
           listenWhen: (prev, next) =>
           next is TransactionsLoadedState &&
@@ -1081,20 +1072,16 @@ class _ExchangeDialog extends StatelessWidget {
           final busy = state is ExchangeSubmitting;
           final loaded =
           state is ExchangeDetailLoaded ? state.detail : null;
-
           final stateText = loaded?.stateText;
           final isPending = stateText == null || stateText == 'Pending';
           final isAuthorized = stateText == 'Authorized';
-
           final loginName = _loginName(context);
           final isMaker = loaded == null ||
               (loaded.maker.isNotEmpty &&
                   loginName != null &&
                   loaded.maker == loginName);
-
           final isEditing = _isEditing;
 
-          // ── Loading gate ────────────────────────────────────
           if (isEditing && loaded == null && state is! ExchangeError) {
             return ZFormDialog(
               width: 720,
@@ -1112,9 +1099,7 @@ class _ExchangeDialog extends StatelessWidget {
           return ZFormDialog(
             width: 720,
             icon: Icons.swap_horiz_rounded,
-            title: isEditing
-                ? 'Exchange · $reference'
-                : 'New Exchange',
+            title: isEditing ? 'Exchange · $reference' : 'New Exchange',
             isActionTrue: false,
             onAction: null,
             child: ConstrainedBox(
@@ -1123,14 +1108,11 @@ class _ExchangeDialog extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Inline error banner ─────────────────────
                   if (state is ExchangeError && state.message.isNotEmpty)
                     _banner(
                       state.message,
                       Theme.of(context).colorScheme.error,
                     ),
-
-                  // ── Form ────────────────────────────────────
                   Flexible(
                     child: ExchangeForm(
                       key: ValueKey(reference ?? 'new'),
@@ -1161,8 +1143,6 @@ class _ExchangeDialog extends StatelessWidget {
                       },
                     ),
                   ),
-
-                  // ── Footer ─────────────────────────────────
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
                     child: Wrap(
@@ -1170,35 +1150,40 @@ class _ExchangeDialog extends StatelessWidget {
                       runSpacing: 8,
                       children: [
                         ZOutlineButton(
-                          onPressed: () => Navigator.of(context).pop(false),
-                          label: Text(AppLocalizations.of(context)!.cancel),
+                          onPressed: () =>
+                              Navigator.of(context).pop(false),
+                          label: Text(
+                            AppLocalizations.of(context)!.cancel,
+                          ),
                         ),
-
-                        // Pending + maker → Delete · Authorize · Update
                         if (isEditing && isPending && isMaker && !busy) ...[
                           ZOutlineButton(
                             onPressed: () => _dispatchDelete(context),
                             backgroundHover:
                             Theme.of(context).colorScheme.error,
                             icon: Icons.delete_outline_rounded,
-                            label: Text(AppLocalizations.of(context)!.delete),
+                            label: Text(
+                              AppLocalizations.of(context)!.delete,
+                            ),
                           ),
                           ZOutlineButton(
                             isActive: true,
                             onPressed: () => _dispatchAuthorize(context),
                             icon: Icons.check_circle_outline_rounded,
-                            label:
-                            Text(AppLocalizations.of(context)!.authorize),
+                            label: Text(
+                              AppLocalizations.of(context)!.authorize,
+                            ),
                           ),
                           ZOutlineButton(
                             isActive: true,
-                            onPressed: () => formKey.currentState?.submit(),
+                            onPressed: () =>
+                                formKey.currentState?.submit(),
                             icon: Icons.save_alt_rounded,
-                            label: Text(AppLocalizations.of(context)!.update),
+                            label: Text(
+                              AppLocalizations.of(context)!.update,
+                            ),
                           ),
                         ],
-
-                        // Authorized → Unauthorize · Reverse
                         if (isEditing && isAuthorized && !busy) ...[
                           ZOutlineButton(
                             onPressed: () => _dispatchUnauthorize(context),
@@ -1210,11 +1195,11 @@ class _ExchangeDialog extends StatelessWidget {
                           ZOutlineButton(
                             onPressed: () => _dispatchReverse(context),
                             icon: Icons.replay_rounded,
-                            label: Text(AppLocalizations.of(context)!.reverse),
+                            label: Text(
+                              AppLocalizations.of(context)!.reverse,
+                            ),
                           ),
                         ],
-
-                        // Create mode → Save
                         if (!isEditing)
                           ZOutlineButton(
                             isActive: true,
@@ -1222,7 +1207,9 @@ class _ExchangeDialog extends StatelessWidget {
                                 ? null
                                 : () => formKey.currentState?.submit(),
                             icon: Icons.save_alt_rounded,
-                            label: Text(AppLocalizations.of(context)!.save),
+                            label: Text(
+                              AppLocalizations.of(context)!.save,
+                            ),
                           ),
                       ],
                     ),
@@ -1260,12 +1247,13 @@ class _ExchangeDialog extends StatelessWidget {
   );
 }
 
-// ── Shared widgets ──────────────────────────────────────────────
+// Shared widgets
 
 class _Check extends StatelessWidget {
   final String label;
   final bool value;
   final ValueChanged<bool> onChanged;
+
   const _Check({
     required this.label,
     required this.value,
@@ -1307,6 +1295,7 @@ class _AccountDetailsCard extends StatelessWidget {
     final color = Theme.of(context).colorScheme;
     final title = Theme.of(context).textTheme.titleSmall;
     final tr = AppLocalizations.of(context)!;
+
     Widget row(String k, String v) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -1350,6 +1339,7 @@ class _AccountDetailsCard extends StatelessWidget {
 class _LegDetailsCard extends StatelessWidget {
   final ExchangeLeg leg;
   final String label;
+
   const _LegDetailsCard({required this.leg, required this.label});
 
   @override
@@ -1357,6 +1347,7 @@ class _LegDetailsCard extends StatelessWidget {
     final color = Theme.of(context).colorScheme;
     final title = Theme.of(context).textTheme.titleSmall;
     final tr = AppLocalizations.of(context)!;
+
     Widget row(String k, String v) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -1387,4 +1378,3 @@ class _LegDetailsCard extends StatelessWidget {
     );
   }
 }
- 
