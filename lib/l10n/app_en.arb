@@ -441,5 +441,19 @@
   "searchAccounts": "Search accounts",
   "balanceFilter": "Balance Filter",
   "filters": "Filters",
-  "apply": "Apply"
+  "apply": "Apply",
+  "databaseBackup": "Database Backup",
+  "browse": "Browse",
+  "recentBackup": "Recent Backup",
+  "restoreBackup": "Restore backup",
+  "renameTitle": "Rename",
+  "openInExplorer": "Open In Eplorer",
+  "restoreComplete": "Restore Completed",
+  "restoreSuccessMsg": "Database has been successfully restored.",
+  "downloadBackup": "Download Backup",
+  "downloadBackupMsg": "Keep your data safe & prevent data loss.",
+  "creatingBackupMsg": "Backing up data before restore...",
+  "saving": "Saving…",
+  "updating": "Updating…",
+  "authorizing": "Authorizing…"
 }

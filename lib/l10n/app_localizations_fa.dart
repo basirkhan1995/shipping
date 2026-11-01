@@ -1312,4 +1312,46 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get apply => 'اعمال';
+
+  @override
+  String get databaseBackup => 'پتشیبانی داده ها';
+
+  @override
+  String get browse => 'جستجو';
+
+  @override
+  String get recentBackup => 'آخرین پشتیبانی ها';
+
+  @override
+  String get restoreBackup => 'بازیابی پشتیبانی';
+
+  @override
+  String get renameTitle => 'اصلاح نام';
+
+  @override
+  String get openInExplorer => '';
+
+  @override
+  String get restoreComplete => 'بازگردانی موفق';
+
+  @override
+  String get restoreSuccessMsg => 'دیتا موفقانه بازگردانی گردید.';
+
+  @override
+  String get downloadBackup => 'تهیه پشتیبانی';
+
+  @override
+  String get downloadBackupMsg => 'از اطلاعات خود نسخه پشتیبان بگیرید';
+
+  @override
+  String get creatingBackupMsg => 'در حال تهیه نسخه پشتیبان قبل از بازیابی...';
+
+  @override
+  String get saving => 'در حال ذخیره‌سازی…';
+
+  @override
+  String get updating => 'در حال به‌روزرسانی…';
+
+  @override
+  String get authorizing => 'در حال تأیید…';
 }

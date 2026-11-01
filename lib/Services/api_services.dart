@@ -212,12 +212,11 @@ class ApiServices {
   //   CancelToken? cancelToken,
   // }) async {
   //   try {
-  //     await _checkConnectivity();
+  //   //  await _checkConnectivity();
   //     return await _dio.post(
   //       endpoint,
   //       data: data,
   //       cancelToken: cancelToken,
-  //       options: Options(contentType: 'multipart/form-data'),
   //     );
   //   } on DioException catch (e) {
   //     throw _handleError(e);
@@ -230,14 +229,18 @@ class ApiServices {
     required String endpoint,
     required FormData data,
     CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    ProgressCallback? onSendProgress,
   }) async {
     try {
-    //  await _checkConnectivity();
       return await _dio.post(
         endpoint,
         data: data,
         cancelToken: cancelToken,
+        options: headers == null ? null : Options(headers: headers),
+        onSendProgress: onSendProgress,
       );
+
     } on DioException catch (e) {
       throw _handleError(e);
     } catch (e) {

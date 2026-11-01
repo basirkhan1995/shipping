@@ -1,8 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' hide MultipartFile;
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:shipping/Services/config.dart';
 import '../Routes/Home/View/Dashboard/model/ds_model.dart';
 import '../Routes/Home/View/Finance/View/Currencies/model/ccy_model.dart';
 import '../Routes/Home/View/Finance/View/EOY/model/eoy_model.dart';
@@ -2195,6 +2199,326 @@ class Repositories {
 
     return [];
   }
+
+  ///Backup
+  Future<Directory> _getBackupBaseDirectory() async {
+    if (Platform.isAndroid) {
+      final dir = Directory('/storage/emulated/0/Download');
+      if (await dir.exists()) return dir;
+      return (await getExternalStorageDirectory())!;
+    }
+
+    if (Platform.isIOS) {
+      return await getApplicationDocumentsDirectory();
+    }
+
+    // Windows / macOS / Linux
+    return await getApplicationDocumentsDirectory();
+  }
+  Future<File> downloadBackup() async {
+    Directory baseDir;
+
+    // 🔹 ANDROID
+    if (Platform.isAndroid) {
+      final status = await Permission.storage.request();
+      if (!status.isGranted) {
+        throw Exception('Storage permission denied');
+      }
+
+      final androidDownload = Directory('/storage/emulated/0/Download');
+      if (await androidDownload.exists()) {
+        baseDir = androidDownload;
+      } else {
+        baseDir = (await getExternalStorageDirectory())!;
+      }
+    }
+    // 🔹 iOS
+    else if (Platform.isIOS) {
+      baseDir = await getApplicationDocumentsDirectory();
+    }
+    // 🔹 Windows / macOS / Linux
+    else {
+      baseDir = await getApplicationDocumentsDirectory();
+    }
+
+    final backupDir = Directory('${baseDir.path}/ZaitoonBackups');
+    if (!await backupDir.exists()) {
+      await backupDir.create(recursive: true);
+    }
+
+    final now = DateTime.now();
+    final formattedDate =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day
+        .toString().padLeft(2, '0')}_'
+        '${now.hour.toString().padLeft(2, '0')}-${now.minute.toString().padLeft(
+        2, '0')}';
+
+    final filePath = '${backupDir.path}/zBackup_$formattedDate.sql';
+
+    await _api.downloadFile(
+      endpoint: "/setting/backupLocally.php",
+      savePath: filePath,
+      onReceiveProgress: (received, total) {
+        if (total > 0) {
+          // progress callback
+        }
+      },
+    );
+
+    return File(filePath);
+  }
+  Future<void> renameBackup(String oldPath, String newPath) async {
+    try {
+      final file = File(oldPath);
+
+      // Check if the source file exists
+      if (!await file.exists()) {
+        throw Exception('Source file does not exist');
+      }
+
+      // Check if a file with the new name already exists
+      final newFile = File(newPath);
+      if (await newFile.exists()) {
+        throw Exception('A file with this name already exists');
+      }
+
+      // Rename the file
+      await file.rename(newPath);
+    } catch (e) {
+
+      throw Exception('Failed to rename backup: $e');
+    }
+  }
+  Future<void> deleteBackup(String filePath) async {
+    final file = File(filePath);
+    if (await file.exists()) {
+      await file.delete();
+    }
+  }
+  Future<void> restoreBackup(
+      String filePath, {
+        Function(String)? onProgress,
+      }) async {
+    try {
+      final file = File(filePath);
+      if (!await file.exists()) {
+        throw Exception('Backup file not found at: $filePath');
+      }
+      if (!filePath.toLowerCase().endsWith('.sql')) {
+        throw Exception('Only .sql backup files can be restored.');
+      }
+      if (Config.token.isEmpty) {
+        throw Exception(
+          'Restore token is not configured. '
+              'Build with --dart-define=RESTORE_TOKEN=<token>.',
+        );
+      }
+
+      onProgress?.call('Uploading backup to server...');
+
+      final formData = FormData.fromMap({
+        'backup': await MultipartFile.fromFile(
+          filePath,
+          filename: filePath.split(Platform.pathSeparator).last,
+          contentType: DioMediaType('application', 'sql'),
+        ),
+      });
+
+      final response = await _api.uploadFile(
+        endpoint: '/setting/restore.php',
+        data: formData,
+        headers: {
+          'Authorization': 'Bearer ${Config.token}',
+          'Accept': 'application/json',
+        },
+        onSendProgress: (sent, total) {
+          if (total > 0) {
+            final pct = (sent / total * 100).toStringAsFixed(1);
+            onProgress?.call('Uploading: $pct%');
+          }
+        },
+      );
+
+      onProgress?.call('Server is restoring the database...');
+
+      final data = response.data;
+      Map<String, dynamic> body;
+      if (data is Map) {
+        body = Map<String, dynamic>.from(data);
+      } else {
+        body = {'status': 'error', 'message': data?.toString() ?? ''};
+      }
+
+      final status = body['status']?.toString().toLowerCase() ?? '';
+      if (status != 'success') {
+        final msg = body['message']?.toString() ?? 'Restore failed.';
+        throw Exception(msg);
+      }
+
+      onProgress?.call('Restore completed successfully!');
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw Exception('Database restore failed: $e');
+    }
+  }
+  // Future<void> restoreBackup(String filePath, {Function(String)? onProgress}) async {
+  //   try {
+  //     final host = 'localhost';
+  //     final port = '3306';
+  //     final username = 'root';
+  //     final database = 'zaitoondb';
+  //
+  //     // Laragon's default MySQL password is blank (same as XAMPP)
+  //     // If you set a password in Laragon, add: -p, 'your_password'
+  //
+  //     String mysqlPath;
+  //     if (Platform.isWindows) {
+  //       // Check for Laragon first, then fallback to XAMPP
+  //       final laragonPath = 'C:\\laragon\\bin\\mysql';
+  //       final xamppPath = 'C:\\xampp\\mysql\\bin\\mysql.exe';
+  //
+  //       if (await Directory(laragonPath).exists()) {
+  //         // Find the MySQL version folder dynamically
+  //         final dir = Directory(laragonPath);
+  //         final entries = await dir.list().toList();
+  //         final mysqlDirs = entries.whereType<Directory>()
+  //             .where((d) => d.path.contains('mysql-'))
+  //             .toList();
+  //
+  //         if (mysqlDirs.isNotEmpty) {
+  //           // Use the first MySQL version found
+  //           mysqlPath = '${mysqlDirs.first.path}\\bin\\mysql.exe';
+  //         } else {
+  //           throw Exception('No MySQL installation found in Laragon');
+  //         }
+  //       } else if (await File(xamppPath).exists()) {
+  //         mysqlPath = xamppPath;
+  //       } else {
+  //         throw Exception('Neither Laragon nor XAMPP MySQL found');
+  //       }
+  //     } else if (Platform.isMacOS) {
+  //       // Laragon doesn't exist on macOS, so keep XAMPP fallback
+  //       mysqlPath = '/Applications/XAMP/xampfiles/bin/mysql';
+  //     } else {
+  //       // Linux
+  //       mysqlPath = '/opt/lampp/bin/mysql';
+  //     }
+  //
+  //     final mysqlFile = File(mysqlPath);
+  //     if (!await mysqlFile.exists()) {
+  //       throw Exception('MySQL executable not found at: $mysqlPath');
+  //     }
+  //
+  //     final backupFile = File(filePath);
+  //     if (!await backupFile.exists()) {
+  //       throw Exception('Backup file not found at: $filePath');
+  //     }
+  //
+  //     onProgress?.call('Starting MySQL restore...');
+  //
+  //     // NOTE: Laragon's MySQL might have a different default password
+  //     // If Laragon asks for password, add these args:
+  //     // '-p', 'your_password',
+  //     // But by default, Laragon has no password just like XAMPP
+  //
+  //     final process = await Process.start(
+  //       mysqlPath,
+  //       [
+  //         '-h', host,
+  //         '-P', port,
+  //         '-u', username,
+  //         '--default-character-set=utf8mb4',
+  //         database,
+  //       ],
+  //       runInShell: true,
+  //     );
+  //
+  //     final fileSize = await backupFile.length();
+  //     var bytesRead = 0;
+  //
+  //     await backupFile.openRead().map((chunk) {
+  //       bytesRead += chunk.length;
+  //       final progress = (bytesRead / fileSize * 100).toStringAsFixed(1);
+  //       onProgress?.call('Restoring: $progress%');
+  //       return chunk;
+  //     }).pipe(process.stdin);
+  //
+  //     await process.stdin.close();
+  //
+  //     final exitCode = await process.exitCode;
+  //
+  //     if (exitCode != 0) {
+  //       final stderr = await process.stderr
+  //           .transform(utf8.decoder)
+  //           .join();
+  //       throw Exception('Restore failed (exit code: $exitCode): $stderr');
+  //     }
+  //
+  //     onProgress?.call('Restore completed successfully!');
+  //   } catch (e) {
+  //     throw Exception('Database restore failed: $e');
+  //   }
+  // }
+  Future<void> openBackupFolder() async {
+    try {
+      String backupDir;
+
+      if (Platform.isWindows) {
+        // Check for Laragon first
+        final laragonBackup = 'C:\\laragon\\data\\mysql\\backups';
+        final xamppBackup = 'C:\\xampp\\mysql\\data\\backups';
+
+        if (await Directory('C:\\laragon').exists()) {
+          backupDir = laragonBackup;
+        } else {
+          backupDir = xamppBackup;
+        }
+      } else if (Platform.isMacOS) {
+        backupDir = '/Applications/XAMP/xampfiles/data/backups';
+      } else {
+        backupDir = '/opt/lampp/data/backups';
+      }
+
+      final dir = Directory(backupDir);
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+
+      if (Platform.isWindows) {
+        await Process.run('explorer', [backupDir]);
+      } else if (Platform.isMacOS) {
+        await Process.run('open', [backupDir]);
+      } else {
+        await Process.run('xdg-open', [backupDir]);
+      }
+    } catch (e) {
+      throw Exception('Failed to open backup folder: $e');
+    }
+  }
+  Future<List<FileSystemEntity>> getBackupFiles({int? limit = 10}) async {
+    try {
+      final baseDir = await _getBackupBaseDirectory();
+      final backupDir = Directory('${baseDir.path}/ZaitoonBackups');
+
+      if (!await backupDir.exists()) return [];
+
+      final files = backupDir.listSync().whereType<File>().toList();
+
+      // Sort by modification time (most recent first)
+      files.sort((a, b) => b.statSync().modified.compareTo(a.statSync().modified));
+
+      // Return only the top 'limit' files
+      if (limit != null && limit > 0) {
+        return files.take(limit).toList();
+      }
+
+      return files; // Return all if limit is null or 0
+    } catch (e) {
+      throw Exception('Failed to load backups: $e');
+    }
+  }
+
 
 
 }

@@ -4,6 +4,7 @@ import 'package:shipping/Features/Widgets/cover.dart';
 import 'package:shipping/Features/Widgets/digital_clock.dart';
 import 'package:shipping/Routes/Auth/bloc/auth_bloc.dart';
 import 'package:shipping/Routes/Home/View/Finance/View/Reminder/reminder_widget.dart';
+import 'package:shipping/Routes/Home/View/Settings/View/Backup/backup.dart';
 import 'package:shipping/Services/api_services.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../Features/Other/responsive_widget.dart';
@@ -287,7 +288,7 @@ class _DesktopDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const rightSideWidth = 350.0;
+    const rightSideWidth = 420.0;
 
     return Scaffold(
       body: Row(
@@ -327,6 +328,11 @@ class _DesktopDashboard extends StatelessWidget {
                               width: rightSideWidth,
                               child: DashboardAlertReminder(),
                             ),
+
+                            SizedBox(
+                                height: 600,
+                                width: rightSideWidth,
+                                child: BackupView())
                           ],
                         ),
                       ],

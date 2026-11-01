@@ -1313,4 +1313,46 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get apply => 'Apply';
+
+  @override
+  String get databaseBackup => 'Database Backup';
+
+  @override
+  String get browse => 'Browse';
+
+  @override
+  String get recentBackup => 'Recent Backup';
+
+  @override
+  String get restoreBackup => 'Restore backup';
+
+  @override
+  String get renameTitle => 'Rename';
+
+  @override
+  String get openInExplorer => 'Open In Eplorer';
+
+  @override
+  String get restoreComplete => 'Restore Completed';
+
+  @override
+  String get restoreSuccessMsg => 'Database has been successfully restored.';
+
+  @override
+  String get downloadBackup => 'Download Backup';
+
+  @override
+  String get downloadBackupMsg => 'Keep your data safe & prevent data loss.';
+
+  @override
+  String get creatingBackupMsg => 'Backing up data before restore...';
+
+  @override
+  String get saving => 'Saving…';
+
+  @override
+  String get updating => 'Updating…';
+
+  @override
+  String get authorizing => 'Authorizing…';
 }

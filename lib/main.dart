@@ -20,6 +20,7 @@ import 'package:shipping/Routes/Home/View/Report/IncomeStatement/bloc/income_sta
 import 'package:shipping/Routes/Home/View/Report/TrialBalance/bloc/trial_balance_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/TxnByReference/bloc/txn_ref_report_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/UserLog/bloc/user_log_bloc.dart';
+import 'package:shipping/Routes/Home/View/Settings/View/Backup/bloc/backup_bloc.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/Company/Branch/Ui/BranchLimits/bloc/branch_limit_bloc.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/Company/Branch/bloc/brc_tab_bloc.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/Company/Branches/bloc/branch_bloc.dart';
@@ -82,6 +83,8 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (_) => GeneralTabBloc()),
           BlocProvider(create: (_) => SettingsVisibleBloc()..add(LoadSettingsEvent())),
           BlocProvider(create: (_) => PrintLanguageCubit()),
+
+          BlocProvider(create: (_) => BackupBloc(Repositories(ApiServices()))..add(LoadBackupsEvent())),
 
           ///Print Services ............................................................
           BlocProvider(create: (context) => PrintLanguageCubit()),

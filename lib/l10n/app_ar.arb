@@ -379,5 +379,19 @@
   "searchAccounts": "جستجو حسابها",
   "balanceFilter": "فلتر بیلانس",
   "filters": "فلتر ها",
-  "apply": "اعمال"
+  "apply": "اعمال",
+  "databaseBackup": "پتشیبانی داده ها",
+  "browse": "جستجو",
+  "recentBackup": "آخرین پشتیبانی ها",
+  "restoreBackup": "بازیابی پشتیبانی",
+  "renameTitle": "اصلاح نام",
+  "openInExplorer": "",
+  "restoreComplete": "بازگردانی موفق",
+  "restoreSuccessMsg": "دیتا موفقانه بازگردانی گردید.",
+  "downloadBackup": "تهیه پشتیبانی",
+  "downloadBackupMsg": "د خپلو معلوماتو بیک اپ واخلئ",
+  "creatingBackupMsg": "د بیا رغونې مخکې د معلوماتو بیک اپ اخیستل کېږي...",
+  "saving": "خوندي کېږي…",
+  "updating": "تازه کېږي…",
+  "authorizing": "تأییدېږي…"
 }

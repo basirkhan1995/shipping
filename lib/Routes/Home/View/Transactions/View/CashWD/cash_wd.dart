@@ -510,6 +510,26 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
     );
   }
 
+  Widget _busyLabel(
+      BuildContext context, {
+        required bool busy,
+        required String busyText,
+        required String idleText,
+      }) {
+    if (!busy) return Text(idleText);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(
+          width: 14,
+          height: 14,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+        const SizedBox(width: 8),
+        Text(busyText),
+      ],
+    );
+  }
   @override
   Widget build(BuildContext context) {
     final formKey = GlobalKey<CashTxnFormState>();
@@ -670,55 +690,56 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
+                        // Cancel
                         ZOutlineButton(
-                          onPressed: () => Navigator.of(context).pop(false),
+                          onPressed: busy ? null : () => Navigator.of(context).pop(false),
                           label: Text(AppLocalizations.of(context)!.cancel),
                         ),
 
                         // Pending + maker → Delete · Update
-                        // (Authorize is hidden for the maker —
-                        //  maker ≠ checker is enforced server-side too.)
-                        if (isEditing &&
-                            isPending &&
-                            isMaker &&
-                            !busy) ...[
+                        if (isEditing && isPending && isMaker) ...[
                           ZOutlineButton(
-                            onPressed: () => _dispatchDelete(context),
-                            backgroundHover:
-                            Theme.of(context).colorScheme.error,
+                            onPressed: busy ? null : () => _dispatchDelete(context),
+                            backgroundHover: Theme.of(context).colorScheme.error,
                             icon: Icons.delete_outline_rounded,
                             label: Text(AppLocalizations.of(context)!.delete),
                           ),
                           ZOutlineButton(
-                            isActive: true,
-                            onPressed: () =>
-                                formKey.currentState?.submit(),
-                            icon: Icons.save_alt_rounded,
-                            label: Text(AppLocalizations.of(context)!.update),
+                            isActive: !busy,
+                            onPressed: busy ? null : () => formKey.currentState?.submit(),
+                            icon: busy ? null : Icons.save_alt_rounded,
+                            label: _busyLabel(
+                              context,
+                              busy: busy,
+                              busyText: AppLocalizations.of(context)!.updating,
+                              idleText: AppLocalizations.of(context)!.update,
+                            ),
                           ),
                         ],
 
-                        // ✅ Pending + non-maker → Authorize
-                        if (isEditing && isPending && !isMaker && !busy)
+                        // Pending + non-maker → Authorize
+                        if (isEditing && isPending && !isMaker)
                           ZOutlineButton(
-                            isActive: true,
-                            onPressed: () => _dispatchAuthorize(context),
-                            icon: Icons.check_circle_outline_rounded,
-                            label:
-                            Text(AppLocalizations.of(context)!.authorize),
+                            isActive: !busy,
+                            onPressed: busy ? null : () => _dispatchAuthorize(context),
+                            icon: busy ? null : Icons.check_circle_outline_rounded,
+                            label: _busyLabel(
+                              context,
+                              busy: busy,
+                              busyText: AppLocalizations.of(context)!.authorizing,
+                              idleText: AppLocalizations.of(context)!.authorize,
+                            ),
                           ),
 
                         // Authorized → Unauthorize · Reverse
-                        if (isEditing && isAuthorized && !busy) ...[
+                        if (isEditing && isAuthorized) ...[
                           ZOutlineButton(
-                            onPressed: () =>
-                                _dispatchUnauthorize(context),
+                            onPressed: busy ? null : () => _dispatchUnauthorize(context),
                             icon: Icons.undo_rounded,
-                            label: Text(
-                                AppLocalizations.of(context)!.unauthorize),
+                            label: Text(AppLocalizations.of(context)!.unauthorize),
                           ),
                           ZOutlineButton(
-                            onPressed: () => _dispatchReverse(context),
+                            onPressed: busy ? null : () => _dispatchReverse(context),
                             icon: Icons.replay_rounded,
                             label: Text(AppLocalizations.of(context)!.reverse),
                           ),
@@ -727,12 +748,15 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
                         // Create mode → Save
                         if (!isEditing)
                           ZOutlineButton(
-                            isActive: true,
-                            onPressed: busy
-                                ? null
-                                : () => formKey.currentState?.submit(),
-                            icon: Icons.save_alt_rounded,
-                            label: Text(AppLocalizations.of(context)!.save),
+                            isActive: !busy,
+                            onPressed: busy ? null : () => formKey.currentState?.submit(),
+                            icon: busy ? null : Icons.save_alt_rounded,
+                            label: _busyLabel(
+                              context,
+                              busy: busy,
+                              busyText: AppLocalizations.of(context)!.saving,
+                              idleText: AppLocalizations.of(context)!.save,
+                            ),
                           ),
                       ],
                     ),

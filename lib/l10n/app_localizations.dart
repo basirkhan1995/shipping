@@ -2673,6 +2673,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Apply'**
   String get apply;
+
+  /// No description provided for @databaseBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Database Backup'**
+  String get databaseBackup;
+
+  /// No description provided for @browse.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse'**
+  String get browse;
+
+  /// No description provided for @recentBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Backup'**
+  String get recentBackup;
+
+  /// No description provided for @restoreBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore backup'**
+  String get restoreBackup;
+
+  /// No description provided for @renameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get renameTitle;
+
+  /// No description provided for @openInExplorer.
+  ///
+  /// In en, this message translates to:
+  /// **'Open In Eplorer'**
+  String get openInExplorer;
+
+  /// No description provided for @restoreComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore Completed'**
+  String get restoreComplete;
+
+  /// No description provided for @restoreSuccessMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Database has been successfully restored.'**
+  String get restoreSuccessMsg;
+
+  /// No description provided for @downloadBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Download Backup'**
+  String get downloadBackup;
+
+  /// No description provided for @downloadBackupMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep your data safe & prevent data loss.'**
+  String get downloadBackupMsg;
+
+  /// No description provided for @creatingBackupMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Backing up data before restore...'**
+  String get creatingBackupMsg;
+
+  /// No description provided for @saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get saving;
+
+  /// No description provided for @updating.
+  ///
+  /// In en, this message translates to:
+  /// **'Updating…'**
+  String get updating;
+
+  /// No description provided for @authorizing.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorizing…'**
+  String get authorizing;
 }
 
 class _AppLocalizationsDelegate

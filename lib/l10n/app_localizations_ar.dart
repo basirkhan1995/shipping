@@ -1310,4 +1310,47 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get apply => 'اعمال';
+
+  @override
+  String get databaseBackup => 'پتشیبانی داده ها';
+
+  @override
+  String get browse => 'جستجو';
+
+  @override
+  String get recentBackup => 'آخرین پشتیبانی ها';
+
+  @override
+  String get restoreBackup => 'بازیابی پشتیبانی';
+
+  @override
+  String get renameTitle => 'اصلاح نام';
+
+  @override
+  String get openInExplorer => '';
+
+  @override
+  String get restoreComplete => 'بازگردانی موفق';
+
+  @override
+  String get restoreSuccessMsg => 'دیتا موفقانه بازگردانی گردید.';
+
+  @override
+  String get downloadBackup => 'تهیه پشتیبانی';
+
+  @override
+  String get downloadBackupMsg => 'د خپلو معلوماتو بیک اپ واخلئ';
+
+  @override
+  String get creatingBackupMsg =>
+      'د بیا رغونې مخکې د معلوماتو بیک اپ اخیستل کېږي...';
+
+  @override
+  String get saving => 'خوندي کېږي…';
+
+  @override
+  String get updating => 'تازه کېږي…';
+
+  @override
+  String get authorizing => 'تأییدېږي…';
 }

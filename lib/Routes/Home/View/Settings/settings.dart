@@ -82,7 +82,7 @@ class _DesktopView extends StatelessWidget {
       ZTabItem(
         value: SettingsTabName.backup,
         label: AppLocalizations.of(context)!.backup,
-        screen: const BackupView(),
+        screen: const BackupView(padding: EdgeInsets.all(5),),
       ),
       ZTabItem(
         value: SettingsTabName.about,
