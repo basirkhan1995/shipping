@@ -42,6 +42,8 @@ import 'Features/PrintSettings/bloc/Printer/printer_cubit.dart';
 import 'Routes/Home/View/Dashboard/bloc/dashboard_stats_bloc.dart';
 import 'Routes/Home/View/Report/BalanceSheet/bloc/balance_sheet_bloc.dart';
 import 'Routes/Home/View/Report/GLStatement/bloc/gl_statement_bloc.dart';
+import 'Routes/Home/View/Report/TxnReport/TxnTypes/bloc/txn_types_bloc.dart';
+import 'Routes/Home/View/Report/TxnReport/bloc/txn_report_bloc.dart';
 import 'Routes/Home/View/Settings/bloc/settings_tab_bloc.dart';
 import 'Routes/Home/View/Stakeholder/View/StakeholderById/bloc/stakeholder_by_id_bloc.dart';
 import 'Routes/Home/bloc/menu_bloc.dart';
@@ -127,6 +129,8 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (_) => IncomeStatementBloc(Repositories(ApiServices()))),
           BlocProvider(create: (_) => ArApReportBloc(Repositories(ApiServices()))),
           BlocProvider(create: (_) => AllBalancesBloc(Repositories(ApiServices()))),
+          BlocProvider(create: (_) => TxnReportBloc(Repositories(ApiServices()))),
+          BlocProvider(create: (_) => TxnTypesBloc(Repositories(ApiServices()))),
         ],
         child: BlocBuilder<LocalizationBloc, Locale>(
           builder: (context, locale) {

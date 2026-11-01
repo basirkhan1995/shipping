@@ -1208,10 +1208,7 @@ Widget build(BuildContext context) {
         final isPending = stateText == null || stateText == 'Pending';
         final isAuthorized = stateText == 'Authorized';
         final loginName = _loginName(context);
-        final isMaker = loaded == null ||
-            (loaded.maker.isNotEmpty &&
-                loginName != null &&
-                loaded.maker == loginName);
+        final isMaker = loaded == null || (loaded.maker.isNotEmpty && loginName != null && loaded.maker == loginName);
         final isEditing = _isEditing;
 
         if (isEditing && loaded == null && state is! ExchangeError) {
@@ -1288,48 +1285,47 @@ Widget build(BuildContext context) {
                           AppLocalizations.of(context)!.cancel,
                         ),
                       ),
+                      // ── Maker, Pending → Delete + Update (Save) ──────────────────
                       if (isEditing && isPending && isMaker && !busy) ...[
                         ZOutlineButton(
                           onPressed: () => _dispatchDelete(context),
-                          backgroundHover:
-                          Theme.of(context).colorScheme.error,
+                          backgroundHover: Theme.of(context).colorScheme.error,
                           icon: Icons.delete_outline_rounded,
-                          label: Text(
-                            AppLocalizations.of(context)!.delete,
-                          ),
+                          label: Text(AppLocalizations.of(context)!.delete),
                         ),
+                        ZOutlineButton(
+                          isActive: true,
+                          onPressed: () => formKey.currentState?.submit(),
+                          icon: Icons.save_alt_rounded,
+                          label: Text(AppLocalizations.of(context)!.save),
+                        ),
+                      ],
+
+                      // ── Non-maker, Pending → Authorize ───────────────────────────
+                      if (isEditing &&
+                          isPending &&
+                          !isMaker &&
+                          loginName != null &&
+                          !busy) ...[
                         ZOutlineButton(
                           isActive: true,
                           onPressed: () => _dispatchAuthorize(context),
                           icon: Icons.check_circle_outline_rounded,
-                          label: Text(
-                            AppLocalizations.of(context)!.authorize,
-                          ),
-                        ),
-                        ZOutlineButton(
-                          isActive: true,
-                          onPressed: () =>
-                              formKey.currentState?.submit(),
-                          icon: Icons.save_alt_rounded,
-                          label: Text(
-                            AppLocalizations.of(context)!.save,
-                          ),
+                          label: Text(AppLocalizations.of(context)!.authorize),
                         ),
                       ],
+
+                      // ── Authorized → Unauthorize + Reverse ───────────────────────
                       if (isEditing && isAuthorized && !busy) ...[
                         ZOutlineButton(
                           onPressed: () => _dispatchUnauthorize(context),
                           icon: Icons.undo_rounded,
-                          label: Text(
-                            AppLocalizations.of(context)!.unauthorize,
-                          ),
+                          label: Text(AppLocalizations.of(context)!.unauthorize),
                         ),
                         ZOutlineButton(
                           onPressed: () => _dispatchReverse(context),
                           icon: Icons.replay_rounded,
-                          label: Text(
-                            AppLocalizations.of(context)!.reverse,
-                          ),
+                          label: Text(AppLocalizations.of(context)!.reverse),
                         ),
                       ],
                       if (!isEditing)

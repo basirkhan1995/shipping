@@ -4,6 +4,7 @@ import 'package:shipping/Routes/Home/View/Report/AllBalances/all_balances.dart';
 import 'package:shipping/Routes/Home/View/Report/CashBalances/all_cash.dart';
 import 'package:shipping/Routes/Home/View/Report/IncomeStatement/income_statement.dart';
 import 'package:shipping/Routes/Home/View/Report/TrialBalance/trial_balance.dart';
+import 'package:shipping/Routes/Home/View/Report/TxnReport/txn_report.dart';
 import '../../../../Features/Other/responsive_widget.dart';
 import 'AccountStatement/acc_statement.dart';
 import 'ArAndAp/ar_ap.dart';
@@ -140,7 +141,7 @@ class _ReportBody extends StatelessWidget {
             ZNavigator.goto(context: ctx, IncomeStatementView()),
       ),
 
-      // ── NEW: Receivables card ─────────────────────────────────────
+      // ── Receivables card ─────────────────────────────────────
       _ReportData(
         icon: Icons.call_received_outlined,
         title: 'Receivables',
@@ -152,7 +153,7 @@ class _ReportBody extends StatelessWidget {
         ),
       ),
 
-      // ── NEW: Payables card ────────────────────────────────────────
+      // ──  Payables card ────────────────────────────────────────
       _ReportData(
         icon: Icons.call_made_outlined,
         title: 'Payables',
@@ -164,7 +165,7 @@ class _ReportBody extends StatelessWidget {
         ),
       ),
 
-      // ── NEW: Payables card ────────────────────────────────────────
+      // ── All balances ────────────────────────────────────────
       _ReportData(
         icon: Icons.all_inclusive_rounded,
         title: 'All Balances',
@@ -172,6 +173,17 @@ class _ReportBody extends StatelessWidget {
         'All accounts balances report',
         onTap: (ctx) => ZNavigator.goto(context: ctx,
           const AllBalancesView(),
+        ),
+      ),
+
+      // ── All Transactions ────────────────────────────────────────
+      _ReportData(
+        icon: Icons.all_inclusive_rounded,
+        title: 'All Transactions',
+        description:
+        'All transactions records',
+        onTap: (ctx) => ZNavigator.goto(context: ctx,
+          const TransactionReportView(),
         ),
       ),
     ];
@@ -189,7 +201,7 @@ class _ReportBody extends StatelessWidget {
                 height: 45,
                 decoration: BoxDecoration(
                   color: scheme.primary.withValues(alpha: .07),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(5),
                 ),
                 alignment: Alignment.center,
                 child: Icon(
@@ -204,17 +216,21 @@ class _ReportBody extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Reports',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w600),
+                      'Reports'.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.1,
+                        color: scheme.primary,
+                      ),
                     ),
                     Text(
                       'Choose a report to view',
                       style: TextStyle(
-                        fontSize: 12.5,
-                        color: scheme.onSurfaceVariant,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.1,
+                        color: scheme.primary,
                       ),
                     ),
                   ],

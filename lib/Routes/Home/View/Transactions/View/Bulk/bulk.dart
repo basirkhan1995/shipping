@@ -505,7 +505,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                 label: Text(AppLocalizations.of(context)!.cancel),
               ),
 
-              // Pending + maker → Delete + Authorize
+// ── Maker, Pending → Delete + Update ─────────────────────────
               if (state.isEditing &&
                   isPending &&
                   isMaker &&
@@ -518,6 +518,26 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                   label: Text(AppLocalizations.of(context)!.delete),
                 ),
                 ZOutlineButton(
+                  icon: Icons.save_alt_rounded,
+                  isActive: true,
+                  onPressed: !state.canSubmit || busy ? null : _onSubmit,
+                  label: busy || isActionBusy
+                      ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                      : Text(AppLocalizations.of(context)!.update),
+                ),
+              ],
+
+// ── Non-maker, Pending → Authorize ───────────────────────────
+              if (state.isEditing &&
+                  isPending &&
+                  !isMaker &&
+                  !busy &&
+                  !isActionBusy) ...[
+                ZOutlineButton(
                   onPressed: _dispatchAuthorize,
                   icon: Icons.check_circle_outline_rounded,
                   isActive: true,
@@ -525,7 +545,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                 ),
               ],
 
-              // Authorized → Unauthorize + Reverse
+// ── Authorized → Unauthorize + Reverse ───────────────────────
               if (state.isEditing &&
                   isAuthorized &&
                   !busy &&
@@ -542,23 +562,19 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                 ),
               ],
 
-              // Save / Update — create mode always; edit mode only if pending+maker
-              if (!state.isEditing || (isPending && isMaker))
+              // ── Create mode → Save ───────────────────────────────────────
+              if (!state.isEditing)
                 ZOutlineButton(
                   icon: Icons.save_alt_rounded,
                   isActive: true,
                   onPressed: !state.canSubmit || busy ? null : _onSubmit,
                   label: busy || isActionBusy
                       ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(
-                          state.isEditing
-                              ? AppLocalizations.of(context)!.update
-                              : AppLocalizations.of(context)!.save,
-                        ),
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                      : Text(AppLocalizations.of(context)!.save),
                 ),
             ],
           ),

@@ -1307,4 +1307,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get balanceFilter => 'Balance Filter';
+
+  @override
+  String get filters => 'Filters';
+
+  @override
+  String get apply => 'Apply';
 }

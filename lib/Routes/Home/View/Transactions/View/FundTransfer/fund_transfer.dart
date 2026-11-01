@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../../../../../Features/Widgets/extensions.dart';
-import '../../../../../../Features/Widgets/zbutton.dart'; // ZOutlineButton
+import '../../../../../../Features/Widgets/zbutton.dart';
 import '../../../../../../Features/Other/generic_textfield.dart';
-import '../../../../../../Features/Widgets/ztextfield.dart'; // ZTextFieldEntitled
+import '../../../../../../Features/Widgets/ztextfield.dart';
 import '../../../../../../Features/Widgets/z_dialog.dart';
 import '../../../../../../Features/Widgets/toast.dart';
 import '../../../../../../l10n/app_localizations.dart';
@@ -834,12 +833,7 @@ class _FundTransferDialog extends StatelessWidget {
           final isAuthorized = stateText == 'Authorized';
 
           final loginName = _loginName(context);
-          final isMaker =
-              loaded == null ||
-              (loaded.maker.isNotEmpty &&
-                  loginName != null &&
-                  loaded.maker == loginName);
-
+          final isMaker = loaded == null || (loaded.maker.isNotEmpty && loginName != null && loaded.maker == loginName);
           final isEditing = _isEditing;
 
           if (isEditing && loaded == null && state is! FundTransferError) {
@@ -920,22 +914,13 @@ class _FundTransferDialog extends StatelessWidget {
                           onPressed: () => Navigator.of(context).pop(false),
                           label: Text(AppLocalizations.of(context)!.cancel),
                         ),
+// ── Maker, Pending → Delete + Update ─────────────────────────
                         if (isEditing && isPending && isMaker && !busy) ...[
                           ZOutlineButton(
                             onPressed: () => _dispatchDelete(context),
-                            backgroundHover: Theme.of(context)
-                                .colorScheme
-                                .error,
+                            backgroundHover: Theme.of(context).colorScheme.error,
                             icon: Icons.delete_outline_rounded,
                             label: Text(AppLocalizations.of(context)!.delete),
-                          ),
-                          ZOutlineButton(
-                            isActive: true,
-                            onPressed: () => _dispatchAuthorize(context),
-                            icon: Icons.check_circle_outline_rounded,
-                            label: Text(
-                              AppLocalizations.of(context)!.authorize,
-                            ),
                           ),
                           ZOutlineButton(
                             isActive: true,
@@ -944,13 +929,27 @@ class _FundTransferDialog extends StatelessWidget {
                             label: Text(AppLocalizations.of(context)!.update),
                           ),
                         ],
+
+                        // ── Non-maker, Pending → Authorize ───────────────────────────
+                        if (isEditing &&
+                            isPending &&
+                            !isMaker &&
+                            loginName != null &&
+                            !busy) ...[
+                          ZOutlineButton(
+                            isActive: true,
+                            onPressed: () => _dispatchAuthorize(context),
+                            icon: Icons.check_circle_outline_rounded,
+                            label: Text(AppLocalizations.of(context)!.authorize),
+                          ),
+                        ],
+
+                        // ── Authorized → Unauthorize + Reverse ───────────────────────
                         if (isEditing && isAuthorized && !busy) ...[
                           ZOutlineButton(
                             onPressed: () => _dispatchUnauthorize(context),
                             icon: Icons.undo_rounded,
-                            label: Text(
-                              AppLocalizations.of(context)!.unauthorize,
-                            ),
+                            label: Text(AppLocalizations.of(context)!.unauthorize),
                           ),
                           ZOutlineButton(
                             onPressed: () => _dispatchReverse(context),

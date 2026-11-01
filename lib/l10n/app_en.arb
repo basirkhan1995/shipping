@@ -439,5 +439,7 @@
   "financialPeriod": "Financial Period",
   "loading": "Loading...",
   "searchAccounts": "Search accounts",
-  "balanceFilter": "Balance Filter"
+  "balanceFilter": "Balance Filter",
+  "filters": "Filters",
+  "apply": "Apply"
 }

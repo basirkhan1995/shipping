@@ -377,5 +377,7 @@
   "financialPeriod": "دوره مالی",
   "loading": "درحال بارگیری...",
   "searchAccounts": "جستجو حسابها",
-  "balanceFilter": "فلتر بیلانس"
+  "balanceFilter": "فلتر بیلانس",
+  "filters": "فلتر ها",
+  "apply": "اعمال"
 }

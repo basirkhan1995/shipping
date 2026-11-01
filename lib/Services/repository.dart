@@ -21,6 +21,8 @@ import '../Routes/Home/View/Report/CashBalances/model/cash_balance_model.dart';
 import '../Routes/Home/View/Report/IncomeStatement/model/income_stmt_model.dart';
 import '../Routes/Home/View/Report/TrialBalance/model/trial_balance_model.dart';
 import '../Routes/Home/View/Report/TxnByReference/model/txn_report_model.dart';
+import '../Routes/Home/View/Report/TxnReport/TxnTypes/model/txn_types_model.dart';
+import '../Routes/Home/View/Report/TxnReport/model/txn_report_model.dart';
 import '../Routes/Home/View/Settings/View/Company/Branch/Ui/BranchLimits/model/limit_model.dart';
 import '../Routes/Home/View/Settings/View/Company/Branches/model/branch_model.dart';
 import '../Routes/Home/View/Settings/View/Company/CompanyProfile/model/com_model.dart';
@@ -2050,5 +2052,110 @@ class Repositories {
 
     return [];
   }
+
+  Future<List<TransactionReportModel>> transactionReport({
+    String? fromDate,
+    String? toDate,
+    String? txnType,
+    int? status,
+    String? maker,
+    String? checker,
+    String? currency,
+  }) async {
+    final response = await _api.post(
+      endpoint: "/reports/transactionsReport.php",
+      data: {
+        "fromDate": fromDate,
+        "toDate": toDate,
+        "type": txnType,
+        "status": status,
+        "maker": maker,
+        "checker": checker,
+        "currency": currency,
+      },
+    );
+
+    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+      throw Exception(response.data['msg']);
+    }
+
+    // Parse as list
+    if (response.data is List) {
+      return List<TransactionReportModel>.from(
+        response.data.map((x) => TransactionReportModel.fromMap(x)),
+      );
+    }
+
+    // If single object, wrap in list
+    if (response.data is Map<String, dynamic>) {
+      return [TransactionReportModel.fromMap(response.data)];
+    }
+
+    return [];
+  }
+
+  /// Transaction Types ........................................................
+  Future<Map<String, dynamic>> addTxnType({
+    required TxnTypeModel newType,
+  }) async {
+    final response = await _api.post(
+      endpoint: "/setting/trnType.php",
+      data: newType.toMap(),
+    );
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> updateTxnType({
+    required TxnTypeModel newType,
+  }) async {
+    final response = await _api.put(
+      endpoint: "/setting/trnType.php",
+      data: newType.toMap(),
+    );
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> deleteTxnType({required String trnCode}) async {
+    final response = await _api.delete(
+      endpoint: "/setting/trnType.php",
+      data: {"trntCode": trnCode},
+    );
+    return response.data;
+  }
+
+  Future<List<TxnTypeModel>> getTxnTypes({
+    String? trnCode,
+    CancelToken? cancelToken,
+  }) async {
+    final queryParams = {'trntCode': trnCode};
+    // Fetch data from API
+    final response = await _api.get(
+      endpoint: "/setting/trnType.php",
+      queryParams: queryParams,
+      cancelToken: cancelToken,
+    );
+
+    // Handle error messages from server
+    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+      throw Exception(response.data['msg']);
+    }
+
+    // If data is null or empty, return empty list
+    if (response.data == null ||
+        (response.data is List && response.data.isEmpty)) {
+      return [];
+    }
+
+    // Parse list of stakeholders safely
+    if (response.data is List) {
+      return (response.data as List)
+          .whereType<Map<String, dynamic>>() // ensure map type
+          .map((json) => TxnTypeModel.fromMap(json))
+          .toList();
+    }
+
+    return [];
+  }
+
 
 }

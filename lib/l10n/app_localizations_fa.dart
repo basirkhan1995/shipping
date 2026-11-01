@@ -1306,4 +1306,10 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get balanceFilter => 'فلتر بیلانس';
+
+  @override
+  String get filters => 'فلتر ها';
+
+  @override
+  String get apply => 'اعمال';
 }
