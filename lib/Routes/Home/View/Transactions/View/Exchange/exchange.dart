@@ -22,8 +22,6 @@ import '../../bloc/transactions_bloc.dart';
 import 'bloc/exchange_bloc.dart';
 import 'model/ex_model.dart';
 
-// FORM — add / edit a cross-currency exchange
-
 class ExchangeForm extends StatefulWidget {
   final String usrName;
   final String baseCurrency;
@@ -59,6 +57,10 @@ class ExchangeFormResult {
     required this.credit,
   });
 }
+
+/// Which field last produced a value. Used by the two-way amount mirror
+/// so that typing in one field updates the other without feedback loops.
+enum _AmountSource { none, amount, rate, creditAmount }
 
 class ExchangeFormState extends State<ExchangeForm> {
   final _internalKey = GlobalKey<FormState>();
@@ -96,6 +98,16 @@ class ExchangeFormState extends State<ExchangeForm> {
   int _rateRequestId = 0;
   StreamSubscription<ExchangeRateState>? _rateSub;
   bool _print = true;
+
+  /// Inline validation error shown at the top of the form.
+  String? _formError;
+
+  /// Last field the user typed in. Used to know which side is
+  /// authoritative when the API-driven rate arrives.
+  _AmountSource _amountSource = _AmountSource.none;
+
+  /// Reentrancy guard for the amount/rate/credit-amount mirror.
+  bool _mirroring = false;
 
   bool get _isEditable =>
       widget.stateText == null || widget.stateText == 'Pending';
@@ -177,8 +189,9 @@ class ExchangeFormState extends State<ExchangeForm> {
     required String currencyCode,
   }) {
     final selected = isDebit ? _debitAcc : _creditAcc;
-    final accountNo = selected?.accNumber;
-    if (selected == null || accountNo == null) return;
+    final accountNo = selected?.accNumber ??
+        (isDebit ? _debitLeg?.account : _creditLeg?.account);
+    if (accountNo == null) return;
 
     setState(() {
       if (isDebit) {
@@ -191,6 +204,7 @@ class ExchangeFormState extends State<ExchangeForm> {
         _pendingCreditCurrency = currencyCode;
       }
       _rate = null;
+      _rateCtrl.clear();
     });
 
     final currentState = context.read<StkAccountsBloc>().state;
@@ -300,7 +314,19 @@ class ExchangeFormState extends State<ExchangeForm> {
     super.dispose();
   }
 
-  // Rate fetching
+  // ── Form-error helpers ─────────────────────────────────────
+  void _setFormError(String msg) {
+    if (!mounted) return;
+    setState(() => _formError = msg);
+  }
+
+  void _clearFormError() {
+    if (_formError == null) return;
+    if (!mounted) return;
+    setState(() => _formError = null);
+  }
+
+  // ── Rate fetching ──────────────────────────────────────────
   Future<void> _fetchRate(String fromCcy, String toCcy) async {
     if (fromCcy == toCcy) {
       _setRate(1.0);
@@ -323,15 +349,11 @@ class ExchangeFormState extends State<ExchangeForm> {
         toCcy: toCcy,
       );
       if (!mounted) return;
+      _clearFormError();
       _setRate(rate);
     } on ApiException catch (e) {
       if (!mounted) return;
-      ToastManager.show(
-        context: context,
-        title: 'Rate unavailable',
-        message: e.message,
-        type: ToastType.error,
-      );
+      _setFormError(e.message);
     } finally {
       if (mounted) setState(() => _loadingRate = false);
     }
@@ -373,65 +395,109 @@ class ExchangeFormState extends State<ExchangeForm> {
     return completer.future;
   }
 
+  /// Apply a rate that came from the API or currency change. The rate
+  /// field is the source of truth; the last user-edited amount side
+  /// stays fixed and the other side recalculates.
   void _setRate(double rate) {
     setState(() {
       _rate = rate;
       _rateCtrl.text = rate.toStringAsFixed(6);
     });
-    _recalcCreditFromRate();
+    if (_amountSource == _AmountSource.creditAmount) {
+      _recalcAmountFromCreditAndRate();
+    } else {
+      _recalcCreditFromRate();
+    }
   }
 
+  // ── Two-way mirror ─────────────────────────────────────────
+  //
+  // Rate is AUTHORITATIVE and only changes when:
+  //   • the user edits the rate field
+  //   • the API returns a new rate
+  //   • currencies change (rate is cleared then fetched)
+  //
+  // Debit and credit amounts are DERIVED:
+  //   • typing debit   → credit = debit × rate
+  //   • typing credit  → debit  = credit ÷ rate
+  //   • typing rate    → credit = debit × rate
+  // ─────────────────────────────────────────────────────────────
   void _recalcCreditFromRate() {
+    if (_mirroring) return;
     final amount = double.tryParse(_amountCtrl.text.replaceAll(',', ''));
     final rate = _rate;
-    if (amount == null || amount <= 0 || rate == null) return;
-    _creditAmountCtrl.text = (amount * rate).toStringAsFixed(2);
+    if (amount == null || amount <= 0 || rate == null || rate <= 0) return;
+
+    _mirroring = true;
+    final computed = (amount * rate).toStringAsFixed(2);
+    if (_creditAmountCtrl.text != computed) {
+      _creditAmountCtrl.text = computed;
+    }
+    _mirroring = false;
   }
 
-  void _recalcRateFromCredit() {
-    final amount = double.tryParse(_amountCtrl.text.replaceAll(',', ''));
+  void _recalcAmountFromCreditAndRate() {
+    if (_mirroring) return;
     final credit =
     double.tryParse(_creditAmountCtrl.text.replaceAll(',', ''));
-    if (amount == null || amount <= 0 || credit == null || credit <= 0) {
-      return;
+    final rate = _rate;
+    if (credit == null || credit <= 0 || rate == null || rate <= 0) return;
+
+    _mirroring = true;
+    final computed = (credit / rate).toStringAsFixed(2);
+    if (_amountCtrl.text != computed) {
+      _amountCtrl.text = computed;
     }
-    final rate = credit / amount;
-    setState(() {
-      _rate = rate;
-      _rateCtrl.text = rate.toStringAsFixed(6);
-    });
+    _mirroring = false;
   }
 
-  // Submit
+  // ── Submit ─────────────────────────────────────────────────
   void submit() {
     if (!_isEditable) return;
-    if (_formKey.currentState?.validate() != true) return;
+
+    if (_formKey.currentState?.validate() != true) {
+      _setFormError('Please fix the highlighted fields.');
+      return;
+    }
 
     final debitAmt = double.tryParse(_amountCtrl.text.replaceAll(',', ''));
     final creditAmt =
     double.tryParse(_creditAmountCtrl.text.replaceAll(',', ''));
-    if (debitAmt == null || debitAmt <= 0) return;
-    if (creditAmt == null || creditAmt <= 0) return;
+    if (debitAmt == null || debitAmt <= 0) {
+      _setFormError('Enter a debit amount greater than zero.');
+      return;
+    }
+    if (creditAmt == null || creditAmt <= 0) {
+      _setFormError('Enter a credit amount greater than zero.');
+      return;
+    }
 
     final debitNo = _debitAccountNo;
     final creditNo = _creditAccountNo;
-    if (debitNo == null || creditNo == null) return;
+    if (debitNo == null) {
+      _setFormError('Pick a debit account.');
+      return;
+    }
+    if (creditNo == null) {
+      _setFormError('Pick a credit account.');
+      return;
+    }
 
-    // Same GL account is valid when the currency differs.
-    // Reject only the identical account + currency combination.
     final sameAccountAndCurrency = debitNo == creditNo &&
         _normalizeCurrency(_debitCcyEffective) ==
             _normalizeCurrency(_creditCcyEffective);
 
     if (sameAccountAndCurrency) {
-      _toastError(AppLocalizations.of(context)!.sameAccount);
+      _setFormError(AppLocalizations.of(context)!.sameAccount);
       return;
     }
     if (_normalizeCurrency(_debitCcyEffective) ==
         _normalizeCurrency(_creditCcyEffective)) {
-      _toastError(AppLocalizations.of(context)!.sameCurrencyForExchange);
+      _setFormError(AppLocalizations.of(context)!.sameCurrencyForExchange);
       return;
     }
+
+    _clearFormError();
 
     final narration = _narrationCtrl.text.trim();
     widget.onSubmit(ExchangeFormResult(
@@ -459,14 +525,7 @@ class ExchangeFormState extends State<ExchangeForm> {
   String _normalizeCurrency(String? currency) =>
       (currency ?? '').trim().toUpperCase();
 
-  void _toastError(String msg) => ToastManager.show(
-    context: context,
-    title: 'Check form',
-    message: msg,
-    type: ToastType.error,
-  );
-
-  // Build
+  // ── Build ──────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
@@ -483,43 +542,66 @@ class ExchangeFormState extends State<ExchangeForm> {
       },
       child: Form(
         key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 12,
-            children: [
-              _buildDebitPicker(),
-              if (_debitAcc != null)
-                _AccountDetailsCard(
-                  account: _debitAcc!,
-                  fallbackCurrency: widget.baseCurrency,
-                  label: tr.debitAccount,
-                  effectiveCurrency: _debitCcyEffective,
-                )
-              else if (_debitLeg != null)
-                _LegDetailsCard(leg: _debitLeg!, label: tr.debitAccount),
-              _buildCreditPicker(),
-              if (_creditAcc != null)
-                _AccountDetailsCard(
-                  account: _creditAcc!,
-                  fallbackCurrency: widget.baseCurrency,
-                  label: tr.creditAccount,
-                  effectiveCurrency: _creditCcyEffective,
-                )
-              else if (_creditLeg != null)
-                _LegDetailsCard(leg: _creditLeg!, label: tr.creditAccount),
-              _buildAmountRow(),
-              _buildNarrationField(),
-              if (_isEditable) _buildToggles(),
-            ],
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Banner sits OUTSIDE the scroll view so it stays visible
+            // regardless of where the user has scrolled.
+            if (_formError != null && _formError!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+                child: _InlineErrorBanner(
+                  message: _formError!,
+                  onDismiss: () => setState(() => _formError = null),
+                ),
+              ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: 12,
+                  children: [
+                    _buildDebitPicker(),
+                    if (_debitAcc != null)
+                      _AccountDetailsCard(
+                        account: _debitAcc!,
+                        fallbackCurrency: widget.baseCurrency,
+                        label: tr.debitAccount,
+                        effectiveCurrency: _debitCcyEffective,
+                      )
+                    else if (_debitLeg != null)
+                      _LegDetailsCard(
+                        leg: _debitLeg!,
+                        label: tr.debitAccount,
+                      ),
+                    _buildCreditPicker(),
+                    if (_creditAcc != null)
+                      _AccountDetailsCard(
+                        account: _creditAcc!,
+                        fallbackCurrency: widget.baseCurrency,
+                        label: tr.creditAccount,
+                        effectiveCurrency: _creditCcyEffective,
+                      )
+                    else if (_creditLeg != null)
+                      _LegDetailsCard(
+                        leg: _creditLeg!,
+                        label: tr.creditAccount,
+                      ),
+                    _buildAmountRow(),
+                    _buildNarrationField(),
+                    if (_isEditable) _buildToggles(),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  // Pickers
+  // ── Pickers ────────────────────────────────────────────────
   Widget _buildDebitPicker() => _accountPicker(
     key: const ValueKey('debit'),
     controller: _debitCtrl,
@@ -527,6 +609,7 @@ class ExchangeFormState extends State<ExchangeForm> {
     title: AppLocalizations.of(context)!.debitAccount,
     selected: _debitAcc,
     onSelected: (a) {
+      _clearFormError();
       setState(() {
         _debitAcc = a;
         _debitLeg = null;
@@ -540,7 +623,7 @@ class ExchangeFormState extends State<ExchangeForm> {
     excludeAccount: _creditAccountNo,
     excludeCurrency: _creditCcyEffective,
     isDebit: true,
-    allowedCategories: null
+    allowedCategories: null,
   );
 
   Widget _buildCreditPicker() => _accountPicker(
@@ -550,6 +633,7 @@ class ExchangeFormState extends State<ExchangeForm> {
     title: AppLocalizations.of(context)!.creditAccount,
     selected: _creditAcc,
     onSelected: (a) {
+      _clearFormError();
       setState(() {
         _creditAcc = a;
         _creditLeg = null;
@@ -563,7 +647,7 @@ class ExchangeFormState extends State<ExchangeForm> {
     excludeAccount: _debitAccountNo,
     excludeCurrency: _debitCcyEffective,
     isDebit: false,
-    allowedCategories: null
+    allowedCategories: null,
   );
 
   Widget _accountPicker({
@@ -578,6 +662,16 @@ class ExchangeFormState extends State<ExchangeForm> {
     required bool isDebit,
     Set<int>? allowedCategories = const {1, 8},
   }) {
+    // Show the currency selector whenever we know the account is GL,
+    // either because it was picked (selected != null) or because we
+    // loaded an existing leg from the edit payload (selected == null
+    // but the leg exists). This makes the selector appear in edit
+    // mode before the user re-picks the account.
+    final leg = isDebit ? _debitLeg : _creditLeg;
+    final canShowCcySelector = _isEditable &&
+        (selected?.accCategory == 1 ||
+            (selected == null && leg != null));
+
     return GenericTextField<StakeholderAccount, StkAccountsBloc,
         StkAccountsState>(
       key: key,
@@ -619,8 +713,6 @@ class ExchangeFormState extends State<ExchangeForm> {
           ],
         ),
       ),
-      // Currency is part of the item identity because one GL account
-      // can have AFN, EUR and USD rows with the same account number/name.
       itemToString: (a) =>
       '${a.accNumber} | ${a.accName} | ${a.accCurrency ?? widget.baseCurrency}',
       stateToItems: (s) {
@@ -628,14 +720,11 @@ class ExchangeFormState extends State<ExchangeForm> {
           return const <StakeholderAccount>[];
         }
         return s.accounts.where((a) {
-          // 1. Category filter — only apply when the caller asked for one.
           if (allowedCategories != null &&
               !allowedCategories.contains(a.accCategory)) {
             return false;
           }
 
-          // 2. Exclude only the exact same account number + currency.
-          //    Keep other currency rows of the same GL account selectable.
           final rowCurrency =
           _normalizeCurrency(a.accCurrency ?? widget.baseCurrency);
           final selectedCurrency = _normalizeCurrency(excludeCurrency);
@@ -650,13 +739,14 @@ class ExchangeFormState extends State<ExchangeForm> {
       },
       stateToLoading: (s) => s is StkAccountsLoadingState,
       onSelected: onSelected,
-      showCurrencySelector: selected?.accCategory == 1 && _isEditable,
-      isCurrencySelectorEnabled: selected?.accCategory == 1 && _isEditable,
+      showCurrencySelector: canShowCcySelector,
+      isCurrencySelectorEnabled: canShowCcySelector,
       selectedCurrencyCodeOverride:
       isDebit ? _debitCcyEffective : _creditCcyEffective,
       onCurrencySelectorChanged: (CurrenciesModel? currency) {
         final code = currency?.ccyCode;
-        if (code == null || code.isEmpty || selected == null) return;
+        if (code == null || code.isEmpty) return;
+        _clearFormError();
         _changeSelectedCurrency(isDebit: isDebit, currencyCode: code);
       },
       validator: (_) {
@@ -667,7 +757,7 @@ class ExchangeFormState extends State<ExchangeForm> {
     );
   }
 
-  // Amount / rate / credit
+  // ── Amount / rate / credit ─────────────────────────────────
   Widget _buildAmountRow() {
     final tr = AppLocalizations.of(context)!;
     final debitCcy = _debitCcyEffective ?? '';
@@ -694,7 +784,17 @@ class ExchangeFormState extends State<ExchangeForm> {
                   FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
                 ],
                 onChanged: (_) {
-                  if (!_loadingRate && _rate != null && _rate! > 0) {
+                  _clearFormError();
+                  _amountSource = _AmountSource.amount;
+                  // debit → credit = debit × rate
+                  final amount = double.tryParse(
+                    _amountCtrl.text.replaceAll(',', ''),
+                  );
+                  final rate = _rate;
+                  if (amount != null &&
+                      amount > 0 &&
+                      rate != null &&
+                      rate > 0) {
                     _recalcCreditFromRate();
                   }
                 },
@@ -723,7 +823,22 @@ class ExchangeFormState extends State<ExchangeForm> {
                 inputFormat: [
                   FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
                 ],
-                onChanged: (_) => _recalcRateFromCredit(),
+                onChanged: (_) {
+                  _clearFormError();
+                  _amountSource = _AmountSource.creditAmount;
+                  // credit → debit = credit ÷ rate. Rate is never
+                  // changed from this field.
+                  final credit = double.tryParse(
+                    _creditAmountCtrl.text.replaceAll(',', ''),
+                  );
+                  final rate = _rate;
+                  if (credit != null &&
+                      credit > 0 &&
+                      rate != null &&
+                      rate > 0) {
+                    _recalcAmountFromCreditAndRate();
+                  }
+                },
                 validator: (v) {
                   if (!_isEditable) return null;
                   final n = double.tryParse((v ?? '').replaceAll(',', ''));
@@ -797,7 +912,18 @@ class ExchangeFormState extends State<ExchangeForm> {
           inputFormat: [
             FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
           ],
-          onChanged: (_) => _recalcCreditFromRate(),
+          onChanged: (_) {
+            _clearFormError();
+            _amountSource = _AmountSource.rate;
+            // The rate field is the ONLY place the user can change
+            // the rate. Typing here updates credit = debit × rate.
+            final parsed =
+            double.tryParse(_rateCtrl.text.replaceAll(',', ''));
+            if (parsed != null && parsed > 0) {
+              setState(() => _rate = parsed);
+              _recalcCreditFromRate();
+            }
+          },
           validator: (v) {
             if (disabled) return null;
             final n = double.tryParse((v ?? '').replaceAll(',', ''));
@@ -832,6 +958,7 @@ class ExchangeFormState extends State<ExchangeForm> {
     focusNode: _narrationFocus,
     textInputAction: TextInputAction.none,
     onFieldSubmitted: (_) => submit(),
+    onChanged: (_) => _clearFormError(),
     keyboardType: TextInputType.multiline,
     validator: (v) =>
     (!_isEditable || (v != null && v.trim().isNotEmpty))
@@ -850,7 +977,7 @@ class ExchangeFormState extends State<ExchangeForm> {
     ],
   );
 
-  // Rate retrigger
+  // ── Rate retrigger ─────────────────────────────────────────
   void _maybeFetchRate() {
     final from = _debitCcyEffective;
     final to = _creditCcyEffective;
@@ -915,341 +1042,341 @@ Future<bool?> showExchangeDialog(
 }
 
 class _ExchangeDialog extends StatelessWidget {
-  final String usrName;
-  final String baseCurrency;
-  final String? reference;
+final String usrName;
+final String baseCurrency;
+final String? reference;
 
-  const _ExchangeDialog({
-    required this.usrName,
-    required this.baseCurrency,
-    this.reference,
-  });
+const _ExchangeDialog({
+required this.usrName,
+required this.baseCurrency,
+this.reference,
+});
 
-  bool get _isEditing => reference != null && reference!.isNotEmpty;
+bool get _isEditing => reference != null && reference!.isNotEmpty;
 
-  String? _loginName(BuildContext context) {
-    final auth = context.read<AuthBloc>().state;
-    return auth is AuthenticatedState ? auth.loginData.usrName : null;
-  }
+String? _loginName(BuildContext context) {
+final auth = context.read<AuthBloc>().state;
+return auth is AuthenticatedState ? auth.loginData.usrName : null;
+}
 
-  void _dispatchAuthorize(BuildContext context) {
-    final ref = reference;
-    if (ref == null || ref.isEmpty) return;
-    context.read<TransactionsBloc>().add(
-      AuthorizeTransactionEvent(
-        reference: ref,
-        userName: _loginName(context),
-      ),
-    );
-  }
+void _dispatchAuthorize(BuildContext context) {
+final ref = reference;
+if (ref == null || ref.isEmpty) return;
+context.read<TransactionsBloc>().add(
+AuthorizeTransactionEvent(
+reference: ref,
+userName: _loginName(context),
+),
+);
+}
 
-  void _dispatchUnauthorize(BuildContext context) {
-    final ref = reference;
-    if (ref == null || ref.isEmpty) return;
-    context.read<TransactionsBloc>().add(
-      UnauthorizeTransactionEvent(
-        reference: ref,
-        userName: _loginName(context),
-      ),
-    );
-  }
-
-  void _dispatchReverse(BuildContext context) {
-    final ref = reference;
-    if (ref == null || ref.isEmpty) return;
-    context.read<TransactionsBloc>().add(
-      ReverseTransactionEvent(
-        reference: ref,
-        userName: _loginName(context),
-      ),
-    );
-  }
-
-  Future<void> _dispatchDelete(BuildContext context) async {
-    final ref = reference;
-    if (ref == null || ref.isEmpty) return;
-
-    final tr = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: Text(tr.delete),
-        content: Text(
-          'Delete exchange $ref?\n\n'
-              'The record will be marked as Deleted and its balance will be reversed.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(false),
-            child: Text(tr.cancel),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              foregroundColor: Theme.of(context).colorScheme.onError,
-            ),
-            onPressed: () => Navigator.of(dialogCtx).pop(true),
-            child: Text(tr.delete),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !context.mounted) return;
-
-    context.read<TransactionsBloc>().add(
-      DeleteTransactionEvent(
-        reference: ref,
-        userName: _loginName(context),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final formKey = GlobalKey<ExchangeFormState>();
-
-    return MultiBlocListener(
-      listeners: [
-        BlocListener<ExchangeBloc, ExchangeState>(
-          listener: (context, state) {
-            if (state is ExchangeSubmitSuccess) {
-              ToastManager.show(
-                context: context,
-                title: 'Saved',
-                message: state.message,
-                type: ToastType.success,
-              );
-              context
-                  .read<ExchangeBloc>()
-                  .add(const ClearExchangeSuccessEvent());
-              Navigator.of(context).pop(true);
-            }
-          },
-        ),
-        BlocListener<TransactionsBloc, TransactionsState>(
-          listenWhen: (prev, next) =>
-          next is TransactionsLoadedState &&
-              (next.actionSuccess != null || next.actionError != null),
-          listener: (context, state) {
-            if (state is! TransactionsLoadedState) return;
-
-            final success = state.actionSuccess;
-            if (success != null) {
-              ToastManager.show(
-                context: context,
-                title: 'Success',
-                message: success,
-                type: ToastType.success,
-              );
-              context
-                  .read<TransactionsBloc>()
-                  .add(const ClearRowActionSuccessEvent());
-
-              final ref = reference;
-              if (ref != null && ref.isNotEmpty) {
-                if (success.toLowerCase().contains('deleted')) {
-                  Navigator.of(context).pop(true);
-                  return;
-                }
-                context
-                    .read<ExchangeBloc>()
-                    .add(LoadExchangeDetailEvent(ref));
-              }
-            }
-
-            final error = state.actionError;
-            if (error != null) {
-              ToastManager.show(
-                context: context,
-                title: 'Failed',
-                message: error,
-                type: ToastType.error,
-              );
-              context
-                  .read<TransactionsBloc>()
-                  .add(const ClearRowActionErrorEvent());
-            }
-          },
-        ),
-      ],
-      child: BlocBuilder<ExchangeBloc, ExchangeState>(
-        builder: (context, state) {
-          final busy = state is ExchangeSubmitting;
-          final loaded =
-          state is ExchangeDetailLoaded ? state.detail : null;
-          final stateText = loaded?.stateText;
-          final isPending = stateText == null || stateText == 'Pending';
-          final isAuthorized = stateText == 'Authorized';
-          final loginName = _loginName(context);
-          final isMaker = loaded == null ||
-              (loaded.maker.isNotEmpty &&
-                  loginName != null &&
-                  loaded.maker == loginName);
-          final isEditing = _isEditing;
-
-          if (isEditing && loaded == null && state is! ExchangeError) {
-            return ZFormDialog(
-              width: 720,
-              icon: Icons.swap_horiz_rounded,
-              title: 'Exchange · $reference',
-              isActionTrue: false,
-              onAction: null,
-              child: const SizedBox(
-                height: 220,
-                child: Center(child: CircularProgressIndicator()),
-              ),
-            );
-          }
-
-          return ZFormDialog(
-            width: 720,
-            icon: Icons.swap_horiz_rounded,
-            title: isEditing ? 'Exchange · $reference' : 'New Exchange',
-            isActionTrue: false,
-            onAction: null,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 600),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (state is ExchangeError && state.message.isNotEmpty)
-                    _banner(
-                      state.message,
-                      Theme.of(context).colorScheme.error,
-                    ),
-                  Flexible(
-                    child: ExchangeForm(
-                      key: ValueKey(reference ?? 'new'),
-                      formKey: formKey,
-                      usrName: usrName,
-                      baseCurrency: baseCurrency,
-                      initialDetail: loaded,
-                      stateText: stateText,
-                      onSubmit: (result) {
-                        if (isEditing) {
-                          context.read<ExchangeBloc>().add(
-                            EditExchangeEvent(
-                              reference: result.reference!,
-                              usrName: result.usrName,
-                              debit: result.debit,
-                              credit: result.credit,
-                            ),
-                          );
-                        } else {
-                          context.read<ExchangeBloc>().add(
-                            AddExchangeEvent(
-                              usrName: result.usrName,
-                              debit: result.debit,
-                              credit: result.credit,
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        ZOutlineButton(
-                          onPressed: () =>
-                              Navigator.of(context).pop(false),
-                          label: Text(
-                            AppLocalizations.of(context)!.cancel,
-                          ),
-                        ),
-                        if (isEditing && isPending && isMaker && !busy) ...[
-                          ZOutlineButton(
-                            onPressed: () => _dispatchDelete(context),
-                            backgroundHover:
-                            Theme.of(context).colorScheme.error,
-                            icon: Icons.delete_outline_rounded,
-                            label: Text(
-                              AppLocalizations.of(context)!.delete,
-                            ),
-                          ),
-                          ZOutlineButton(
-                            isActive: true,
-                            onPressed: () => _dispatchAuthorize(context),
-                            icon: Icons.check_circle_outline_rounded,
-                            label: Text(
-                              AppLocalizations.of(context)!.authorize,
-                            ),
-                          ),
-                          ZOutlineButton(
-                            isActive: true,
-                            onPressed: () =>
-                                formKey.currentState?.submit(),
-                            icon: Icons.save_alt_rounded,
-                            label: Text(
-                              AppLocalizations.of(context)!.save,
-                            ),
-                          ),
-                        ],
-                        if (isEditing && isAuthorized && !busy) ...[
-                          ZOutlineButton(
-                            onPressed: () => _dispatchUnauthorize(context),
-                            icon: Icons.undo_rounded,
-                            label: Text(
-                              AppLocalizations.of(context)!.unauthorize,
-                            ),
-                          ),
-                          ZOutlineButton(
-                            onPressed: () => _dispatchReverse(context),
-                            icon: Icons.replay_rounded,
-                            label: Text(
-                              AppLocalizations.of(context)!.reverse,
-                            ),
-                          ),
-                        ],
-                        if (!isEditing)
-                          ZOutlineButton(
-                            isActive: true,
-                            onPressed: busy
-                                ? null
-                                : () => formKey.currentState?.submit(),
-                            icon: Icons.save_alt_rounded,
-                            label: Text(
-                              AppLocalizations.of(context)!.save,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _banner(String text, Color color) => Container(
-    width: double.infinity,
-    margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-    decoration: BoxDecoration(
-      color: color.withValues(alpha: .08),
-      borderRadius: BorderRadius.circular(4),
-      border: Border.all(color: color.withValues(alpha: .3)),
+void _dispatchUnauthorize(BuildContext context) {
+  final ref = reference;
+  if (ref == null || ref.isEmpty) return;
+  context.read<TransactionsBloc>().add(
+    UnauthorizeTransactionEvent(
+      reference: ref,
+      userName: _loginName(context),
     ),
-    child: Row(
-      children: [
-        Icon(Icons.warning_amber_rounded, color: color, size: 16),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(color: color, fontSize: 12),
+  );
+}
+
+void _dispatchReverse(BuildContext context) {
+  final ref = reference;
+  if (ref == null || ref.isEmpty) return;
+  context.read<TransactionsBloc>().add(
+    ReverseTransactionEvent(
+      reference: ref,
+      userName: _loginName(context),
+    ),
+  );
+}
+
+Future<void> _dispatchDelete(BuildContext context) async {
+  final ref = reference;
+  if (ref == null || ref.isEmpty) return;
+
+  final tr = AppLocalizations.of(context)!;
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogCtx) => AlertDialog(
+      title: Text(tr.delete),
+      content: Text(
+        'Delete exchange $ref?\n\n'
+            'The record will be marked as Deleted and its balance will be reversed.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogCtx).pop(false),
+          child: Text(tr.cancel),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            foregroundColor: Theme.of(context).colorScheme.onError,
           ),
+          onPressed: () => Navigator.of(dialogCtx).pop(true),
+          child: Text(tr.delete),
         ),
       ],
     ),
   );
+  if (confirmed != true || !context.mounted) return;
+
+  context.read<TransactionsBloc>().add(
+    DeleteTransactionEvent(
+      reference: ref,
+      userName: _loginName(context),
+    ),
+  );
+}
+
+@override
+Widget build(BuildContext context) {
+  final formKey = GlobalKey<ExchangeFormState>();
+
+  return MultiBlocListener(
+    listeners: [
+      BlocListener<ExchangeBloc, ExchangeState>(
+        listener: (context, state) {
+          if (state is ExchangeSubmitSuccess) {
+            ToastManager.show(
+              context: context,
+              title: 'Saved',
+              message: state.message,
+              type: ToastType.success,
+            );
+            context
+                .read<ExchangeBloc>()
+                .add(const ClearExchangeSuccessEvent());
+            Navigator.of(context).pop(true);
+          }
+        },
+      ),
+      BlocListener<TransactionsBloc, TransactionsState>(
+        listenWhen: (prev, next) =>
+        next is TransactionsLoadedState &&
+            (next.actionSuccess != null || next.actionError != null),
+        listener: (context, state) {
+          if (state is! TransactionsLoadedState) return;
+
+          final success = state.actionSuccess;
+          if (success != null) {
+            ToastManager.show(
+              context: context,
+              title: 'Success',
+              message: success,
+              type: ToastType.success,
+            );
+            context
+                .read<TransactionsBloc>()
+                .add(const ClearRowActionSuccessEvent());
+
+            final ref = reference;
+            if (ref != null && ref.isNotEmpty) {
+              if (success.toLowerCase().contains('deleted')) {
+                Navigator.of(context).pop(true);
+                return;
+              }
+              context
+                  .read<ExchangeBloc>()
+                  .add(LoadExchangeDetailEvent(ref));
+            }
+          }
+
+          final error = state.actionError;
+          if (error != null) {
+            ToastManager.show(
+              context: context,
+              title: 'Failed',
+              message: error,
+              type: ToastType.error,
+            );
+            context
+                .read<TransactionsBloc>()
+                .add(const ClearRowActionErrorEvent());
+          }
+        },
+      ),
+    ],
+    child: BlocBuilder<ExchangeBloc, ExchangeState>(
+      builder: (context, state) {
+        final busy = state is ExchangeSubmitting;
+        final loaded =
+        state is ExchangeDetailLoaded ? state.detail : null;
+        final stateText = loaded?.stateText;
+        final isPending = stateText == null || stateText == 'Pending';
+        final isAuthorized = stateText == 'Authorized';
+        final loginName = _loginName(context);
+        final isMaker = loaded == null ||
+            (loaded.maker.isNotEmpty &&
+                loginName != null &&
+                loaded.maker == loginName);
+        final isEditing = _isEditing;
+
+        if (isEditing && loaded == null && state is! ExchangeError) {
+          return ZFormDialog(
+            width: 720,
+            icon: Icons.swap_horiz_rounded,
+            title: 'Exchange · $reference',
+            isActionTrue: false,
+            onAction: null,
+            child: const SizedBox(
+              height: 220,
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          );
+        }
+
+        return ZFormDialog(
+          width: 720,
+          icon: Icons.swap_horiz_rounded,
+          title: isEditing ? 'Exchange · $reference' : 'New Exchange',
+          isActionTrue: false,
+          onAction: null,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 600),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (state is ExchangeError && state.message.isNotEmpty)
+                  _banner(
+                    state.message,
+                    Theme.of(context).colorScheme.error,
+                  ),
+                Flexible(
+                  child: ExchangeForm(
+                    key: ValueKey(reference ?? 'new'),
+                    formKey: formKey,
+                    usrName: usrName,
+                    baseCurrency: baseCurrency,
+                    initialDetail: loaded,
+                    stateText: stateText,
+                    onSubmit: (result) {
+                      if (isEditing) {
+                        context.read<ExchangeBloc>().add(
+                          EditExchangeEvent(
+                            reference: result.reference!,
+                            usrName: result.usrName,
+                            debit: result.debit,
+                            credit: result.credit,
+                          ),
+                        );
+                      } else {
+                        context.read<ExchangeBloc>().add(
+                          AddExchangeEvent(
+                            usrName: result.usrName,
+                            debit: result.debit,
+                            credit: result.credit,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ZOutlineButton(
+                        onPressed: () =>
+                            Navigator.of(context).pop(false),
+                        label: Text(
+                          AppLocalizations.of(context)!.cancel,
+                        ),
+                      ),
+                      if (isEditing && isPending && isMaker && !busy) ...[
+                        ZOutlineButton(
+                          onPressed: () => _dispatchDelete(context),
+                          backgroundHover:
+                          Theme.of(context).colorScheme.error,
+                          icon: Icons.delete_outline_rounded,
+                          label: Text(
+                            AppLocalizations.of(context)!.delete,
+                          ),
+                        ),
+                        ZOutlineButton(
+                          isActive: true,
+                          onPressed: () => _dispatchAuthorize(context),
+                          icon: Icons.check_circle_outline_rounded,
+                          label: Text(
+                            AppLocalizations.of(context)!.authorize,
+                          ),
+                        ),
+                        ZOutlineButton(
+                          isActive: true,
+                          onPressed: () =>
+                              formKey.currentState?.submit(),
+                          icon: Icons.save_alt_rounded,
+                          label: Text(
+                            AppLocalizations.of(context)!.save,
+                          ),
+                        ),
+                      ],
+                      if (isEditing && isAuthorized && !busy) ...[
+                        ZOutlineButton(
+                          onPressed: () => _dispatchUnauthorize(context),
+                          icon: Icons.undo_rounded,
+                          label: Text(
+                            AppLocalizations.of(context)!.unauthorize,
+                          ),
+                        ),
+                        ZOutlineButton(
+                          onPressed: () => _dispatchReverse(context),
+                          icon: Icons.replay_rounded,
+                          label: Text(
+                            AppLocalizations.of(context)!.reverse,
+                          ),
+                        ),
+                      ],
+                      if (!isEditing)
+                        ZOutlineButton(
+                          isActive: true,
+                          onPressed: busy
+                              ? null
+                              : () => formKey.currentState?.submit(),
+                          icon: Icons.save_alt_rounded,
+                          label: Text(
+                            AppLocalizations.of(context)!.save,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ),
+  );
+}
+
+Widget _banner(String text, Color color) => Container(
+  width: double.infinity,
+  margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+  decoration: BoxDecoration(
+    color: color.withValues(alpha: .08),
+    borderRadius: BorderRadius.circular(4),
+    border: Border.all(color: color.withValues(alpha: .3)),
+  ),
+  child: Row(
+    children: [
+      Icon(Icons.warning_amber_rounded, color: color, size: 16),
+      const SizedBox(width: 8),
+      Expanded(
+        child: Text(
+          text,
+          style: TextStyle(color: color, fontSize: 12),
+        ),
+      ),
+    ],
+  ),
+);
 }
 
 // Shared widgets
@@ -1278,6 +1405,57 @@ class _Check extends StatelessWidget {
       Text(label),
     ],
   );
+}
+
+/// Inline red banner used to surface form validation errors inside the
+/// dialog instead of as a toast. Dismissible via the trailing X.
+class _InlineErrorBanner extends StatelessWidget {
+  final String message;
+  final VoidCallback? onDismiss;
+
+  const _InlineErrorBanner({
+    required this.message,
+    this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.error.withValues(alpha: .08),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.error.withValues(alpha: .3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline_rounded, color: color.error, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(color: color.error, fontSize: 12),
+            ),
+          ),
+          if (onDismiss != null)
+            InkWell(
+              onTap: onDismiss,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.all(2),
+                child: Icon(
+                  Icons.close_rounded,
+                  color: color.error,
+                  size: 16,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class _AccountDetailsCard extends StatelessWidget {
