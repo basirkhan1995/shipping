@@ -23,6 +23,7 @@ import '../Routes/Home/View/Report/TrialBalance/model/trial_balance_model.dart';
 import '../Routes/Home/View/Report/TxnByReference/model/txn_report_model.dart';
 import '../Routes/Home/View/Report/TxnReport/TxnTypes/model/txn_types_model.dart';
 import '../Routes/Home/View/Report/TxnReport/model/txn_report_model.dart';
+import '../Routes/Home/View/Report/UserLog/model/user_log_model.dart';
 import '../Routes/Home/View/Settings/View/Company/Branch/Ui/BranchLimits/model/limit_model.dart';
 import '../Routes/Home/View/Settings/View/Company/Branches/model/branch_model.dart';
 import '../Routes/Home/View/Settings/View/Company/CompanyProfile/model/com_model.dart';
@@ -2151,6 +2152,44 @@ class Repositories {
       return (response.data as List)
           .whereType<Map<String, dynamic>>() // ensure map type
           .map((json) => TxnTypeModel.fromMap(json))
+          .toList();
+    }
+
+    return [];
+  }
+
+  Future<List<UserLogModel>> getUserLog({
+    String? usrName,
+    String? fromDate,
+    String? toDate,
+  }) async {
+    final queryParams = {
+      'usrName': usrName,
+      'fromDate': fromDate,
+      'toDate': toDate,
+    };
+    // Fetch data from API
+    final response = await _api.post(
+      endpoint: "/reports/userLogs.php",
+      data: queryParams,
+    );
+
+    // Handle error messages from server
+    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+      throw Exception(response.data['msg']);
+    }
+
+    // If data is null or empty, return empty list
+    if (response.data == null ||
+        (response.data is List && response.data.isEmpty)) {
+      return [];
+    }
+
+    // Parse list of stakeholders safely
+    if (response.data is List) {
+      return (response.data as List)
+          .whereType<Map<String, dynamic>>() // ensure map type
+          .map((json) => UserLogModel.fromMap(json))
           .toList();
     }
 

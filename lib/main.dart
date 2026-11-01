@@ -19,6 +19,7 @@ import 'package:shipping/Routes/Home/View/Report/CashBalances/bloc/cash_balances
 import 'package:shipping/Routes/Home/View/Report/IncomeStatement/bloc/income_statement_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/TrialBalance/bloc/trial_balance_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/TxnByReference/bloc/txn_ref_report_bloc.dart';
+import 'package:shipping/Routes/Home/View/Report/UserLog/bloc/user_log_bloc.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/Company/Branch/Ui/BranchLimits/bloc/branch_limit_bloc.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/Company/Branch/bloc/brc_tab_bloc.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/Company/Branches/bloc/branch_bloc.dart';
@@ -130,6 +131,7 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (_) => ArApReportBloc(Repositories(ApiServices()))),
           BlocProvider(create: (_) => AllBalancesBloc(Repositories(ApiServices()))),
           BlocProvider(create: (_) => TxnReportBloc(Repositories(ApiServices()))),
+          BlocProvider(create: (_) => UserLogBloc(Repositories(ApiServices()))),
           BlocProvider(create: (_) => TxnTypesBloc(Repositories(ApiServices()))),
         ],
         child: BlocBuilder<LocalizationBloc, Locale>(

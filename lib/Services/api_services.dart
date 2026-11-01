@@ -1,11 +1,10 @@
 import 'package:dio/dio.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'api_exception.dart';
 import 'localization_services.dart';
 
 class ApiServices {
-  static const String baseUrl = "http://localhost/rapi";
-  static const String imageUrl = "http://localhost/images/personal/";
+  static const String baseUrl = "https://www.ferdawsbelalnabizada.com/rapi";
+  static const String imageUrl = "https://www.ferdawsbelalnabizada.com/images/personal/";
 
   ApiServices() {
     _dio = Dio(
@@ -26,18 +25,7 @@ class ApiServices {
 
   Dio get client => _dio;
 
-  /* -------------------------------------------------------------------------- */
-  /*                            Connectivity Check                               */
-  /* -------------------------------------------------------------------------- */
 
-  Future<void> _checkConnectivity() async {
-    final tr = localizationService.loc;
-    final connectivityResult = await Connectivity().checkConnectivity();
-
-    if (connectivityResult.contains(ConnectivityResult.none)) {
-      throw ApiException(tr.noInternet);
-    }
-  }
 
   /* -------------------------------------------------------------------------- */
   /*                              Error Handling                                */
