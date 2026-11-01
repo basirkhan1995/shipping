@@ -1185,7 +1185,7 @@ class _ExchangeDialog extends StatelessWidget {
                                 formKey.currentState?.submit(),
                             icon: Icons.save_alt_rounded,
                             label: Text(
-                              AppLocalizations.of(context)!.update,
+                              AppLocalizations.of(context)!.save,
                             ),
                           ),
                         ],
