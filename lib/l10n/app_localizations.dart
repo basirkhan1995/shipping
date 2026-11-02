@@ -2793,6 +2793,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manage people and organizations involved in your business'**
   String get stakeholderHint;
+
+  /// No description provided for @employeeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'View and manage all employees'**
+  String get employeeHint;
+
+  /// No description provided for @searchEmployees.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Employees'**
+  String get searchEmployees;
+
+  /// No description provided for @addEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Employee'**
+  String get addEmployee;
+
+  /// No description provided for @department.
+  ///
+  /// In en, this message translates to:
+  /// **'Department'**
+  String get department;
+
+  /// No description provided for @executiveManagement.
+  ///
+  /// In en, this message translates to:
+  /// **'Executive Management'**
+  String get executiveManagement;
+
+  /// No description provided for @operation.
+  ///
+  /// In en, this message translates to:
+  /// **'Operations'**
+  String get operation;
+
+  /// No description provided for @it.
+  ///
+  /// In en, this message translates to:
+  /// **'Information Technology'**
+  String get it;
+
+  /// No description provided for @audit.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit'**
+  String get audit;
+
+  /// No description provided for @procurement.
+  ///
+  /// In en, this message translates to:
+  /// **'Procurement'**
+  String get procurement;
+
+  /// No description provided for @marketing.
+  ///
+  /// In en, this message translates to:
+  /// **'Marketing'**
+  String get marketing;
+
+  /// No description provided for @sales.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales'**
+  String get sales;
+
+  /// No description provided for @customerService.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Service'**
+  String get customerService;
+
+  /// No description provided for @legal.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal'**
+  String get legal;
+
+  /// No description provided for @daily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get daily;
+
+  /// No description provided for @monthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get monthly;
+
+  /// No description provided for @paymentMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Method'**
+  String get paymentMethod;
+
+  /// No description provided for @hourly.
+  ///
+  /// In en, this message translates to:
+  /// **'Hourly'**
+  String get hourly;
+
+  /// No description provided for @salaryBased.
+  ///
+  /// In en, this message translates to:
+  /// **'Salary Based'**
+  String get salaryBased;
+
+  /// No description provided for @editEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit employee'**
+  String get editEmployee;
+
+  /// No description provided for @firstName.
+  ///
+  /// In en, this message translates to:
+  /// **'First name'**
+  String get firstName;
+
+  /// No description provided for @lastName.
+  ///
+  /// In en, this message translates to:
+  /// **'Last name'**
+  String get lastName;
+
+  /// No description provided for @phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get phone;
+
+  /// No description provided for @position.
+  ///
+  /// In en, this message translates to:
+  /// **'Position'**
+  String get position;
+
+  /// No description provided for @salaryAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Salary account'**
+  String get salaryAccount;
+
+  /// No description provided for @salary.
+  ///
+  /// In en, this message translates to:
+  /// **'Salary'**
+  String get salary;
+
+  /// No description provided for @hireDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Hire date'**
+  String get hireDate;
+
+  /// No description provided for @endDate.
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get endDate;
+
+  /// No description provided for @taxInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax info (TIN)'**
+  String get taxInfo;
+
+  /// No description provided for @fingerprint.
+  ///
+  /// In en, this message translates to:
+  /// **'Fingerprint'**
+  String get fingerprint;
+
+  /// No description provided for @alreadyEmployed.
+  ///
+  /// In en, this message translates to:
+  /// **'This person is already employed'**
+  String get alreadyEmployed;
+
+  /// No description provided for @fieldsRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please fill all required fields'**
+  String get fieldsRequired;
+
+  /// No description provided for @fieldRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please fill all required fields'**
+  String get fieldRequired;
+
+  /// No description provided for @salaryMustBeNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Salary must be a valid number'**
+  String get salaryMustBeNumber;
 }
 
 class _AppLocalizationsDelegate

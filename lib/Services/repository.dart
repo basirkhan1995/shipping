@@ -14,6 +14,7 @@ import '../Routes/Home/View/Finance/View/ExchangeRate/model/ex_rate_model.dart';
 import '../Routes/Home/View/Finance/View/GlAccounts/GlCategories/model/cat_model.dart';
 import '../Routes/Home/View/Finance/View/GlAccounts/model/gl_model.dart';
 import '../Routes/Home/View/Finance/View/Reminder/model/reminder_model.dart';
+import '../Routes/Home/View/HR/View/Employees/model/emp_model.dart';
 import '../Routes/Home/View/HR/View/Users/model/user_model.dart';
 import '../Routes/Home/View/HR/View/Users/model/usr_report_model.dart';
 import '../Routes/Home/View/Report/AccountStatement/model/stmt_model.dart';
@@ -2519,6 +2520,53 @@ class Repositories {
     }
   }
 
+  ///Employees .................................................................
+  Future<List<EmployeeModel>> getEmployees({String? cat, CancelToken? cancelToken,}) async {
+    // Build query parameters dynamically
+    final queryParams = cat != null ? {'cat': cat} : null;
+
+    // Fetch data from API
+    final response = await _api.get(
+      endpoint: "/HR/employees.php",
+      queryParams: queryParams,
+      cancelToken: cancelToken,
+    );
+
+    // Handle error messages from server
+    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+      throw Exception(response.data['msg']);
+    }
+
+    // If data is null or empty, return empty list
+    if (response.data == null ||
+        (response.data is List && response.data.isEmpty)) {
+      return [];
+    }
+
+    // Parse list of stakeholders safely
+    if (response.data is List) {
+      return (response.data as List)
+          .whereType<Map<String, dynamic>>() // ensure map type
+          .map((json) => EmployeeModel.fromMap(json))
+          .toList();
+    }
+
+    return [];
+  }
+  Future<Map<String, dynamic>> addEmployee({required EmployeeModel newEmployee,}) async {
+    final response = await _api.post(
+      endpoint: "/HR/employees.php",
+      data: newEmployee.toMap(),
+    );
+    return response.data;
+  }
+  Future<Map<String, dynamic>> updateEmployee({required EmployeeModel newEmployee,}) async {
+    final response = await _api.put(
+      endpoint: "/HR/employees.php",
+      data: newEmployee.toMap(),
+    );
+    return response.data;
+  }
 
 
 }

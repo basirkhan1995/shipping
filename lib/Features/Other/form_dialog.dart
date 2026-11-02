@@ -20,6 +20,10 @@ class ZFormDialog extends StatefulWidget {
   final EdgeInsetsGeometry? margin;
   final Widget? expandedHeader;
 
+  /// When non-null and non-empty, a red inline banner is shown
+  /// between the form content and the action buttons.
+  final String? errorMessage;
+
   const ZFormDialog({
     super.key,
     required this.onAction,
@@ -37,6 +41,7 @@ class ZFormDialog extends StatefulWidget {
     this.margin,
     this.expandedHeader,
     this.padding,
+    this.errorMessage,
   });
 
   @override
@@ -44,6 +49,44 @@ class ZFormDialog extends StatefulWidget {
 }
 
 class _ZFormDialogState extends State<ZFormDialog> {
+  // ── Inline error banner ─────────────────────────────────────────
+  Widget _buildErrorBanner(BuildContext context, String message) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(15, 4, 15, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: scheme.errorContainer,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: scheme.error.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 18,
+            color: scheme.onErrorContainer,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w500,
+                color: scheme.onErrorContainer,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return StatefulBuilder(
@@ -76,6 +119,12 @@ class _ZFormDialogState extends State<ZFormDialog> {
                         child: widget.child,
                       ),
                     ),
+
+                    // ── Inline error banner ───────────────────────
+                    if (widget.errorMessage != null &&
+                        widget.errorMessage!.isNotEmpty)
+                      _buildErrorBanner(context, widget.errorMessage!),
+
                     if (widget.isActionTrue) buildAction(context),
                   ],
                 ),
@@ -105,8 +154,6 @@ class _ZFormDialogState extends State<ZFormDialog> {
                 height: 35,
                 width: 100,
               ),
-              // Shortcut scoped to the Save button only — so Enter submits
-              // ONLY when this button has focus (not when a text field does).
               Shortcuts(
                 shortcuts: {
                   LogicalKeySet(LogicalKeyboardKey.enter):
@@ -169,10 +216,12 @@ class _ZFormDialogState extends State<ZFormDialog> {
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       widget.icon != null
-                          ? Icon(widget.icon,
-                          color:
-                          Theme.of(context).colorScheme.secondary,
-                          size: 24)
+                          ? Icon(
+                        widget.icon,
+                        color:
+                        Theme.of(context).colorScheme.secondary,
+                        size: 24,
+                      )
                           : SizedBox(),
                       widget.icon != null
                           ? const SizedBox(width: 8)

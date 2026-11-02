@@ -10,6 +10,7 @@ import 'package:shipping/Routes/Home/View/Finance/View/GlAccounts/GlCategories/b
 import 'package:shipping/Routes/Home/View/Finance/View/GlAccounts/bloc/gl_accounts_bloc.dart';
 import 'package:shipping/Routes/Home/View/Finance/View/Reminder/bloc/reminder_bloc.dart';
 import 'package:shipping/Routes/Home/View/Finance/bloc/financial_tab_bloc.dart';
+import 'package:shipping/Routes/Home/View/HR/View/Employees/bloc/employee_bloc.dart';
 import 'package:shipping/Routes/Home/View/HR/View/Users/bloc/users_bloc.dart';
 import 'package:shipping/Routes/Home/View/HR/bloc/hrtab_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/AccountStatement/bloc/acc_statement_bloc.dart';
@@ -100,7 +101,7 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (_) => StakeholderBloc(Repositories(ApiServices()))..add(GetStakeholdersEvent())),
           BlocProvider(create: (_) => StakeholderByIdBloc(Repositories(ApiServices()))),
           BlocProvider(create: (_) => StkAccountsBloc(Repositories(ApiServices()))),
-
+          BlocProvider(create: (_) => EmployeeBloc(Repositories(ApiServices()))),
           ///Currencies
           BlocProvider(create: (_) => CurrenciesBloc(Repositories(ApiServices()))..add(LoadCurrenciesEvent())),
           BlocProvider(create: (_) => TransactionsBloc(Repositories(ApiServices()))..add(LoadTransactionsEvent())),

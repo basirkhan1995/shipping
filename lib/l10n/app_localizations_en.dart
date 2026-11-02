@@ -1374,4 +1374,103 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get stakeholderHint =>
       'Manage people and organizations involved in your business';
+
+  @override
+  String get employeeHint => 'View and manage all employees';
+
+  @override
+  String get searchEmployees => 'Search Employees';
+
+  @override
+  String get addEmployee => 'Add Employee';
+
+  @override
+  String get department => 'Department';
+
+  @override
+  String get executiveManagement => 'Executive Management';
+
+  @override
+  String get operation => 'Operations';
+
+  @override
+  String get it => 'Information Technology';
+
+  @override
+  String get audit => 'Audit';
+
+  @override
+  String get procurement => 'Procurement';
+
+  @override
+  String get marketing => 'Marketing';
+
+  @override
+  String get sales => 'Sales';
+
+  @override
+  String get customerService => 'Customer Service';
+
+  @override
+  String get legal => 'Legal';
+
+  @override
+  String get daily => 'Daily';
+
+  @override
+  String get monthly => 'Monthly';
+
+  @override
+  String get paymentMethod => 'Payment Method';
+
+  @override
+  String get hourly => 'Hourly';
+
+  @override
+  String get salaryBased => 'Salary Based';
+
+  @override
+  String get editEmployee => 'Edit employee';
+
+  @override
+  String get firstName => 'First name';
+
+  @override
+  String get lastName => 'Last name';
+
+  @override
+  String get phone => 'Phone';
+
+  @override
+  String get position => 'Position';
+
+  @override
+  String get salaryAccount => 'Salary account';
+
+  @override
+  String get salary => 'Salary';
+
+  @override
+  String get hireDate => 'Hire date';
+
+  @override
+  String get endDate => 'End date';
+
+  @override
+  String get taxInfo => 'Tax info (TIN)';
+
+  @override
+  String get fingerprint => 'Fingerprint';
+
+  @override
+  String get alreadyEmployed => 'This person is already employed';
+
+  @override
+  String get fieldsRequired => 'Please fill all required fields';
+
+  @override
+  String get fieldRequired => 'Please fill all required fields';
+
+  @override
+  String get salaryMustBeNumber => 'Salary must be a valid number';
 }

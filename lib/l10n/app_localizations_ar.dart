@@ -1372,4 +1372,103 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get stakeholderHint =>
       'ستاسو په سوداګرۍ کې د ښکېلو اشخاصو او ادارو مدیریت';
+
+  @override
+  String get employeeHint => 'د ټولو کارکوونکو کتل او مدیریت';
+
+  @override
+  String get searchEmployees => 'د کارکوونکو لټون';
+
+  @override
+  String get addEmployee => 'نوی کارکوونکی';
+
+  @override
+  String get department => 'دیپارتمنت';
+
+  @override
+  String get executiveManagement => 'اجرائیه مدیریت';
+
+  @override
+  String get operation => 'عملیات';
+
+  @override
+  String get it => 'معلوماتي ټکنالوژي';
+
+  @override
+  String get audit => 'پلټنه';
+
+  @override
+  String get procurement => 'تدارکات';
+
+  @override
+  String get marketing => 'بازار موندنه';
+
+  @override
+  String get sales => 'پلور';
+
+  @override
+  String get customerService => 'د پېرودونکو خدمتونه';
+
+  @override
+  String get legal => 'حقوقي';
+
+  @override
+  String get daily => 'ورځنی';
+
+  @override
+  String get monthly => 'میاشتنی';
+
+  @override
+  String get paymentMethod => 'د تادیې طریقه';
+
+  @override
+  String get hourly => 'ساعتي';
+
+  @override
+  String get salaryBased => 'د معاش پر بنسټ';
+
+  @override
+  String get editEmployee => 'د کارکوونکي سمون';
+
+  @override
+  String get firstName => 'لومړی نوم';
+
+  @override
+  String get lastName => 'تخلص';
+
+  @override
+  String get phone => 'د اړیکې شمېره';
+
+  @override
+  String get position => 'دنده';
+
+  @override
+  String get salaryAccount => 'د معاش حساب';
+
+  @override
+  String get salary => 'معاش';
+
+  @override
+  String get hireDate => 'د استخدام نېټه';
+
+  @override
+  String get endDate => 'د پای نېټه';
+
+  @override
+  String get taxInfo => 'د مالیې معلومات (TIN)';
+
+  @override
+  String get fingerprint => 'د ګوتې نښه';
+
+  @override
+  String get alreadyEmployed => 'دا شخص لا دمخه استخدام شوی دی';
+
+  @override
+  String get fieldsRequired => 'مهرباني وکړئ ټول اړین معلومات بشپړ کړئ';
+
+  @override
+  String get fieldRequired => 'مهرباني وکړئ ټول اړین معلومات بشپړ کړئ';
+
+  @override
+  String get salaryMustBeNumber => 'معاش باید یوه معتبره شمېره وي';
 }

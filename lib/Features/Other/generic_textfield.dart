@@ -17,8 +17,6 @@ typedef OnFieldSubmitFunction = void Function({required String name});
 
 enum TextFieldStyle { roundedBorder, underline, noBorder }
 
-// Local mirror of the ZTextField currency model so this file doesn't
-// depend on `ztextfield.dart`.
 class _CcyItem {
   final String code;
   final String symbol;

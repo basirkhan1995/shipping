@@ -1372,4 +1372,103 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get stakeholderHint => 'مدیریت افراد و نهاد های دخیل در کسب‌ وکار شما';
+
+  @override
+  String get employeeHint => 'مشاهده و مدیریت تمامی کارمندان';
+
+  @override
+  String get searchEmployees => 'جستجو کارمندان';
+
+  @override
+  String get addEmployee => 'کارمند جدید';
+
+  @override
+  String get department => 'دیپارتمنت';
+
+  @override
+  String get executiveManagement => 'مدیریت اجرایی';
+
+  @override
+  String get operation => 'عملیات';
+
+  @override
+  String get it => 'فناوری اطلاعات';
+
+  @override
+  String get audit => 'حسابرسی';
+
+  @override
+  String get procurement => 'تدارکات';
+
+  @override
+  String get marketing => 'بازاریابی';
+
+  @override
+  String get sales => 'فروش';
+
+  @override
+  String get customerService => 'خدمات مشتریان';
+
+  @override
+  String get legal => 'حقوقی';
+
+  @override
+  String get daily => 'روزانه';
+
+  @override
+  String get monthly => 'ماهانه';
+
+  @override
+  String get paymentMethod => 'روش پرداخت';
+
+  @override
+  String get hourly => 'ساعتی';
+
+  @override
+  String get salaryBased => 'مبتنی بر معاش';
+
+  @override
+  String get editEmployee => 'ویرایش کارمند';
+
+  @override
+  String get firstName => 'نام';
+
+  @override
+  String get lastName => 'نام خانوادگی';
+
+  @override
+  String get phone => 'شماره تماس';
+
+  @override
+  String get position => 'سمت';
+
+  @override
+  String get salaryAccount => 'حساب معاش';
+
+  @override
+  String get salary => 'معاش';
+
+  @override
+  String get hireDate => 'تاریخ استخدام';
+
+  @override
+  String get endDate => 'تاریخ پایان';
+
+  @override
+  String get taxInfo => 'اطلاعات مالیاتی (TIN)';
+
+  @override
+  String get fingerprint => 'اثر انگشت';
+
+  @override
+  String get alreadyEmployed => 'این شخص قبلاً استخدام شده است';
+
+  @override
+  String get fieldsRequired => 'لطفاً تمام فیلدهای الزامی را تکمیل کنید';
+
+  @override
+  String get fieldRequired => 'لطفاً تمام فیلدهای الزامی را تکمیل کنید';
+
+  @override
+  String get salaryMustBeNumber => 'معاش باید یک عدد معتبر باشد';
 }
