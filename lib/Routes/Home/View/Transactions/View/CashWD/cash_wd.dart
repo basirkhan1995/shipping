@@ -153,8 +153,6 @@ class CashTxnFormState extends State<CashTxnForm> {
       _draftAccountNo = draft.trdAccount;
       _accountCtrl.text = draft.trdAccount.toString();
 
-      // Fetch the full account row so we can render the details card
-      // in edit mode (mirroring Fund Transfer's behavior).
       _pendingAccountNo = draft.trdAccount;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -179,8 +177,6 @@ class CashTxnFormState extends State<CashTxnForm> {
     super.dispose();
   }
 
-  /// Sync `_acc` once the bloc returns the row for the pending number.
-  /// Runs from a `BlocListener<StkAccountsBloc>` in `build()`.
   void _applyPendingAccountSync(List<StakeholderAccount> rows) {
     final pending = _pendingAccountNo;
     if (pending == null) return;
@@ -207,18 +203,11 @@ class CashTxnFormState extends State<CashTxnForm> {
     if (!_isEditable) return false;
 
     final ok = _formKey.currentState?.validate() == true;
-    debugPrint(
-      'CashTxnForm.submit: valid=$ok acc=${_acc?.accNumber} '
-      'draftAcc=${widget.initialDraft?.trdAccount} ccy=$_ccy',
-    );
     if (!ok) return false;
 
     final draft = widget.initialDraft;
     final accNumber = _effectiveAccountNo;
-    if (accNumber == null) {
-      debugPrint('CashTxnForm.submit: no account number — aborting');
-      return false;
-    }
+    if (accNumber == null) return false;
 
     widget.onSubmit(
       TransactionDraft(
@@ -254,8 +243,6 @@ class CashTxnFormState extends State<CashTxnForm> {
             children: [
               _buildAccountPicker(),
 
-              // Show the details card when we have either the full row
-              // or just the draft's account number (edit mode).
               if (_acc != null)
                 _AccountDetailsCard(
                   account: _acc!,
@@ -282,7 +269,6 @@ class CashTxnFormState extends State<CashTxnForm> {
     );
   }
 
-  // ── Account picker ─────────────────────────────────────────────
   Widget _buildAccountPicker() =>
       GenericTextField<StakeholderAccount, StkAccountsBloc, StkAccountsState>(
         controller: _accountCtrl,
@@ -474,6 +460,10 @@ Future<bool?> showCashTxnDialog(
   );
 }
 
+/// Which row-action button is currently in flight. Drives the spinner
+/// on the correct button without making the *other* button spin too.
+enum _RowAction { none, delete, authorize, unauthorize, reverse }
+
 class _CashTxnDialog extends StatefulWidget {
   final CashTxnSpec spec;
   final String usrName;
@@ -498,8 +488,10 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
   /// resolves to the live `CashTxnFormState` (mouse + Enter share one path).
   final _formKey = GlobalKey<CashTxnFormState>();
 
-  bool _formBusy = false;
-  bool _actionBusy = false;
+  bool _formBusy = false; // Save / Update
+  _RowAction _pendingAction = _RowAction.none;
+
+  bool get _actionBusy => _pendingAction != _RowAction.none;
 
   CashTxnSpec get spec => widget.spec;
   String get usrName => widget.usrName;
@@ -523,8 +515,14 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
     if (mounted) setState(() => _formBusy = v);
   }
 
-  void _setActionBusy(bool v) {
-    if (mounted) setState(() => _actionBusy = v);
+  void _setPendingAction(_RowAction action) {
+    if (mounted) setState(() => _pendingAction = action);
+  }
+
+  void _clearPendingAction() {
+    if (mounted && _pendingAction != _RowAction.none) {
+      setState(() => _pendingAction = _RowAction.none);
+    }
   }
 
   // ── Form submit (mouse + keyboard both land here) ─────────────
@@ -544,7 +542,7 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
     final ref = reference;
     if (ref == null || ref.isEmpty) return;
     _clearLocalError();
-    _setActionBusy(true);
+    _setPendingAction(_RowAction.authorize);
     context.read<TransactionsBloc>().add(
       AuthorizeTransactionEvent(reference: ref, userName: _loginName(context)),
     );
@@ -554,7 +552,7 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
     final ref = reference;
     if (ref == null || ref.isEmpty) return;
     _clearLocalError();
-    _setActionBusy(true);
+    _setPendingAction(_RowAction.unauthorize);
     context.read<TransactionsBloc>().add(
       UnauthorizeTransactionEvent(
         reference: ref,
@@ -567,7 +565,7 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
     final ref = reference;
     if (ref == null || ref.isEmpty) return;
     _clearLocalError();
-    _setActionBusy(true);
+    _setPendingAction(_RowAction.reverse);
     context.read<TransactionsBloc>().add(
       ReverseTransactionEvent(reference: ref, userName: _loginName(context)),
     );
@@ -604,7 +602,7 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
     if (!context.mounted) return;
 
     _clearLocalError();
-    _setActionBusy(true);
+    _setPendingAction(_RowAction.delete);
 
     context.read<TransactionsBloc>().add(
       DeleteTransactionEvent(reference: ref, userName: _loginName(context)),
@@ -663,7 +661,7 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
 
             final success = state.actionSuccess;
             if (success != null) {
-              _setActionBusy(false);
+              _clearPendingAction();
               if (mounted && _localError != null) {
                 setState(() => _localError = null);
               }
@@ -690,7 +688,7 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
 
             final error = state.actionError;
             if (error != null) {
-              _setActionBusy(false);
+              _clearPendingAction();
               if (mounted) {
                 setState(() => _localError = error);
               }
@@ -705,17 +703,22 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
         builder: (context, state) {
           final cashBusy = _formBusy || state is CashTxnSubmitting;
 
-          final rowBusy =
-              _actionBusy ||
-              context.select<TransactionsBloc, bool>((bloc) {
-                final s = bloc.state;
-                if (s is! TransactionsLoadedState) return false;
-                final ref = reference;
-                if (ref == null || ref.isEmpty) return false;
-                return s.actionInProgress == ref;
-              });
+          final blocRowBusy = context.select<TransactionsBloc, bool>((bloc) {
+            final s = bloc.state;
+            if (s is! TransactionsLoadedState) return false;
+            final ref = reference;
+            if (ref == null || ref.isEmpty) return false;
+            return s.actionInProgress == ref;
+          });
+          final rowBusy = _actionBusy || blocRowBusy;
 
           final anyBusy = cashBusy || rowBusy;
+
+          // Per-button busy flags — only the clicked button spins.
+          final deleteBusy = _pendingAction == _RowAction.delete;
+          final authorizeBusy = _pendingAction == _RowAction.authorize;
+          final unauthorizeBusy = _pendingAction == _RowAction.unauthorize;
+          final reverseBusy = _pendingAction == _RowAction.reverse;
 
           final loaded = state is CashTxnLoadedForEdit ? state : null;
 
@@ -804,6 +807,7 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
                           label: Text(AppLocalizations.of(context)!.cancel),
                         ),
 
+                        // Pending + maker → Delete + Update
                         if (isEditing && isPending && isMaker) ...[
                           ZOutlineButton(
                             onPressed: anyBusy
@@ -812,10 +816,12 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
                             backgroundHover: Theme.of(context)
                                 .colorScheme
                                 .error,
-                            icon: rowBusy ? null : Icons.delete_outline_rounded,
+                            icon: deleteBusy
+                                ? null
+                                : Icons.delete_outline_rounded,
                             label: _busyLabel(
                               context,
-                              busy: rowBusy,
+                              busy: deleteBusy,
                               busyText: AppLocalizations.of(context)!.deleting,
                               idleText: AppLocalizations.of(context)!.delete,
                             ),
@@ -833,34 +839,37 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
                           ),
                         ],
 
+                        // Pending + non-maker → Authorize
                         if (isEditing && isPending && !isMaker)
                           ZOutlineButton(
-                            isActive: !rowBusy,
-                            onPressed: rowBusy
+                            isActive: !authorizeBusy,
+                            onPressed: anyBusy
                                 ? null
                                 : () => _dispatchAuthorize(context),
-                            icon: rowBusy
+                            icon: authorizeBusy
                                 ? null
                                 : Icons.check_circle_outline_rounded,
                             label: _busyLabel(
                               context,
-                              busy: rowBusy,
+                              busy: authorizeBusy,
                               busyText: AppLocalizations.of(context)!
                                   .authorizing,
                               idleText: AppLocalizations.of(context)!.authorize,
                             ),
                           ),
 
+                        // Authorized → Unauthorize · Reverse
+                        // Each button shows its own spinner.
                         if (isEditing && isAuthorized) ...[
                           ZOutlineButton(
-                            isActive: !rowBusy,
-                            onPressed: rowBusy
+                            isActive: !unauthorizeBusy,
+                            onPressed: anyBusy
                                 ? null
                                 : () => _dispatchUnauthorize(context),
-                            icon: rowBusy ? null : Icons.undo_rounded,
+                            icon: unauthorizeBusy ? null : Icons.undo_rounded,
                             label: _busyLabel(
                               context,
-                              busy: rowBusy,
+                              busy: unauthorizeBusy,
                               busyText: AppLocalizations.of(context)!
                                   .unauthorize,
                               idleText: AppLocalizations.of(context)!
@@ -868,20 +877,21 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
                             ),
                           ),
                           ZOutlineButton(
-                            isActive: !rowBusy,
-                            onPressed: rowBusy
+                            isActive: !reverseBusy,
+                            onPressed: anyBusy
                                 ? null
                                 : () => _dispatchReverse(context),
-                            icon: rowBusy ? null : Icons.replay_rounded,
+                            icon: reverseBusy ? null : Icons.replay_rounded,
                             label: _busyLabel(
                               context,
-                              busy: rowBusy,
+                              busy: reverseBusy,
                               busyText: AppLocalizations.of(context)!.reversing,
                               idleText: AppLocalizations.of(context)!.reverse,
                             ),
                           ),
                         ],
 
+                        // Create mode → Save
                         if (!isEditing)
                           ZOutlineButton(
                             isActive: !cashBusy,
@@ -1016,7 +1026,8 @@ class _AccountDetailsCard extends StatelessWidget {
           row('Account name', account.accName ?? ''),
           row(
             'Balance',
-            '${account.accBalance.toAmount()} ${account.accCurrency ?? effectiveCcy}',
+            '${account.accBalance.toAmount()} '
+                '${account.accCurrency ?? effectiveCcy}',
           ),
           if (isStakeholder && status != null)
             row('Status', status == 1 ? 'Active' : 'Blocked'),
@@ -1027,8 +1038,7 @@ class _AccountDetailsCard extends StatelessWidget {
 }
 
 /// Lightweight card shown while the full [StakeholderAccount] row is
-/// still loading in edit mode. Renders from the draft's account number
-/// and the known currency so the user sees something immediately.
+/// still loading in edit mode.
 class _PendingAccountCard extends StatelessWidget {
   final int accountNo;
   final String fallbackCurrency;
