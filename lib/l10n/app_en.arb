@@ -494,5 +494,6 @@
   "alreadyEmployed": "This person is already employed",
   "fieldsRequired": "Please fill all required fields",
   "fieldRequired": "Please fill all required fields",
-  "salaryMustBeNumber": "Salary must be a valid number"
+  "salaryMustBeNumber": "Salary must be a valid number",
+  "usersHint": "Manage user accounts, roles, and access permissions."
 }

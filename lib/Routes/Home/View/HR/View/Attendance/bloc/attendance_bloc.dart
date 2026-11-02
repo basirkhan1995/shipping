@@ -44,7 +44,7 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
 
   Future<void> _onAdd(
       AddAttendanceEvent e, Emitter<AttendanceState> emit) async {
-    emit(AttendanceLoadedState(_lastList, date: _date, month: _month));
+    // ❌ NO pre-emit — the list is already on screen.
     try {
       final res = await _repo.addAttendance(
         mode: e.mode,
@@ -56,15 +56,27 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
         emaStatus: e.emaStatus,
         records: e.records,
       );
-      final skipped = (res['skipped'] as num?)?.toInt() ?? 0;
-      final inserted = (res['inserted'] as num?)?.toInt() ?? 0;
-      final list = await _reload();
-      emit(AttendanceSavedState(
-        skipped > 0
-            ? 'Inserted $inserted, skipped $skipped already-present.'
-            : 'Inserted $inserted.',
-      ));
-      emit(AttendanceLoadedState(list, date: _date, month: _month));
+
+      final serverMsg = (res['message'] as String?)?.trim();
+      final inserted  = _toInt(res['inserted']) ?? 0;
+      final skipped   = _toInt(res['skipped'])  ?? 0;
+
+      final msg = (serverMsg != null && serverMsg.isNotEmpty)
+          ? serverMsg
+          : (skipped > 0
+          ? 'Inserted $inserted, skipped $skipped already-present.'
+          : 'Inserted $inserted.');
+
+      // ✅ Emit success FIRST so the dialog pops.
+      emit(AttendanceSavedState(msg));
+
+      // ✅ Refresh — silence any refresh failure so success isn't lost.
+      try {
+        final list = await _reload();
+        emit(AttendanceLoadedState(list, date: _date, month: _month));
+      } catch (_) {
+        emit(AttendanceLoadedState(_lastList, date: _date, month: _month));
+      }
     } on ApiException catch (err) {
       emit(AttendanceErrorState(err.message));
     } catch (err) {
@@ -75,10 +87,24 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
   Future<void> _onUpdate(
       UpdateAttendanceEvent e, Emitter<AttendanceState> emit) async {
     try {
-      await _repo.updateAttendance(usrName: e.usrName, records: e.records);
-      final list = await _reload();
-      emit(const AttendanceSavedState('Attendance updated.'));
-      emit(AttendanceLoadedState(list, date: _date, month: _month));
+      final res = await _repo.updateAttendance(
+        usrName: e.usrName,
+        records: e.records,
+      );
+
+      final serverMsg = (res['message'] as String?)?.trim();
+      emit(AttendanceSavedState(
+        (serverMsg != null && serverMsg.isNotEmpty)
+            ? serverMsg
+            : 'Attendance updated.',
+      ));
+
+      try {
+        final list = await _reload();
+        emit(AttendanceLoadedState(list, date: _date, month: _month));
+      } catch (_) {
+        emit(AttendanceLoadedState(_lastList, date: _date, month: _month));
+      }
     } on ApiException catch (err) {
       emit(AttendanceErrorState(err.message));
     } catch (err) {
@@ -88,17 +114,38 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
 
   Future<void> _onDelete(
       DeleteAttendanceEvent e, Emitter<AttendanceState> emit) async {
-    emit(AttendanceLoadedState(_lastList, date: _date, month: _month));
+    // ❌ NO pre-emit here either.
     try {
-      await _repo.deleteAttendance(emaID: e.emaID, usrName: e.usrName);
-      final list = await _reload();
-      emit(const AttendanceSavedState('Attendance deleted.'));
-      emit(AttendanceLoadedState(list, date: _date, month: _month));
+      final res = await _repo.deleteAttendance(
+        emaID: e.emaID,
+        usrName: e.usrName,
+      );
+
+      final serverMsg = (res['message'] as String?)?.trim();
+      emit(AttendanceSavedState(
+        (serverMsg != null && serverMsg.isNotEmpty)
+            ? serverMsg
+            : 'Attendance deleted.',
+      ));
+
+      try {
+        final list = await _reload();
+        emit(AttendanceLoadedState(list, date: _date, month: _month));
+      } catch (_) {
+        emit(AttendanceLoadedState(_lastList, date: _date, month: _month));
+      }
     } on ApiException catch (err) {
       emit(AttendanceErrorState(err.message));
     } catch (err) {
       emit(AttendanceErrorState(err.toString()));
     }
+  }
+
+  static int? _toInt(dynamic v) {
+    if (v == null) return null;
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return int.tryParse(v.toString().trim());
   }
 
   void _onClear(

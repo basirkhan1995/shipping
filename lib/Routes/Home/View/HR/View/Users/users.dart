@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../../../../../Features/Other/global_shortcut.dart';
 import '../../../../../../Features/Other/image_helper.dart';
 import '../../../../../../Features/Other/responsive_widget.dart';
 import '../../../../../../Features/Widgets/noData_widget.dart';
 import '../../../../../../Features/Widgets/search_field.dart';
+import '../../../../../../Features/Widgets/shimmer.dart';
 import '../../../../../../Features/Widgets/zbutton.dart';
 import '../../../../../../l10n/app_localizations.dart';
 import '../../../../../Auth/bloc/auth_bloc.dart';
@@ -263,16 +263,28 @@ class _UsersDesktop extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+                padding: const EdgeInsets.fromLTRB(12, 20, 12, 12),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      tr.users,
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w700),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tr.users.toUpperCase(),
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.w700,letterSpacing: 1.3),
+                        ),
+                        Text(
+                          tr.usersHint,
+                          style: TextStyle(
+                            letterSpacing: 1.3,
+                            fontSize: 11
+                          )
+                        ),
+                      ],
                     ),
                     const Spacer(),
                     const SizedBox(
@@ -411,7 +423,10 @@ class _UsersListState extends State<_UsersList> {
 
               // Loading: only show spinner if we have NO cached data.
               if (state is UsersLoadingState && _lastUsers.isEmpty) {
-                return const Center(child: CircularProgressIndicator());
+                return UniversalShimmer.accountList(
+                  itemCount: 10,
+                  useAlternatingColors: true,
+                );
               }
 
               // Error: only show the error view if we have no data to
@@ -546,9 +561,9 @@ class _UserRowState extends State<_UserRow> {
 
     final baseColor = widget.isEven
         ? scheme.surfaceContainerLow
-        : scheme.surfaceContainerHigh;
+        : scheme.surfaceContainerHighest;
     final bg = _hovered
-        ? Color.alphaBlend(scheme.primary.withValues(alpha: .06), baseColor)
+        ? Color.alphaBlend(scheme.primary.withValues(alpha: .01), baseColor)
         : baseColor;
 
     return MouseRegion(

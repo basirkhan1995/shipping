@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../../../Features/Date/z_generic_date.dart';
 import '../../../../../../Features/Other/form_dialog.dart';
-import '../../../../../../Features/Widgets/ztextfield.dart';
+import '../../../../../../Features/Other/generic_textfield.dart';
 import '../../../../../../l10n/app_localizations.dart';
 import '../Employees/bloc/employee_bloc.dart';
 import '../Employees/model/emp_model.dart';
@@ -27,8 +29,13 @@ class _AttendanceAddDialogState extends State<AttendanceAddDialog> {
   String _status = 'Present';
   TimeOfDay? _in;
   TimeOfDay? _out;
-  int? _empId;
 
+  // ── Single-mode employee picker ────────────────────────────────
+  int? _empId;
+  final TextEditingController _empCtrl = TextEditingController();
+  final FocusNode _empFocus = FocusNode(debugLabel: 'attendance-employee');
+
+  // ── Multiple-mode rows ─────────────────────────────────────────
   final Map<int, ({TimeOfDay? inT, TimeOfDay? outT, String status})> _rows = {};
 
   String? _error;
@@ -36,33 +43,90 @@ class _AttendanceAddDialogState extends State<AttendanceAddDialog> {
 
   static const _statuses = ['Present', 'Absent', 'Late', 'Leave'];
 
-  String _time24(TimeOfDay? t) => t == null
-      ? '00:00:00'
+  @override
+  void initState() {
+    super.initState();
+    // Seed with today so `initialDate: DateTime.tryParse(_date ?? '')`
+    // is never null on the first build — this avoids ZDatePicker
+    // re-triggering didUpdateWidget on every rebuild.
+    final now = DateTime.now();
+    _date =
+    '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  void dispose() {
+    _empCtrl.dispose();
+    _empFocus.dispose();
+    super.dispose();
+  }
+
+  /// Safe setter — defers `setState` so it can never run while the widget
+  /// tree is building. This is what prevents
+  /// "setState() called during build" when ZDatePicker's didUpdateWidget
+  /// echoes its `initialDate` back through `onDateChanged`.
+  void _setDate(String v) {
+    if (!mounted) return;
+    if (v.isEmpty || v == _date) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (v == _date) return;
+      setState(() => _date = v);
+    });
+  }
+
+  String? _time24OrNull(TimeOfDay? t) => t == null
+      ? null
       : '${t.hour.toString().padLeft(2, '0')}:'
       '${t.minute.toString().padLeft(2, '0')}:00';
-
-  Future<void> _pickDate() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.tryParse(_date ?? '') ?? now,
-      firstDate: DateTime(now.year - 3),
-      lastDate: DateTime(now.year + 1),
-    );
-    if (!mounted) return;
-    if (picked != null) {
-      setState(() {
-        _date = '${picked.year.toString().padLeft(4, '0')}-'
-            '${picked.month.toString().padLeft(2, '0')}-'
-            '${picked.day.toString().padLeft(2, '0')}';
-      });
-    }
-  }
 
   Future<TimeOfDay?> _pickTime(TimeOfDay? init) => showTimePicker(
     context: context,
     initialTime: init ?? const TimeOfDay(hour: 8, minute: 0),
   );
+
+  void _applyEmployee(EmployeeModel e) {
+    setState(() {
+      _empId = e.empId;
+      _empCtrl.text = _employeeLabel(e);
+    });
+  }
+
+  static String _employeeLabel(EmployeeModel e) =>
+      '${e.perName ?? ''} ${e.perLastName ?? ''}'.trim().isEmpty
+          ? 'Employee #${e.empId}'
+          : '${e.perName ?? ''} ${e.perLastName ?? ''}'.trim();
+
+  Future<void> _openMultiSelect() async {
+    final picked = await showDialog<Set<int>>(
+      context: context,
+      barrierDismissible: true,
+      useRootNavigator: true,
+      builder: (_) => BlocProvider.value(
+        value: context.read<EmployeeBloc>(),
+        child: EmployeeMultiSelectDialog(initial: _rows.keys.toSet()),
+      ),
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() {
+      // Remove employees the user deselected.
+      _rows.removeWhere((k, _) => !picked.contains(k));
+      // Add new picks with a default open-shift row.
+      for (final id in picked) {
+        _rows.putIfAbsent(
+          id,
+              () => (
+          inT: const TimeOfDay(hour: 8, minute: 0),
+          outT: null,
+          status: 'Present',
+          ),
+        );
+      }
+    });
+  }
 
   void _submit() {
     if (_submitting) return;
@@ -82,54 +146,68 @@ class _AttendanceAddDialogState extends State<AttendanceAddDialog> {
     }
     if ((_mode == _AddMode.single || _mode == _AddMode.all) &&
         _status != 'Absent' &&
-        (_in == null || _out == null)) {
-      setState(() => _error = 'Please pick check-in and check-out.');
+        _in == null) {
+      setState(() => _error = 'Please pick a check-in time.');
       return;
+    }
+    if (_mode == _AddMode.multiple) {
+      final missingIn = _rows.entries.any(
+            (e) => e.value.status != 'Absent' && e.value.inT == null,
+      );
+      if (missingIn) {
+        setState(
+              () => _error = 'Every non-absent employee needs a check-in time.',
+        );
+        return;
+      }
     }
 
     setState(() => _submitting = true);
 
     if (_mode == _AddMode.multiple) {
-      final records = _rows.entries.map((e) => {
-        'emaEmployee': e.key,
-        'emaCheckedIn': e.value.status == 'Absent'
-            ? '00:00:00'
-            : _time24(e.value.inT),
-        'emaCheckedOut': e.value.status == 'Absent'
-            ? '00:00:00'
-            : _time24(e.value.outT),
-        'emaStatus': e.value.status,
+      final records = _rows.entries.map((e) {
+        final isAbsent = e.value.status == 'Absent';
+        return {
+          'emaEmployee': e.key,
+          'emaCheckedIn': isAbsent ? null : _time24OrNull(e.value.inT),
+          'emaCheckedOut': isAbsent ? null : _time24OrNull(e.value.outT),
+          'emaStatus': e.value.status,
+        };
       }).toList();
 
-      context.read<AttendanceBloc>().add(AddAttendanceEvent(
-        mode: 'multiple',
-        usrName: widget.usrName,
-        emaDate: _date!,
-        records: records,
-      ));
+      context.read<AttendanceBloc>().add(
+        AddAttendanceEvent(
+          mode: 'multiple',
+          usrName: widget.usrName,
+          emaDate: _date!,
+          records: records,
+        ),
+      );
     } else if (_mode == _AddMode.all) {
-      context.read<AttendanceBloc>().add(AddAttendanceEvent(
-        mode: 'all',
-        usrName: widget.usrName,
-        emaDate: _date!,
-        emaCheckedIn:
-        _status == 'Absent' ? '00:00:00' : _time24(_in),
-        emaCheckedOut:
-        _status == 'Absent' ? '00:00:00' : _time24(_out),
-        emaStatus: _status,
-      ));
+      final isAbsent = _status == 'Absent';
+      context.read<AttendanceBloc>().add(
+        AddAttendanceEvent(
+          mode: 'all',
+          usrName: widget.usrName,
+          emaDate: _date!,
+          emaCheckedIn: isAbsent ? null : _time24OrNull(_in),
+          emaCheckedOut: isAbsent ? null : _time24OrNull(_out),
+          emaStatus: _status,
+        ),
+      );
     } else {
-      context.read<AttendanceBloc>().add(AddAttendanceEvent(
-        mode: 'single',
-        usrName: widget.usrName,
-        emaDate: _date!,
-        emaEmployee: _empId,
-        emaCheckedIn:
-        _status == 'Absent' ? '00:00:00' : _time24(_in),
-        emaCheckedOut:
-        _status == 'Absent' ? '00:00:00' : _time24(_out),
-        emaStatus: _status,
-      ));
+      final isAbsent = _status == 'Absent';
+      context.read<AttendanceBloc>().add(
+        AddAttendanceEvent(
+          mode: 'single',
+          usrName: widget.usrName,
+          emaDate: _date!,
+          emaEmployee: _empId,
+          emaCheckedIn: isAbsent ? null : _time24OrNull(_in),
+          emaCheckedOut: isAbsent ? null : _time24OrNull(_out),
+          emaStatus: _status,
+        ),
+      );
     }
   }
 
@@ -137,7 +215,34 @@ class _AttendanceAddDialogState extends State<AttendanceAddDialog> {
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
     final scheme = Theme.of(context).colorScheme;
-
+    InputDecoration denseField({
+      required String label,
+      required Color color,
+    }) =>
+        InputDecoration(
+          labelText: label,
+          isDense: true,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(3),
+            borderSide: BorderSide(color: color, width: 1),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(3),
+            borderSide: BorderSide(color: color, width: 1),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(3),
+            borderSide: BorderSide(color: color, width: 1.4),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(3),
+            borderSide: BorderSide(color: Colors.red, width: 1),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(3),
+            borderSide: BorderSide(color: Colors.red, width: 1.4),
+          ),
+        );
     String fmt(TimeOfDay? t) => t == null
         ? '--:--'
         : '${t.hour.toString().padLeft(2, '0')}:'
@@ -176,14 +281,20 @@ class _AttendanceAddDialogState extends State<AttendanceAddDialog> {
         onAction: _submit,
         width: 720,
         child: SingleChildScrollView(
-          padding:
-          const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
               // ── Mode selector ───────────────────────────────────
               SegmentedButton<_AddMode>(
+                style: const ButtonStyle(
+                  shape: WidgetStatePropertyAll(
+                    RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(2)),
+                    ),
+                  ),
+                ),
                 segments: const [
                   ButtonSegment(
                     value: _AddMode.single,
@@ -211,25 +322,14 @@ class _AttendanceAddDialogState extends State<AttendanceAddDialog> {
 
               // ── Date + Status ───────────────────────────────────
               Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Expanded(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: _pickDate,
-                      child: IgnorePointer(
-                        child: ZTextFieldEntitled(
-                          title: 'Date',
-                          controller: TextEditingController(
-                            text: _date ?? '',
-                          ),
-                          readOnly: true,
-                          trailing: const Icon(
-                            Icons.calendar_month,
-                            size: 18,
-                          ),
-                          autoFocus: false,
-                        ),
-                      ),
+                    child: ZDatePicker(
+                      label: 'Date',
+                      initialDate: DateTime.tryParse(_date ?? ''),
+                      // Deferred + deduped — never calls setState mid-build.
+                      onDateChanged: _setDate,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -242,10 +342,9 @@ class _AttendanceAddDialogState extends State<AttendanceAddDialog> {
                         isDense: true,
                       ),
                       items: _statuses
-                          .map((s) => DropdownMenuItem(
-                        value: s,
-                        child: Text(s),
-                      ))
+                          .map(
+                            (s) => DropdownMenuItem(value: s, child: Text(s)),
+                      )
                           .toList(),
                       onChanged: (v) {
                         if (v != null) setState(() => _status = v);
@@ -256,38 +355,67 @@ class _AttendanceAddDialogState extends State<AttendanceAddDialog> {
               ),
               const SizedBox(height: 12),
 
-              // ── Single: employee + in/out ────────────────────────
+              // ── Single: employee picker + in/out ─────────────────
               if (_mode == _AddMode.single) ...[
-                BlocBuilder<EmployeeBloc, EmployeeState>(
-                  builder: (context, state) {
-                    final list = state is EmployeeLoadedState
-                        ? state.employees
-                        : const <EmployeeModel>[];
-                    return DropdownButtonFormField<int>(
-                      initialValue: _empId,
-                      isExpanded: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Employee',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      items: list
-                          .where((e) => e.empId != null)
-                          .map((e) => DropdownMenuItem<int>(
-                        value: e.empId,
-                        child: Text(
-                          '${e.perName ?? ''} '
-                              '${e.perLastName ?? ''} '
-                              '(${e.empPosition ?? ''})',
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ))
-                          .toList(),
-                      onChanged: (v) => setState(() => _empId = v),
-                    );
+                GenericTextField<EmployeeModel, EmployeeBloc, EmployeeState>(
+                  focusNode: _empFocus,
+                  textInputAction: TextInputAction.next,
+                  controller: _empCtrl,
+                  title: 'Employee',
+                  hintText: 'Search employee…',
+                  isRequired: true,
+                  showAllOnFocus: true,
+                  bloc: context.read<EmployeeBloc>(),
+                  fetchAllFunction: (bloc) =>
+                      bloc.add(const LoadEmployeeEvent()),
+                  searchFunction: (bloc, query) =>
+                      bloc.add(SearchEmployeesEvent(query)),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return tr.fieldRequired;
+                    }
+                    return null;
                   },
+                  itemBuilder: (context, e) => Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _employeeLabel(e),
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                        ),
+                        if ((e.empPosition ?? '').isNotEmpty)
+                          Text(
+                            e.empPosition!,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  itemToString: _employeeLabel,
+                  stateToLoading: (state) => state is EmployeeLoadingState,
+                  loadingBuilder: (context) => const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  stateToItems: (state) {
+                    if (state is EmployeeLoadedState) return state.employees;
+                    return const [];
+                  },
+                  onSelected: _applyEmployee,
+                  noResultsText: tr.noDataFound,
+                  showClearButton: true,
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 20),
                 Row(
                   children: [
                     Expanded(
@@ -301,10 +429,9 @@ class _AttendanceAddDialogState extends State<AttendanceAddDialog> {
                           }
                         },
                         child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'Check-in',
-                            border: OutlineInputBorder(),
-                            isDense: true,
+                          decoration: denseField(
+                            label: 'Check-in',
+                            color: scheme.outline.withValues(alpha: .3), // ← your border color
                           ),
                           child: Text(fmt(_in)),
                         ),
@@ -322,10 +449,9 @@ class _AttendanceAddDialogState extends State<AttendanceAddDialog> {
                           }
                         },
                         child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'Check-out',
-                            border: OutlineInputBorder(),
-                            isDense: true,
+                          decoration: denseField(
+                            label: 'Check-out (optional)',
+                            color: scheme.outline.withValues(alpha: .3),
                           ),
                           child: Text(fmt(_out)),
                         ),
@@ -333,21 +459,32 @@ class _AttendanceAddDialogState extends State<AttendanceAddDialog> {
                     ),
                   ],
                 ),
+                if (_status != 'Absent' && _in != null && _out == null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      'No check-out selected — this row will be saved as '
+                          'an OPEN shift (incomplete). You can add the checkout '
+                          'later from the list.',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: const Color(0xFFF59E0B),
+                      ),
+                    ),
+                  ),
               ],
 
-              // ── All active: banner + in/out ──────────────────────
+              // ── All active ───────────────────────────────────────
               if (_mode == _AddMode.all) ...[
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color:
-                    scheme.primaryContainer.withValues(alpha: .3),
+                    color: scheme.primaryContainer.withValues(alpha: .3),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline,
-                          size: 18, color: scheme.primary),
+                      Icon(Icons.info_outline, size: 18, color: scheme.primary),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -400,7 +537,7 @@ class _AttendanceAddDialogState extends State<AttendanceAddDialog> {
                         },
                         child: InputDecorator(
                           decoration: const InputDecoration(
-                            labelText: 'Check-out',
+                            labelText: 'Check-out (optional)',
                             border: OutlineInputBorder(),
                             isDense: true,
                           ),
@@ -412,7 +549,7 @@ class _AttendanceAddDialogState extends State<AttendanceAddDialog> {
                 ),
               ],
 
-              // ── Multiple: employee selection grid ────────────────
+              // ── Multiple: pick-employees button + list ───────────
               if (_mode == _AddMode.multiple) ...[
                 Row(
                   children: [
@@ -425,32 +562,7 @@ class _AttendanceAddDialogState extends State<AttendanceAddDialog> {
                     ),
                     const Spacer(),
                     TextButton.icon(
-                      onPressed: () async {
-                        final picked = await showDialog<Set<int>>(
-                          context: context,
-                          useRootNavigator: true,
-                          builder: (_) => _EmployeeMultiSelectDialog(
-                            initial: _rows.keys.toSet(),
-                          ),
-                        );
-                        if (picked != null && mounted) {
-                          setState(() {
-                            _rows.removeWhere(
-                                    (k, _) => !picked.contains(k));
-                            for (final id in picked) {
-                              _rows.putIfAbsent(
-                                id,
-                                    () => (
-                                inT: const TimeOfDay(hour: 8, minute: 0),
-                                outT:
-                                const TimeOfDay(hour: 16, minute: 0),
-                                status: 'Present',
-                                ),
-                              );
-                            }
-                          });
-                        }
-                      },
+                      onPressed: _openMultiSelect,
                       icon: const Icon(Icons.group_add, size: 16),
                       label: const Text('Pick employees'),
                     ),
@@ -493,8 +605,7 @@ class _AttendanceAddDialogState extends State<AttendanceAddDialog> {
                                 (e) => e.empId == id,
                             orElse: () => EmployeeModel(empId: id),
                           );
-                          return _multiRowTile(
-                              context, emp, id, r);
+                          return _multiRowTile(context, emp, id, r);
                         },
                       );
                     },
@@ -528,7 +639,7 @@ class _AttendanceAddDialogState extends State<AttendanceAddDialog> {
           Expanded(
             flex: 3,
             child: Text(
-              '${emp.perName ?? ''} ${emp.perLastName ?? ''}',
+              _employeeLabel(emp),
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 12),
             ),
@@ -541,22 +652,24 @@ class _AttendanceAddDialogState extends State<AttendanceAddDialog> {
               isDense: true,
               decoration: const InputDecoration(
                 isDense: true,
-                contentPadding:
-                EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 6,
+                ),
                 border: OutlineInputBorder(),
               ),
               items: _statuses
-                  .map((s) => DropdownMenuItem(
-                value: s,
-                child: Text(s,
-                    style: const TextStyle(fontSize: 12)),
-              ))
+                  .map(
+                    (s) => DropdownMenuItem(
+                  value: s,
+                  child: Text(s, style: const TextStyle(fontSize: 12)),
+                ),
+              )
                   .toList(),
               onChanged: (v) {
                 if (v == null) return;
                 setState(() {
-                  _rows[id] =
-                  (inT: r.inT, outT: r.outT, status: v);
+                  _rows[id] = (inT: r.inT, outT: r.outT, status: v);
                 });
               },
             ),
@@ -569,15 +682,13 @@ class _AttendanceAddDialogState extends State<AttendanceAddDialog> {
               final t = await _pickTime(r.inT);
               if (t != null && mounted) {
                 setState(() {
-                  _rows[id] =
-                  (inT: t, outT: r.outT, status: r.status);
+                  _rows[id] = (inT: t, outT: r.outT, status: r.status);
                 });
               }
             },
             child: Container(
               width: 72,
-              padding:
-              const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
               decoration: BoxDecoration(
                 border: Border.all(color: scheme.outlineVariant),
                 borderRadius: BorderRadius.circular(4),
@@ -602,17 +713,19 @@ class _AttendanceAddDialogState extends State<AttendanceAddDialog> {
               final t = await _pickTime(r.outT);
               if (t != null && mounted) {
                 setState(() {
-                  _rows[id] =
-                  (inT: r.inT, outT: t, status: r.status);
+                  _rows[id] = (inT: r.inT, outT: t, status: r.status);
                 });
               }
             },
             child: Container(
               width: 72,
-              padding:
-              const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
               decoration: BoxDecoration(
-                border: Border.all(color: scheme.outlineVariant),
+                border: Border.all(
+                  color: r.outT == null
+                      ? const Color(0xFFF59E0B)
+                      : scheme.outlineVariant,
+                ),
                 borderRadius: BorderRadius.circular(4),
               ),
               alignment: Alignment.center,
@@ -622,7 +735,9 @@ class _AttendanceAddDialogState extends State<AttendanceAddDialog> {
                   fontSize: 12,
                   color: r.status == 'Absent'
                       ? scheme.outline
-                      : scheme.onSurface,
+                      : (r.outT == null
+                      ? const Color(0xFFF59E0B)
+                      : scheme.onSurface),
                 ),
               ),
             ),
@@ -642,115 +757,7 @@ class _AttendanceAddDialogState extends State<AttendanceAddDialog> {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Multi-select employee picker
-// ═══════════════════════════════════════════════════════════════════
-class _EmployeeMultiSelectDialog extends StatefulWidget {
-  final Set<int> initial;
-  const _EmployeeMultiSelectDialog({required this.initial});
-
-  @override
-  State<_EmployeeMultiSelectDialog> createState() =>
-      _EmployeeMultiSelectDialogState();
-}
-
-class _EmployeeMultiSelectDialogState
-    extends State<_EmployeeMultiSelectDialog> {
-  late final Set<int> _picked = {...widget.initial};
-  final TextEditingController _search = TextEditingController();
-  String _q = '';
-
-  @override
-  void dispose() {
-    _search.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<EmployeeBloc, EmployeeState>(
-      builder: (context, state) {
-        final all = state is EmployeeLoadedState
-            ? state.employees
-            : const <EmployeeModel>[];
-        final list = all
-            .where((e) => e.empId != null)
-            .where((e) {
-          if (_q.isEmpty) return true;
-          final hay =
-          '${e.perName ?? ''} ${e.perLastName ?? ''} '
-              '${e.empPosition ?? ''}'.toLowerCase();
-          return hay.contains(_q.toLowerCase());
-        })
-            .toList();
-
-        return AlertDialog(
-          title: const Text('Pick employees'),
-          content: SizedBox(
-            width: 420,
-            height: 460,
-            child: Column(
-              children: [
-                TextField(
-                  controller: _search,
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.search, size: 18),
-                    hintText: 'Search…',
-                    isDense: true,
-                    border: OutlineInputBorder(),
-                  ),
-                  onChanged: (v) => setState(() => _q = v),
-                ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: list.length,
-                    itemBuilder: (_, i) {
-                      final e = list[i];
-                      final id = e.empId!;
-                      return CheckboxListTile(
-                        value: _picked.contains(id),
-                        dense: true,
-                        title: Text(
-                          '${e.perName ?? ''} ${e.perLastName ?? ''}',
-                          style: const TextStyle(fontSize: 13),
-                        ),
-                        subtitle: Text(
-                          e.empPosition ?? '',
-                          style: const TextStyle(fontSize: 11),
-                        ),
-                        onChanged: (v) => setState(() {
-                          if (v == true) {
-                            _picked.add(id);
-                          } else {
-                            _picked.remove(id);
-                          }
-                        }),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () =>
-                  Navigator.of(context).pop(_picked),
-              child: Text('Select (${_picked.length})'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// EDIT dialog
+// EDIT dialog — unchanged
 // ═══════════════════════════════════════════════════════════════════
 class AttendanceEditDialog extends StatefulWidget {
   final AttendanceModel record;
@@ -762,8 +769,7 @@ class AttendanceEditDialog extends StatefulWidget {
   });
 
   @override
-  State<AttendanceEditDialog> createState() =>
-      _AttendanceEditDialogState();
+  State<AttendanceEditDialog> createState() => _AttendanceEditDialogState();
 }
 
 class _AttendanceEditDialogState extends State<AttendanceEditDialog> {
@@ -790,11 +796,12 @@ class _AttendanceEditDialogState extends State<AttendanceEditDialog> {
     final h = int.tryParse(parts[0]);
     final m = int.tryParse(parts[1]);
     if (h == null || m == null) return null;
+    if (h == 0 && m == 0) return null;
     return TimeOfDay(hour: h, minute: m);
   }
 
-  String _time24(TimeOfDay? t) => t == null
-      ? '00:00:00'
+  String? _time24OrNull(TimeOfDay? t) => t == null
+      ? null
       : '${t.hour.toString().padLeft(2, '0')}:'
       '${t.minute.toString().padLeft(2, '0')}:00';
 
@@ -807,33 +814,59 @@ class _AttendanceEditDialogState extends State<AttendanceEditDialog> {
     if (_submitting) return;
     setState(() => _error = null);
 
-    if (_status != 'Absent' && (_in == null || _out == null)) {
-      setState(() => _error = 'Please pick check-in and check-out.');
+    if (_status != 'Absent' && _in == null) {
+      setState(() => _error = 'Please pick a check-in time.');
       return;
     }
 
     setState(() => _submitting = true);
 
+    final isAbsent = _status == 'Absent';
     final rec = {
       'emaID': widget.record.emaID,
       'emaEmployee': widget.record.emaEmployee,
-      'emaCheckedIn': _status == 'Absent' ? '00:00:00' : _time24(_in),
-      'emaCheckedOut':
-      _status == 'Absent' ? '00:00:00' : _time24(_out),
+      'emaCheckedIn': isAbsent ? null : _time24OrNull(_in),
+      'emaCheckedOut': isAbsent ? null : _time24OrNull(_out),
       'emaStatus': _status,
     };
 
-    context.read<AttendanceBloc>().add(UpdateAttendanceEvent(
-      usrName: widget.usrName,
-      records: [rec],
-    ));
+    context.read<AttendanceBloc>().add(
+      UpdateAttendanceEvent(usrName: widget.usrName, records: [rec]),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
     final scheme = Theme.of(context).colorScheme;
-
+    InputDecoration denseField({
+      required String label,
+      required Color color,
+    }) =>
+        InputDecoration(
+          labelText: label,
+          isDense: true,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(3),
+            borderSide: BorderSide(color: color, width: 1),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(3),
+            borderSide: BorderSide(color: color, width: 1),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(3),
+            borderSide: BorderSide(color: color, width: 1.2),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(3),
+            borderSide: BorderSide(color: Colors.red, width: 1),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(3),
+            borderSide: BorderSide(color: Colors.red, width: 1.2),
+          ),
+        );
     String fmt(TimeOfDay? t) => t == null
         ? '--:--'
         : '${t.hour.toString().padLeft(2, '0')}:'
@@ -887,24 +920,44 @@ class _AttendanceEditDialogState extends State<AttendanceEditDialog> {
               Text(
                 '${widget.record.empPosition ?? ''}  ·  '
                     '${widget.record.emaDate ?? ''}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: scheme.onSurfaceVariant,
-                ),
+                style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Icon(
+                    widget.record.emaCompleted
+                        ? Icons.check_circle_outline
+                        : Icons.timelapse,
+                    size: 14,
+                    color: widget.record.emaCompleted
+                        ? const Color(0xFF22C55E)
+                        : const Color(0xFFF59E0B),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    widget.record.emaCompleted
+                        ? 'Completed'
+                        : 'Incomplete — waiting for check-out',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: widget.record.emaCompleted
+                          ? const Color(0xFF22C55E)
+                          : const Color(0xFFF59E0B),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: _status,
-                decoration: const InputDecoration(
-                  labelText: 'Status',
-                  border: OutlineInputBorder(),
-                  isDense: true,
+                decoration: denseField(
+                  label: 'Status',
+                  color: scheme.outline.withValues(alpha: .3), // ← your border color
                 ),
                 items: _statuses
-                    .map((s) => DropdownMenuItem(
-                  value: s,
-                  child: Text(s),
-                ))
+                    .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                     .toList(),
                 onChanged: (v) {
                   if (v != null) setState(() => _status = v);
@@ -945,10 +998,17 @@ class _AttendanceEditDialogState extends State<AttendanceEditDialog> {
                         }
                       },
                       child: InputDecorator(
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Check-out',
-                          border: OutlineInputBorder(),
+                          border: const OutlineInputBorder(),
                           isDense: true,
+                          suffixIcon: _out != null
+                              ? IconButton(
+                            tooltip: 'Clear check-out',
+                            icon: const Icon(Icons.clear, size: 16),
+                            onPressed: () => setState(() => _out = null),
+                          )
+                              : null,
                         ),
                         child: Text(fmt(_out)),
                       ),
@@ -956,10 +1016,289 @@ class _AttendanceEditDialogState extends State<AttendanceEditDialog> {
                   ),
                 ],
               ),
+              if (!widget.record.emaCompleted && _out == null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    'Pick a check-out time and save to complete this shift.',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
       ),
     );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Multi-select employee picker — search + checkboxes + select-all
+// ═══════════════════════════════════════════════════════════════════
+class EmployeeMultiSelectDialog extends StatefulWidget {
+  final Set<int> initial;
+  final String? title;
+
+  const EmployeeMultiSelectDialog({
+    super.key,
+    this.initial = const {},
+    this.title,
+  });
+
+  @override
+  State<EmployeeMultiSelectDialog> createState() =>
+      _EmployeeMultiSelectDialogState();
+}
+
+class _EmployeeMultiSelectDialogState
+    extends State<EmployeeMultiSelectDialog> {
+  late final Set<int> _picked = {...widget.initial};
+  final TextEditingController _search = TextEditingController();
+  String _q = '';
+
+  @override
+  void initState() {
+    super.initState();
+    final bloc = context.read<EmployeeBloc>();
+    if (bloc.state is! EmployeeLoadedState) {
+      bloc.add(const LoadEmployeeEvent());
+    }
+  }
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  void _toggleAll(List<EmployeeModel> visible) {
+    setState(() {
+      final visibleIds = visible.map((e) => e.empId).whereType<int>().toSet();
+      final allVisiblePicked = visibleIds.every(_picked.contains);
+      if (allVisiblePicked) {
+        _picked.removeAll(visibleIds);
+      } else {
+        _picked.addAll(visibleIds);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: SizedBox(
+        width: 460,
+        height: 560,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
+              child: Row(
+                children: [
+                  Icon(Icons.group_add, size: 18, color: scheme.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    widget.title ?? 'Pick employees',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    tooltip: 'Close',
+                    icon: const Icon(Icons.close, size: 18),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+            BlocBuilder<EmployeeBloc, EmployeeState>(
+              builder: (context, state) {
+                final all = state is EmployeeLoadedState
+                    ? state.employees
+                    : const <EmployeeModel>[];
+                final visible = _filter(all, _q);
+                final visibleIds = visible
+                    .map((e) => e.empId)
+                    .whereType<int>()
+                    .toSet();
+                final allPicked =
+                    visibleIds.isNotEmpty && visibleIds.every(_picked.contains);
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: [
+                      TextField(
+                        controller: _search,
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.search, size: 18),
+                          hintText: 'Search employees…',
+                          isDense: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                        onChanged: (v) => setState(() => _q = v),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          InkWell(
+                            borderRadius: BorderRadius.circular(4),
+                            onTap: visible.isEmpty
+                                ? null
+                                : () => _toggleAll(visible),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 6,
+                              ),
+                              child: Row(
+                                children: [
+                                  Checkbox(
+                                    value: allPicked,
+                                    tristate: true,
+                                    onChanged: visible.isEmpty
+                                        ? null
+                                        : (_) => _toggleAll(visible),
+                                  ),
+                                  Text(
+                                    allPicked ? 'Deselect all' : 'Select all',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            '${_picked.length} selected',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: BlocBuilder<EmployeeBloc, EmployeeState>(
+                builder: (context, state) {
+                  if (state is EmployeeLoadingState) {
+                    return const Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    );
+                  }
+
+                  final all = state is EmployeeLoadedState
+                      ? state.employees
+                      : const <EmployeeModel>[];
+                  final visible = _filter(all, _q);
+
+                  if (visible.isEmpty) {
+                    return Center(
+                      child: Text(
+                        all.isEmpty
+                            ? 'No employees found.'
+                            : 'No employees match "$_q".',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    );
+                  }
+
+                  return ListView.separated(
+                    itemCount: visible.length,
+                    separatorBuilder: (_, _) => const Divider(height: 1),
+                    itemBuilder: (_, i) {
+                      final e = visible[i];
+                      final id = e.empId;
+                      if (id == null) return const SizedBox.shrink();
+                      final isChecked = _picked.contains(id);
+                      return CheckboxListTile(
+                        value: isChecked,
+                        dense: true,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        title: Text(
+                          '${e.perName ?? ''} ${e.perLastName ?? ''}'.trim(),
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                        subtitle: (e.empPosition ?? '').isEmpty
+                            ? null
+                            : Text(
+                          e.empPosition!,
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                        onChanged: (v) {
+                          setState(() {
+                            if (v == true) {
+                              _picked.add(id);
+                            } else {
+                              _picked.remove(id);
+                            }
+                          });
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+              child: Row(
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => setState(() => _picked.clear()),
+                    child: const Text('Clear'),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: () => Navigator.of(context).pop(_picked),
+                    child: Text('Select (${_picked.length})'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<EmployeeModel> _filter(List<EmployeeModel> all, String q) {
+    final query = q.trim().toLowerCase();
+    return all.where((e) => e.empId != null).where((e) {
+      if (query.isEmpty) return true;
+      final hay = '${e.perName ?? ''} ${e.perLastName ?? ''} '
+          '${e.empPosition ?? ''}'
+          .toLowerCase();
+      return hay.contains(query);
+    }).toList();
   }
 }

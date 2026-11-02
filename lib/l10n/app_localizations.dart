@@ -2991,6 +2991,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Salary must be a valid number'**
   String get salaryMustBeNumber;
+
+  /// No description provided for @usersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage user accounts, roles, and access permissions.'**
+  String get usersHint;
 }
 
 class _AppLocalizationsDelegate

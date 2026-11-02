@@ -1,12 +1,14 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/toast.dart';
 import '../../../../../../../Features/Other/responsive_widget.dart';
-import '../../../../../../../Features/Widgets/search_field.dart';
 import '../../../../../../../Features/Widgets/shimmer.dart';
 import '../../../../../../../Features/Widgets/zbutton.dart';
 import '../../../../../../../l10n/app_localizations.dart';
+import '../../../../../../Features/Date/zdate_picker.dart';
+import '../../../../../Auth/bloc/auth_bloc.dart';
 import 'attendance_form.dart';
 import 'bloc/attendance_bloc.dart';
 import 'model/attendance_model.dart';
@@ -17,11 +19,18 @@ class AttendanceView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authState = context.watch<AuthBloc>().state;
+    final resolvedUser = usrName?.trim().isNotEmpty == true
+        ? usrName!.trim()
+        : authState is AuthenticatedState
+        ? (authState.loginData.usrName ?? '').trim()
+        : '';
+
     return _AttendanceListener(
       child: ResponsiveLayout(
-        mobile: _AttendanceMobile(usrName: usrName ?? ''),
-        tablet: _AttendanceTablet(usrName: usrName ?? ''),
-        desktop: _AttendanceDesktop(usrName: usrName ?? ''),
+        mobile: _AttendanceMobile(usrName: resolvedUser),
+        tablet: _AttendanceTablet(usrName: resolvedUser),
+        desktop: _AttendanceDesktop(usrName: resolvedUser),
       ),
     );
   }
@@ -32,13 +41,7 @@ class AttendanceView extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════
 class _AttendanceController {
   static void refresh(BuildContext context) {
-    final tr = AppLocalizations.of(context)!;
     context.read<AttendanceBloc>().add(const LoadAttendanceEvent());
-    ToastManager.show(
-      context: context,
-      message: tr.refresh,
-      type: ToastType.success,
-    );
   }
 
   static void filterByDate(BuildContext context, String date) {
@@ -49,44 +52,67 @@ class _AttendanceController {
     context.read<AttendanceBloc>().add(const LoadAttendanceEvent());
   }
 
+  static String _resolveUser(BuildContext context) {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthenticatedState) {
+      final name = (authState.loginData.usrName ?? '').trim();
+      if (name.isNotEmpty) return name;
+    }
+    return '';
+  }
+
   static Future<void> openAddDialog(
       BuildContext context, String usrName) async {
+    final who =
+    usrName.trim().isNotEmpty ? usrName.trim() : _resolveUser(context);
+    if (who.isEmpty) {
+      ToastManager.show(
+        context: context,
+        message: 'No active user — please sign in again.',
+        type: ToastType.error,
+      );
+      return;
+    }
+
     final navigator = Navigator.of(context, rootNavigator: true);
     final bloc = context.read<AttendanceBloc>();
 
-    final saved = await showDialog<bool>(
+    await showDialog<bool>(
       context: navigator.context,
       barrierDismissible: false,
       useRootNavigator: true,
       builder: (_) => BlocProvider.value(
         value: bloc,
-        child: AttendanceAddDialog(usrName: usrName),
+        child: AttendanceAddDialog(usrName: who),
       ),
     );
-    if (!context.mounted) return;
-    if (saved == true) {
-      bloc.add(const LoadAttendanceEvent());
-    }
   }
 
   static Future<void> openEditDialog(
       BuildContext context, AttendanceModel model, String usrName) async {
+    final who =
+    usrName.trim().isNotEmpty ? usrName.trim() : _resolveUser(context);
+    if (who.isEmpty) {
+      ToastManager.show(
+        context: context,
+        message: 'No active user — please sign in again.',
+        type: ToastType.error,
+      );
+      return;
+    }
+
     final navigator = Navigator.of(context, rootNavigator: true);
     final bloc = context.read<AttendanceBloc>();
 
-    final saved = await showDialog<bool>(
+    await showDialog<bool>(
       context: navigator.context,
       barrierDismissible: false,
       useRootNavigator: true,
       builder: (_) => BlocProvider.value(
         value: bloc,
-        child: AttendanceEditDialog(record: model, usrName: usrName),
+        child: AttendanceEditDialog(record: model, usrName: who),
       ),
     );
-    if (!context.mounted) return;
-    if (saved == true) {
-      bloc.add(const LoadAttendanceEvent());
-    }
   }
 
   static Future<void> confirmDelete(
@@ -95,6 +121,17 @@ class _AttendanceController {
       ToastManager.show(
         context: context,
         message: 'Attendance record not found.',
+        type: ToastType.error,
+      );
+      return;
+    }
+
+    final who =
+    usrName.trim().isNotEmpty ? usrName.trim() : _resolveUser(context);
+    if (who.isEmpty) {
+      ToastManager.show(
+        context: context,
+        message: 'No active user — please sign in again.',
         type: ToastType.error,
       );
       return;
@@ -127,15 +164,15 @@ class _AttendanceController {
         ],
       ),
     );
-    if (!context.mounted) return;
+
     if (ok == true) {
-      bloc.add(DeleteAttendanceEvent(row.emaID!, usrName: usrName));
+      bloc.add(DeleteAttendanceEvent(row.emaID!, usrName: who));
     }
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Listener — toasts success / error
+// Listener
 // ═══════════════════════════════════════════════════════════════════
 class _AttendanceListener extends StatelessWidget {
   final Widget child;
@@ -145,23 +182,37 @@ class _AttendanceListener extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocListener<AttendanceBloc, AttendanceState>(
       listenWhen: (p, c) =>
-      c is AttendanceSavedState || c is AttendanceErrorState,
+      (c is AttendanceSavedState && p is! AttendanceSavedState) ||
+          (c is AttendanceErrorState && p is! AttendanceErrorState),
       listener: (context, state) {
+        if (!context.mounted) return;
+
         if (state is AttendanceSavedState) {
           ToastManager.show(
             context: context,
             message: state.message,
             type: ToastType.success,
           );
+          Future.microtask(() {
+            if (context.mounted) {
+              context
+                  .read<AttendanceBloc>()
+                  .add(const ClearAttendanceMessagesEvent());
+            }
+          });
         } else if (state is AttendanceErrorState) {
           ToastManager.show(
             context: context,
             message: state.message,
             type: ToastType.error,
           );
-          context
-              .read<AttendanceBloc>()
-              .add(const ClearAttendanceMessagesEvent());
+          Future.microtask(() {
+            if (context.mounted) {
+              context
+                  .read<AttendanceBloc>()
+                  .add(const ClearAttendanceMessagesEvent());
+            }
+          });
         }
       },
       child: child,
@@ -172,9 +223,21 @@ class _AttendanceListener extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════
 // MOBILE
 // ═══════════════════════════════════════════════════════════════════
-class _AttendanceMobile extends StatelessWidget {
+class _AttendanceMobile extends StatefulWidget {
   final String usrName;
   const _AttendanceMobile({required this.usrName});
+
+  @override
+  State<_AttendanceMobile> createState() => _AttendanceMobileState();
+}
+
+class _AttendanceMobileState extends State<_AttendanceMobile> {
+  String? _date;
+
+  void _clearFilter() {
+    setState(() => _date = null);
+    _AttendanceController.clearFilter(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -188,11 +251,17 @@ class _AttendanceMobile extends StatelessWidget {
             icon: const Icon(Icons.refresh, size: 20),
             onPressed: () => _AttendanceController.refresh(context),
           ),
+          if (_date != null)
+          IconButton(
+            tooltip: 'Clear filter',
+            icon: const Icon(Icons.filter_alt_off, size: 20),
+            onPressed: _clearFilter,
+          ),
           IconButton(
             tooltip: 'Add attendance',
             icon: const Icon(Icons.add, size: 20),
             onPressed: () =>
-                _AttendanceController.openAddDialog(context, usrName),
+                _AttendanceController.openAddDialog(context, widget.usrName),
           ),
           const SizedBox(width: 4),
         ],
@@ -201,10 +270,18 @@ class _AttendanceMobile extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: _DateFilterBar(usrName: usrName, expand: true),
+            child: _DateFilterBar(
+              usrName: widget.usrName,
+              expand: true,
+              initialDate: _date,
+              onDatePicked: (v) => setState(() => _date = v),
+            ),
           ),
           Expanded(
-            child: _AttendanceList(usrName: usrName, isMobile: true),
+            child: _AttendanceList(
+              usrName: widget.usrName,
+              isMobile: true,
+            ),
           ),
         ],
       ),
@@ -215,9 +292,21 @@ class _AttendanceMobile extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════
 // TABLET
 // ═══════════════════════════════════════════════════════════════════
-class _AttendanceTablet extends StatelessWidget {
+class _AttendanceTablet extends StatefulWidget {
   final String usrName;
   const _AttendanceTablet({required this.usrName});
+
+  @override
+  State<_AttendanceTablet> createState() => _AttendanceTabletState();
+}
+
+class _AttendanceTabletState extends State<_AttendanceTablet> {
+  String? _date;
+
+  void _clearFilter() {
+    setState(() => _date = null);
+    _AttendanceController.clearFilter(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -231,11 +320,17 @@ class _AttendanceTablet extends StatelessWidget {
             icon: const Icon(Icons.refresh, size: 20),
             onPressed: () => _AttendanceController.refresh(context),
           ),
+          if (_date != null)
+          IconButton(
+            tooltip: 'Clear filter',
+            icon: const Icon(Icons.filter_alt_off, size: 20),
+            onPressed: _clearFilter,
+          ),
           IconButton(
             tooltip: 'Add attendance',
             icon: const Icon(Icons.add, size: 20),
             onPressed: () =>
-                _AttendanceController.openAddDialog(context, usrName),
+                _AttendanceController.openAddDialog(context, widget.usrName),
           ),
         ],
       ),
@@ -243,11 +338,19 @@ class _AttendanceTablet extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: _DateFilterBar(usrName: usrName, expand: true),
+            child: _DateFilterBar(
+              usrName: widget.usrName,
+              expand: true,
+              initialDate: _date,
+              onDatePicked: (v) => setState(() => _date = v),
+            ),
           ),
           const SizedBox(height: 8),
           Expanded(
-            child: _AttendanceList(usrName: usrName, isMobile: false),
+            child: _AttendanceList(
+              usrName: widget.usrName,
+              isMobile: false,
+            ),
           ),
         ],
       ),
@@ -258,13 +361,26 @@ class _AttendanceTablet extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════
 // DESKTOP
 // ═══════════════════════════════════════════════════════════════════
-class _AttendanceDesktop extends StatelessWidget {
+class _AttendanceDesktop extends StatefulWidget {
   final String usrName;
   const _AttendanceDesktop({required this.usrName});
 
   @override
+  State<_AttendanceDesktop> createState() => _AttendanceDesktopState();
+}
+
+class _AttendanceDesktopState extends State<_AttendanceDesktop> {
+  String? _date;
+
+  void _clearFilter() {
+    setState(() => _date = null);
+    _AttendanceController.clearFilter(context);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
+
     return Scaffold(
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -290,23 +406,18 @@ class _AttendanceDesktop extends StatelessWidget {
                     const SizedBox(height: 3),
                     const Text(
                       'TRACK EMPLOYEE CHECK-IN / CHECK-OUT',
-                      style: TextStyle(
-                        letterSpacing: 1.3,
-                        fontSize: 10,
-                      ),
+                      style: TextStyle(letterSpacing: 1.3, fontSize: 10),
                     ),
                   ],
                 ),
                 const Spacer(),
-                // ← FIX: bounded width so the inner Row never sees
-                //        unbounded constraints. `expand: false` makes
-                //        `_DateFilterBar` size to its children only.
                 SizedBox(
-                  width: 280,
                   child: _DateFilterBar(
-                    usrName: usrName,
+                    usrName: widget.usrName,
                     compact: true,
                     expand: false,
+                    initialDate: _date,
+                    onDatePicked: (v) => setState(() => _date = v),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -314,24 +425,41 @@ class _AttendanceDesktop extends StatelessWidget {
                   label: Text(tr.refresh),
                   icon: Icons.refresh,
                   iconSize: 18,
-                  height: 45,
+                  height: 48,
                   onPressed: () => _AttendanceController.refresh(context),
                 ),
+
+                if (_date != null)...[
+                  const SizedBox(width: 8),
+                  ZOutlineButton(
+                    label: const Text('Clear filter'),
+                    isActive: true,
+                    backgroundHover: Theme.of(context).colorScheme.error,
+                    icon: Icons.filter_alt_off,
+                    iconSize: 18,
+                    height: 48,
+                    onPressed: _clearFilter,
+                  ),
+                ],
+
                 const SizedBox(width: 8),
                 ZOutlineButton(
                   label: const Text('Add attendance'),
                   icon: Icons.add,
                   isActive: true,
                   iconSize: 18,
-                  height: 45,
-                  onPressed: () =>
-                      _AttendanceController.openAddDialog(context, usrName),
+                  height: 48,
+                  onPressed: () => _AttendanceController.openAddDialog(
+                      context, widget.usrName),
                 ),
               ],
             ),
           ),
           Expanded(
-            child: _AttendanceList(usrName: usrName, isMobile: false),
+            child: _AttendanceList(
+              usrName: widget.usrName,
+              isMobile: false,
+            ),
           ),
         ],
       ),
@@ -340,23 +468,19 @@ class _AttendanceDesktop extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Date filter bar
-//
-//   `expand: true`  → fills available width (used inside Column body)
-//   `expand: false` → sizes to its children (used inside desktop header
-//                     where the parent is a Row giving unbounded width)
-//
-//   The inner Row never uses `Flexible` on the search bar when the
-//   parent can hand down unbounded width — that was the source of the
-//   "RenderFlex children have non-zero flex but incoming width
-//   constraints are unbounded" assertion.
+// Date filter bar — fully controlled
 // ═══════════════════════════════════════════════════════════════════
 class _DateFilterBar extends StatefulWidget {
   final String usrName;
   final bool compact;
   final bool expand;
+  final String? initialDate;
+  final ValueChanged<String?> onDatePicked;
+
   const _DateFilterBar({
     required this.usrName,
+    required this.onDatePicked,
+    this.initialDate,
     this.compact = false,
     this.expand = true,
   });
@@ -369,63 +493,59 @@ class _DateFilterBarState extends State<_DateFilterBar> {
   String? _date;
 
   @override
+  void initState() {
+    super.initState();
+    _date = widget.initialDate;
+  }
+
+  @override
+  void didUpdateWidget(covariant _DateFilterBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialDate != _date) {
+      setState(() => _date = widget.initialDate);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    Widget searchBar = GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () async {
-        final now = DateTime.now();
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: DateTime.tryParse(_date ?? '') ?? now,
-          firstDate: DateTime(now.year - 3),
-          lastDate: DateTime(now.year + 1),
-        );
-        if (!context.mounted) return;
-        if (picked != null) {
-          final s = '${picked.year.toString().padLeft(4, '0')}-'
-              '${picked.month.toString().padLeft(2, '0')}-'
-              '${picked.day.toString().padLeft(2, '0')}';
-          setState(() => _date = s);
-          _AttendanceController.filterByDate(context, s);
-        }
+    final Widget datePicker = GenericDatePicker(
+      // Changing the key forces the picker to rebuild and reset
+      // its internal visual state when the parent clears it.
+      key: ValueKey(_date ?? 'no-date'),
+      label: '',
+      height: 40,
+      initialGregorianDate: _date,
+      onDateChanged: (value) {
+        if (value.isEmpty || value == _date) return;
+        setState(() => _date = value);
+        widget.onDatePicked(value);
+        _AttendanceController.filterByDate(context, value);
       },
-      child: AbsorbPointer(
-        child: ReusableSearchBar(
-          hintText: _date == null ? 'Filter by date…' : _date!,
-          height: 40,
-          padding: EdgeInsets.zero,
-          prefixIconSize: 20,
-          suffixIconSize: 16,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-          onChanged: (_) {},
-        ),
+      padding: EdgeInsets.zero,
+      gregorianTextStyle: TextStyle(
+        fontSize: 12,
+        color: scheme.onSurface,
+        fontWeight: FontWeight.w500,
+      ),
+      shamsiTextStyle: TextStyle(
+        fontSize: 10,
+        color: scheme.primary,
+        fontWeight: FontWeight.bold,
       ),
     );
 
     return Row(
-      mainAxisSize:
-      widget.expand ? MainAxisSize.max : MainAxisSize.min,
+      mainAxisSize: widget.expand ? MainAxisSize.max : MainAxisSize.min,
       children: [
         if (widget.expand)
-          Expanded(child: searchBar)
+          Expanded(child: datePicker)
         else
           SizedBox(
-            width: widget.compact ? 260 : 320,
-            child: searchBar,
+            width: widget.compact ? 170 : 175,
+            child: datePicker,
           ),
-        if (_date != null) ...[
-          const SizedBox(width: 6),
-          IconButton(
-            tooltip: 'Clear date filter',
-            icon: Icon(Icons.close, size: 18, color: scheme.error),
-            onPressed: () {
-              setState(() => _date = null);
-              _AttendanceController.clearFilter(context);
-            },
-          ),
-        ],
       ],
     );
   }
@@ -434,25 +554,37 @@ class _DateFilterBarState extends State<_DateFilterBar> {
 // ═══════════════════════════════════════════════════════════════════
 // List
 // ═══════════════════════════════════════════════════════════════════
-class _AttendanceList extends StatelessWidget {
+class _AttendanceList extends StatefulWidget {
   final String usrName;
   final bool isMobile;
   const _AttendanceList({required this.usrName, required this.isMobile});
 
   @override
+  State<_AttendanceList> createState() => _AttendanceListState();
+}
+
+class _AttendanceListState extends State<_AttendanceList> {
+  List<AttendanceModel> _cached = const [];
+
+  @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AttendanceBloc, AttendanceState>(
+    return BlocConsumer<AttendanceBloc, AttendanceState>(
+      listenWhen: (p, c) => c is AttendanceLoadedState,
+      listener: (context, state) {
+        if (state is AttendanceLoadedState) {
+          setState(() => _cached = state.records);
+        }
+      },
       builder: (context, state) {
-        if (state is AttendanceLoadingState) {
+        if (state is AttendanceLoadingState && _cached.isEmpty) {
           return UniversalShimmer.accountList(
             itemCount: 10,
             useAlternatingColors: true,
           );
         }
 
-        final records = state is AttendanceLoadedState
-            ? state.records
-            : <AttendanceModel>[];
+        final records =
+        state is AttendanceLoadedState ? state.records : _cached;
 
         if (state is AttendanceErrorState && records.isEmpty) {
           return _ErrorView(
@@ -461,32 +593,28 @@ class _AttendanceList extends StatelessWidget {
           );
         }
 
-        if (records.isEmpty) {
-          return const _EmptyView();
-        }
+        if (records.isEmpty) return const _EmptyView();
 
         return RefreshIndicator(
           onRefresh: () async => _AttendanceController.refresh(context),
           child: ListView.separated(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             itemCount: records.length + 1,
-            separatorBuilder: (_, i) => i == 0
-                ? const SizedBox(height: 4)
-                : const SizedBox(height: 6),
+            separatorBuilder: (_, i) =>
+            i == 0 ? const SizedBox(height: 4) : const SizedBox(height: 6),
             itemBuilder: (context, index) {
               if (index == 0) {
-                return _HeaderRow(isMobile: isMobile);
+                return _HeaderRow(isMobile: widget.isMobile);
               }
               final row = records[index - 1];
               return _AttendanceRow(
                 row: row,
-                isMobile: isMobile,
+                isMobile: widget.isMobile,
                 onEdit: () => _AttendanceController.openEditDialog(
-                    context, row, usrName),
+                    context, row, widget.usrName),
                 onDelete: () => _AttendanceController.confirmDelete(
-                    context, row, usrName),
+                    context, row, widget.usrName),
               );
             },
           ),
@@ -521,11 +649,7 @@ class _HeaderRow extends StatelessWidget {
             flex: isMobile ? 4 : 3,
             child: Text(isMobile ? 'Employee' : 'EMPLOYEE', style: style),
           ),
-          if (!isMobile)
-            Expanded(
-              flex: 2,
-              child: Text('DATE', style: style),
-            ),
+          if (!isMobile) Expanded(flex: 2, child: Text('DATE', style: style)),
           Expanded(
             flex: 2,
             child: Text(isMobile ? 'In' : 'CHECK-IN', style: style),
@@ -537,6 +661,10 @@ class _HeaderRow extends StatelessWidget {
           Expanded(
             flex: 2,
             child: Text(isMobile ? 'Hrs' : 'HOURS', style: style),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(isMobile ? 'State' : 'STATUS', style: style),
           ),
           const SizedBox(width: 40),
         ],
@@ -576,16 +704,17 @@ class _AttendanceRow extends StatelessWidget {
     }
   }
 
+  Color _completionColor() =>
+      row.emaCompleted ? const Color(0xFF22C55E) : const Color(0xFFF59E0B);
+
   String _shortTime(String? t) {
     if (t == null || t.isEmpty) return '--:--';
     return t.length >= 5 ? t.substring(0, 5) : t;
   }
 
-  String _hours(String? hours, double? numeric) {
-    if (numeric != null) return numeric.toStringAsFixed(1);
-    if (hours == null) return '0.0';
-    final d = double.tryParse(hours);
-    return d == null ? hours : d.toStringAsFixed(1);
+  String _hours(double? hours) {
+    if (hours == null) return '—';
+    return hours.toStringAsFixed(1);
   }
 
   @override
@@ -593,6 +722,7 @@ class _AttendanceRow extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     final statusColor = _statusColor(context, row.emaStatus);
+    final completionColor = _completionColor();
 
     return Material(
       color: scheme.surface,
@@ -629,33 +759,34 @@ class _AttendanceRow extends StatelessWidget {
                     if (!isMobile && (row.empPosition ?? '').isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
-                        child: Text(
-                          row.empPosition!,
-                          style: text.bodySmall?.copyWith(
-                            fontSize: 11,
-                            color: scheme.onSurfaceVariant,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        child: Wrap(
+                          children: [
+                            Text(
+                              row.empPosition!,
+                              style: text.bodySmall?.copyWith(
+                                fontSize: 11,
+                                color: scheme.onSurfaceVariant,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+
+                            SizedBox(width: 4),
+
+                            Text(
+                              "• ${row.emaStatus}",
+                              style: text.bodySmall?.copyWith(
+                                fontSize: 11,
+                                color: statusColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
                       ),
-                    const SizedBox(height: 2),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: statusColor.withValues(alpha: .12),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        row.emaStatus ?? '—',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: statusColor,
-                        ),
-                      ),
-                    ),
+
+
                   ],
                 ),
               ),
@@ -684,22 +815,50 @@ class _AttendanceRow extends StatelessWidget {
               Expanded(
                 flex: 2,
                 child: Text(
-                  _shortTime(row.emaCheckedOut),
+                  row.emaCheckedOut == null
+                      ? '--:--'
+                      : _shortTime(row.emaCheckedOut),
                   style: text.bodySmall?.copyWith(
                     fontSize: 12,
-                    color: scheme.onSurface,
+                    color: row.emaCheckedOut == null
+                        ? completionColor
+                        : scheme.onSurface,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              Flexible(
+              Expanded(
                 flex: 2,
                 child: Text(
-                  _hours(null, row.emaWorkHours),
+                  row.emaCompleted ? _hours(row.emaWorkHours) : '—',
                   style: text.bodySmall?.copyWith(
                     fontSize: 12,
                     color: scheme.onSurfaceVariant,
                   ),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Row(
+                  children: [
+                    Icon(
+                      row.emaCompleted ? Icons.check_circle : Icons.timelapse,
+                      size: 14,
+                      color: completionColor,
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        row.emaCompleted ? 'Completed' : 'Incomplete',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: completionColor,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               SizedBox(
@@ -725,8 +884,7 @@ class _AttendanceRow extends StatelessWidget {
                         children: [
                           Icon(Icons.edit_outlined, size: 16),
                           SizedBox(width: 10),
-                          Text('Edit',
-                              style: TextStyle(fontSize: 13)),
+                          Text('Edit', style: TextStyle(fontSize: 13)),
                         ],
                       ),
                     ),
@@ -740,8 +898,7 @@ class _AttendanceRow extends StatelessWidget {
                           const SizedBox(width: 10),
                           Text(
                             'Delete',
-                            style: TextStyle(
-                                fontSize: 13, color: scheme.error),
+                            style: TextStyle(fontSize: 13, color: scheme.error),
                           ),
                         ],
                       ),
@@ -770,8 +927,11 @@ class _EmptyView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.event_busy_outlined,
-              size: 48, color: scheme.onSurface.withValues(alpha: .3)),
+          Icon(
+            Icons.event_busy_outlined,
+            size: 48,
+            color: scheme.onSurface.withValues(alpha: .3),
+          ),
           const SizedBox(height: 12),
           Text(
             'No attendance records',

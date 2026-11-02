@@ -1473,4 +1473,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salaryMustBeNumber => 'Salary must be a valid number';
+
+  @override
+  String get usersHint =>
+      'Manage user accounts, roles, and access permissions.';
 }

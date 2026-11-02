@@ -2658,28 +2658,26 @@ class Repositories {
     required String mode,
     required String usrName,
     required String emaDate,
-    // single / all:
-    int?    emaEmployee,
+    int? emaEmployee,
     String? emaCheckedIn,
     String? emaCheckedOut,
     String? emaStatus,
-    // multiple:
     List<Map<String, dynamic>>? records,
   }) async {
     final payload = <String, dynamic>{
-      'mode':    mode,
+      'mode': mode,
       'usrName': usrName,
       'emaDate': emaDate,
       if (mode == 'single') ...{
-        'emaEmployee':   emaEmployee,
-        'emaCheckedIn':  emaCheckedIn,
+        'emaEmployee': emaEmployee,
+        'emaCheckedIn': emaCheckedIn,
         'emaCheckedOut': emaCheckedOut,
-        'emaStatus':     emaStatus ?? 'Present',
+        'emaStatus': emaStatus ?? 'Present',
       },
       if (mode == 'all') ...{
-        'emaCheckedIn':  emaCheckedIn,
+        'emaCheckedIn': emaCheckedIn,
         'emaCheckedOut': emaCheckedOut,
-        'emaStatus':     emaStatus ?? 'Present',
+        'emaStatus': emaStatus ?? 'Present',
       },
       if (mode == 'multiple') 'records': records ?? const [],
     };
@@ -2694,12 +2692,17 @@ class Repositories {
 
     final msg = body['msg']?.toString().toLowerCase() ?? '';
     if (msg == 'success') return body;
+
+    // ✅ Accept any 'failed' body that still inserted rows
+    final inserted = _asInt(body['inserted']) ?? 0;
+    if (inserted > 0) return body;
+
     if (msg == 'empty')        throw ApiException('Please fill in all fields.');
     if (msg == 'invalid_mode') throw ApiException('Invalid attendance mode.');
     _fail(body, fallback: 'Failed to add attendance');
   }
 
-  Future<void> updateAttendance({
+  Future<Map<String, dynamic>> updateAttendance({
     required String usrName,
     required List<Map<String, dynamic>> records,
   }) async {
@@ -2707,24 +2710,32 @@ class Repositories {
       endpoint: '/HR/attendance.php',
       data: {'usrName': usrName, 'records': records},
     );
-    _requireSuccess(response.data, fallback: 'Failed to update attendance');
+    return _requireSuccess(response.data, fallback: 'Failed to update attendance');
   }
 
-  Future<void> deleteAttendance({
+  Future<Map<String, dynamic>> deleteAttendance({
     required int emaID,
     String? usrName,
     CancelToken? cancelToken,
   }) async {
     final response = await _api.delete(
       endpoint: '/HR/attendance.php',
-      data: {'emaID': emaID, 'usrName': ?usrName},
+      data: {'emaID': emaID, 'usrName': usrName},
       cancelToken: cancelToken,
     );
+
     final body = _asMap(response.data);
-    if (body == null) throw ApiException('Invalid server response');
+    if (body == null) {
+      // Some servers return a raw string on success
+      final s = response.data?.toString().toLowerCase() ?? '';
+      if (s.contains('success')) {
+        return {'msg': 'success', 'message': 'Attendance deleted.'};
+      }
+      throw ApiException('Invalid server response');
+    }
 
     final msg = body['msg']?.toString().toLowerCase() ?? '';
-    if (msg == 'success')  return;
+    if (msg == 'success')  return body;
     if (msg == 'notfound') throw ApiException('Attendance record not found.');
     if (msg == 'empty')    throw ApiException('Missing attendance id.');
     _fail(body, fallback: 'Failed to delete attendance');

@@ -1471,4 +1471,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get salaryMustBeNumber => 'معاش باید یک عدد معتبر باشد';
+
+  @override
+  String get usersHint => 'مدیریت کاربران، نقش‌ ها و دسترسی‌ ها';
 }

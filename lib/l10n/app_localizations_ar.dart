@@ -1471,4 +1471,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get salaryMustBeNumber => 'معاش باید یوه معتبره شمېره وي';
+
+  @override
+  String get usersHint => 'د کاروونکو، رولونو او لاسرسیو مدیریت';
 }

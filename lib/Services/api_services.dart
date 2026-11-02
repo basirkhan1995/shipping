@@ -1,10 +1,16 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'api_exception.dart';
 import 'localization_services.dart';
 
 class ApiServices {
   static const String baseUrl = "https://www.ferdawsbelalnabizada.com/rapi";
-  static const String imageUrl = "https://www.ferdawsbelalnabizada.com/images/personal/";
+  static const String imageUrl =
+      "https://www.ferdawsbelalnabizada.com/images/personal/";
+
+  late final Dio _dio;
+
+  Dio get client => _dio;
 
   ApiServices() {
     _dio = Dio(
@@ -19,13 +25,25 @@ class ApiServices {
         },
       ),
     );
+
+    // ────────────────────────────────────────────────────────────────
+    // Log interceptor — DEBUG ONLY.
+    // Goes AFTER _dio = Dio(...) because _dio must exist first.
+    // ────────────────────────────────────────────────────────────────
+    if (kDebugMode) {
+      _dio.interceptors.add(
+        LogInterceptor(
+          request: true,
+          requestHeader: true,
+          requestBody: true,
+          responseHeader: false,
+          responseBody: true,
+          error: true,
+          logPrint: (o) => debugPrint('🌐 $o'),
+        ),
+      );
+    }
   }
-
-  late final Dio _dio;
-
-  Dio get client => _dio;
-
-
 
   /* -------------------------------------------------------------------------- */
   /*                              Error Handling                                */
@@ -38,72 +56,76 @@ class ApiServices {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.receiveTimeout:
       case DioExceptionType.sendTimeout:
-        return ApiException(
-          tr.timeOutMessage,
-          statusCode: e.response?.statusCode,
-        );
+        return ApiException(tr.timeOutMessage,
+            statusCode: e.response?.statusCode);
 
       case DioExceptionType.cancel:
-        return ApiException(
-          tr.requestCancelMessage,
-          statusCode: e.response?.statusCode,
-        );
+        return ApiException(tr.requestCancelMessage,
+            statusCode: e.response?.statusCode);
 
       case DioExceptionType.connectionError:
-        return ApiException(
-          tr.noInternet,
-          statusCode: e.response?.statusCode,
-        );
+        return ApiException(tr.noInternet,
+            statusCode: e.response?.statusCode);
 
       case DioExceptionType.badResponse:
         final status = e.response?.statusCode;
         final data = e.response?.data;
 
-        // Extract the server-provided machine code, e.g. TOKEN_EXPIRED,
-        // TOKEN_INVALID, so the bloc can react to it.
         String? code;
         if (data is Map && data['code'] is String) {
           code = data['code'] as String;
         }
 
-        // Prefer a server-provided message when it's a plain string.
         String? serverMessage;
-        if (data is Map && data['error'] is String) {
-          serverMessage = data['error'] as String;
+        if (data is Map) {
+          final raw = data['error'] ?? data['message'] ?? data['msg'];
+          if (raw is String && raw.isNotEmpty) serverMessage = raw;
+        } else if (data is String && data.isNotEmpty) {
+          serverMessage = data;
         }
 
         String message;
         switch (status) {
-          case 400:
-            message = serverMessage ?? tr.badRequest;
-            break;
-          case 401:
-            message = serverMessage ?? tr.unAuthorized;
-            break;
-          case 403:
-            message = serverMessage ?? tr.forbidden;
-            break;
-          case 404:
-            message = serverMessage ?? tr.url404;
-            break;
-          case 405:
-            message = serverMessage ?? tr.notAllowedError;
-            break;
-          case 500:
-            message = serverMessage ?? tr.internalServerError;
-            break;
-          case 503:
-            message = serverMessage ?? tr.serviceUnavailable;
-            break;
-          default:
-            message = serverMessage ?? "${tr.serverError}: $status";
+          case 400: message = serverMessage ?? tr.badRequest; break;
+          case 401: message = serverMessage ?? tr.unAuthorized; break;
+          case 403: message = serverMessage ?? tr.forbidden; break;
+          case 404: message = serverMessage ?? tr.url404; break;
+          case 405: message = serverMessage ?? tr.notAllowedError; break;
+          case 500: message = serverMessage ?? tr.internalServerError; break;
+          case 503: message = serverMessage ?? tr.serviceUnavailable; break;
+          default:  message = serverMessage ?? "${tr.serverError}: $status";
         }
-
         return ApiException(message, statusCode: status, code: code);
+
+    // 🎯 THE FIX: don't hide JSON parse failures as "network error"
+      case DioExceptionType.unknown:
+        final raw = e.response?.data;
+        final statusCode = e.response?.statusCode;
+
+        if (raw is String) {
+          final preview = raw.length > 200 ? '${raw.substring(0, 200)}…' : raw;
+          return ApiException(
+            'Server returned invalid JSON (HTTP $statusCode): $preview',
+            statusCode: statusCode,
+          );
+        }
+        if (raw is Map) {
+          final serverMessage =
+          (raw['error'] ?? raw['message'] ?? raw['msg'])?.toString();
+          if (serverMessage != null && serverMessage.isNotEmpty) {
+            return ApiException(serverMessage, statusCode: statusCode);
+          }
+        }
+        return ApiException(
+          'Unexpected server response: ${e.message ?? e.error ?? ''}',
+          statusCode: statusCode,
+        );
 
       default:
         return ApiException(
-          tr.networkError,
+          e.message?.isNotEmpty == true
+              ? e.message!
+              : tr.networkError,
           statusCode: e.response?.statusCode,
         );
     }
@@ -119,7 +141,6 @@ class ApiServices {
     CancelToken? cancelToken,
   }) async {
     try {
-     // await _checkConnectivity();
       return await _dio.get(
         endpoint,
         queryParameters: queryParams,
@@ -142,7 +163,6 @@ class ApiServices {
     CancelToken? cancelToken,
   }) async {
     try {
-     // await _checkConnectivity();
       return await _dio.post(
         endpoint,
         data: data,
@@ -165,7 +185,6 @@ class ApiServices {
     CancelToken? cancelToken,
   }) async {
     try {
-     // await _checkConnectivity();
       return await _dio.put(
         endpoint,
         data: data,
@@ -206,25 +225,6 @@ class ApiServices {
   /*                               FILE UPLOAD                                  */
   /* -------------------------------------------------------------------------- */
 
-  // Future<Response> uploadFile({
-  //   required String endpoint,
-  //   required FormData data,
-  //   CancelToken? cancelToken,
-  // }) async {
-  //   try {
-  //   //  await _checkConnectivity();
-  //     return await _dio.post(
-  //       endpoint,
-  //       data: data,
-  //       cancelToken: cancelToken,
-  //     );
-  //   } on DioException catch (e) {
-  //     throw _handleError(e);
-  //   } catch (e) {
-  //     throw ApiException(e.toString());
-  //   }
-  // }
-
   Future<Response> uploadFile({
     required String endpoint,
     required FormData data,
@@ -240,7 +240,6 @@ class ApiServices {
         options: headers == null ? null : Options(headers: headers),
         onSendProgress: onSendProgress,
       );
-
     } on DioException catch (e) {
       throw _handleError(e);
     } catch (e) {
@@ -259,7 +258,6 @@ class ApiServices {
     ProgressCallback? onReceiveProgress,
   }) async {
     try {
-     // await _checkConnectivity();
       return await _dio.download(
         endpoint,
         savePath,
@@ -272,6 +270,4 @@ class ApiServices {
       throw ApiException(e.toString());
     }
   }
-
-
 }
