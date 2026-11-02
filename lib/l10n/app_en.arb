@@ -458,5 +458,8 @@
   "authorizing": "Authorizing…",
   "reversing": "Reversing...",
   "unauthorizing": "Unauthorizing...",
-  "deleting": "Deleting..."
+  "deleting": "Deleting...",
+  "addStakeholder": "Add Stakeholder",
+  "searchStakeholders": "Search Stakeholders",
+  "stakeholderHint": "Manage people and organizations involved in your business"
 }

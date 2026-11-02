@@ -8,6 +8,7 @@ import 'package:shipping/Routes/Home/View/Settings/View/Backup/backup.dart';
 import 'package:shipping/Services/api_services.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../Features/Other/responsive_widget.dart';
+import '../../bloc/menu_bloc.dart';
 import '../Finance/View/ExchangeRate/Ui/exchange_rate.dart';
 import 'bloc/dashboard_stats_bloc.dart';
 
@@ -425,7 +426,7 @@ class _DesktopTopBar extends StatelessWidget {
             size: 40,
             iconSize: 22,
             onPressed: () {
-              // open settings
+              context.read<MenuBloc>().add(MenuOnChangedEvent(MenuName.settings));
             },
           ),
           const SizedBox(width: 8),
@@ -584,10 +585,11 @@ class _CountCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withAlpha(25),
-                borderRadius: BorderRadius.circular(8),
+                color: color.withAlpha(10),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: color.withValues(alpha: .2))
               ),
-              child: Icon(icon, color: color, size: 22),
+              child: Icon(icon, color: color.withValues(alpha: .8), size: 22),
             ),
             const SizedBox(height: 10),
             SizedBox(
@@ -670,9 +672,9 @@ class _FinCard extends StatelessWidget {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: bg.withAlpha(80),
-                    border: Border.all(color: bg),
-                    borderRadius: BorderRadius.circular(5),
+                    color: bg.withValues(alpha: .3),
+                    border: Border.all(color: bg.withValues(alpha: .2)),
+                    borderRadius: BorderRadius.circular(3),
                   ),
                   alignment: Alignment.center,
                   child: Icon(icon, size: 22, color: accent),

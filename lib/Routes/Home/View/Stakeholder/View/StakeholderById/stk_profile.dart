@@ -8,6 +8,7 @@ import 'package:shipping/Routes/Home/View/Report/AccountStatement/acc_statement.
 import 'package:shipping/Routes/Home/View/Stakeholder/bloc/stakeholder_bloc.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/stk_form.dart';
 import 'package:shipping/l10n/app_localizations.dart';
+
 import '../../../../../../Features/Other/image_helper.dart';
 import '../../../../../../Features/Other/responsive_widget.dart';
 import '../../../Transactions/View/CashWD/cash_wd.dart';
@@ -81,12 +82,12 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
   bool _listNeedsRefresh = false;
 
   static Widget _buildHeroShuttle(
-      BuildContext flightContext,
-      Animation<double> animation,
-      HeroFlightDirection direction,
-      BuildContext fromHeroContext,
-      BuildContext toHeroContext,
-      ) {
+    BuildContext flightContext,
+    Animation<double> animation,
+    HeroFlightDirection direction,
+    BuildContext fromHeroContext,
+    BuildContext toHeroContext,
+  ) {
     return ClipOval(
       child: Material(
         color: Colors.transparent,
@@ -107,15 +108,15 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
       if (!mounted) return;
 
       if (_stkId != null) {
-        context
-            .read<StkAccountsBloc>()
-            .add(LoadStkAccountsEvent(perId: _stkId!));
+        context.read<StkAccountsBloc>().add(
+          LoadStkAccountsEvent(perId: _stkId!),
+        );
       }
 
       if (_stkId != null) {
-        context
-            .read<StakeholderByIdBloc>()
-            .add(LoadStakeholderByIdEvent(stkId: _stkId!));
+        context.read<StakeholderByIdBloc>().add(
+          LoadStakeholderByIdEvent(stkId: _stkId!),
+        );
       }
     });
   }
@@ -129,9 +130,9 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
 
   void _reloadProfile() {
     if (_stkId != null) {
-      context
-          .read<StakeholderByIdBloc>()
-          .add(LoadStakeholderByIdEvent(stkId: _stkId!));
+      context.read<StakeholderByIdBloc>().add(
+        LoadStakeholderByIdEvent(stkId: _stkId!),
+      );
     }
   }
 
@@ -201,7 +202,7 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
 
     if (!mounted) return;
     if (saved == true) {
-      _listNeedsRefresh = true; // ← balances changed → list needs refresh
+      _listNeedsRefresh = true;
       _reloadProfile();
       final tr = AppLocalizations.of(context)!;
       ToastManager.show(
@@ -226,7 +227,7 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
 
     if (!mounted) return;
     if (saved == true) {
-      _listNeedsRefresh = true; // ← balances changed → list needs refresh
+      _listNeedsRefresh = true;
       _reloadProfile();
       final tr = AppLocalizations.of(context)!;
       ToastManager.show(
@@ -269,10 +270,8 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
         builder: (_) => StkAccountFormDialog(perId: _stkId!),
       );
       if (!mounted) return;
-      _listNeedsRefresh = true; // ← account list may have changed
-      context
-          .read<StkAccountsBloc>()
-          .add(LoadStkAccountsEvent(perId: _stkId!));
+      _listNeedsRefresh = true;
+      context.read<StkAccountsBloc>().add(LoadStkAccountsEvent(perId: _stkId!));
     } catch (e) {
       _showError('Add account', e);
     }
@@ -287,13 +286,10 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
     try {
       await showDialog<void>(
         context: context,
-        builder: (_) => StkAccountFormDialog(
-          perId: _stkId!,
-          account: account,
-        ),
+        builder: (_) => StkAccountFormDialog(perId: _stkId!, account: account),
       );
       if (!mounted) return;
-      _listNeedsRefresh = true; // ← balance / limit may have changed
+      _listNeedsRefresh = true;
     } catch (e) {
       _showError('Edit account', e);
     }
@@ -325,7 +321,7 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
           title: const Text('Delete account'),
           content: Text(
             'Delete "${account.accName ?? account.accNumber}"? '
-                'This cannot be undone.',
+            'This cannot be undone.',
           ),
           actions: [
             TextButton(
@@ -343,7 +339,7 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
         ),
       );
       if (ok == true && mounted) {
-        _listNeedsRefresh = true; // ← account removed from totals
+        _listNeedsRefresh = true;
         context.read<StkAccountsBloc>().add(
           DeleteStkAccountEvent(_stkId!, account.accNumber!),
         );
@@ -358,8 +354,6 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
     final color = Theme.of(context).colorScheme;
     final tr = AppLocalizations.of(context)!;
 
-    // Intercept the pop so we can return whether the stakeholder list needs
-    // a refresh (i.e. whether any balance-affecting action happened here).
     return PopScope<bool>(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -402,11 +396,11 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
         ),
         body: BlocListener<StakeholderBloc, StakeholderState>(
           listenWhen: (p, c) =>
-          c is UpdateStakeholderSuccessState ||
+              c is UpdateStakeholderSuccessState ||
               c is UpdateStakeholderFailureState,
           listener: (context, state) {
             if (state is UpdateStakeholderSuccessState) {
-              _listNeedsRefresh = true; // ← profile edit → list needs refresh
+              _listNeedsRefresh = true;
               _reloadProfile();
             } else if (state is UpdateStakeholderFailureState) {
               ToastManager.show(
@@ -419,12 +413,12 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
           },
           child: BlocListener<StkAccountsBloc, StkAccountsState>(
             listenWhen: (p, c) =>
-            (c is StkAccountsLoadedState && c.successMessage != null) ||
+                (c is StkAccountsLoadedState && c.successMessage != null) ||
                 (c is StkAccountsFailureState && c.errorMessage != null),
             listener: (context, state) {
               if (state is StkAccountsLoadedState &&
                   state.successMessage != null) {
-                _listNeedsRefresh = true; // ← account mutation succeeded
+                _listNeedsRefresh = true;
                 _reloadProfile();
                 ToastManager.show(
                   context: context,
@@ -440,9 +434,9 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
                   type: ToastType.error,
                 );
               }
-              context
-                  .read<StkAccountsBloc>()
-                  .add(const ClearStkAccountMessagesEvent());
+              context.read<StkAccountsBloc>().add(
+                const ClearStkAccountMessagesEvent(),
+              );
             },
             child: BlocBuilder<StakeholderByIdBloc, StakeholderByIdState>(
               builder: (context, state) {
@@ -485,7 +479,7 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
                                   accounts: accounts,
                                   ownerName: fullName ?? '—',
                                   isLoading:
-                                  state is StakeholderByIdLoadingState,
+                                      state is StakeholderByIdLoadingState,
                                   onEdit: _onEditAccount,
                                   onDelete: _onDeleteAccount,
                                   onStatement: _onStatement,
@@ -518,10 +512,10 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
   // Profile column
   // ═══════════════════════════════════════════════════════════════
   Widget _buildProfileContent(
-      BuildContext context,
-      ColorScheme color,
-      IndividualsModel data,
-      ) {
+    BuildContext context,
+    ColorScheme color,
+    IndividualsModel data,
+  ) {
     final dob = data.perDoB;
     final tr = AppLocalizations.of(context)!;
     return Column(
@@ -579,10 +573,8 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
         const SizedBox(height: 8),
         Text(
           fullName ?? '—',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.3,
-          ),
+          style: Theme.of(context).textTheme.titleLarge
+              ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.3),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
@@ -724,11 +716,11 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
   }
 
   Widget _infoSection(
-      BuildContext context, {
-        required IconData icon,
-        required String title,
-        required String value,
-      }) {
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String value,
+  }) {
     final color = Theme.of(context).colorScheme;
     if (value.isEmpty) return const SizedBox.shrink();
 
@@ -804,9 +796,7 @@ class _AppBarAction extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
-                color: Theme.of(context)
-                    .colorScheme
-                    .outlineVariant
+                color: Theme.of(context).colorScheme.outlineVariant
                     .withValues(alpha: .4),
               ),
             ),
@@ -856,14 +846,12 @@ class _AccountsSection extends StatelessWidget {
             children: [
               Text(
                 tr.accounts,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+                style: Theme.of(context).textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(width: 8),
               Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: color.primary.withValues(alpha: .1),
                   borderRadius: BorderRadius.circular(10),
@@ -882,28 +870,30 @@ class _AccountsSection extends StatelessWidget {
         ),
         Expanded(
           child: isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const _ShimmerAccounts()
               : accounts.isEmpty
               ? const _EmptyAccounts()
               : SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              children: accounts
-                  .map((a) => SizedBox(
-                width: 320,
-                child: _BankCard(
-                  account: a,
-                  ownerName: ownerName,
-                  onEdit: () => onEdit(a),
-                  onDelete: () => onDelete(a),
-                  onStatement: () => onStatement(a),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    children: accounts
+                        .map(
+                          (a) => SizedBox(
+                            width: 320,
+                            child: _BankCard(
+                              account: a,
+                              ownerName: ownerName,
+                              onEdit: () => onEdit(a),
+                              onDelete: () => onDelete(a),
+                              onStatement: () => onStatement(a),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
                 ),
-              ))
-                  .toList(),
-            ),
-          ),
         ),
       ],
     );
@@ -936,9 +926,7 @@ class _RecentTransactionsPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.surfaceContainerLow,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.outlineVariant.withValues(alpha: 0.5),
-        ),
+        border: Border.all(color: color.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -968,8 +956,10 @@ class _RecentTransactionsPanel extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: color.primary.withValues(alpha: .1),
                     borderRadius: BorderRadius.circular(10),
@@ -996,13 +986,17 @@ class _RecentTransactionsPanel extends StatelessWidget {
               children: [
                 SizedBox(
                   width: _wDate,
-                  child:
-                  Text(tr.date.toUpperCase(), style: _headerStyle(color)),
+                  child: Text(
+                    tr.date.toUpperCase(),
+                    style: _headerStyle(color),
+                  ),
                 ),
                 const SizedBox(width: _gap),
                 Expanded(
-                  child: Text(tr.narration.toUpperCase(),
-                      style: _headerStyle(color)),
+                  child: Text(
+                    tr.narration.toUpperCase(),
+                    style: _headerStyle(color),
+                  ),
                 ),
                 const SizedBox(width: _gap),
                 SizedBox(
@@ -1051,28 +1045,28 @@ class _RecentTransactionsPanel extends StatelessWidget {
             child: isEmpty
                 ? _EmptyTransactions(color: color)
                 : ListView.separated(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.zero,
-              itemCount: transactions.length,
-              separatorBuilder: (_, _) => Divider(
-                height: 1,
-                color: color.outlineVariant.withValues(alpha: 0.2),
-              ),
-              itemBuilder: (context, i) {
-                return _RecentTxnRow(
-                  tx: transactions[i],
-                  color: color,
-                  textTheme: textTheme,
-                  wDate: _wDate,
-                  wRef: _wRef,
-                  wAccount: _wAccount,
-                  wAmount: _wAmount,
-                  wBalance: _wBalance,
-                  wStatus: _wStatus,
-                  gap: _gap,
-                );
-              },
-            ),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.zero,
+                    itemCount: transactions.length,
+                    separatorBuilder: (_, _) => Divider(
+                      height: 1,
+                      color: color.outlineVariant.withValues(alpha: 0.2),
+                    ),
+                    itemBuilder: (context, i) {
+                      return _RecentTxnRow(
+                        tx: transactions[i],
+                        color: color,
+                        textTheme: textTheme,
+                        wDate: _wDate,
+                        wRef: _wRef,
+                        wAccount: _wAccount,
+                        wAmount: _wAmount,
+                        wBalance: _wBalance,
+                        wStatus: _wStatus,
+                        gap: _gap,
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -1116,11 +1110,9 @@ class _RecentTxnRow extends StatelessWidget {
   });
 
   bool get _isDebitIn => tx.drCr == 'Dr';
-  Color get _amountColor =>
-      _isDebitIn ? const Color(0xFF16A34A) : color.error;
-  IconData get _arrowIcon => _isDebitIn
-      ? Icons.arrow_upward_rounded
-      : Icons.arrow_downward_rounded;
+  Color get _amountColor => _isDebitIn ? const Color(0xFF16A34A) : color.error;
+  IconData get _arrowIcon =>
+      _isDebitIn ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded;
 
   String get _signedAmount {
     final sign = _isDebitIn ? '+' : '−';
@@ -1139,7 +1131,10 @@ class _RecentTxnRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          SizedBox(width: wDate, child: _DateCell(tx: tx)),
+          SizedBox(
+            width: wDate,
+            child: _DateCell(tx: tx),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1280,7 +1275,8 @@ class _DateCell extends StatelessWidget {
     }
 
     final shamsi = raw.shamsiDateString;
-    final gregorian = '${raw.year.toString().padLeft(4, '0')}-'
+    final gregorian =
+        '${raw.year.toString().padLeft(4, '0')}-'
         '${raw.month.toString().padLeft(2, '0')}-'
         '${raw.day.toString().padLeft(2, '0')}';
 
@@ -1405,8 +1401,9 @@ class _BankCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final (Color top, Color bottom) =
-    _gradientFor(account.accCurrency ?? 'UNK');
+    final (Color top, Color bottom) = _gradientFor(
+      account.accCurrency ?? 'UNK',
+    );
 
     final isActive = account.accStatus == 1;
     final name = (account.accName?.isNotEmpty ?? false)
@@ -1519,9 +1516,7 @@ class _BankCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        _BalancePositionBadge(
-                          balance: account.accBalance,
-                        ),
+                        _BalancePositionBadge(balance: account.accBalance),
                       ],
                     ),
                     const Spacer(),
@@ -1570,8 +1565,8 @@ class _BankCard extends StatelessWidget {
     final text = a.isUnlimited
         ? '∞ LIMIT'
         : (a.limitValue != null
-        ? 'LIMIT ${_formatAmount(a.limitValue!)}'
-        : null);
+              ? 'LIMIT ${_formatAmount(a.limitValue!)}'
+              : null);
     if (text == null) return const SizedBox.shrink();
     return Text(
       text,
@@ -1611,7 +1606,7 @@ class _BankCard extends StatelessWidget {
     final parts = value.toDouble().toStringAsFixed(2).split('.');
     final intPart = parts[0].replaceAllMapped(
       RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-          (m) => '${m[1]},',
+      (m) => '${m[1]},',
     );
     return '$intPart.${parts[1]}';
   }
@@ -1650,22 +1645,22 @@ class _BalancePositionBadge extends StatelessWidget {
   (String, Color, Color) _resolve(double balance, {AppLocalizations? tr}) {
     if (balance < 0) {
       return (
-      tr!.debitor.toUpperCase(),
-      const Color(0xFFEF4444).withValues(alpha: .18),
-      const Color(0xFFFECACA),
+        tr!.debitor.toUpperCase(),
+        const Color(0xFFEF4444).withValues(alpha: .18),
+        const Color(0xFFFECACA),
       );
     }
     if (balance > 0) {
       return (
-      tr!.creditor.toUpperCase(),
-      const Color(0xFF22C55E).withValues(alpha: .18),
-      const Color(0xFFBBF7D0),
+        tr!.creditor.toUpperCase(),
+        const Color(0xFF22C55E).withValues(alpha: .18),
+        const Color(0xFFBBF7D0),
       );
     }
     return (
-    tr!.noBalance.toUpperCase(),
-    Colors.white.withValues(alpha: .18),
-    Colors.white.withValues(alpha: .85),
+      tr!.noBalance.toUpperCase(),
+      Colors.white.withValues(alpha: .18),
+      Colors.white.withValues(alpha: .85),
     );
   }
 }
@@ -1714,9 +1709,9 @@ class _BankCardMenu extends StatelessWidget {
           height: 40,
           child: Row(
             children: [
-              Icon(Icons.receipt_long_outlined, size: 16),
-              SizedBox(width: 10),
-              Text(tr.statement, style: TextStyle(fontSize: 13)),
+              const Icon(Icons.receipt_long_outlined, size: 16),
+              const SizedBox(width: 10),
+              Text(tr.statement, style: const TextStyle(fontSize: 13)),
             ],
           ),
         ),
@@ -1725,17 +1720,13 @@ class _BankCardMenu extends StatelessWidget {
           height: 40,
           child: Row(
             children: [
-              Icon(Icons.edit_outlined, size: 16),
-              SizedBox(width: 10),
-              Text(tr.edit, style: TextStyle(fontSize: 13)),
+              const Icon(Icons.edit_outlined, size: 16),
+              const SizedBox(width: 10),
+              Text(tr.edit, style: const TextStyle(fontSize: 13)),
             ],
           ),
         ),
-        PopupMenuItem(
-          value: 'delete',
-          height: 40,
-          child: _DeleteItem(),
-        ),
+        const PopupMenuItem(value: 'delete', height: 40, child: _DeleteItem()),
       ],
     );
   }
@@ -1751,8 +1742,10 @@ class _DeleteItem extends StatelessWidget {
       children: [
         Icon(Icons.delete_outline, size: 16, color: error),
         const SizedBox(width: 10),
-        Text(AppLocalizations.of(context)!.delete,
-            style: TextStyle(fontSize: 13, color: error)),
+        Text(
+          AppLocalizations.of(context)!.delete,
+          style: TextStyle(fontSize: 13, color: error),
+        ),
       ],
     );
   }
@@ -1809,9 +1802,11 @@ class _EmptyAccounts extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.credit_card_off_outlined,
-              size: 44,
-              color: color.onSurfaceVariant.withValues(alpha: .4)),
+          Icon(
+            Icons.credit_card_off_outlined,
+            size: 44,
+            color: color.onSurfaceVariant.withValues(alpha: .4),
+          ),
           const SizedBox(height: 10),
           Text(
             'No accounts linked',
@@ -1823,6 +1818,257 @@ class _EmptyAccounts extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Shimmer placeholders — skeleton bank cards shown while loading.
+// ═══════════════════════════════════════════════════════════════════
+
+class _ShimmerAccounts extends StatelessWidget {
+  const _ShimmerAccounts() : count = 3;
+
+  /// How many skeleton cards to show. Two fits comfortably on most
+  /// desktop widths; bump to 3 if you typically show more.
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      child: Wrap(
+        spacing: 16,
+        runSpacing: 16,
+        children: List.generate(
+          count,
+          (_) => const SizedBox(width: 320, child: _ShimmerBankCard()),
+        ),
+      ),
+    );
+  }
+}
+
+class _ShimmerBankCard extends StatelessWidget {
+  const _ShimmerBankCard();
+
+  // Match the fallback gradient of `_BankCard._gradientFor('UNK')`
+  // so the loading card reads as the same visual family.
+  static const _top = Color(0xFF334155);
+  static const _bottom = Color(0xFF0F172A);
+
+  @override
+  Widget build(BuildContext context) {
+    final base = Colors.white.withValues(alpha: .08);
+    final highlight = Colors.white.withValues(alpha: .22);
+
+    return AspectRatio(
+      aspectRatio: 1.586,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [_top, _bottom],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: _bottom.withValues(alpha: .3),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+              spreadRadius: -4,
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            children: [
+              Positioned(
+                right: -40,
+                top: -40,
+                child: _circle(160, Colors.white.withValues(alpha: .08)),
+              ),
+              Positioned(
+                right: -20,
+                bottom: -60,
+                child: _circle(180, Colors.white.withValues(alpha: .06)),
+              ),
+              Positioned(
+                left: -30,
+                bottom: -50,
+                child: _circle(140, Colors.white.withValues(alpha: .05)),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _ShimmerBar(
+                            width: double.infinity,
+                            height: 11,
+                            baseColor: base,
+                            highlightColor: highlight,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        _ShimmerBar(
+                          width: 20,
+                          height: 20,
+                          radius: 10,
+                          baseColor: base,
+                          highlightColor: highlight,
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    _ShimmerBar(
+                      width: 56,
+                      height: 8,
+                      baseColor: base,
+                      highlightColor: highlight,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        _ShimmerBar(
+                          width: 120,
+                          height: 22,
+                          baseColor: base,
+                          highlightColor: highlight,
+                        ),
+                        const SizedBox(width: 8),
+                        _ShimmerBar(
+                          width: 28,
+                          height: 12,
+                          baseColor: base,
+                          highlightColor: highlight,
+                        ),
+                        const SizedBox(width: 8),
+                        _ShimmerBar(
+                          width: 62,
+                          height: 16,
+                          radius: 8,
+                          baseColor: base,
+                          highlightColor: highlight,
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    _ShimmerBar(
+                      width: 150,
+                      height: 13,
+                      baseColor: base,
+                      highlightColor: highlight,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _ShimmerBar(
+                            width: double.infinity,
+                            height: 9,
+                            baseColor: base,
+                            highlightColor: highlight,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        _ShimmerBar(
+                          width: 48,
+                          height: 9,
+                          baseColor: base,
+                          highlightColor: highlight,
+                        ),
+                        const SizedBox(width: 8),
+                        _ShimmerBar(
+                          width: 44,
+                          height: 12,
+                          radius: 6,
+                          baseColor: base,
+                          highlightColor: highlight,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Widget _circle(double size, Color color) => Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+  );
+}
+
+/// A single shimmer bar. Dependency-free — drives its own
+/// `AnimationController` so no `shimmer` package is required.
+class _ShimmerBar extends StatefulWidget {
+  final double width;
+  final double height;
+  final double radius;
+  final Color baseColor;
+  final Color highlightColor;
+
+  const _ShimmerBar({
+    required this.width,
+    required this.height,
+    required this.baseColor,
+    required this.highlightColor,
+    this.radius = 4,
+  });
+
+  @override
+  State<_ShimmerBar> createState() => _ShimmerBarState();
+}
+
+class _ShimmerBarState extends State<_ShimmerBar>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1200),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, _) {
+        final t = _c.value; // 0..1
+        return Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(widget.radius),
+            gradient: LinearGradient(
+              begin: Alignment(-1 + 2 * t, 0),
+              end: Alignment(1 + 2 * t, 0),
+              colors: [
+                widget.baseColor,
+                widget.highlightColor,
+                widget.baseColor,
+              ],
+              stops: const [0.25, 0.5, 0.75],
+            ),
+          ),
+        );
+      },
     );
   }
 }

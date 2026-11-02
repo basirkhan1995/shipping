@@ -1362,4 +1362,14 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get deleting => 'در حال خذف...';
+
+  @override
+  String get addStakeholder => 'نوی سهمدار';
+
+  @override
+  String get searchStakeholders => 'جستجو سهمداران';
+
+  @override
+  String get stakeholderHint =>
+      'ستاسو په سوداګرۍ کې د ښکېلو اشخاصو او ادارو مدیریت';
 }

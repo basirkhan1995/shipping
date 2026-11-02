@@ -8,6 +8,25 @@ import '../../Services/api_services.dart';
 enum ShapeStyle { circle, roundedRectangle }
 
 class ImageHelper {
+  // ── Caches ──────────────────────────────────────────────────────
+  /// Validated image bytes, keyed by URL. Survives widget rebuilds and
+  /// navigation until the app is killed.
+  static final Map<String, Uint8List> _memCache = {};
+
+  /// In-flight downloads — coalesces concurrent requests for the same
+  /// URL so N widgets showing the same image trigger exactly one fetch.
+  static final Map<String, Future<Uint8List?>> _inflight = {};
+
+  /// Manually evict a URL from the cache (e.g. after a profile photo
+  /// update). Pass nothing to clear everything.
+  static void clearCache([String? url]) {
+    if (url == null) {
+      _memCache.clear();
+    } else {
+      _memCache.remove(url);
+    }
+  }
+
   /// ---------------------------------------------------------------
   /// Main helper: renders an image with a camera overlay + tap zones.
   ///
@@ -17,7 +36,8 @@ class ImageHelper {
   ///   3. neither            — placeholder icon
   ///
   /// Every source is validated before display, so `Invalid image data`
-  /// can never crash the widget tree.
+  /// can never crash the widget tree. Network fetches are cached in
+  /// memory, so revisiting a screen renders instantly.
   /// ---------------------------------------------------------------
   static Widget stakeholderProfile({
     required String? imageName,
@@ -55,7 +75,9 @@ class ImageHelper {
     /// ---------- Build main image (all safe paths) ----------
     Widget mainImage;
 
-    if (localImageBytes != null && localImageBytes.isNotEmpty && _isValidImageBytes(localImageBytes)) {
+    if (localImageBytes != null &&
+        localImageBytes.isNotEmpty &&
+        _isValidImageBytes(localImageBytes)) {
       mainImage = _safeMemoryImage(
         bytes: localImageBytes,
         fit: fit,
@@ -95,7 +117,6 @@ class ImageHelper {
       onTap: onImageTap,
       child: Stack(
         children: [
-          /// Outer border container
           Container(
             width: size,
             height: size,
@@ -112,7 +133,6 @@ class ImageHelper {
             child: clippedImage,
           ),
 
-          /// Camera overlay with separate tap
           if (showCameraIcon)
             Positioned.fill(
               child: Align(
@@ -190,7 +210,8 @@ class ImageHelper {
                       color: Colors.black54,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.close, color: Colors.white, size: 24),
+                    child:
+                    const Icon(Icons.close, color: Colors.white, size: 24),
                   ),
                 ),
               ),
@@ -208,7 +229,9 @@ class ImageHelper {
     required String? imageName,
     Uint8List? localImageBytes,
   }) {
-    if (localImageBytes != null && localImageBytes.isNotEmpty && _isValidImageBytes(localImageBytes)) {
+    if (localImageBytes != null &&
+        localImageBytes.isNotEmpty &&
+        _isValidImageBytes(localImageBytes)) {
       return SizedBox(
         width: double.infinity,
         height: double.infinity,
@@ -263,13 +286,13 @@ class ImageHelper {
 
   /// ---------------------------------------------------------------
   /// Safe network image:
-  ///   1. download via `http` (small, cheap)
-  ///   2. validate magic bytes
-  ///   3. render via `Image.memory` (with errorBuilder)
-  ///   4. fall back to the error icon on any failure
+  ///   1. synchronous in-memory cache hit → render immediately, no spinner
+  ///   2. otherwise download, validate magic bytes, cache, render
+  ///   3. fall back to the error icon on any failure
   ///
   /// Bypasses `CachedNetworkImage` entirely for the display path,
-  /// so a non-image 200-OK response can no longer crash.
+  /// so a non-image 200-OK response can no longer crash. Also caches
+  /// the validated bytes in memory so revisits are instant.
   /// ---------------------------------------------------------------
   static Widget _safeNetworkImage({
     required String url,
@@ -279,6 +302,20 @@ class ImageHelper {
     required IconData errorIcon,
     bool fullScreen = false,
   }) {
+    // Synchronous cache hit — no FutureBuilder, no spinner flash.
+    final cached = _memCache[url];
+    if (cached != null) {
+      return _renderBytes(
+        bytes: cached,
+        fit: fit,
+        size: size,
+        errorColor: errorColor,
+        errorIcon: errorIcon,
+        fullScreen: fullScreen,
+      );
+    }
+
+    // Cache miss — fetch (coalesced across widgets).
     return FutureBuilder<Uint8List?>(
       future: _fetchValidatedImage(url),
       builder: (context, snap) {
@@ -286,8 +323,12 @@ class ImageHelper {
         if (snap.connectionState != ConnectionState.done) {
           return Center(
             child: SizedBox(
-              width: (fullScreen ? 40.0 : size * 0.35).clamp(16.0, 60.0).toDouble(),
-              height: (fullScreen ? 40.0 : size * 0.35).clamp(16.0, 60.0).toDouble(),
+              width: (fullScreen ? 40.0 : size * 0.35)
+                  .clamp(16.0, 60.0)
+                  .toDouble(),
+              height: (fullScreen ? 40.0 : size * 0.35)
+                  .clamp(16.0, 60.0)
+                  .toDouble(),
               child: const CircularProgressIndicator(
                 strokeWidth: 2,
                 color: Colors.white,
@@ -306,20 +347,39 @@ class ImageHelper {
           );
         }
 
-        // Success — render safely
-        return Image.memory(
-          bytes,
+        // Success
+        return _renderBytes(
+          bytes: bytes,
           fit: fit,
-          width: fullScreen ? double.infinity : size,
-          height: fullScreen ? double.infinity : size,
-          gaplessPlayback: true,
-          errorBuilder: (_, _, _) => _errorPlaceholder(
-            errorColor: errorColor,
-            errorIcon: errorIcon,
-            size: fullScreen ? 100 : size * 0.5,
-          ),
+          size: size,
+          errorColor: errorColor,
+          errorIcon: errorIcon,
+          fullScreen: fullScreen,
         );
       },
+    );
+  }
+
+  /// Render validated bytes through `Image.memory`.
+  static Widget _renderBytes({
+    required Uint8List bytes,
+    required BoxFit fit,
+    required double size,
+    required Color errorColor,
+    required IconData errorIcon,
+    required bool fullScreen,
+  }) {
+    return Image.memory(
+      bytes,
+      fit: fit,
+      width: fullScreen ? double.infinity : size,
+      height: fullScreen ? double.infinity : size,
+      gaplessPlayback: true,
+      errorBuilder: (_, _, _) => _errorPlaceholder(
+        errorColor: errorColor,
+        errorIcon: errorIcon,
+        size: fullScreen ? 100 : size * 0.5,
+      ),
     );
   }
 
@@ -334,9 +394,36 @@ class ImageHelper {
     );
   }
 
-  /// Download the URL and validate it's a real image. Returns `null`
-  /// on any problem (network, empty body, non-image bytes).
+  /// Return the validated bytes for [url].
+  ///
+  /// Order:
+  ///   1. memory cache hit → return immediately (no network)
+  ///   2. another widget is already fetching this URL → await its future
+  ///   3. otherwise download, validate, cache, return
+  ///
+  /// Returns `null` on any failure (network, non-200, non-image bytes).
   static Future<Uint8List?> _fetchValidatedImage(String url) async {
+    // 1. Cache hit
+    final cached = _memCache[url];
+    if (cached != null) return cached;
+
+    // 2. Coalesce concurrent requests
+    final existing = _inflight[url];
+    if (existing != null) return existing;
+
+    // 3. Own the download
+    final future = _downloadAndValidate(url);
+    _inflight[url] = future;
+    try {
+      final bytes = await future;
+      if (bytes != null) _memCache[url] = bytes;
+      return bytes;
+    } finally {
+      _inflight.remove(url);
+    }
+  }
+
+  static Future<Uint8List?> _downloadAndValidate(String url) async {
     try {
       final res = await http.get(Uri.parse(url));
       if (res.statusCode != 200) {
@@ -345,7 +432,8 @@ class ImageHelper {
       }
       final bytes = res.bodyBytes;
       if (!_isValidImageBytes(bytes)) {
-        debugPrint('ImageHelper: non-image bytes (${bytes.length} B) from $url');
+        debugPrint(
+            'ImageHelper: non-image bytes (${bytes.length} B) from $url');
         return null;
       }
       return bytes;
@@ -427,9 +515,11 @@ class ImageHelper {
     return CachedNetworkImage(
       imageUrl: url,
       fit: fit,
-      memCacheWidth: (size * MediaQueryData.fromView(
-        WidgetsBinding.instance.platformDispatcher.views.first,
-      ).devicePixelRatio).round(),
+      memCacheWidth: (size *
+          MediaQueryData.fromView(
+            WidgetsBinding.instance.platformDispatcher.views.first,
+          ).devicePixelRatio)
+          .round(),
       placeholder: (_, _) => Center(
         child: SizedBox(
           width: size * 0.35,

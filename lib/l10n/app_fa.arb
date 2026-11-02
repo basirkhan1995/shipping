@@ -458,5 +458,8 @@
   "authorizing": "در حال تأیید…",
   "reversing": "درحال برگشتاندن...",
   "unauthorizing": "درحال کشیدن از تایید...",
-  "deleting": "در حال خذف..."
+  "deleting": "در حال خذف...",
+  "addStakeholder": "سهمدار جدید",
+  "searchStakeholders": "جستجو سهمداران",
+  "stakeholderHint": "مدیریت افراد و نهاد های دخیل در کسب‌ وکار شما"
 }

@@ -1364,4 +1364,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleting => 'Deleting...';
+
+  @override
+  String get addStakeholder => 'Add Stakeholder';
+
+  @override
+  String get searchStakeholders => 'Search Stakeholders';
+
+  @override
+  String get stakeholderHint =>
+      'Manage people and organizations involved in your business';
 }

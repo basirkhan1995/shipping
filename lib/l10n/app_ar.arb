@@ -396,5 +396,8 @@
   "authorizing": "تأییدېږي…",
   "reversing": "درحال برگشتاندن...",
   "unauthorizing": "درحال کشیدن از تایید...",
-  "deleting": "در حال خذف..."
+  "deleting": "در حال خذف...",
+  "addStakeholder": "نوی سهمدار",
+  "searchStakeholders": "جستجو سهمداران",
+  "stakeholderHint": "ستاسو په سوداګرۍ کې د ښکېلو اشخاصو او ادارو مدیریت"
 }

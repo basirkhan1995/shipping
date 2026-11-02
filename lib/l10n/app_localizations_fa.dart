@@ -1363,4 +1363,13 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get deleting => 'در حال خذف...';
+
+  @override
+  String get addStakeholder => 'سهمدار جدید';
+
+  @override
+  String get searchStakeholders => 'جستجو سهمداران';
+
+  @override
+  String get stakeholderHint => 'مدیریت افراد و نهاد های دخیل در کسب‌ وکار شما';
 }

@@ -81,7 +81,7 @@ class _DesktopView extends StatelessWidget {
         value: MenuName.finance,
         label: AppLocalizations.of(context)!.finance,
         screen: const FinanceView(),
-        icon: Icons.monetization_on_outlined,
+        icon: Icons.money,
       ),
       MenuDefinition(
         value: MenuName.hr,
@@ -117,7 +117,7 @@ class _DesktopView extends StatelessWidget {
         value: MenuName.report,
         label: AppLocalizations.of(context)!.report,
         screen: const ReportView(),
-        icon: Icons.file_copy_outlined,
+        icon: Icons.insert_drive_file_outlined,
       ),
     ];
     if (menuItems.isEmpty) {

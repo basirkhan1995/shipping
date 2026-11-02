@@ -2775,6 +2775,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Deleting...'**
   String get deleting;
+
+  /// No description provided for @addStakeholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Stakeholder'**
+  String get addStakeholder;
+
+  /// No description provided for @searchStakeholders.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Stakeholders'**
+  String get searchStakeholders;
+
+  /// No description provided for @stakeholderHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage people and organizations involved in your business'**
+  String get stakeholderHint;
 }
 
 class _AppLocalizationsDelegate

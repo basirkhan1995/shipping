@@ -5,6 +5,7 @@ import 'package:shipping/Features/Widgets/toast.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/stk_form.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/View/StakeholderById/stk_profile.dart';
 import '../../../../Features/Other/responsive_widget.dart';
+import '../../../../Features/Widgets/shimmer.dart';
 import '../../../../Features/Widgets/zbutton.dart';
 import '../../../../Features/Widgets/search_field.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -281,19 +282,34 @@ class _StakeholderDesktop extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    tr.stakeholders,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Text(
+                        tr.stakeholders.toUpperCase(),
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.3
+                        ),
+                      ),
+                      SizedBox(height: 3),
+                      Text(
+                        tr.stakeholderHint.toUpperCase(),
+                        style: TextStyle(
+                          letterSpacing: 1.3,
+                          fontSize: 10
+                        ),
+                      ),
+                    ],
                   ),
                   const Spacer(),
                   SizedBox(
-                    width: 420,
+                    width: 350,
                     child: ReusableSearchBar(
                       height: 40,
                       padding: EdgeInsets.zero,
@@ -301,13 +317,13 @@ class _StakeholderDesktop extends StatelessWidget {
                       suffixIconSize: 16,
                       contentPadding:
                       const EdgeInsets.symmetric(horizontal: 4),
-                      hintText: 'Search stakeholder',
+                      hintText: tr.searchStakeholders,
                       onChanged: (q) => _StakeholderController.search(context, q),
                     ),
                   ),
                   const SizedBox(width: 8),
                   ZOutlineButton(
-                    label: const Text('Refresh'),
+                    label: Text(tr.refresh),
                     icon: Icons.refresh,
                     iconSize: 18,
                     height: 45,
@@ -316,7 +332,7 @@ class _StakeholderDesktop extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   ZOutlineButton(
-                    label: const Text('Add Stakeholder'),
+                    label: Text(tr.addStakeholder),
                     icon: Icons.add,
                     isActive: true,
                     iconSize: 18,
@@ -359,7 +375,10 @@ class _StakeholderList extends StatelessWidget {
     return BlocBuilder<StakeholderBloc, StakeholderState>(
       builder: (context, state) {
         if (state is GetStakeholdersLoadingState) {
-          return const Center(child: CircularProgressIndicator());
+          return  UniversalShimmer.accountList(
+            itemCount: 10,
+            useAlternatingColors: true,
+          );
         }
         if (state is GetStakeholdersFailureState) {
           return _ErrorView(
