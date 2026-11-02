@@ -480,7 +480,7 @@
   "paymentMethod": "Payment Method",
   "hourly": "Hourly",
   "salaryBased": "Salary Based",
-  "editEmployee": "Edit employee",
+  "editEmployee": "Edit Employee",
   "firstName": "First name",
   "lastName": "Last name",
   "phone": "Phone",
@@ -495,5 +495,4 @@
   "fieldsRequired": "Please fill all required fields",
   "fieldRequired": "Please fill all required fields",
   "salaryMustBeNumber": "Salary must be a valid number"
-
 }

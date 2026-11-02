@@ -11,6 +11,13 @@ class LoadEmployeeEvent extends EmployeeEvent {
   List<Object?> get props => [cat];
 }
 
+class SearchEmployeesEvent extends EmployeeEvent {
+  final String query;
+  const SearchEmployeesEvent(this.query);
+  @override
+  List<Object?> get props => [query];
+}
+
 class AddEmployeeEvent extends EmployeeEvent {
   final EmployeeModel newEmployee;
   const AddEmployeeEvent(this.newEmployee);
@@ -25,11 +32,11 @@ class UpdateEmployeeEvent extends EmployeeEvent {
   List<Object?> get props => [newEmployee];
 }
 
-class SearchEmployeesEvent extends EmployeeEvent {
-  final String query;
-  const SearchEmployeesEvent(this.query);
+class DeleteEmployeeEvent extends EmployeeEvent {
+  final int empId;
+  const DeleteEmployeeEvent(this.empId);
   @override
-  List<Object?> get props => [query];
+  List<Object?> get props => [empId];
 }
 
 class ClearEmployeeMessagesEvent extends EmployeeEvent {

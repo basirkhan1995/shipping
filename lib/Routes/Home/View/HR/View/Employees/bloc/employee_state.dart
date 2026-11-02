@@ -16,12 +16,14 @@ final class EmployeeLoadingState extends EmployeeState {
 
 final class EmployeeLoadedState extends EmployeeState {
   final List<EmployeeModel> employees;
-  const EmployeeLoadedState(this.employees);
+  final String search;
+  const EmployeeLoadedState(this.employees, {this.search = ''});
   @override
-  List<Object> get props => [employees];
+  List<Object> get props => [employees, search];
 }
 
-/// Emitted when add/update succeeds — dialog closes, view refreshes.
+/// Emitted after a successful add / update / delete.
+/// Used by the dialog to close and by the view listener to toast + refresh.
 final class EmployeeSavedState extends EmployeeState {
   final String message;
   final bool isEdit;

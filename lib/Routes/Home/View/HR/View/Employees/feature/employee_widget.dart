@@ -1,23 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:shipping/l10n/app_localizations.dart';
+
 import '../../../../../../../Features/Other/image_helper.dart';
 import '../model/emp_model.dart';
 
 class EmployeeWidget extends StatelessWidget {
   final EmployeeModel employee;
-
-  /// Alternate row background based on index parity.
   final bool isEven;
 
-  /// Postponed: view / edit / delete. Pass null to disable.
   final VoidCallback? onTap;
   final VoidCallback? onTapView;
   final VoidCallback? onTapEdit;
   final VoidCallback? onTapDelete;
-
-  /// When false (default while postponed) the ⋯ menu items are greyed
-  /// out and do nothing.
-  final bool actionsEnabled;
 
   const EmployeeWidget({
     super.key,
@@ -27,8 +21,10 @@ class EmployeeWidget extends StatelessWidget {
     this.onTapView,
     this.onTapEdit,
     this.onTapDelete,
-    this.actionsEnabled = false,
   });
+
+  bool get _anyMenuEnabled =>
+      onTapView != null || onTapEdit != null || onTapDelete != null;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +32,6 @@ class EmployeeWidget extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     final rowBg = isEven ? scheme.surface : scheme.surfaceContainerHighest;
-
     final fullName = _fullName();
     final isActive = (employee.empStatus ?? 0) == 1;
 
@@ -45,21 +40,17 @@ class EmployeeWidget extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: actionsEnabled ? onTap : null,
+        onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // ── Avatar ──
               _avatar(scheme),
-
               const SizedBox(width: 12),
 
-              // ── Name + contact ──
+              // ── Name + contact ────────────────────────────────
               Expanded(
                 flex: 4,
                 child: Column(
@@ -114,7 +105,7 @@ class EmployeeWidget extends StatelessWidget {
                 ),
               ),
 
-              // ── Position / Department (mirrors stakeholder "city" slot) ──
+              // ── Position · Department ─────────────────────────
               if (_positionOrDepartment().isNotEmpty)
                 Expanded(
                   flex: 3,
@@ -138,26 +129,25 @@ class EmployeeWidget extends StatelessWidget {
                   ),
                 ),
 
-              // ── Salary (mirrors stakeholder "balances" slot) ──
+              // ── Salary ────────────────────────────────────────
               Expanded(
                 flex: 3,
                 child: _salaryStack(scheme, textTheme),
               ),
               const SizedBox(width: 8),
 
-              // ── Status dot ──
+              // ── Status dot ────────────────────────────────────
               Container(
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isActive ? const Color(0xFF22C55E) : scheme.error,
+                  color:
+                  isActive ? const Color(0xFF22C55E) : scheme.error,
                 ),
               ),
-
               const SizedBox(width: 6),
 
-              // ── Menu ──
               _menu(scheme, AppLocalizations.of(context)!),
             ],
           ),
@@ -166,11 +156,9 @@ class EmployeeWidget extends StatelessWidget {
     );
   }
 
-  // ── Avatar with Hero (same tag pattern as EntityWidget) ────────────
   Widget _avatar(ColorScheme scheme) {
     return Hero(
       tag: 'employee_img_${employee.empId ?? employee.perId}',
-      flightShuttleBuilder: _buildHeroShuttle,
       child: ImageHelper.stakeholderProfile(
         imageName: employee.empImage ?? '',
         size: 40,
@@ -182,22 +170,6 @@ class EmployeeWidget extends StatelessWidget {
     );
   }
 
-  static Widget _buildHeroShuttle(
-      BuildContext flightContext,
-      Animation<double> animation,
-      HeroFlightDirection direction,
-      BuildContext fromHeroContext,
-      BuildContext toHeroContext,
-      ) {
-    return ClipOval(
-      child: Material(
-        color: Colors.transparent,
-        child: (toHeroContext.widget as Hero).child,
-      ),
-    );
-  }
-
-  // ── Salary stacked (one line, like _balanceStack) ─────────────────
   Widget _salaryStack(ColorScheme scheme, TextTheme textTheme) {
     final raw = employee.empSalary;
     if (raw == null || raw.trim().isEmpty) {
@@ -224,15 +196,17 @@ class EmployeeWidget extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                display,
-                style: textTheme.bodySmall?.copyWith(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: scheme.onSurface,
+              Flexible(
+                child: Text(
+                  display,
+                  style: textTheme.bodySmall?.copyWith(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSurface,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
               if (unit.isNotEmpty) ...[
                 const SizedBox(width: 4),
@@ -262,17 +236,16 @@ class EmployeeWidget extends StatelessWidget {
     return '$intPart.${parts[1]}';
   }
 
-  // ── ⋯ menu (disabled while postponed) ─────────────────────────────
   Widget _menu(ColorScheme scheme, AppLocalizations tr) {
     return PopupMenuButton<String>(
-      tooltip: "options",
+      tooltip: "Options",
       padding: EdgeInsets.zero,
       splashRadius: 14,
-      enabled: actionsEnabled,
+      enabled: _anyMenuEnabled,
       icon: Icon(
         Icons.more_horiz,
         size: 18,
-        color: actionsEnabled
+        color: _anyMenuEnabled
             ? scheme.onSurfaceVariant
             : scheme.onSurfaceVariant.withValues(alpha: .4),
       ),
@@ -293,62 +266,68 @@ class EmployeeWidget extends StatelessWidget {
       itemBuilder: (_) => [
         PopupMenuItem(
           value: 'view',
-          enabled: actionsEnabled,
+          enabled: onTapView != null,
           height: 40,
-          child: Row(
-            children: [
-              Icon(Icons.visibility_outlined,
-                  size: 16,
-                  color: _itemColor(scheme.onSurfaceVariant, scheme)),
-              const SizedBox(width: 10),
-              Text(tr.view,
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: _itemColor(scheme.onSurface, scheme))),
-            ],
+          child: _rowItem(
+            icon: Icons.visibility_outlined,
+            label: tr.view,
+            color: onTapView != null
+                ? scheme.onSurface
+                : scheme.onSurface.withValues(alpha: .4),
+            iconColor: onTapView != null
+                ? scheme.onSurfaceVariant
+                : scheme.onSurfaceVariant.withValues(alpha: .4),
           ),
         ),
         PopupMenuItem(
           value: 'edit',
-          enabled: actionsEnabled,
+          enabled: onTapEdit != null,
           height: 40,
-          child: Row(
-            children: [
-              Icon(Icons.edit_outlined,
-                  size: 16,
-                  color: _itemColor(scheme.onSurfaceVariant, scheme)),
-              const SizedBox(width: 10),
-              Text(tr.edit,
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: _itemColor(scheme.onSurface, scheme))),
-            ],
+          child: _rowItem(
+            icon: Icons.edit_outlined,
+            label: tr.edit,
+            color: onTapEdit != null
+                ? scheme.onSurface
+                : scheme.onSurface.withValues(alpha: .4),
+            iconColor: onTapEdit != null
+                ? scheme.onSurfaceVariant
+                : scheme.onSurfaceVariant.withValues(alpha: .4),
           ),
         ),
         PopupMenuItem(
           value: 'delete',
-          enabled: actionsEnabled,
+          enabled: onTapDelete != null,
           height: 40,
-          child: Row(
-            children: [
-              Icon(Icons.delete_outline,
-                  size: 16, color: _itemColor(scheme.error, scheme)),
-              const SizedBox(width: 10),
-              Text(tr.delete,
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: _itemColor(scheme.error, scheme))),
-            ],
+          child: _rowItem(
+            icon: Icons.delete_outline,
+            label: tr.delete,
+            color: onTapDelete != null
+                ? scheme.error
+                : scheme.error.withValues(alpha: .4),
+            iconColor: onTapDelete != null
+                ? scheme.error
+                : scheme.error.withValues(alpha: .4),
           ),
         ),
       ],
     );
   }
 
-  Color _itemColor(Color base, ColorScheme scheme) =>
-      actionsEnabled ? base : base.withValues(alpha: .4);
+  Widget _rowItem({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required Color iconColor,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: iconColor),
+        const SizedBox(width: 10),
+        Text(label, style: TextStyle(fontSize: 13, color: color)),
+      ],
+    );
+  }
 
-  // ── Helpers ───────────────────────────────────────────────────────
   String _fullName() {
     final parts = [employee.perName, employee.perLastName]
         .whereType<String>()

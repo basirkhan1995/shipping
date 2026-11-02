@@ -2905,7 +2905,7 @@ abstract class AppLocalizations {
   /// No description provided for @editEmployee.
   ///
   /// In en, this message translates to:
-  /// **'Edit employee'**
+  /// **'Edit Employee'**
   String get editEmployee;
 
   /// No description provided for @firstName.

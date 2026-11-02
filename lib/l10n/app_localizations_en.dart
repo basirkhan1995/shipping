@@ -1430,7 +1430,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salaryBased => 'Salary Based';
 
   @override
-  String get editEmployee => 'Edit employee';
+  String get editEmployee => 'Edit Employee';
 
   @override
   String get firstName => 'First name';

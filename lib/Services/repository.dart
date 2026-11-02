@@ -14,6 +14,7 @@ import '../Routes/Home/View/Finance/View/ExchangeRate/model/ex_rate_model.dart';
 import '../Routes/Home/View/Finance/View/GlAccounts/GlCategories/model/cat_model.dart';
 import '../Routes/Home/View/Finance/View/GlAccounts/model/gl_model.dart';
 import '../Routes/Home/View/Finance/View/Reminder/model/reminder_model.dart';
+import '../Routes/Home/View/HR/View/Attendance/model/attendance_model.dart';
 import '../Routes/Home/View/HR/View/Employees/model/emp_model.dart';
 import '../Routes/Home/View/HR/View/Users/model/user_model.dart';
 import '../Routes/Home/View/HR/View/Users/model/usr_report_model.dart';
@@ -2521,46 +2522,51 @@ class Repositories {
   }
 
   ///Employees .................................................................
-  Future<List<EmployeeModel>> getEmployees({String? cat, CancelToken? cancelToken,}) async {
-    // Build query parameters dynamically
+  ///Employees .................................................................
+  Future<List<EmployeeModel>> getEmployees({
+    String? cat,
+    CancelToken? cancelToken,
+  }) async {
     final queryParams = cat != null ? {'cat': cat} : null;
 
-    // Fetch data from API
     final response = await _api.get(
       endpoint: "/HR/employees.php",
       queryParams: queryParams,
       cancelToken: cancelToken,
     );
 
-    // Handle error messages from server
     if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
       throw Exception(response.data['msg']);
     }
 
-    // If data is null or empty, return empty list
     if (response.data == null ||
         (response.data is List && response.data.isEmpty)) {
       return [];
     }
 
-    // Parse list of stakeholders safely
     if (response.data is List) {
       return (response.data as List)
-          .whereType<Map<String, dynamic>>() // ensure map type
+          .whereType<Map<String, dynamic>>()
           .map((json) => EmployeeModel.fromMap(json))
           .toList();
     }
 
     return [];
   }
-  Future<Map<String, dynamic>> addEmployee({required EmployeeModel newEmployee,}) async {
+
+  Future<Map<String, dynamic>> addEmployee({
+    required EmployeeModel newEmployee,
+  }) async {
     final response = await _api.post(
       endpoint: "/HR/employees.php",
       data: newEmployee.toMap(),
     );
     return response.data;
   }
-  Future<Map<String, dynamic>> updateEmployee({required EmployeeModel newEmployee,}) async {
+
+  Future<Map<String, dynamic>> updateEmployee({
+    required EmployeeModel newEmployee,
+  }) async {
     final response = await _api.put(
       endpoint: "/HR/employees.php",
       data: newEmployee.toMap(),
@@ -2568,5 +2574,160 @@ class Repositories {
     return response.data;
   }
 
+  Future<void> deleteEmployee({
+    required int empId,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.delete(
+      endpoint: '/HR/employees.php',
+      data: {'empID': empId},
+      cancelToken: cancelToken,
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) {
+      throw ApiException('Invalid server response');
+    }
+
+    final msg = body['msg']?.toString().toLowerCase() ?? '';
+
+    switch (msg) {
+      case 'success':
+        return;
+
+      case 'notfound':
+        throw ApiException('Employee not found.');
+
+      case 'empty':
+        throw ApiException('Missing employee id.');
+
+      case 'inuse':
+        final detail = body['detail']?.toString().trim();
+        if (detail != null && detail.isNotEmpty) {
+          throw ApiException('Cannot delete this employee. $detail');
+        }
+
+        final deps = (body['dependencies'] as List<dynamic>? ?? const [])
+            .whereType<Map>()
+            .map((m) {
+          final reason = m['reason']?.toString() ?? 'records';
+          final count = m['count']?.toString() ?? '?';
+          return '$reason ($count)';
+        })
+            .join(', ');
+        throw ApiException(
+          deps.isEmpty
+              ? 'Cannot delete this employee — related records exist.'
+              : 'Cannot delete this employee. Related records: $deps',
+        );
+
+      default:
+      // `_fail` returns Never, so this is the correct terminal statement —
+      // no `return` after it.
+        _fail(body, fallback: 'Failed to delete employee');
+    }
+  }
+
+  // ═════════════════════════════════════════════════════════════════
+// Attendance
+// ═════════════════════════════════════════════════════════════════
+  Future<List<AttendanceModel>> getAttendance({
+    String? date,
+    String? month,
+    int? emaID,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.get(
+      endpoint: '/HR/attendance.php',
+      queryParams: {
+        'emaID': ?emaID,
+        if (date  != null && date.isNotEmpty)  'date':  date,
+        if (month != null && month.isNotEmpty) 'month': month,
+      },
+      cancelToken: cancelToken,
+    );
+    return _parseList(
+      response.data,
+      AttendanceModel.fromMap,
+      fallback: 'Failed to load attendance',
+    );
+  }
+
+  /// mode: 'single' | 'multiple' | 'all'
+  Future<Map<String, dynamic>> addAttendance({
+    required String mode,
+    required String usrName,
+    required String emaDate,
+    // single / all:
+    int?    emaEmployee,
+    String? emaCheckedIn,
+    String? emaCheckedOut,
+    String? emaStatus,
+    // multiple:
+    List<Map<String, dynamic>>? records,
+  }) async {
+    final payload = <String, dynamic>{
+      'mode':    mode,
+      'usrName': usrName,
+      'emaDate': emaDate,
+      if (mode == 'single') ...{
+        'emaEmployee':   emaEmployee,
+        'emaCheckedIn':  emaCheckedIn,
+        'emaCheckedOut': emaCheckedOut,
+        'emaStatus':     emaStatus ?? 'Present',
+      },
+      if (mode == 'all') ...{
+        'emaCheckedIn':  emaCheckedIn,
+        'emaCheckedOut': emaCheckedOut,
+        'emaStatus':     emaStatus ?? 'Present',
+      },
+      if (mode == 'multiple') 'records': records ?? const [],
+    };
+
+    final response = await _api.post(
+      endpoint: '/HR/attendance.php',
+      data: payload,
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+
+    final msg = body['msg']?.toString().toLowerCase() ?? '';
+    if (msg == 'success') return body;
+    if (msg == 'empty')        throw ApiException('Please fill in all fields.');
+    if (msg == 'invalid_mode') throw ApiException('Invalid attendance mode.');
+    _fail(body, fallback: 'Failed to add attendance');
+  }
+
+  Future<void> updateAttendance({
+    required String usrName,
+    required List<Map<String, dynamic>> records,
+  }) async {
+    final response = await _api.put(
+      endpoint: '/HR/attendance.php',
+      data: {'usrName': usrName, 'records': records},
+    );
+    _requireSuccess(response.data, fallback: 'Failed to update attendance');
+  }
+
+  Future<void> deleteAttendance({
+    required int emaID,
+    String? usrName,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.delete(
+      endpoint: '/HR/attendance.php',
+      data: {'emaID': emaID, 'usrName': ?usrName},
+      cancelToken: cancelToken,
+    );
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+
+    final msg = body['msg']?.toString().toLowerCase() ?? '';
+    if (msg == 'success')  return;
+    if (msg == 'notfound') throw ApiException('Attendance record not found.');
+    if (msg == 'empty')    throw ApiException('Missing attendance id.');
+    _fail(body, fallback: 'Failed to delete attendance');
+  }
 
 }

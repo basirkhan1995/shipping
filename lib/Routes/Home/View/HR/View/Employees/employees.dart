@@ -58,6 +58,49 @@ class _EmployeeController {
       ),
     );
   }
+
+  // ── DELETE ───────────────────────────────────────────────────────
+  static Future<void> confirmDelete(
+      BuildContext context, EmployeeModel model) async {
+    final tr = AppLocalizations.of(context)!;
+
+    if (model.empId == null) {
+      ToastManager.show(
+        context: context,
+        message: 'Employee not found.',
+        type: ToastType.error,
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr.delete),
+        content: Text(
+          '${tr.areYouSure} '
+              '"${model.perName ?? ''} ${model.perLastName ?? ''}"?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(tr.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            child: Text(tr.delete),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      context.read<EmployeeBloc>().add(DeleteEmployeeEvent(model.empId!));
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -290,15 +333,16 @@ class _EmployeeList extends StatelessWidget {
             useAlternatingColors: true,
           );
         }
-        // Error with no data at all (first load failed)
-        if (state is EmployeeErrorState) {
+
+        final employees = _extractList(state);
+
+        // Show the full-page error view only when we have nothing to render.
+        if (state is EmployeeErrorState && employees.isEmpty) {
           return _ErrorView(
             message: state.message,
             onRetry: () => _EmployeeController.refresh(context),
           );
         }
-
-        final employees = _extractList(state);
 
         if (employees.isEmpty) {
           return const _EmptyView();
@@ -311,7 +355,7 @@ class _EmployeeList extends StatelessWidget {
             padding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             itemCount: employees.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               final emp = employees[index];
               return EmployeeWidget(
@@ -319,6 +363,8 @@ class _EmployeeList extends StatelessWidget {
                 employee: emp,
                 onTapEdit: () =>
                     _EmployeeController.openEditDialog(context, emp),
+                onTapDelete: () =>
+                    _EmployeeController.confirmDelete(context, emp),
               );
             },
           ),
@@ -327,7 +373,6 @@ class _EmployeeList extends StatelessWidget {
     );
   }
 
-  // Only EmployeeLoadedState has `.employees` now.
   List<EmployeeModel> _extractList(EmployeeState state) {
     if (state is EmployeeLoadedState) return state.employees;
     return const [];

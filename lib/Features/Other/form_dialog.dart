@@ -77,6 +77,7 @@ class _ZFormDialogState extends State<ZFormDialog> {
               message,
               style: TextStyle(
                 fontSize: 12.5,
+                letterSpacing: 1.3,
                 fontWeight: FontWeight.w500,
                 color: scheme.onErrorContainer,
               ),
