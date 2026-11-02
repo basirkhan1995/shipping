@@ -226,7 +226,7 @@
   "glCredit": "جی ال کریدت",
   "exchange": "تبادله",
   "fundTransfer": "انتقال حساب",
-  "journal": "روزنامچه",
+  "journal": "انتقال و تبادله وجه",
   "cashFlow": "جریان نقدی",
   "tryAgain": "امتحان دوباره",
   "newTransaction": "معامله جدید",
@@ -455,5 +455,8 @@
   "creatingBackupMsg": "در حال تهیه نسخه پشتیبان قبل از بازیابی...",
   "saving": "در حال ذخیره‌سازی…",
   "updating": "در حال به‌روزرسانی…",
-  "authorizing": "در حال تأیید…"
+  "authorizing": "در حال تأیید…",
+  "reversing": "درحال برگشتاندن...",
+  "unauthorizing": "درحال کشیدن از تایید...",
+  "deleting": "در حال خذف..."
 }

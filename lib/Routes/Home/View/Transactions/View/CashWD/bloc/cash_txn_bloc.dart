@@ -2,8 +2,6 @@
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/cupertino.dart';
-
 import '../../../../../../../Services/api_exception.dart';
 import '../../../../../../../Services/repository.dart';
 import '../../../model/trn_model.dart';
@@ -76,13 +74,13 @@ class CashTxnBloc extends Bloc<CashTxnEvent, CashTxnState> {
         makerName: body['makerName']?.toString(),
         typeCode: body['type']?.toString(),
       ));
-
     } on ApiException catch (x) {
       emit(CashTxnFailure(x.message));
     } catch (x) {
       emit(CashTxnFailure(x.toString()));
     }
   }
+
   Future<void> _onCreate(
       CashTxnCreateRequested e,
       Emitter<CashTxnState> emit,
@@ -90,13 +88,10 @@ class CashTxnBloc extends Bloc<CashTxnEvent, CashTxnState> {
     emit(const CashTxnSubmitting());
     try {
       final result = await _repo.cashFlowOperations(newTransaction: e.draft);
-      debugPrint('CashTxnBloc SUCCESS: $result');
       emit(CashTxnSuccess(result));
     } on ApiException catch (x) {
-      debugPrint('CashTxnBloc ApiException: ${x.message}');
       emit(CashTxnFailure(x.message));
-    } catch (x, st) {
-      debugPrint('CashTxnBloc UNEXPECTED: $x\n$st');
+    } catch (x) {
       emit(CashTxnFailure(x.toString()));
     }
   }

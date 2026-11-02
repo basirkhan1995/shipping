@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../../../../Features/Widgets/extensions.dart';
 import '../../../../../../Features/Widgets/zbutton.dart';
 import '../../../../../../Features/Other/generic_textfield.dart';
@@ -28,7 +29,10 @@ class FundTransferForm extends StatefulWidget {
   final String baseCurrency;
   final FundTransferDetail? initialDetail;
   final String? stateText;
-  final GlobalKey<FundTransferFormState>? formKey;
+
+  /// Optional external trigger so the dialog (mouse click) and the
+  /// narration field (Enter key) go through the *same* submit path.
+  final VoidCallback? onSubmitRequested;
 
   /// Emits a draft ready for `FundTransferBloc.add/edit`.
   final void Function(FundTransferFormResult result) onSubmit;
@@ -38,9 +42,9 @@ class FundTransferForm extends StatefulWidget {
     required this.usrName,
     required this.baseCurrency,
     required this.onSubmit,
+    this.onSubmitRequested,
     this.initialDetail,
     this.stateText,
-    this.formKey,
   });
 
   @override
@@ -261,24 +265,30 @@ class FundTransferFormState extends State<FundTransferForm> {
     return int.tryParse(numText);
   }
 
-  void submit() {
-    if (!_isEditable) return;
-    if (_formKey.currentState?.validate() != true) return;
+  /// Validates and dispatches the draft.
+  ///
+  /// Returns `true` when a `FundTransferFormResult` was actually sent to
+  /// `widget.onSubmit`, `false` when validation blocked it. The caller
+  /// (dialog) uses this to know whether to keep the spinner running.
+  bool submit() {
+    if (!_isEditable) return false;
+
+    if (_formKey.currentState?.validate() != true) return false;
 
     final amount = double.tryParse(_amountCtrl.text.replaceAll(',', '').trim());
-    if (amount == null || amount <= 0) return;
+    if (amount == null || amount <= 0) return false;
 
     final fromNo = _fromAccountNo;
     final toNo = _toAccountNo;
-    if (fromNo == null || toNo == null) return;
+    if (fromNo == null || toNo == null) return false;
 
     if (fromNo == toNo && _fromCcyEffective == _toCcyEffective) {
       _toastError(AppLocalizations.of(context)!.sameAccount);
-      return;
+      return false;
     }
     if (_fromCcyEffective != _toCcyEffective) {
       _toastError(AppLocalizations.of(context)!.currencyMismatch);
-      return;
+      return false;
     }
 
     widget.onSubmit(
@@ -293,6 +303,7 @@ class FundTransferFormState extends State<FundTransferForm> {
         narration: _narrationCtrl.text.trim(),
       ),
     );
+    return true;
   }
 
   void _toastError(String msg) => ToastManager.show(
@@ -619,7 +630,10 @@ class FundTransferFormState extends State<FundTransferForm> {
     isEnabled: _isEditable,
     focusNode: _narrationFocus,
     textInputAction: TextInputAction.none,
-    onFieldSubmitted: (_) => submit(),
+    // Route Enter through the dialog's onSubmitRequested when supplied,
+    // so keyboard and mouse go through the exact same path (busy flag,
+    // validation, dispatch, spinner).
+    onFieldSubmitted: (_) => (widget.onSubmitRequested ?? submit)(),
     keyboardType: TextInputType.multiline,
     validator: (v) => (!_isEditable || (v != null && v.trim().isNotEmpty))
         ? null
@@ -675,7 +689,7 @@ Future<bool?> showFundTransferDialog(
   );
 }
 
-class _FundTransferDialog extends StatelessWidget {
+class _FundTransferDialog extends StatefulWidget {
   final String usrName;
   final String baseCurrency;
   final String? reference;
@@ -686,6 +700,30 @@ class _FundTransferDialog extends StatelessWidget {
     this.reference,
   });
 
+  @override
+  State<_FundTransferDialog> createState() => _FundTransferDialogState();
+}
+
+class _FundTransferDialogState extends State<_FundTransferDialog> {
+  /// Local error shown inside the dialog when a row action fails.
+  String? _localError;
+
+  /// Stable key — attached to `FundTransferForm.key` so `currentState`
+  /// resolves to the live `FundTransferFormState` (mouse + Enter share
+  /// one path). Created **once** — never inside build().
+  final _formKey = GlobalKey<FundTransferFormState>();
+
+  /// Local busy flags. Set on the button press, cleared on bloc
+  /// success/failure. Combined with the bloc's own flags so the spinner
+  /// paints even when `FundTransferSubmitting` is coalesced away before
+  /// the next frame.
+  bool _formBusy = false; // Save / Update
+  bool _actionBusy = false; // Delete / Auth / Unauth / Reverse
+
+  String get usrName => widget.usrName;
+  String get baseCurrency => widget.baseCurrency;
+  String? get reference => widget.reference;
+
   bool get _isEditing => reference != null && reference!.isNotEmpty;
 
   String? _loginName(BuildContext context) {
@@ -693,9 +731,38 @@ class _FundTransferDialog extends StatelessWidget {
     return auth is AuthenticatedState ? auth.loginData.usrName : null;
   }
 
+  void _clearLocalError() {
+    if (_localError != null && mounted) {
+      setState(() => _localError = null);
+    }
+  }
+
+  void _setFormBusy(bool v) {
+    if (mounted) setState(() => _formBusy = v);
+  }
+
+  void _setActionBusy(bool v) {
+    if (mounted) setState(() => _actionBusy = v);
+  }
+
+  // ── Form submit (mouse + keyboard both land here) ─────────────
+  void _onFormSubmit() {
+    final st = _formKey.currentState;
+    if (st == null) return;
+
+    _clearLocalError();
+    _setFormBusy(true);
+
+    final dispatched = st.submit();
+    if (!dispatched) _setFormBusy(false);
+  }
+
+  // ── Row actions ───────────────────────────────────────────────
   void _dispatchAuthorize(BuildContext context) {
     final ref = reference;
     if (ref == null || ref.isEmpty) return;
+    _clearLocalError();
+    _setActionBusy(true);
     context.read<TransactionsBloc>().add(
       AuthorizeTransactionEvent(reference: ref, userName: _loginName(context)),
     );
@@ -704,6 +771,8 @@ class _FundTransferDialog extends StatelessWidget {
   void _dispatchUnauthorize(BuildContext context) {
     final ref = reference;
     if (ref == null || ref.isEmpty) return;
+    _clearLocalError();
+    _setActionBusy(true);
     context.read<TransactionsBloc>().add(
       UnauthorizeTransactionEvent(
         reference: ref,
@@ -715,6 +784,8 @@ class _FundTransferDialog extends StatelessWidget {
   void _dispatchReverse(BuildContext context) {
     final ref = reference;
     if (ref == null || ref.isEmpty) return;
+    _clearLocalError();
+    _setActionBusy(true);
     context.read<TransactionsBloc>().add(
       ReverseTransactionEvent(reference: ref, userName: _loginName(context)),
     );
@@ -748,20 +819,44 @@ class _FundTransferDialog extends StatelessWidget {
     );
     if (confirmed != true || !context.mounted) return;
 
+    _clearLocalError();
+    _setActionBusy(true);
+
     context.read<TransactionsBloc>().add(
       DeleteTransactionEvent(reference: ref, userName: _loginName(context)),
     );
   }
 
+  Widget _busyLabel(
+    BuildContext context, {
+    required bool busy,
+    required String busyText,
+    required String idleText,
+  }) {
+    if (!busy) return Text(idleText);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(
+          width: 14,
+          height: 14,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+        const SizedBox(width: 8),
+        Text(busyText),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final formKey = GlobalKey<FundTransferFormState>();
-
     return MultiBlocListener(
       listeners: [
+        // ── FundTransferBloc: save / update result ─────────────
         BlocListener<FundTransferBloc, FundTransferState>(
           listener: (context, state) {
             if (state is FundTransferSubmitSuccess) {
+              _setFormBusy(false);
               ToastManager.show(
                 context: context,
                 title: 'Saved',
@@ -772,9 +867,15 @@ class _FundTransferDialog extends StatelessWidget {
                 const ClearFundTransferSuccessEvent(),
               );
               Navigator.of(context).pop(true);
+              return;
+            }
+            if (state is FundTransferError) {
+              _setFormBusy(false);
             }
           },
         ),
+
+        // ── TransactionsBloc: row actions ──────────────────────
         BlocListener<TransactionsBloc, TransactionsState>(
           listenWhen: (prev, next) =>
               next is TransactionsLoadedState &&
@@ -784,6 +885,10 @@ class _FundTransferDialog extends StatelessWidget {
 
             final success = state.actionSuccess;
             if (success != null) {
+              _setActionBusy(false);
+              if (mounted && _localError != null) {
+                setState(() => _localError = null);
+              }
               ToastManager.show(
                 context: context,
                 title: 'Success',
@@ -804,16 +909,15 @@ class _FundTransferDialog extends StatelessWidget {
                   LoadFundTransferDetailEvent(ref),
                 );
               }
+              return;
             }
 
             final error = state.actionError;
             if (error != null) {
-              ToastManager.show(
-                context: context,
-                title: 'Failed',
-                message: error,
-                type: ToastType.error,
-              );
+              _setActionBusy(false);
+              if (mounted) {
+                setState(() => _localError = error);
+              }
               context.read<TransactionsBloc>().add(
                 const ClearRowActionErrorEvent(),
               );
@@ -823,7 +927,22 @@ class _FundTransferDialog extends StatelessWidget {
       ],
       child: BlocBuilder<FundTransferBloc, FundTransferState>(
         builder: (context, state) {
-          final busy = state is FundTransferSubmitting;
+          // Form submit (Save / Update) — local OR bloc flag.
+          final cashBusy = _formBusy || state is FundTransferSubmitting;
+
+          // Row actions — local OR bloc's in-flight reference.
+          final rowBusy =
+              _actionBusy ||
+              context.select<TransactionsBloc, bool>((bloc) {
+                final s = bloc.state;
+                if (s is! TransactionsLoadedState) return false;
+                final ref = reference;
+                if (ref == null || ref.isEmpty) return false;
+                return s.actionInProgress == ref;
+              });
+
+          final anyBusy = cashBusy || rowBusy;
+
           final loaded = state is FundTransferDetailLoaded
               ? state.detail
               : null;
@@ -833,9 +952,14 @@ class _FundTransferDialog extends StatelessWidget {
           final isAuthorized = stateText == 'Authorized';
 
           final loginName = _loginName(context);
-          final isMaker = loaded == null || (loaded.maker.isNotEmpty && loginName != null && loaded.maker == loginName);
+          final isMaker =
+              loaded == null ||
+              (loaded.maker.isNotEmpty &&
+                  loginName != null &&
+                  loaded.maker == loginName);
           final isEditing = _isEditing;
 
+          // ── Loading gate ──────────────────────────────────────
           if (isEditing && loaded == null && state is! FundTransferError) {
             return ZFormDialog(
               width: 640,
@@ -864,17 +988,27 @@ class _FundTransferDialog extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ── Inline error banner ────────────────────
                   if (state is FundTransferError && state.message.isNotEmpty)
                     _banner(state.message, Theme.of(context).colorScheme.error),
+
+                  if (_localError != null && _localError!.isNotEmpty)
+                    _banner(_localError!, Theme.of(context).colorScheme.error),
+
+                  // ── Form ───────────────────────────────────
                   Flexible(
                     child: FundTransferForm(
-                      key: ValueKey(reference ?? 'new'),
-                      formKey: formKey,
+                      // Stable GlobalKey<FundTransferFormState> attached
+                      // to the widget so currentState resolves. Mouse +
+                      // Enter both route through _onFormSubmit.
+                      key: _formKey,
                       usrName: usrName,
                       baseCurrency: baseCurrency,
                       initialDetail: loaded,
                       stateText: stateText,
+                      onSubmitRequested: _onFormSubmit,
                       onSubmit: (result) {
+                        _clearLocalError();
                         if (isEditing) {
                           context.read<FundTransferBloc>().add(
                             EditFundTransferEvent(
@@ -904,67 +1038,118 @@ class _FundTransferDialog extends StatelessWidget {
                       },
                     ),
                   ),
+
+                  // ── Footer ─────────────────────────────────
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
                     child: Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
+                        // Cancel — disabled while anything is in flight.
                         ZOutlineButton(
-                          onPressed: () => Navigator.of(context).pop(false),
+                          onPressed: anyBusy
+                              ? null
+                              : () => Navigator.of(context).pop(false),
                           label: Text(AppLocalizations.of(context)!.cancel),
                         ),
-// ── Maker, Pending → Delete + Update ─────────────────────────
-                        if (isEditing && isPending && isMaker && !busy) ...[
+
+                        // ── Maker, Pending → Delete + Update ────
+                        if (isEditing && isPending && isMaker) ...[
                           ZOutlineButton(
-                            onPressed: () => _dispatchDelete(context),
-                            backgroundHover: Theme.of(context).colorScheme.error,
-                            icon: Icons.delete_outline_rounded,
-                            label: Text(AppLocalizations.of(context)!.delete),
+                            onPressed: anyBusy
+                                ? null
+                                : () => _dispatchDelete(context),
+                            backgroundHover: Theme.of(context)
+                                .colorScheme
+                                .error,
+                            icon: rowBusy ? null : Icons.delete_outline_rounded,
+                            label: _busyLabel(
+                              context,
+                              busy: rowBusy,
+                              busyText: AppLocalizations.of(context)!.deleting,
+                              idleText: AppLocalizations.of(context)!.delete,
+                            ),
                           ),
                           ZOutlineButton(
-                            isActive: true,
-                            onPressed: () => formKey.currentState?.submit(),
-                            icon: Icons.save_alt_rounded,
-                            label: Text(AppLocalizations.of(context)!.update),
+                            isActive: !cashBusy,
+                            onPressed: cashBusy ? null : _onFormSubmit,
+                            icon: cashBusy ? null : Icons.save_alt_rounded,
+                            label: _busyLabel(
+                              context,
+                              busy: cashBusy,
+                              busyText: AppLocalizations.of(context)!.updating,
+                              idleText: AppLocalizations.of(context)!.update,
+                            ),
                           ),
                         ],
 
-                        // ── Non-maker, Pending → Authorize ───────────────────────────
+                        // ── Non-maker, Pending → Authorize ──────
                         if (isEditing &&
                             isPending &&
                             !isMaker &&
-                            loginName != null &&
-                            !busy) ...[
+                            loginName != null)
                           ZOutlineButton(
-                            isActive: true,
-                            onPressed: () => _dispatchAuthorize(context),
-                            icon: Icons.check_circle_outline_rounded,
-                            label: Text(AppLocalizations.of(context)!.authorize),
+                            isActive: !rowBusy,
+                            onPressed: rowBusy
+                                ? null
+                                : () => _dispatchAuthorize(context),
+                            icon: rowBusy
+                                ? null
+                                : Icons.check_circle_outline_rounded,
+                            label: _busyLabel(
+                              context,
+                              busy: rowBusy,
+                              busyText: AppLocalizations.of(context)!
+                                  .authorizing,
+                              idleText: AppLocalizations.of(context)!.authorize,
+                            ),
+                          ),
+
+                        // ── Authorized → Unauthorize + Reverse ──
+                        if (isEditing && isAuthorized) ...[
+                          ZOutlineButton(
+                            isActive: !rowBusy,
+                            onPressed: rowBusy
+                                ? null
+                                : () => _dispatchUnauthorize(context),
+                            icon: rowBusy ? null : Icons.undo_rounded,
+                            label: _busyLabel(
+                              context,
+                              busy: rowBusy,
+                              busyText: AppLocalizations.of(context)!
+                                  .unauthorize,
+                              idleText: AppLocalizations.of(context)!
+                                  .unauthorize,
+                            ),
+                          ),
+                          ZOutlineButton(
+                            isActive: !rowBusy,
+                            onPressed: rowBusy
+                                ? null
+                                : () => _dispatchReverse(context),
+                            icon: rowBusy ? null : Icons.replay_rounded,
+                            label: _busyLabel(
+                              context,
+                              busy: rowBusy,
+                              busyText: AppLocalizations.of(context)!.reversing,
+                              idleText: AppLocalizations.of(context)!.reverse,
+                            ),
                           ),
                         ],
 
-                        // ── Authorized → Unauthorize + Reverse ───────────────────────
-                        if (isEditing && isAuthorized && !busy) ...[
-                          ZOutlineButton(
-                            onPressed: () => _dispatchUnauthorize(context),
-                            icon: Icons.undo_rounded,
-                            label: Text(AppLocalizations.of(context)!.unauthorize),
-                          ),
-                          ZOutlineButton(
-                            onPressed: () => _dispatchReverse(context),
-                            icon: Icons.replay_rounded,
-                            label: Text(AppLocalizations.of(context)!.reverse),
-                          ),
-                        ],
+                        // ── Create mode → Save ─────────────────
                         if (!isEditing)
                           ZOutlineButton(
-                            isActive: true,
-                            onPressed: busy
-                                ? null
-                                : () => formKey.currentState?.submit(),
-                            icon: Icons.save_alt_rounded,
-                            label: Text(AppLocalizations.of(context)!.save),
+                            isActive: !cashBusy,
+                            onPressed: cashBusy ? null : _onFormSubmit,
+                            icon: cashBusy ? null : Icons.save_alt_rounded,
+                            label: _busyLabel(
+                              context,
+                              busy: cashBusy,
+                              busyText: AppLocalizations.of(context)!.saving,
+                              idleText: AppLocalizations.of(context)!.save,
+                            ),
                           ),
                       ],
                     ),

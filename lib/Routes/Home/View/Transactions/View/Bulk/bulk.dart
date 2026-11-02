@@ -56,6 +56,10 @@ Future<bool?> showBulkTransferDialog(
   );
 }
 
+/// Which row-action button is currently in flight. Drives the spinner
+/// on the correct button without making the buttons disappear.
+enum _RowAction { none, delete, authorize, unauthorize, reverse }
+
 class _BulkTransferDialog extends StatefulWidget {
   final String usrName;
   final String baseCurrency;
@@ -76,6 +80,13 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
 
   String? _errorMessage;
 
+  /// Local busy flags — set on press, cleared on bloc success/failure.
+  bool _formBusy = false; // Submit (Save / Update)
+  _RowAction _pendingAction = _RowAction.none;
+
+  /// True when any row action is in flight.
+  bool get _actionBusy => _pendingAction != _RowAction.none;
+
   @override
   void initState() {
     super.initState();
@@ -90,6 +101,20 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
     super.dispose();
   }
 
+  void _setFormBusy(bool v) {
+    if (mounted) setState(() => _formBusy = v);
+  }
+
+  void _setPendingAction(_RowAction action) {
+    if (mounted) setState(() => _pendingAction = action);
+  }
+
+  void _clearPendingAction() {
+    if (mounted && _pendingAction != _RowAction.none) {
+      setState(() => _pendingAction = _RowAction.none);
+    }
+  }
+
   _RowControllers _ctrlFor(BulkTransferRow row) =>
       _controllers.putIfAbsent(row.rowId, () => _RowControllers(row));
 
@@ -98,10 +123,6 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
     context.read<BulkTransferBloc>().add(event);
   }
 
-  // ✅ Only push the new currency to rows that do not already carry their
-  // own per-row currency. Stakeholders are skipped (fixed by account), and
-  // multi-ccy GL rows (e.g. 10101010 picked as USD) keep what the user
-  // chose. Rows without an explicit ccy inherit the header.
   void _changeHeaderCurrency(String ccy) {
     setState(() {
       _headerCurrency = ccy;
@@ -112,17 +133,13 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
 
     for (final row in cur.rows) {
       if (_isStakeholderAccount(row)) continue;
-      // Don't overwrite a row that already has an explicit currency.
       if (row.currency != null && row.currency!.isNotEmpty) continue;
-
       context.read<BulkTransferBloc>().add(
         BulkTransferUpdateRow(rowId: row.rowId, currency: ccy),
       );
     }
   }
 
-  /// Heuristic — stakeholder accounts live in 500000–9999999 in this API,
-  /// GL accounts are >= 10_000_000.
   bool _isStakeholderAccount(BulkTransferRow row) {
     final n = row.accountNumber;
     if (n == null) return false;
@@ -133,11 +150,19 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
 
   void _onSubmit() {
     if (_errorMessage != null) setState(() => _errorMessage = null);
+    _setFormBusy(true);
 
     final state = context.read<BulkTransferBloc>().state;
     if (state is BulkTransferEditing) {
+      if (!state.canSubmit) {
+        _setFormBusy(false);
+        return;
+      }
       final preview = state.rows.map((r) => r.toRecord()).toList();
       debugPrint('BULK POST records=$preview');
+    } else {
+      _setFormBusy(false);
+      return;
     }
 
     context.read<BulkTransferBloc>().add(
@@ -145,7 +170,6 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
     );
   }
 
-  // ── row actions dispatched to TransactionsBloc ────────────
   String? get _reference {
     final s = context.read<BulkTransferBloc>().state;
     return (s is BulkTransferEditing) ? s.reference : null;
@@ -160,6 +184,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
     final ref = _reference;
     if (ref == null || ref.isEmpty) return;
     if (_errorMessage != null) setState(() => _errorMessage = null);
+    _setPendingAction(_RowAction.authorize);
     context.read<TransactionsBloc>().add(
       AuthorizeTransactionEvent(reference: ref, userName: _currentUserName()),
     );
@@ -169,6 +194,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
     final ref = _reference;
     if (ref == null || ref.isEmpty) return;
     if (_errorMessage != null) setState(() => _errorMessage = null);
+    _setPendingAction(_RowAction.unauthorize);
     context.read<TransactionsBloc>().add(
       UnauthorizeTransactionEvent(reference: ref, userName: _currentUserName()),
     );
@@ -178,6 +204,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
     final ref = _reference;
     if (ref == null || ref.isEmpty) return;
     if (_errorMessage != null) setState(() => _errorMessage = null);
+    _setPendingAction(_RowAction.reverse);
     context.read<TransactionsBloc>().add(
       ReverseTransactionEvent(reference: ref, userName: _currentUserName()),
     );
@@ -216,9 +243,31 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
     if (confirmed != true) return;
     if (!mounted) return;
     if (_errorMessage != null) setState(() => _errorMessage = null);
+    _setPendingAction(_RowAction.delete);
 
     context.read<TransactionsBloc>().add(
       DeleteTransactionEvent(reference: ref, userName: _currentUserName()),
+    );
+  }
+
+  Widget _busyLabel(
+    BuildContext context, {
+    required bool busy,
+    required String busyText,
+    required String idleText,
+  }) {
+    if (!busy) return Text(idleText);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(
+          width: 14,
+          height: 14,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+        const SizedBox(width: 8),
+        Text(busyText),
+      ],
     );
   }
 
@@ -242,12 +291,19 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
       child: BlocBuilder<BulkTransferBloc, BulkTransferState>(
         builder: (context, bulkState) {
           final editing = _toEditing(bulkState);
-          final busy = bulkState is BulkTransferSubmitting;
-          final isActionBusy = context.select<TransactionsBloc, bool>(
-            (b) =>
-                b.state is TransactionsLoadedState &&
-                (b.state as TransactionsLoadedState).actionInProgress != null,
-          );
+
+          final formBusy = _formBusy || bulkState is BulkTransferSubmitting;
+
+          final blocRowBusy = context.select<TransactionsBloc, bool>((b) {
+            final s = b.state;
+            if (s is! TransactionsLoadedState) return false;
+            final ref = editing.reference;
+            if (ref == null || ref.isEmpty) return false;
+            return s.actionInProgress == ref;
+          });
+          final rowBusy = _actionBusy || blocRowBusy;
+
+          final anyBusy = formBusy || rowBusy;
 
           return ZFormDialog(
             width: MediaQuery.of(context).size.width * 0.7,
@@ -257,12 +313,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                 : AppLocalizations.of(context)!.bulkTransfer,
             isActionTrue: false,
             onAction: null,
-            child: _buildBody(
-              context,
-              editing,
-              busy || isActionBusy,
-              isActionBusy,
-            ),
+            child: _buildBody(context, editing, formBusy, rowBusy, anyBusy),
           );
         },
       ),
@@ -271,6 +322,8 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
 
   void _bulkListener(BuildContext context, BulkTransferState state) {
     if (state is BulkTransferSuccess) {
+      _setFormBusy(false);
+      _clearPendingAction();
       ToastManager.show(
         context: context,
         title: 'Bulk transfer',
@@ -279,6 +332,8 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
       );
       Navigator.of(context).pop(true);
     } else if (state is BulkTransferDeleted) {
+      _setFormBusy(false);
+      _clearPendingAction();
       ToastManager.show(
         context: context,
         title: 'Bulk transfer',
@@ -287,10 +342,14 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
       );
       Navigator.of(context).pop(true);
     } else if (state is BulkTransferFailure) {
+      _setFormBusy(false);
+      _clearPendingAction();
       setState(() => _errorMessage = state.message);
     } else if (state is BulkTransferEditing &&
         state.reference != null &&
         state.rows.isNotEmpty) {
+      // Successful reload after an action → clear the action spinner.
+      _clearPendingAction();
       final ccy = state.rows.first.currency;
       if (ccy != null && ccy.isNotEmpty && _headerCurrency != ccy && mounted) {
         setState(() => _headerCurrency = ccy);
@@ -303,6 +362,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
 
     final success = state.actionSuccess;
     if (success != null) {
+      _clearPendingAction();
       ToastManager.show(
         context: context,
         title: 'Bulk transfer',
@@ -326,6 +386,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
 
     final error = state.actionError;
     if (error != null) {
+      _clearPendingAction();
       setState(() => _errorMessage = error);
       context.read<TransactionsBloc>().add(const ClearRowActionErrorEvent());
     }
@@ -353,9 +414,6 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
     return const BulkTransferEditing(rows: [], totalDebit: 0, totalCredit: 0);
   }
 
-  /// ✅ Build the set of `"accNumber::ccy"` keys already used by *other*
-  /// rows. For the multi-ccy cash account (10101010) this means picking
-  /// AFN in row 1 hides AFN in row 2+ but keeps USD and EUR available.
   Set<String> _usedAccountCcyKeys(int currentRowId) {
     final state = context.read<BulkTransferBloc>().state;
     if (state is! BulkTransferEditing) return const {};
@@ -373,8 +431,9 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
   Widget _buildBody(
     BuildContext context,
     BulkTransferEditing state,
-    bool busy,
-    bool isActionBusy,
+    bool formBusy,
+    bool rowBusy,
+    bool anyBusy,
   ) {
     final isPending = state.isPending;
     final isAuthorized = state.isAuthorized;
@@ -389,6 +448,13 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
         loginName != null &&
         state.makerName == loginName;
 
+    // Per-button busy flags.
+    final deleteBusy = _pendingAction == _RowAction.delete;
+    final updateBusy = formBusy;
+    final authorizeBusy = _pendingAction == _RowAction.authorize;
+    final unauthorizeBusy = _pendingAction == _RowAction.unauthorize;
+    final reverseBusy = _pendingAction == _RowAction.reverse;
+
     return Column(
       children: [
         Padding(
@@ -402,7 +468,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                   title: AppLocalizations.of(context)!.currencyTitle,
                   isMulti: false,
                   height: 35,
-                  disableAction: busy,
+                  disableAction: anyBusy,
                   initiallySelectedSingle: CurrenciesModel(
                     ccyCode: _headerCurrency,
                   ),
@@ -416,7 +482,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
               ZOutlineButton(
                 height: 42,
                 isActive: true,
-                onPressed: busy
+                onPressed: anyBusy
                     ? null
                     : () => _dispatch(const BulkTransferAddRow()),
                 icon: Icons.add,
@@ -445,7 +511,6 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
           ),
         ),
 
-        // ── Inline warnings ──────────────────────────────────────
         if (_errorMessage != null && _errorMessage!.isNotEmpty)
           _banner(_errorMessage!, Colors.red),
 
@@ -458,7 +523,6 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
         if (!state.isEmpty && !state.isBalanced)
           _banner('Total debit must equal total credit.', Colors.red),
 
-        // ── Rows ─────────────────────────────────────────────────
         Expanded(
           child: state.isEmpty
               ? _emptyState()
@@ -483,7 +547,8 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                       controllers: _ctrlFor(row),
                       headerCurrency: _headerCurrency,
                       enabled:
-                          !busy && (!state.isEditing || (isPending && isMaker)),
+                          !anyBusy &&
+                          (!state.isEditing || (isPending && isMaker)),
                       isLast: isLast,
                       onRowComplete: isLast ? _onRowComplete : null,
                       onChanged: _dispatch,
@@ -499,82 +564,95 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
           child: Row(
             spacing: 8,
             children: [
+              // Cancel — disabled while anything is in flight.
               ZOutlineButton(
-                onPressed: () => Navigator.of(context).pop(false),
+                onPressed: anyBusy
+                    ? null
+                    : () => Navigator.of(context).pop(false),
                 backgroundHover: Theme.of(context).colorScheme.error,
                 label: Text(AppLocalizations.of(context)!.cancel),
               ),
 
-// ── Maker, Pending → Delete + Update ─────────────────────────
-              if (state.isEditing &&
-                  isPending &&
-                  isMaker &&
-                  !busy &&
-                  !isActionBusy) ...[
+              // ── Maker, Pending → Delete + Update ─────────────
+              if (state.isEditing && isPending && isMaker) ...[
                 ZOutlineButton(
-                  onPressed: _dispatchDelete,
+                  onPressed: anyBusy ? null : _dispatchDelete,
                   backgroundHover: Theme.of(context).colorScheme.error,
-                  icon: Icons.delete_outline_rounded,
-                  label: Text(AppLocalizations.of(context)!.delete),
+                  icon: deleteBusy ? null : Icons.delete_outline_rounded,
+                  label: _busyLabel(
+                    context,
+                    busy: deleteBusy,
+                    busyText: AppLocalizations.of(context)!.deleting,
+                    idleText: AppLocalizations.of(context)!.delete,
+                  ),
                 ),
                 ZOutlineButton(
-                  icon: Icons.save_alt_rounded,
-                  isActive: true,
-                  onPressed: !state.canSubmit || busy ? null : _onSubmit,
-                  label: busy || isActionBusy
-                      ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                      : Text(AppLocalizations.of(context)!.update),
+                  icon: updateBusy ? null : Icons.save_alt_rounded,
+                  isActive: !updateBusy,
+                  onPressed: updateBusy || !state.canSubmit ? null : _onSubmit,
+                  label: _busyLabel(
+                    context,
+                    busy: updateBusy,
+                    busyText: AppLocalizations.of(context)!.updating,
+                    idleText: AppLocalizations.of(context)!.update,
+                  ),
                 ),
               ],
 
-// ── Non-maker, Pending → Authorize ───────────────────────────
-              if (state.isEditing &&
-                  isPending &&
-                  !isMaker &&
-                  !busy &&
-                  !isActionBusy) ...[
+              // ── Non-maker, Pending → Authorize ───────────────
+              if (state.isEditing && isPending && !isMaker && loginName != null)
                 ZOutlineButton(
-                  onPressed: _dispatchAuthorize,
-                  icon: Icons.check_circle_outline_rounded,
-                  isActive: true,
-                  label: Text(AppLocalizations.of(context)!.authorize),
+                  onPressed: anyBusy ? null : _dispatchAuthorize,
+                  icon: authorizeBusy
+                      ? null
+                      : Icons.check_circle_outline_rounded,
+                  isActive: !authorizeBusy,
+                  label: _busyLabel(
+                    context,
+                    busy: authorizeBusy,
+                    busyText: AppLocalizations.of(context)!.authorizing,
+                    idleText: AppLocalizations.of(context)!.authorize,
+                  ),
+                ),
+
+              // ── Authorized → Unauthorize + Reverse ───────────
+              if (state.isEditing && isAuthorized) ...[
+                ZOutlineButton(
+                  onPressed: anyBusy ? null : _dispatchUnauthorize,
+                  icon: unauthorizeBusy ? null : Icons.undo_rounded,
+                  isActive: !unauthorizeBusy,
+                  label: _busyLabel(
+                    context,
+                    busy: unauthorizeBusy,
+                    busyText: AppLocalizations.of(context)!.unauthorize,
+                    idleText: AppLocalizations.of(context)!.unauthorize,
+                  ),
+                ),
+                ZOutlineButton(
+                  onPressed: anyBusy ? null : _dispatchReverse,
+                  icon: reverseBusy ? null : Icons.replay_rounded,
+                  isActive: !reverseBusy,
+                  label: _busyLabel(
+                    context,
+                    busy: reverseBusy,
+                    busyText: AppLocalizations.of(context)!.reversing,
+                    idleText: AppLocalizations.of(context)!.reverse,
+                  ),
                 ),
               ],
 
-// ── Authorized → Unauthorize + Reverse ───────────────────────
-              if (state.isEditing &&
-                  isAuthorized &&
-                  !busy &&
-                  !isActionBusy) ...[
-                ZOutlineButton(
-                  onPressed: _dispatchUnauthorize,
-                  icon: Icons.undo_rounded,
-                  label: Text(AppLocalizations.of(context)!.unauthorize),
-                ),
-                ZOutlineButton(
-                  onPressed: _dispatchReverse,
-                  icon: Icons.replay_rounded,
-                  label: Text(AppLocalizations.of(context)!.reverse),
-                ),
-              ],
-
-              // ── Create mode → Save ───────────────────────────────────────
+              // ── Create mode → Save ───────────────────────────
               if (!state.isEditing)
                 ZOutlineButton(
-                  icon: Icons.save_alt_rounded,
-                  isActive: true,
-                  onPressed: !state.canSubmit || busy ? null : _onSubmit,
-                  label: busy || isActionBusy
-                      ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                      : Text(AppLocalizations.of(context)!.save),
+                  icon: formBusy ? null : Icons.save_alt_rounded,
+                  isActive: !formBusy,
+                  onPressed: formBusy || !state.canSubmit ? null : _onSubmit,
+                  label: _busyLabel(
+                    context,
+                    busy: formBusy,
+                    busyText: AppLocalizations.of(context)!.saving,
+                    idleText: AppLocalizations.of(context)!.save,
+                  ),
                 ),
             ],
           ),
@@ -650,10 +728,6 @@ class _RowControllers {
       ),
       narration = TextEditingController(text: row.narration);
 
-  // ✅ Matches the picker's `itemToString` format, which includes the
-  // currency. Without this, load-for-edit produces text that no picker
-  // item matches (because the picker stringifies with the ccy) and the
-  // validator rejects it.
   static String _initialAccountText(BulkTransferRow row) {
     final hasName = row.accountName != null && row.accountName!.isNotEmpty;
     final hasNumber = row.accountNumber != null;
@@ -794,7 +868,6 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
                     bloc.add(LoadStkAccountsEvent(query: q));
                   },
 
-                  // ✅ Currency-aware list badge.
                   itemBuilder: (context, account) {
                     final ownCcy = account.accCurrency;
                     final effectiveCcy = (ownCcy != null && ownCcy.isNotEmpty)
@@ -836,18 +909,10 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
                     );
                   },
 
-                  // ✅ Currency is part of the item identity. A single GL
-                  // account (e.g. 10101010) has AFN, EUR, USD rows with the
-                  // same number and name. Without the currency in the string,
-                  // picking a different variant produces identical text and
-                  // the field never re-resolves the currency. This is the
-                  // same pattern used in the exchange form.
                   itemToString: (a) =>
                       '${a.accNumber} | ${a.accName} | '
                       '${a.accCurrency ?? widget.headerCurrency}',
 
-                  // ✅ Filter by header currency, keep multi-ccy GL variants,
-                  //    AND hide pairs already used by other rows.
                   stateToItems: (s) {
                     if (s is! StkAccountsLoadedState) {
                       return const <StakeholderAccount>[];
@@ -855,7 +920,6 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
 
                     const excluded = <int>{10101011};
 
-                    // Count distinct currencies per account number.
                     final ccyByAcc = <int, Set<String>>{};
                     for (final a in s.accounts) {
                       final n = a.accNumber;
@@ -869,8 +933,6 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
                     for (final a in s.accounts) {
                       if (excluded.contains(a.accNumber)) continue;
 
-                      // Hide (account, ccy) already used by another row, but
-                      // never hide the pair this row is currently showing.
                       final key = '${a.accNumber}::${a.accCurrency ?? ''}';
                       final ownKey =
                           '${widget.row.accountNumber ?? ''}::'
@@ -909,7 +971,6 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
                   },
                   stateToLoading: (s) => s is StkAccountsLoadingState,
 
-                  // ✅ Trust the picked row's accCurrency first.
                   onSelected: (a) {
                     if (!widget.enabled) return;
                     final effectiveCcy = (a.accCurrency?.isNotEmpty == true)

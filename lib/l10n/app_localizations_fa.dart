@@ -679,7 +679,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get fundTransfer => 'انتقال حساب';
 
   @override
-  String get journal => 'روزنامچه';
+  String get journal => 'انتقال و تبادله وجه';
 
   @override
   String get cashFlow => 'جریان نقدی';
@@ -1354,4 +1354,13 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get authorizing => 'در حال تأیید…';
+
+  @override
+  String get reversing => 'درحال برگشتاندن...';
+
+  @override
+  String get unauthorizing => 'درحال کشیدن از تایید...';
+
+  @override
+  String get deleting => 'در حال خذف...';
 }

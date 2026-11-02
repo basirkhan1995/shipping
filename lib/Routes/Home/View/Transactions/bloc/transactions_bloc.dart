@@ -16,7 +16,7 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
   /// the list to "all".
   LoadTransactionsEvent? _lastLoad;
 
-  TransactionsBloc(this._repo) : super(TransactionsInitial()) {
+  TransactionsBloc(this._repo) : super(const TransactionsInitial()) {
     // ── Load ────────────────────────────────────────────────────
     on<LoadTransactionsEvent>((event, emit) async {
       _lastLoad = event;
@@ -69,7 +69,8 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
   }
 
   // ══════════════════════════════════════════════════════════════
-  // Row action handlers — each just delegates to _runRowAction.
+  // Row action handlers — each delegates to _runRowAction, passing
+  // its own [RowAction] kind so the list can spin the right icon.
   // ══════════════════════════════════════════════════════════════
 
   Future<void> _onAuthorize(
@@ -79,6 +80,7 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
       _runRowAction(
         emit: emit,
         reference: e.reference,
+        kind: RowAction.authorize,
         action: () => _repo.authorizeTxn(
           reference: e.reference,
           usrName: e.userName,
@@ -93,6 +95,7 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
       _runRowAction(
         emit: emit,
         reference: e.reference,
+        kind: RowAction.unauthorize,
         action: () => _repo.unAuthorizeTxn(
           reference: e.reference,
           usrName: e.userName,
@@ -107,6 +110,7 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
       _runRowAction(
         emit: emit,
         reference: e.reference,
+        kind: RowAction.reverse,
         action: () => _repo.reverseTxn(
           reference: e.reference,
           usrName: e.userName,
@@ -121,6 +125,7 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
       _runRowAction(
         emit: emit,
         reference: e.reference,
+        kind: RowAction.delete,
         action: () => _repo.deleteBulkTransfer(
           reference: e.reference,
           userName: e.userName ?? '',
@@ -149,22 +154,25 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
   }
 
   // ══════════════════════════════════════════════════════════════
-  // Shared helper: drives the busy flag, the reload, the error
-  // banner, and the success toast for all four actions.
+  // Shared helper: drives the busy flag + kind, the reload, the
+  // error banner, and the success toast for all four actions.
   // ══════════════════════════════════════════════════════════════
 
   Future<void> _runRowAction({
     required Emitter<TransactionsState> emit,
     required String reference,
+    required RowAction kind,
     required Future<Map<String, dynamic>> Function() action,
     required String successMessage,
   }) async {
     final s = state;
     if (s is! TransactionsLoadedState) return;
 
-    // 1. Mark this row as busy, clear any previous banner / toast.
+    // 1. Mark this row (and this specific action) as busy,
+    //    clear any previous banner / toast.
     emit(s.copyWith(
       actionInProgress: reference,
+      actionKind: kind,
       clearActionError: true,
       clearActionSuccess: true,
     ));
@@ -172,7 +180,7 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
     try {
       await action();
 
-      // 2. Success. Clear the busy flag and surface a success message.
+      // 2. Success. Clear busy + kind, surface a success message.
       final after = state;
       if (after is TransactionsLoadedState) {
         emit(after.copyWith(

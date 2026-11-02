@@ -6,7 +6,9 @@ sealed class TransactionsState extends Equatable {
   List<Object?> get props => const [];
 }
 
-final class TransactionsInitial extends TransactionsState {}
+final class TransactionsInitial extends TransactionsState {
+  const TransactionsInitial();
+}
 
 final class TransactionsLoadingState extends TransactionsState {
   final List<TransactionListItem> previous;
@@ -15,14 +17,25 @@ final class TransactionsLoadingState extends TransactionsState {
   List<Object?> get props => [previous];
 }
 
+/// Identifies *which* row action is currently running, in addition to
+/// [TransactionsLoadedState.actionInProgress] (which row it's running on).
+///
+/// The dialog ignores this — it only ever renders one action button per
+/// state, so `actionInProgress == reference` is enough there. The list
+/// uses it to spin only the tapped icon when a row has multiple actions.
+enum RowAction { authorize, unauthorize, reverse, delete }
+
 final class TransactionsLoadedState extends TransactionsState {
   final List<TransactionListItem> rows;
   final int total;
 
-  /// Which reference is currently being acted on (authorize / unauthorize
-  /// / reverse / delete). Null when nothing is in flight.
-  /// Row widget: `isBusy = actionInProgress == row.reference`.
+  /// Which reference is currently being acted on. Null when nothing is
+  /// in flight. Row widget: `isBusy = actionInProgress == row.reference`.
   final String? actionInProgress;
+
+  /// Which action is running on that row. Only meaningful when
+  /// [actionInProgress] is non-null. Cleared together with it.
+  final RowAction? actionKind;
 
   /// Set when a row action fails. Renders as an inline banner.
   /// Cleared by [ClearRowActionErrorEvent] or the next action.
@@ -36,6 +49,7 @@ final class TransactionsLoadedState extends TransactionsState {
       this.rows, {
         required this.total,
         this.actionInProgress,
+        this.actionKind,
         this.actionError,
         this.actionSuccess,
       });
@@ -44,6 +58,7 @@ final class TransactionsLoadedState extends TransactionsState {
     List<TransactionListItem>? rows,
     int? total,
     String? actionInProgress,
+    RowAction? actionKind,
     String? actionError,
     String? actionSuccess,
     bool clearActionInProgress = false,
@@ -53,22 +68,24 @@ final class TransactionsLoadedState extends TransactionsState {
       TransactionsLoadedState(
         rows ?? this.rows,
         total: total ?? this.total,
+        // These two MUST clear together — a stale kind with no reference
+        // would make the next busy row spin the wrong icon.
         actionInProgress: clearActionInProgress
             ? null
             : (actionInProgress ?? this.actionInProgress),
-        actionError: clearActionError
+        actionKind: clearActionInProgress
             ? null
-            : (actionError ?? this.actionError),
-        actionSuccess: clearActionSuccess
-            ? null
-            : (actionSuccess ?? this.actionSuccess),
+            : (actionKind ?? this.actionKind),
+        actionError: clearActionError ? null : (actionError ?? this.actionError),
+        actionSuccess:
+        clearActionSuccess ? null : (actionSuccess ?? this.actionSuccess),
       );
 
   bool get isActionInProgress => actionInProgress != null;
 
   @override
   List<Object?> get props =>
-      [rows, total, actionInProgress, actionError, actionSuccess];
+      [rows, total, actionInProgress, actionKind, actionError, actionSuccess];
 }
 
 final class TransactionsErrorState extends TransactionsState {

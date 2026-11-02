@@ -226,7 +226,7 @@
   "glCredit": "GL Credit",
   "exchange": "Exchange",
   "fundTransfer": "Fund Transfer",
-  "journal": "Journal",
+  "journal": "Fund Transfer & Exchange",
   "cashFlow": "Cash flow",
   "tryAgain": "Try again",
   "newTransaction": "New Transaction",
@@ -455,5 +455,8 @@
   "creatingBackupMsg": "Backing up data before restore...",
   "saving": "Saving…",
   "updating": "Updating…",
-  "authorizing": "Authorizing…"
+  "authorizing": "Authorizing…",
+  "reversing": "Reversing...",
+  "unauthorizing": "Unauthorizing...",
+  "deleting": "Deleting..."
 }

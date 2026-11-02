@@ -226,7 +226,7 @@
   "glCredit": "جی ال کریدت",
   "exchange": "تبادله",
   "fundTransfer": "حساب انتقال",
-  "journal": "روزنامچه",
+  "journal": "د پیسو لېږد او تبادله",
   "cashFlow": "جریان نقدی",
   "tryAgain": "امتحان دوباره",
   "newTransaction": "معامله جدید",
@@ -393,5 +393,8 @@
   "creatingBackupMsg": "د بیا رغونې مخکې د معلوماتو بیک اپ اخیستل کېږي...",
   "saving": "خوندي کېږي…",
   "updating": "تازه کېږي…",
-  "authorizing": "تأییدېږي…"
+  "authorizing": "تأییدېږي…",
+  "reversing": "درحال برگشتاندن...",
+  "unauthorizing": "درحال کشیدن از تایید...",
+  "deleting": "در حال خذف..."
 }

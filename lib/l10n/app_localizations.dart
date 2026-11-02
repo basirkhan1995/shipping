@@ -1423,7 +1423,7 @@ abstract class AppLocalizations {
   /// No description provided for @journal.
   ///
   /// In en, this message translates to:
-  /// **'Journal'**
+  /// **'Fund Transfer & Exchange'**
   String get journal;
 
   /// No description provided for @cashFlow.
@@ -2757,6 +2757,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Authorizing…'**
   String get authorizing;
+
+  /// No description provided for @reversing.
+  ///
+  /// In en, this message translates to:
+  /// **'Reversing...'**
+  String get reversing;
+
+  /// No description provided for @unauthorizing.
+  ///
+  /// In en, this message translates to:
+  /// **'Unauthorizing...'**
+  String get unauthorizing;
+
+  /// No description provided for @deleting.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting...'**
+  String get deleting;
 }
 
 class _AppLocalizationsDelegate

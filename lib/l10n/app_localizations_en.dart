@@ -679,7 +679,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fundTransfer => 'Fund Transfer';
 
   @override
-  String get journal => 'Journal';
+  String get journal => 'Fund Transfer & Exchange';
 
   @override
   String get cashFlow => 'Cash flow';
@@ -1355,4 +1355,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authorizing => 'Authorizing…';
+
+  @override
+  String get reversing => 'Reversing...';
+
+  @override
+  String get unauthorizing => 'Unauthorizing...';
+
+  @override
+  String get deleting => 'Deleting...';
 }
