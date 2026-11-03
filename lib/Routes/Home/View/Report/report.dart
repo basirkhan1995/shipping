@@ -6,6 +6,7 @@ import 'package:shipping/Routes/Home/View/Report/IncomeStatement/income_statemen
 import 'package:shipping/Routes/Home/View/Report/TrialBalance/trial_balance.dart';
 import 'package:shipping/Routes/Home/View/Report/TxnReport/txn_report.dart';
 import 'package:shipping/Routes/Home/View/Report/UserLog/user_log_report.dart';
+import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../Features/Other/responsive_widget.dart';
 import 'AccountStatement/acc_statement.dart';
 import 'ArAndAp/ar_ap.dart';
@@ -82,72 +83,73 @@ class _ReportBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final tr = AppLocalizations.of(context)!;
 
     // ── Sections. Each has its own title and its own grid of cards. ─
     final sections = <_ReportSection>[
       _ReportSection(
-        title: 'FINANCIAL REPORTS',
+        title: tr.financialReports,
         reports: [
           _ReportData(
             icon: Icons.receipt_long_outlined,
-            title: 'Account Statement',
+            title: tr.accountStatement.toUpperCase(),
             description:
-            'Ledger activity for a single account with running balance.',
+            tr.accountStatementHint,
             onTap: (ctx) =>
                 ZNavigator.goto(context: ctx, AccountStatementView()),
           ),
           _ReportData(
             icon: Icons.account_balance_outlined,
-            title: 'GL Statement',
+            title: tr.glStatement,
             description:
-            'General ledger activity and balances for a chosen account.',
+            tr.glStatementHint,
             onTap: (ctx) => ZNavigator.goto(context: ctx, GlStatementView()),
           ),
           _ReportData(
             icon: Icons.balance_outlined,
-            title: 'Balance Sheet',
-            description: 'Assets, liabilities and equity as of a chosen date.',
+            title: tr.balanceSheet.toUpperCase(),
+            description: tr.balanceSheetHint,
             onTap: (ctx) => ZNavigator.goto(context: ctx, BalanceSheetView()),
           ),
           _ReportData(
             icon: Icons.rule_folder_outlined,
-            title: 'Trial Balance',
+            title: tr.trialBalance.toUpperCase(),
             description:
-            'Debit and credit totals with automatic balance check.',
+            tr.trialBalanceHint,
             onTap: (ctx) => ZNavigator.goto(context: ctx, TrialBalanceView()),
           ),
           _ReportData(
             icon: Icons.manage_search_outlined,
-            title: 'Transaction Details',
-            description: 'Look up any transaction by its reference number.',
+            title: tr.transactionDetails.toUpperCase(),
+            description: tr.transactionDetailsHint,
             onTap: (ctx) =>
                 ZNavigator.goto(context: ctx, TxnByReferenceView()),
           ),
           _ReportData(
             icon: Icons.point_of_sale_outlined,
-            title: 'Branch Cash Balance',
-            description: 'Cash position for the current branch.',
+            title: tr.cashBalance,
+            description: tr.cashBalanceHint,
             onTap: (ctx) =>
                 ZNavigator.goto(context: ctx, CashBalancesBranchWiseView()),
           ),
           _ReportData(
             icon: Icons.account_balance_wallet_outlined,
-            title: 'Cash Balances',
-            description: 'Cash position across all branches.',
+            title: tr.cashBalance.toUpperCase(),
+            description: tr.treasuryHint,
             onTap: (ctx) => ZNavigator.goto(context: ctx, TreasuryView()),
           ),
           _ReportData(
             icon: Icons.line_axis_rounded,
-            title: 'Profit & Loss',
-            description: 'Income & expense statement.',
+            title: tr.profitAndLoss.toUpperCase(),
+            description: tr.profitAndLossHint,
             onTap: (ctx) =>
                 ZNavigator.goto(context: ctx, IncomeStatementView()),
           ),
           _ReportData(
             icon: Icons.call_received_outlined,
-            title: 'Receivables',
+            title: tr.receivables,
             description:
-            'Accounts where customers owe money to the business.',
+            tr.receivablesHint,
             onTap: (ctx) => ZNavigator.goto(
               context: ctx,
               const ArApReportPage(initialType: 'ar'),
@@ -155,9 +157,9 @@ class _ReportBody extends StatelessWidget {
           ),
           _ReportData(
             icon: Icons.call_made_outlined,
-            title: 'Payables',
+            title: tr.payables,
             description:
-            'Accounts where the business owes money to suppliers.',
+            tr.payablesHint,
             onTap: (ctx) => ZNavigator.goto(
               context: ctx,
               const ArApReportPage(initialType: 'ap'),
@@ -165,15 +167,15 @@ class _ReportBody extends StatelessWidget {
           ),
           _ReportData(
             icon: Icons.all_inclusive_rounded,
-            title: 'All Balances',
-            description: 'All accounts balances report',
+            title: tr.allBalances.toUpperCase(),
+            description: tr.allBalancesHint,
             onTap: (ctx) =>
                 ZNavigator.goto(context: ctx, const AllBalancesView()),
           ),
           _ReportData(
             icon: Icons.all_inclusive_rounded,
-            title: 'All Transactions',
-            description: 'All transactions records',
+            title: tr.allTransactions,
+            description: tr.allTransactionsHint,
             onTap: (ctx) => ZNavigator.goto(
               context: ctx,
               const TransactionReportView(),
@@ -184,19 +186,19 @@ class _ReportBody extends StatelessWidget {
 
       // ── HR SECTION ────────────────────────────────────────
       _ReportSection(
-        title: 'HUMAN RESOURCES',
+        title: tr.hrTitle.toUpperCase(),
         reports: [
           _ReportData(
             icon: Icons.verified_user_rounded,
-            title: 'Users log',
-            description: 'Users activities & logs',
+            title: tr.userLog.toUpperCase(),
+            description: tr.userLogHint,
             onTap: (ctx) =>
                 ZNavigator.goto(context: ctx, const UserLogReportView()),
           ),
           _ReportData(
             icon: Icons.location_on_rounded,
-            title: 'Attendance',
-            description: 'Present & Absent records',
+            title: tr.attendance.toUpperCase(),
+            description: tr.attendanceHint,
             onTap: (ctx) =>
                 ZNavigator.goto(context: ctx, const UserLogReportView()),
           ),
@@ -205,19 +207,19 @@ class _ReportBody extends StatelessWidget {
 
       // ── TRANSPORT SECTION ─────────────────────────────────
       _ReportSection(
-        title: 'TRANSPORT & CARGO',
+        title: tr.transportCargo,
         reports: [
           _ReportData(
             icon: Icons.verified_user_rounded,
-            title: 'Shipments',
-            description: 'List of Containers imported',
+            title: tr.shipments,
+            description: tr.shipmentsHint,
             onTap: (ctx) =>
                 ZNavigator.goto(context: ctx, const UserLogReportView()),
           ),
           _ReportData(
             icon: Icons.verified_user_rounded,
-            title: 'Customers Shipment Invoice',
-            description: 'PDF or EXCEL Invoice for customer out of containers',
+            title: tr.shipmentInvoice,
+            description: tr.shipmentInvoiceHint,
             onTap: (ctx) =>
                 ZNavigator.goto(context: ctx, const UserLogReportView()),
           ),
@@ -234,8 +236,8 @@ class _ReportBody extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 45,
+                height: 45,
                 decoration: BoxDecoration(
                   color: scheme.primary.withValues(alpha: .07),
                   borderRadius: BorderRadius.circular(5),
@@ -253,21 +255,21 @@ class _ReportBody extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'REPORTS',
+                      tr.reports,
                       style: TextStyle(
-                        fontSize: 17,
+                        fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: 1.1,
+                        letterSpacing: 1,
                         color: scheme.primary,
                       ),
                     ),
                     Text(
-                      'Choose a report to view',
+                      tr.reportHint,
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 1.0,
-                        color: scheme.primary,
+                        color: scheme.outline,
                       ),
                     ),
                   ],
@@ -426,8 +428,8 @@ class _ReportCardState extends State<_ReportCard> {
     final scheme = Theme.of(context).colorScheme;
     final iconSize = widget.compact ? 44.0 : 52.0;
     final innerIconSize = widget.compact ? 24.0 : 28.0;
-    final titleSize = widget.compact ? 13.0 : 15.0;
-    final descSize = widget.compact ? 12.0 : 12.5;
+    final titleSize = widget.compact ? 15.0 : 17.0;
+    final descSize = widget.compact ? 13.0 : 13.5;
     final pad = widget.compact ? 12.0 : 14.0;
 
     return MouseRegion(

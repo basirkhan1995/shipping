@@ -1498,4 +1498,113 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get accountDetails => 'جزئیات حساب';
+
+  @override
+  String get inTitle => 'آمد';
+
+  @override
+  String get outTitle => 'رفت';
+
+  @override
+  String get systemDate => 'سیستم نیته';
+
+  @override
+  String get gregorian => 'میلادی';
+
+  @override
+  String get shamsi => 'هجری شمسی';
+
+  @override
+  String get theme => 'تم';
+
+  @override
+  String get financialReports => 'مالي راپورونه';
+
+  @override
+  String get accountStatementHint => 'د یوه حساب معاملې او روان بیلانس.';
+
+  @override
+  String get glStatementHint =>
+      'د ټاکل شوي حساب لپاره د عمومي لېجر معاملې او بیلانسونه.';
+
+  @override
+  String get balanceSheetHint => 'تر ټاکلې نېټې پورې شتمنۍ، پورونه او سرمایه.';
+
+  @override
+  String get trialBalanceHint =>
+      'د ډیبیټ او کریډیټ ټولیزه اندازه له اتومات توازن کتنې سره.';
+
+  @override
+  String get transactionDetailsHint => 'هره معامله د مرجع شمېرې له مخې ولټوئ.';
+
+  @override
+  String get cashBalanceHint => 'د اوسنۍ څانګې نغدي وضعیت.';
+
+  @override
+  String get treasuryHint => 'په ټولو څانګو کې نغدي وضعیت.';
+
+  @override
+  String get profitAndLossHint => 'د عاید او لګښت راپور.';
+
+  @override
+  String get receivables => 'د ترلاسه کولو وړ حسابونه';
+
+  @override
+  String get receivablesHint =>
+      'هغه حسابونه چې پېرودونکي سوداګرۍ ته پوروړي وي.';
+
+  @override
+  String get payables => 'د ورکړې وړ حسابونه';
+
+  @override
+  String get payablesHint => 'هغه حسابونه چې سوداګري عرضه کوونکو ته پوروړې وي.';
+
+  @override
+  String get allBalancesHint => 'د ټولو حسابونو د بیلانس راپور.';
+
+  @override
+  String get allTransactionsHint => 'د ټولو معاملو ریکارډونه.';
+
+  @override
+  String get userLogHint => 'د کاروونکو فعالیتونه او لاګونه.';
+
+  @override
+  String get attendanceHint => 'د حاضرۍ او غیر حاضرۍ ریکارډونه.';
+
+  @override
+  String get transportCargo => 'ترانسپورت او بار وړنه';
+
+  @override
+  String get shipments => 'لېږدونې';
+
+  @override
+  String get shipmentsHint => 'د وارد شوو کانتینرونو لېست.';
+
+  @override
+  String get shipmentInvoice => 'د لېږدونې بل';
+
+  @override
+  String get shipmentInvoiceHint =>
+      'د کانتینرونو پر بنسټ د پیرودونکو لپاره PDF یا Excel بل.';
+
+  @override
+  String get reportHint => 'د لیدلو لپاره یو راپور وټاکئ.';
+
+  @override
+  String get authorizationMakerOnly =>
+      'یوازې د دې معاملې جوړوونکی کولای شي د هغې تأیید لغوه یا بیرته را وګرځوي.';
+
+  @override
+  String get authorizationInvalidState =>
+      'دا معامله د تأیید لپاره په مناسب حالت کې نه ده.';
+
+  @override
+  String get authorizationPending =>
+      'دا معامله لا دمخه د انتظار په حالت کې ده.';
+
+  @override
+  String get authorizationFailedProcess => 'دا معامله پروسس نه شوه.';
+
+  @override
+  String get authorizationFailed => 'تأیید ناکام شو.';
 }

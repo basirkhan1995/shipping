@@ -85,3 +85,9 @@ flutter:
         - asset: assets/fonts/Amiri/Amiri-Bold.ttf
         - asset: assets/fonts/Amiri/Amiri-BoldItalic.ttf
         - asset: assets/fonts/Amiri/Amiri-Italic.ttf
+    - family: Vazir
+      fonts:
+        - asset: assets/fonts/Vazir/Vazirmatn-Regular.ttf
+        - asset: assets/fonts/Vazir/Vazirmatn-Bold.ttf
+        - asset: assets/fonts/Vazir/Vazirmatn-Medium.ttf
+        - asset: assets/fonts/Vazir/Vazirmatn-Light.ttf

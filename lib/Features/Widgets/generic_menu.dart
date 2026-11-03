@@ -137,7 +137,7 @@ class GenericMenuItem extends StatelessWidget {
                             ),
                             child: Text(
                               label,
-                              style: TextStyle(fontWeight: FontWeight.w400),
+                              style: TextStyle(fontWeight: isSelected? FontWeight.w600 : FontWeight.w500,letterSpacing: 1),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),

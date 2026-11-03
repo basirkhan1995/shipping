@@ -250,7 +250,6 @@ class _ZRangeDatePickerState extends State<ZRangeDatePicker> {
           int.parse(startParts[2]),
         );
       }
-
       final endParts = selectedEndGregorianDate.split('-');
       if (endParts.length == 3) {
         initialEndPickerDate = DateTime(
@@ -268,7 +267,6 @@ class _ZRangeDatePickerState extends State<ZRangeDatePicker> {
     final initialRange = (initialStartPickerDate != null && initialEndPickerDate != null)
         ? ZGregorianRangePicker(initialStartPickerDate, initialEndPickerDate)
         : null;
-
     showDialog(
       context: context,
       builder: (_) => GregorianDateRangePicker(

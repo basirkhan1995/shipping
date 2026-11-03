@@ -372,7 +372,7 @@ class AccountStatementPrintSettings extends PrintServices {
     }
   }
   pw.Widget items({required AccountStatementModel items, required String language, required ReportModel report}) {
-    const dateWidth = 50.0;
+    const dateWidth = 65.0;
     const trnWidth = 90.0;
     const amountWidth = 60.0;
     const balanceWidth = 70.0;
@@ -471,7 +471,7 @@ class AccountStatementPrintSettings extends PrintServices {
                         ? pw.TextAlign.left
                         : pw.TextAlign.right,
                     text: isGre? items.records![i].trnEntryDate!.toFormattedDate() : items.records![i].trnEntryDate!.shamsiDateString,
-                    fontSize: language == "en"? 9 : 10,
+                    fontSize: 9,
                   ),
                 ),
                 pw.SizedBox(

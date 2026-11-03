@@ -26,21 +26,23 @@ class CashTxnBloc extends Bloc<CashTxnEvent, CashTxnState> {
     emit(const CashTxnLoading());
     try {
       final body = await _repo.getCashTxnByReference(reference: e.reference);
+
+      if (body['msg'] != null && body['msg'] != 'success') {
+        emit(CashTxnFailure(body['msg'].toString()));
+        return;
+      }
+
       final lines = (body['lines'] as List?) ?? const [];
       if (lines.isEmpty) {
         emit(const CashTxnFailure('Transaction has no detail lines.'));
         return;
       }
 
-      // The two legs are:
-      //   • the "subject" account leg (the user's account), and
-      //   • the contra GL leg (10101010).
-      // The dialog only needs the subject leg. Find the first line whose
-      // account is NOT the GL.
+      // ── 1. Pick the subject leg ─────────────────────────────
+      // The two legs are: the subject account and the contra GL 10101010.
+      // The dialog only needs the subject leg.
       const valueGL = 10101010;
-
       Map<String, dynamic>? subjectLeg;
-
       for (final raw in lines) {
         if (raw is! Map) continue;
         final map = Map<String, dynamic>.from(raw);
@@ -50,29 +52,61 @@ class CashTxnBloc extends Bloc<CashTxnEvent, CashTxnState> {
           break;
         }
       }
-
-      // Fallback — if every line is the GL (data anomaly), use the first.
       subjectLeg ??= Map<String, dynamic>.from(lines.first as Map);
 
-      final subjectAcc =
-      int.tryParse(subjectLeg['trdAccount']?.toString() ?? '');
-      final ccy = subjectLeg['trdCcy']?.toString();
-      final amount = subjectLeg['trdAmount']?.toString() ?? '0';
-      final narration = (subjectLeg['trdNarration'] ?? '').toString();
+      final subjectAcc = int.tryParse(subjectLeg['trdAccount']?.toString() ?? '');
+      final ccy        = subjectLeg['trdCcy']?.toString();
+      final amount     = subjectLeg['trdAmount']?.toString() ?? '0';
+      final narration  = (subjectLeg['trdNarration'] ?? '').toString();
+
+      // ── 2. Header fields — display names, not ids ──────────
+      String? pickNonEmpty(List<String> keys) {
+        for (final k in keys) {
+          final s = body[k]?.toString().trim();
+          if (s != null && s.isNotEmpty && s != 'null') return s;
+        }
+        return null;
+      }
+
+      final makerName   = pickNonEmpty(const ['makerName', 'maker']);
+      final checkerName = pickNonEmpty(const ['checkerName', 'checker']);
+
+      final statusInt = int.tryParse(body['status']?.toString() ?? '');
+      final stateText = pickNonEmpty(const ['stateText', 'trnStateText']) ??
+          _statusLabel(statusInt);
+
+      // ── 3. Date — SQL Server sends "yyyy-MM-dd HH:mm:ss" ───
+      DateTime? parsedDate;
+      final rawDate = pickNonEmpty(const ['entryDate', 'trnEntryDate']);
+      if (rawDate != null) {
+        parsedDate = DateTime.tryParse(rawDate) ??
+            DateTime.tryParse(rawDate.replaceFirst(' ', 'T'));
+      }
+
+      // ── 4. Build the draft with ALL audit fields ───────────
+      final draft = TransactionDraft(
+        trnReference: e.reference,
+        trnType:      pickNonEmpty(const ['trnType', 'type']),
+        trdBranch:    int.tryParse(subjectLeg['trdBranch']?.toString() ?? ''),
+        maker:        makerName,     // ← "basir" not 2
+        checker:      checkerName,   // ← null / "ali"
+        trnStatus:    statusInt,
+        trnStateText: stateText,
+        trnEntryDate: parsedDate,
+
+        trdAccount:   subjectAcc,
+        trdCcy:       ccy,
+        trdAmount:    amount,
+        trdNarration: narration,
+        accName:      subjectLeg['accName']?.toString(),
+      );
 
       emit(CashTxnLoadedForEdit(
-        draft: TransactionDraft(
-          trnReference: e.reference,
-          trnType: body['type']?.toString(),
-          trdAccount: subjectAcc,
-          trdCcy: ccy,
-          trdAmount: amount,
-          trdNarration: narration,
-        ),
-        stateText: body['stateText']?.toString(),
-        status: int.tryParse(body['status']?.toString() ?? ''),
-        makerName: body['makerName']?.toString(),
-        typeCode: body['type']?.toString(),
+        draft:     draft,
+        stateText: stateText,
+        status:    statusInt,
+        makerName: makerName,        // ← display name, for isMaker comparison
+        typeCode:  pickNonEmpty(const ['trnType', 'type']),
       ));
     } on ApiException catch (x) {
       emit(CashTxnFailure(x.message));
@@ -80,6 +114,18 @@ class CashTxnBloc extends Bloc<CashTxnEvent, CashTxnState> {
       emit(CashTxnFailure(x.toString()));
     }
   }
+
+  String? _statusLabel(int? status) {
+    switch (status) {
+      case 0: return 'Pending';
+      case 1: return 'Authorized';
+      case 2: return 'Reversed';
+      case 3: return 'Deleted';
+      default: return null;
+    }
+  }
+
+
 
   Future<void> _onCreate(
       CashTxnCreateRequested e,

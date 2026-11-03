@@ -690,7 +690,6 @@ class _DesktopViewState extends State<_DesktopView> {
                 Container(
                   width: 0,
                   margin: const EdgeInsets.symmetric(horizontal: 8),
-                 // color: color.outlineVariant.withValues(alpha: .35),
                 ),
             ],
           ],
@@ -996,7 +995,7 @@ class _RibbonButtonState extends State<_RibbonButton> {
             decoration: BoxDecoration(
               color: _hover
                   ? color.primary.withValues(alpha: .06)
-                  : color.surface,
+                  : color.primary.withValues(alpha: .04),
               borderRadius: BorderRadius.circular(5),
               border: Border.all(color: borderColor, width: 1),
             ),

@@ -3045,6 +3045,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Account Details'**
   String get accountDetails;
+
+  /// No description provided for @inTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'IN'**
+  String get inTitle;
+
+  /// No description provided for @outTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'OUT'**
+  String get outTitle;
+
+  /// No description provided for @systemDate.
+  ///
+  /// In en, this message translates to:
+  /// **'System Date'**
+  String get systemDate;
+
+  /// No description provided for @gregorian.
+  ///
+  /// In en, this message translates to:
+  /// **'Gregorian'**
+  String get gregorian;
+
+  /// No description provided for @shamsi.
+  ///
+  /// In en, this message translates to:
+  /// **'Hijri Shamsi'**
+  String get shamsi;
+
+  /// No description provided for @theme.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get theme;
+
+  /// No description provided for @financialReports.
+  ///
+  /// In en, this message translates to:
+  /// **'Financial Reports'**
+  String get financialReports;
+
+  /// No description provided for @accountStatementHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ledger activity for a single account with running balance.'**
+  String get accountStatementHint;
+
+  /// No description provided for @glStatementHint.
+  ///
+  /// In en, this message translates to:
+  /// **'General ledger activity and balances for a chosen account.'**
+  String get glStatementHint;
+
+  /// No description provided for @balanceSheetHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Assets, liabilities and equity as of a chosen date.'**
+  String get balanceSheetHint;
+
+  /// No description provided for @trialBalanceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Debit and credit totals with automatic balance check.'**
+  String get trialBalanceHint;
+
+  /// No description provided for @transactionDetailsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Look up any transaction by its reference number.'**
+  String get transactionDetailsHint;
+
+  /// No description provided for @cashBalanceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash position for the current branch.'**
+  String get cashBalanceHint;
+
+  /// No description provided for @treasuryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash position across all branches.'**
+  String get treasuryHint;
+
+  /// No description provided for @profitAndLossHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Income & expense statement.'**
+  String get profitAndLossHint;
+
+  /// No description provided for @receivables.
+  ///
+  /// In en, this message translates to:
+  /// **'Receivables'**
+  String get receivables;
+
+  /// No description provided for @receivablesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts where customers owe money to the business.'**
+  String get receivablesHint;
+
+  /// No description provided for @payables.
+  ///
+  /// In en, this message translates to:
+  /// **'Payables'**
+  String get payables;
+
+  /// No description provided for @payablesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts where the business owes money to suppliers.'**
+  String get payablesHint;
+
+  /// No description provided for @allBalancesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'All accounts balances report.'**
+  String get allBalancesHint;
+
+  /// No description provided for @allTransactionsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'All transactions records.'**
+  String get allTransactionsHint;
+
+  /// No description provided for @userLogHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Users activities & logs.'**
+  String get userLogHint;
+
+  /// No description provided for @attendanceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Present & Absent records.'**
+  String get attendanceHint;
+
+  /// No description provided for @transportCargo.
+  ///
+  /// In en, this message translates to:
+  /// **'Transport & Cargo'**
+  String get transportCargo;
+
+  /// No description provided for @shipments.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipments'**
+  String get shipments;
+
+  /// No description provided for @shipmentsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'List of Containers imported.'**
+  String get shipmentsHint;
+
+  /// No description provided for @shipmentInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipment Invoice'**
+  String get shipmentInvoice;
+
+  /// No description provided for @shipmentInvoiceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF or EXCEL Invoice for customer out of containers.'**
+  String get shipmentInvoiceHint;
+
+  /// No description provided for @reportHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a report to view.'**
+  String get reportHint;
+
+  /// No description provided for @authorizationMakerOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the maker of this transaction can unauthorize or reverse it.'**
+  String get authorizationMakerOnly;
+
+  /// No description provided for @authorizationInvalidState.
+  ///
+  /// In en, this message translates to:
+  /// **'This transaction is not in the right state to be authorized.'**
+  String get authorizationInvalidState;
+
+  /// No description provided for @authorizationPending.
+  ///
+  /// In en, this message translates to:
+  /// **'This transaction is already pending.'**
+  String get authorizationPending;
+
+  /// No description provided for @authorizationFailedProcess.
+  ///
+  /// In en, this message translates to:
+  /// **'The transaction could not be processed.'**
+  String get authorizationFailedProcess;
+
+  /// No description provided for @authorizationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorization failed.'**
+  String get authorizationFailed;
 }
 
 class _AppLocalizationsDelegate

@@ -118,7 +118,7 @@ class _StatsSection extends StatelessWidget {
 
         final cashCard = _FinCard(
           icon: Icons.payments_outlined,
-          label: 'Net Cash',
+          label: tr.cashFlow,
           value: loading ? null : netCash,
           currency: loading ? null : s!.currency,
           accent: netCashPos
@@ -132,13 +132,13 @@ class _StatsSection extends StatelessWidget {
               ? null
               : [
             _BreakdownItem(
-              label: 'In',
+              label: tr.inTitle,
               value: s!.cash.inAmount,
               icon: Icons.arrow_downward_rounded,
               color: const Color(0xFF059669),
             ),
             _BreakdownItem(
-              label: 'Out',
+              label: tr.outTitle,
               value: s.cash.outAmount,
               icon: Icons.arrow_upward_rounded,
               color: const Color(0xFFDC2626),
@@ -156,7 +156,7 @@ class _StatsSection extends StatelessWidget {
           icon: profitPos
               ? Icons.trending_up_rounded
               : Icons.trending_down_rounded,
-          label: 'Profit',
+          label: tr.profit,
           value: loading ? null : profit,
           currency: loading ? null : s!.currency,
           accent: profitPos
@@ -170,13 +170,13 @@ class _StatsSection extends StatelessWidget {
               ? null
               : [
             _BreakdownItem(
-              label: 'Income',
+              label: tr.income,
               value: s!.finance.income,
               icon: Icons.add_circle_outline,
               color: const Color(0xFF059669),
             ),
             _BreakdownItem(
-              label: 'Expense',
+              label: tr.expense,
               value: s.finance.expense,
               icon: Icons.remove_circle_outline,
               color: const Color(0xFFDC2626),
@@ -577,7 +577,7 @@ class _CountCard extends StatelessWidget {
     return ZCover(
       radius: 5,
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -616,6 +616,8 @@ class _CountCard extends StatelessWidget {
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: scheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
+                fontSize: 14,
+                letterSpacing: 1
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

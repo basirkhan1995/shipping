@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../../../Features/Date/shamsi_converter.dart';
 import '../../../../../../Features/Widgets/extensions.dart';
 import '../../../../../../Features/Widgets/zbutton.dart';
 import '../../../../../../Features/Other/generic_textfield.dart';
@@ -21,7 +22,7 @@ import 'bloc/fund_transfer_bloc.dart';
 import 'model/ft_model.dart';
 
 // ═════════════════════════════════════════════════════════════════
-// FORM — add / edit a fund transfer (debit → credit)
+// FORM
 // ═════════════════════════════════════════════════════════════════
 
 class FundTransferForm extends StatefulWidget {
@@ -30,11 +31,11 @@ class FundTransferForm extends StatefulWidget {
   final FundTransferDetail? initialDetail;
   final String? stateText;
 
-  /// Optional external trigger so the dialog (mouse click) and the
-  /// narration field (Enter key) go through the *same* submit path.
-  final VoidCallback? onSubmitRequested;
+  /// Optional — scopes the **account picker** to one stakeholder.
+  /// Has nothing to do with loading the transaction itself.
+  final int? perId;
 
-  /// Emits a draft ready for `FundTransferBloc.add/edit`.
+  final VoidCallback? onSubmitRequested;
   final void Function(FundTransferFormResult result) onSubmit;
 
   const FundTransferForm({
@@ -45,15 +46,15 @@ class FundTransferForm extends StatefulWidget {
     this.onSubmitRequested,
     this.initialDetail,
     this.stateText,
+    this.perId,
   });
 
   @override
   State<FundTransferForm> createState() => FundTransferFormState();
 }
 
-/// Form output — used by `FundTransferBloc`.
 class FundTransferFormResult {
-  final String? reference; // null → create, set → edit
+  final String? reference;
   final String usrName;
   final int fromAccount;
   final String fromAccCcy;
@@ -91,12 +92,9 @@ class FundTransferFormState extends State<FundTransferForm> {
   StakeholderAccount? _fromAcc;
   StakeholderAccount? _toAcc;
 
-  /// Fallback legs from the loaded detail (edit mode).
   FundTransferLeg? _fromLeg;
   FundTransferLeg? _toLeg;
 
-  /// GL-side currency override. Stakeholder endpoints ignore this and
-  /// always use `accCurrency` from the API row.
   String? _fromCcyOverride;
   String? _toCcyOverride;
 
@@ -107,7 +105,6 @@ class FundTransferFormState extends State<FundTransferForm> {
   bool get _isEditable =>
       widget.stateText == null || widget.stateText == 'Pending';
 
-  // ── Account / category resolution ─────────────────────────────
   int? get _fromAccountNo => _fromAcc?.accNumber ?? _fromLeg?.account;
   int? get _toAccountNo => _toAcc?.accNumber ?? _toLeg?.account;
 
@@ -117,9 +114,6 @@ class FundTransferFormState extends State<FundTransferForm> {
   bool get _fromIsStakeholder => _fromCategory == _stakeholderCategory;
   bool get _toIsStakeholder => _toCategory == _stakeholderCategory;
 
-  // ── Currency resolution ──────────────────────────────────────
-  /// Stakeholder → API currency (never base).
-  /// GL → user override → API row ccy → leg ccy → base (last resort).
   String? get _fromCcyEffective {
     if (_fromIsStakeholder) {
       return _fromAcc?.accCurrency ?? _fromLeg?.currency ?? widget.baseCurrency;
@@ -168,7 +162,6 @@ class FundTransferFormState extends State<FundTransferForm> {
     _fromLeg = from;
     _toLeg = to;
 
-    // Seed the override from the API leg currency (not base).
     _fromCcyOverride = from?.currency ?? widget.baseCurrency;
     _toCcyOverride = to?.currency ?? widget.baseCurrency;
 
@@ -184,18 +177,24 @@ class FundTransferFormState extends State<FundTransferForm> {
     }
 
     _amountCtrl.text = (from?.amount ?? 0).toStringAsFixed(2);
-    _narrationCtrl.text = d.narration;
+    _narrationCtrl.text = from?.narration ?? '';
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (from != null) {
         context.read<StkAccountsBloc>().add(
-          LoadStkAccountsEvent(query: '${from.account}'),
+          LoadStkAccountsEvent(
+            query: '${from.account}',
+            perId: widget.perId,
+          ),
         );
       }
       if (to != null) {
         context.read<StkAccountsBloc>().add(
-          LoadStkAccountsEvent(query: '${to.account}'),
+          LoadStkAccountsEvent(
+            query: '${to.account}',
+            perId: widget.perId,
+          ),
         );
       }
     });
@@ -230,7 +229,6 @@ class FundTransferFormState extends State<FundTransferForm> {
       }
     }
 
-    // Clear the pending requests either way so we don't loop forever.
     _pendingFromAccountNo = null;
     _pendingFromCcy = null;
     _pendingToAccountNo = null;
@@ -256,7 +254,6 @@ class FundTransferFormState extends State<FundTransferForm> {
     super.dispose();
   }
 
-  /// Read the numeric account from a "num | name | ccy" controller text.
   int? _accountNumberOf(TextEditingController c) {
     final text = c.text.trim();
     if (text.isEmpty) return null;
@@ -265,11 +262,6 @@ class FundTransferFormState extends State<FundTransferForm> {
     return int.tryParse(numText);
   }
 
-  /// Validates and dispatches the draft.
-  ///
-  /// Returns `true` when a `FundTransferFormResult` was actually sent to
-  /// `widget.onSubmit`, `false` when validation blocked it. The caller
-  /// (dialog) uses this to know whether to keep the spinner running.
   bool submit() {
     if (!_isEditable) return false;
 
@@ -313,11 +305,8 @@ class FundTransferFormState extends State<FundTransferForm> {
     type: ToastType.error,
   );
 
-  /// Pending refresh request for the debit / credit card, set when the
-  /// user changes the GL currency and cleared once we've synced the row.
   int? _pendingFromAccountNo;
   String? _pendingFromCcy;
-
   int? _pendingToAccountNo;
   String? _pendingToCcy;
 
@@ -327,7 +316,7 @@ class FundTransferFormState extends State<FundTransferForm> {
 
     return BlocListener<StkAccountsBloc, StkAccountsState>(
       listenWhen: (prev, next) =>
-          next is StkAccountsLoadedState &&
+      next is StkAccountsLoadedState &&
           (_pendingFromAccountNo != null || _pendingToAccountNo != null),
       listener: (context, state) {
         if (state is! StkAccountsLoadedState) return;
@@ -381,13 +370,6 @@ class FundTransferFormState extends State<FundTransferForm> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // Unique row identity — the same GL account number appears
-  // multiple times (once per currency). The identity MUST include
-  // the currency so the picker can distinguish 10101010/AFN from
-  // 10101010/USD, otherwise it will always resolve to the first
-  // row that matches the account number.
-  // ═══════════════════════════════════════════════════════════════
   String _rowKey(StakeholderAccount a) => _rowKeyFromParts(
     a.accNumber,
     a.accName,
@@ -407,7 +389,6 @@ class FundTransferFormState extends State<FundTransferForm> {
     return '$n | $nm';
   }
 
-  // ── Account pickers ──────────────────────────────────────────
   Widget _buildFromPicker() => _accountPicker(
     key: const ValueKey('debit'),
     controller: _fromCtrl,
@@ -422,9 +403,7 @@ class FundTransferFormState extends State<FundTransferForm> {
       final code = ccy?.ccyCode ?? widget.baseCurrency;
       final accountNo = _fromAcc?.accNumber;
 
-      setState(() {
-        _fromCcyOverride = code;
-      });
+      setState(() => _fromCcyOverride = code);
 
       if (accountNo == null || _fromIsStakeholder) return;
 
@@ -432,7 +411,10 @@ class FundTransferFormState extends State<FundTransferForm> {
       _pendingFromCcy = code;
 
       context.read<StkAccountsBloc>().add(
-        LoadStkAccountsEvent(query: '$accountNo'),
+        LoadStkAccountsEvent(
+          query: '$accountNo',
+          perId: widget.perId,
+        ),
       );
     },
     onSelected: (a) {
@@ -466,9 +448,7 @@ class FundTransferFormState extends State<FundTransferForm> {
       final code = ccy?.ccyCode ?? widget.baseCurrency;
       final accountNo = _toAcc?.accNumber;
 
-      setState(() {
-        _toCcyOverride = code;
-      });
+      setState(() => _toCcyOverride = code);
 
       if (accountNo == null || _toIsStakeholder) return;
 
@@ -476,7 +456,10 @@ class FundTransferFormState extends State<FundTransferForm> {
       _pendingToCcy = code;
 
       context.read<StkAccountsBloc>().add(
-        LoadStkAccountsEvent(query: '$accountNo'),
+        LoadStkAccountsEvent(
+          query: '$accountNo',
+          perId: widget.perId,
+        ),
       );
     },
     onSelected: (a) {
@@ -512,14 +495,12 @@ class FundTransferFormState extends State<FundTransferForm> {
     String? excludeCurrency,
   }) {
     final accountNo = _accountNumberOf(controller);
-
     final showCcySelector = _isEditable && !isStakeholder && accountNo != null;
 
     return GenericTextField<
-      StakeholderAccount,
-      StkAccountsBloc,
-      StkAccountsState
-    >(
+        StakeholderAccount,
+        StkAccountsBloc,
+        StkAccountsState>(
       key: key,
       controller: controller,
       title: title,
@@ -533,7 +514,9 @@ class FundTransferFormState extends State<FundTransferForm> {
       readOnly: !_isEditable,
       searchFunction: (bloc, q) {
         if (q.trim().isEmpty) return;
-        bloc.add(LoadStkAccountsEvent(query: q));
+        bloc.add(
+          LoadStkAccountsEvent(query: q, perId: widget.perId),
+        );
       },
       itemBuilder: (context, account) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
@@ -551,23 +534,16 @@ class FundTransferFormState extends State<FundTransferForm> {
           ],
         ),
       ),
-
-      // ⚠️ Unique identity per API row (includes currency).
       itemToString: _rowKey,
-
       stateToItems: (s) {
         if (s is! StkAccountsLoadedState) {
           return const <StakeholderAccount>[];
         }
         return s.accounts.where((a) {
-          // 1. Category filter — only apply when the caller asked for one.
           if (allowedCategories != null &&
               !allowedCategories.contains(a.accCategory)) {
             return false;
           }
-
-          // 2. Exclude only the exact (account number + currency) pair.
-          //    Keeps other currency rows of the same GL account selectable.
           final rowCcy = (a.accCurrency ?? widget.baseCurrency)
               .trim()
               .toUpperCase();
@@ -582,13 +558,10 @@ class FundTransferFormState extends State<FundTransferForm> {
       },
       stateToLoading: (s) => s is StkAccountsLoadingState,
       onSelected: onSelected,
-
       showCurrencySelector: showCcySelector,
       isCurrencySelectorEnabled: _isEditable,
-      // The currency override must be the picked row's ccy, not the base.
       selectedCurrencyCodeOverride: currencyOverride,
       onCurrencySelectorChanged: onCurrencySelected,
-
       validator: (_) {
         if (!_isEditable) return null;
         if (widget.initialDetail != null) return null;
@@ -597,18 +570,16 @@ class FundTransferFormState extends State<FundTransferForm> {
     );
   }
 
-  /// Dropdown-list trailing text: always show balance + currency from API.
   String _accountBadge(StakeholderAccount a) {
     final balance = a.accBalance.toAmount();
     final ccy = a.accCurrency ?? widget.baseCurrency;
     return '$balance $ccy'.trim();
   }
 
-  // ── Amount & narration ───────────────────────────────────────
   Widget _buildAmountField() => ZTextFieldEntitled(
     controller: _amountCtrl,
     title:
-        '${AppLocalizations.of(context)!.amount} (${_fromCcyEffective ?? widget.baseCurrency})',
+    '${AppLocalizations.of(context)!.amount} (${_fromCcyEffective ?? widget.baseCurrency})',
     isRequired: true,
     isEnabled: _isEditable,
     focusNode: _amountFocus,
@@ -630,9 +601,6 @@ class FundTransferFormState extends State<FundTransferForm> {
     isEnabled: _isEditable,
     focusNode: _narrationFocus,
     textInputAction: TextInputAction.none,
-    // Route Enter through the dialog's onSubmitRequested when supplied,
-    // so keyboard and mouse go through the exact same path (busy flag,
-    // validation, dispatch, spinner).
     onFieldSubmitted: (_) => (widget.onSubmitRequested ?? submit)(),
     keyboardType: TextInputType.multiline,
     validator: (v) => (!_isEditable || (v != null && v.trim().isNotEmpty))
@@ -653,15 +621,19 @@ class FundTransferFormState extends State<FundTransferForm> {
 }
 
 // ═════════════════════════════════════════════════════════════════
-// DIALOG — provisions FundTransferBloc, reuses TransactionsBloc
+// DIALOG
 // ═════════════════════════════════════════════════════════════════
 
 Future<bool?> showFundTransferDialog(
-  BuildContext context, {
-  required String usrName,
-  required String baseCurrency,
-  String? reference,
-}) {
+    BuildContext context, {
+      required String usrName,
+      required String baseCurrency,
+      String? reference,
+
+      /// Optional — forwarded to the form so the **account picker** is
+      /// scoped to one stakeholder. Does NOT affect the detail fetch.
+      int? perId,
+    }) {
   return showDialog<bool>(
     context: context,
     barrierDismissible: false,
@@ -671,6 +643,7 @@ Future<bool?> showFundTransferDialog(
           create: (ctx) {
             final bloc = FundTransferBloc(ctx.read<Repositories>());
             if (reference != null && reference.isNotEmpty) {
+              // ✅ No perId — the reference identifies the transaction.
               bloc.add(LoadFundTransferDetailEvent(reference));
             }
             return bloc;
@@ -684,6 +657,7 @@ Future<bool?> showFundTransferDialog(
         usrName: usrName,
         baseCurrency: baseCurrency,
         reference: reference,
+        perId: perId,
       ),
     ),
   );
@@ -693,11 +667,13 @@ class _FundTransferDialog extends StatefulWidget {
   final String usrName;
   final String baseCurrency;
   final String? reference;
+  final int? perId;
 
   const _FundTransferDialog({
     required this.usrName,
     required this.baseCurrency,
     this.reference,
+    this.perId,
   });
 
   @override
@@ -705,20 +681,11 @@ class _FundTransferDialog extends StatefulWidget {
 }
 
 class _FundTransferDialogState extends State<_FundTransferDialog> {
-  /// Local error shown inside the dialog when a row action fails.
   String? _localError;
-
-  /// Stable key — attached to `FundTransferForm.key` so `currentState`
-  /// resolves to the live `FundTransferFormState` (mouse + Enter share
-  /// one path). Created **once** — never inside build().
   final _formKey = GlobalKey<FundTransferFormState>();
 
-  /// Local busy flags. Set on the button press, cleared on bloc
-  /// success/failure. Combined with the bloc's own flags so the spinner
-  /// paints even when `FundTransferSubmitting` is coalesced away before
-  /// the next frame.
-  bool _formBusy = false; // Save / Update
-  bool _actionBusy = false; // Delete / Auth / Unauth / Reverse
+  bool _formBusy = false;
+  bool _actionBusy = false;
 
   String get usrName => widget.usrName;
   String get baseCurrency => widget.baseCurrency;
@@ -745,7 +712,6 @@ class _FundTransferDialogState extends State<_FundTransferDialog> {
     if (mounted) setState(() => _actionBusy = v);
   }
 
-  // ── Form submit (mouse + keyboard both land here) ─────────────
   void _onFormSubmit() {
     final st = _formKey.currentState;
     if (st == null) return;
@@ -757,14 +723,14 @@ class _FundTransferDialogState extends State<_FundTransferDialog> {
     if (!dispatched) _setFormBusy(false);
   }
 
-  // ── Row actions ───────────────────────────────────────────────
   void _dispatchAuthorize(BuildContext context) {
     final ref = reference;
     if (ref == null || ref.isEmpty) return;
     _clearLocalError();
     _setActionBusy(true);
     context.read<TransactionsBloc>().add(
-      AuthorizeTransactionEvent(reference: ref, userName: _loginName(context)),
+      AuthorizeTransactionEvent(
+          reference: ref, userName: _loginName(context)),
     );
   }
 
@@ -787,7 +753,8 @@ class _FundTransferDialogState extends State<_FundTransferDialog> {
     _clearLocalError();
     _setActionBusy(true);
     context.read<TransactionsBloc>().add(
-      ReverseTransactionEvent(reference: ref, userName: _loginName(context)),
+      ReverseTransactionEvent(
+          reference: ref, userName: _loginName(context)),
     );
   }
 
@@ -823,16 +790,17 @@ class _FundTransferDialogState extends State<_FundTransferDialog> {
     _setActionBusy(true);
 
     context.read<TransactionsBloc>().add(
-      DeleteTransactionEvent(reference: ref, userName: _loginName(context)),
+      DeleteTransactionEvent(
+          reference: ref, userName: _loginName(context)),
     );
   }
 
   Widget _busyLabel(
-    BuildContext context, {
-    required bool busy,
-    required String busyText,
-    required String idleText,
-  }) {
+      BuildContext context, {
+        required bool busy,
+        required String busyText,
+        required String idleText,
+      }) {
     if (!busy) return Text(idleText);
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -852,7 +820,6 @@ class _FundTransferDialogState extends State<_FundTransferDialog> {
   Widget build(BuildContext context) {
     return MultiBlocListener(
       listeners: [
-        // ── FundTransferBloc: save / update result ─────────────
         BlocListener<FundTransferBloc, FundTransferState>(
           listener: (context, state) {
             if (state is FundTransferSubmitSuccess) {
@@ -874,11 +841,9 @@ class _FundTransferDialogState extends State<_FundTransferDialog> {
             }
           },
         ),
-
-        // ── TransactionsBloc: row actions ──────────────────────
         BlocListener<TransactionsBloc, TransactionsState>(
           listenWhen: (prev, next) =>
-              next is TransactionsLoadedState &&
+          next is TransactionsLoadedState &&
               (next.actionSuccess != null || next.actionError != null),
           listener: (context, state) {
             if (state is! TransactionsLoadedState) return;
@@ -905,6 +870,7 @@ class _FundTransferDialogState extends State<_FundTransferDialog> {
                   Navigator.of(context).pop(true);
                   return;
                 }
+                // ✅ No perId — reload the same transaction by reference.
                 context.read<FundTransferBloc>().add(
                   LoadFundTransferDetailEvent(ref),
                 );
@@ -927,12 +893,9 @@ class _FundTransferDialogState extends State<_FundTransferDialog> {
       ],
       child: BlocBuilder<FundTransferBloc, FundTransferState>(
         builder: (context, state) {
-          // Form submit (Save / Update) — local OR bloc flag.
           final cashBusy = _formBusy || state is FundTransferSubmitting;
 
-          // Row actions — local OR bloc's in-flight reference.
-          final rowBusy =
-              _actionBusy ||
+          final rowBusy = _actionBusy ||
               context.select<TransactionsBloc, bool>((bloc) {
                 final s = bloc.state;
                 if (s is! TransactionsLoadedState) return false;
@@ -943,29 +906,26 @@ class _FundTransferDialogState extends State<_FundTransferDialog> {
 
           final anyBusy = cashBusy || rowBusy;
 
-          final loaded = state is FundTransferDetailLoaded
-              ? state.detail
-              : null;
+          final loaded =
+          state is FundTransferDetailLoaded ? state.detail : null;
 
           final stateText = loaded?.stateText;
           final isPending = stateText == null || stateText == 'Pending';
           final isAuthorized = stateText == 'Authorized';
 
           final loginName = _loginName(context);
-          final isMaker =
-              loaded == null ||
+          final isMaker = loaded == null ||
               (loaded.maker.isNotEmpty &&
                   loginName != null &&
                   loaded.maker == loginName);
           final isEditing = _isEditing;
 
-          // ── Loading gate ──────────────────────────────────────
           if (isEditing && loaded == null && state is! FundTransferError) {
             return ZFormDialog(
               width: 640,
               icon: Icons.swap_horiz_rounded,
               title:
-                  '${AppLocalizations.of(context)!.fundTransfer} · $reference',
+              '${AppLocalizations.of(context)!.fundTransfer} · $reference',
               isActionTrue: false,
               onAction: null,
               child: const SizedBox(
@@ -983,29 +943,33 @@ class _FundTransferDialogState extends State<_FundTransferDialog> {
             isActionTrue: false,
             onAction: null,
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: double.infinity),
+              constraints: const BoxConstraints(
+                maxHeight: 600,
+                minWidth: 640,
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Inline error banner ────────────────────
                   if (state is FundTransferError && state.message.isNotEmpty)
                     _banner(state.message, Theme.of(context).colorScheme.error),
 
                   if (_localError != null && _localError!.isNotEmpty)
                     _banner(_localError!, Theme.of(context).colorScheme.error),
 
-                  // ── Form ───────────────────────────────────
+                  // ── Audit strip ─────────────────────────────
+                  if (loaded != null && _hasAuditData(loaded))
+                    _TransactionAuditStrip(detail: loaded),
+
                   Flexible(
+                    fit: FlexFit.loose,
                     child: FundTransferForm(
-                      // Stable GlobalKey<FundTransferFormState> attached
-                      // to the widget so currentState resolves. Mouse +
-                      // Enter both route through _onFormSubmit.
                       key: _formKey,
                       usrName: usrName,
                       baseCurrency: baseCurrency,
                       initialDetail: loaded,
                       stateText: stateText,
+                      perId: widget.perId, // ← only used for the account picker
                       onSubmitRequested: _onFormSubmit,
                       onSubmit: (result) {
                         _clearLocalError();
@@ -1039,14 +1003,12 @@ class _FundTransferDialogState extends State<_FundTransferDialog> {
                     ),
                   ),
 
-                  // ── Footer ─────────────────────────────────
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
                     child: Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        // Cancel — disabled while anything is in flight.
                         ZOutlineButton(
                           onPressed: anyBusy
                               ? null
@@ -1054,20 +1016,20 @@ class _FundTransferDialogState extends State<_FundTransferDialog> {
                           label: Text(AppLocalizations.of(context)!.cancel),
                         ),
 
-                        // ── Maker, Pending → Delete + Update ────
                         if (isEditing && isPending && isMaker) ...[
                           ZOutlineButton(
                             onPressed: anyBusy
                                 ? null
                                 : () => _dispatchDelete(context),
-                            backgroundHover: Theme.of(context)
-                                .colorScheme
-                                .error,
-                            icon: rowBusy ? null : Icons.delete_outline_rounded,
+                            backgroundHover:
+                            Theme.of(context).colorScheme.error,
+                            icon:
+                            rowBusy ? null : Icons.delete_outline_rounded,
                             label: _busyLabel(
                               context,
                               busy: rowBusy,
-                              busyText: AppLocalizations.of(context)!.deleting,
+                              busyText:
+                              AppLocalizations.of(context)!.deleting,
                               idleText: AppLocalizations.of(context)!.delete,
                             ),
                           ),
@@ -1078,13 +1040,13 @@ class _FundTransferDialogState extends State<_FundTransferDialog> {
                             label: _busyLabel(
                               context,
                               busy: cashBusy,
-                              busyText: AppLocalizations.of(context)!.updating,
+                              busyText:
+                              AppLocalizations.of(context)!.updating,
                               idleText: AppLocalizations.of(context)!.update,
                             ),
                           ),
                         ],
 
-                        // ── Non-maker, Pending → Authorize ──────
                         if (isEditing &&
                             isPending &&
                             !isMaker &&
@@ -1102,11 +1064,11 @@ class _FundTransferDialogState extends State<_FundTransferDialog> {
                               busy: rowBusy,
                               busyText: AppLocalizations.of(context)!
                                   .authorizing,
-                              idleText: AppLocalizations.of(context)!.authorize,
+                              idleText:
+                              AppLocalizations.of(context)!.authorize,
                             ),
                           ),
 
-                        // ── Authorized → Unauthorize + Reverse ──
                         if (isEditing && isAuthorized) ...[
                           ZOutlineButton(
                             isActive: !rowBusy,
@@ -1138,7 +1100,6 @@ class _FundTransferDialogState extends State<_FundTransferDialog> {
                           ),
                         ],
 
-                        // ── Create mode → Save ─────────────────
                         if (!isEditing)
                           ZOutlineButton(
                             isActive: !cashBusy,
@@ -1163,6 +1124,11 @@ class _FundTransferDialogState extends State<_FundTransferDialog> {
     );
   }
 
+  bool _hasAuditData(FundTransferDetail d) =>
+      d.stateText.isNotEmpty ||
+          d.maker.isNotEmpty ||
+          (d.checker ?? '').isNotEmpty;
+
   Widget _banner(String text, Color color) => Container(
     width: double.infinity,
     margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
@@ -1182,6 +1148,181 @@ class _FundTransferDialogState extends State<_FundTransferDialog> {
       ],
     ),
   );
+}
+
+// ═════════════════════════════════════════════════════════════════
+// AUDIT STRIP
+// ═════════════════════════════════════════════════════════════════
+
+class _TransactionAuditStrip extends StatelessWidget {
+  final FundTransferDetail detail;
+  const _TransactionAuditStrip({required this.detail});
+
+  @override
+  Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
+    final palette = _StatusPalette.of(context, detail.stateText);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(4),
+
+      ),
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 10,
+        runSpacing: 6,
+        children: [
+          _AuditChip(
+            icon: Icons.circle,
+            iconColor: palette.fg,
+            iconSize: 8,
+            bg: palette.bg,
+            fg: palette.fg,
+            label: detail.stateText.toUpperCase(),
+          ),
+          if (detail.maker.isNotEmpty)
+            _AuditChip(
+              icon: Icons.person_outline,
+              iconColor: scheme.onSurfaceVariant,
+              bg: Colors.transparent,
+              fg: scheme.onSurfaceVariant,
+              label: '${tr.maker.toUpperCase()}: ${detail.maker}',
+              boldValue: true,
+            ),
+          if ((detail.checker ?? '').isNotEmpty)
+            _AuditChip(
+              icon: Icons.verified_user_outlined,
+              iconColor: scheme.onSurfaceVariant,
+              bg: Colors.transparent,
+              fg: scheme.onSurfaceVariant,
+              label: '${tr.authorizer.toUpperCase()}: ${detail.checker}',
+              boldValue: true,
+            ),
+          _AuditChip(
+            icon: Icons.schedule_outlined,
+            iconColor: scheme.onSurfaceVariant,
+            bg: Colors.transparent,
+            fg: scheme.onSurfaceVariant,
+            label:
+            '${detail.entryDate.toFormattedDate()} | ${detail.entryDate.shamsiDateString}',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AuditChip extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final double iconSize;
+  final Color bg;
+  final Color fg;
+  final String label;
+  final bool boldValue;
+
+  const _AuditChip({
+    required this.icon,
+    required this.iconColor,
+    required this.bg,
+    required this.fg,
+    required this.label,
+    this.iconSize = 12,
+    this.boldValue = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colonIdx = label.indexOf(':');
+    final keyPart =
+    colonIdx == -1 ? '' : label.substring(0, colonIdx + 1).trim();
+    final valuePart =
+    colonIdx == -1 ? label : label.substring(colonIdx + 1).trim();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: iconSize, color: iconColor),
+          const SizedBox(width: 5),
+          if (keyPart.isNotEmpty) ...[
+            Text(
+              keyPart,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w500,
+                color: fg.withValues(alpha: 0.75),
+                letterSpacing: 0.2,
+              ),
+            ),
+            const SizedBox(width: 3),
+          ],
+          Text(
+            valuePart,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: boldValue ? FontWeight.w700 : FontWeight.w500,
+              color: fg,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusPalette {
+  final Color bg;
+  final Color fg;
+  const _StatusPalette(this.bg, this.fg);
+
+  factory _StatusPalette.of(BuildContext context, String status) {
+    final isDark =
+        Theme.of(context).colorScheme.brightness == Brightness.dark;
+    final key = status.toLowerCase();
+
+    final (Color hue, Color lightFg, Color darkFg) = switch (key) {
+      'authorized' => (
+      const Color(0xFF22C55E),
+      const Color(0xFF166534),
+      const Color(0xFF86EFAC),
+      ),
+      'pending' => (
+      const Color(0xFFF59E0B),
+      const Color(0xFF92400E),
+      const Color(0xFFFCD34D),
+      ),
+      'reversed' => (
+      const Color(0xFF6366F1),
+      const Color(0xFF3730A3),
+      const Color(0xFFA5B4FC),
+      ),
+      'deleted' => (
+      const Color(0xFFEF4444),
+      const Color(0xFF991B1B),
+      const Color(0xFFFCA5A5),
+      ),
+      _ => (
+      const Color(0xFF9CA3AF),
+      const Color(0xFF374151),
+      const Color(0xFFE5E7EB),
+      ),
+    };
+
+    final bg = hue.withValues(alpha: isDark ? 0.20 : 0.14);
+    final fg = isDark ? darkFg : lightFg;
+    return _StatusPalette(bg, fg);
+  }
 }
 
 // ── Shared widgets ──────────────────────────────────────────────
@@ -1230,6 +1371,7 @@ class _AccountDetailsCard extends StatelessWidget {
     final color = Theme.of(context).colorScheme;
     final title = Theme.of(context).textTheme.titleSmall;
     final tr = AppLocalizations.of(context)!;
+
     Widget row(String k, String v, {bool bold = false}) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -1240,9 +1382,9 @@ class _AccountDetailsCard extends StatelessWidget {
               v,
               style: bold
                   ? title?.copyWith(
-                      color: color.primary,
-                      fontWeight: FontWeight.w700,
-                    )
+                color: color.primary,
+                fontWeight: FontWeight.w700,
+              )
                   : title,
             ),
           ),
@@ -1252,11 +1394,7 @@ class _AccountDetailsCard extends StatelessWidget {
 
     final isStakeholder = account.accCategory == _stakeholderCategory;
     final status = account.accStatus;
-
-    // API row currency first; only fall back to base if the API
-    // returned nothing.
-    final effectiveCcy =
-        account.accCurrency ??
+    final effectiveCcy = account.accCurrency ??
         effectiveCurrencyOverride ??
         (fallbackCurrency.isEmpty ? '' : fallbackCurrency);
 
@@ -1286,12 +1424,11 @@ class _AccountDetailsCard extends StatelessWidget {
   }
 }
 
-/// Lightweight card shown while the full [StakeholderAccount] isn't loaded
-/// yet (edit mode). Renders directly from the loaded `FundTransferLeg`.
 class _LegDetailsCard extends StatelessWidget {
   final FundTransferLeg leg;
   final String label;
   final String? effectiveCurrency;
+
   const _LegDetailsCard({
     required this.leg,
     required this.label,
@@ -1303,6 +1440,7 @@ class _LegDetailsCard extends StatelessWidget {
     final color = Theme.of(context).colorScheme;
     final title = Theme.of(context).textTheme.titleSmall;
     final tr = AppLocalizations.of(context)!;
+
     Widget row(String k, String v) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -1313,9 +1451,8 @@ class _LegDetailsCard extends StatelessWidget {
       ),
     );
 
-    final ccy = leg.currency.isNotEmpty
-        ? leg.currency
-        : (effectiveCurrency ?? '');
+    final ccy =
+    leg.currency.isNotEmpty ? leg.currency : (effectiveCurrency ?? '');
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 2),

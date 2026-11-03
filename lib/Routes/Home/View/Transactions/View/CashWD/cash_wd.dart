@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shipping/Features/Date/shamsi_converter.dart';
 import 'package:shipping/Features/Widgets/extensions.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/model/stk_model.dart';
@@ -224,7 +225,7 @@ class CashTxnFormState extends State<CashTxnForm> {
     final tr = AppLocalizations.of(context)!;
     return BlocListener<StkAccountsBloc, StkAccountsState>(
       listenWhen: (prev, next) =>
-          next is StkAccountsLoadedState && _pendingAccountNo != null,
+      next is StkAccountsLoadedState && _pendingAccountNo != null,
       listener: (context, state) {
         if (state is! StkAccountsLoadedState) return;
         _applyPendingAccountSync(state.accounts);
@@ -292,7 +293,7 @@ class CashTxnFormState extends State<CashTxnForm> {
               ),
               Text(
                 '${account.accBalance.toAmount()} '
-                '${account.accCurrency ?? widget.baseCurrency}',
+                    '${account.accCurrency ?? widget.baseCurrency}',
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
             ],
@@ -334,10 +335,10 @@ class CashTxnFormState extends State<CashTxnForm> {
     final include = includeAll
         ? const <int>{}
         : includeRaw
-              .split(',')
-              .map((s) => int.tryParse(s.trim()))
-              .whereType<int>()
-              .toSet();
+        .split(',')
+        .map((s) => int.tryParse(s.trim()))
+        .whereType<int>()
+        .toSet();
 
     final exclude = widget.spec.accountExclude
         .split(',')
@@ -418,20 +419,18 @@ class CashTxnFormState extends State<CashTxnForm> {
       return;
     }
 
-    // Turn on, then open the picker immediately.
     setState(() => _reminder = true);
 
     final picked = await showDatePicker(
       context: context,
       initialDate: _reminderDate ?? DateTime.now(),
-      firstDate: DateTime.now(),                       // no past dates
+      firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
     );
 
     if (!mounted) return;
 
     if (picked == null) {
-      // User cancelled → roll the toggle back.
       setState(() {
         _reminder = false;
         _reminderDate = null;
@@ -465,8 +464,7 @@ class CashTxnFormState extends State<CashTxnForm> {
           suffixIcon: const Icon(Icons.calendar_today_outlined, size: 18),
         ),
         child: Text(
-          MaterialLocalizations.of(context)
-              .formatMediumDate(_reminderDate!),
+          MaterialLocalizations.of(context).formatMediumDate(_reminderDate!),
         ),
       ),
     );
@@ -478,12 +476,12 @@ class CashTxnFormState extends State<CashTxnForm> {
 // ═════════════════════════════════════════════════════════════════
 
 Future<bool?> showCashTxnDialog(
-  BuildContext context, {
-  required CashTxnSpec spec,
-  required String usrName,
-  required String baseCurrency,
-  String? reference,
-}) {
+    BuildContext context, {
+      required CashTxnSpec spec,
+      required String usrName,
+      required String baseCurrency,
+      String? reference,
+    }) {
   return showDialog<bool>(
     context: context,
     barrierDismissible: false,
@@ -512,8 +510,7 @@ Future<bool?> showCashTxnDialog(
   );
 }
 
-/// Which row-action button is currently in flight. Drives the spinner
-/// on the correct button without making the *other* button spin too.
+/// Which row-action button is currently in flight.
 enum _RowAction { none, delete, authorize, unauthorize, reverse }
 
 class _CashTxnDialog extends StatefulWidget {
@@ -536,11 +533,9 @@ class _CashTxnDialog extends StatefulWidget {
 class _CashTxnDialogState extends State<_CashTxnDialog> {
   String? _localError;
 
-  /// Stable key — attached to `CashTxnForm.key` so `currentState`
-  /// resolves to the live `CashTxnFormState` (mouse + Enter share one path).
   final _formKey = GlobalKey<CashTxnFormState>();
 
-  bool _formBusy = false; // Save / Update
+  bool _formBusy = false;
   _RowAction _pendingAction = _RowAction.none;
 
   bool get _actionBusy => _pendingAction != _RowAction.none;
@@ -577,7 +572,6 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
     }
   }
 
-  // ── Form submit (mouse + keyboard both land here) ─────────────
   void _onFormSubmit() {
     final st = _formKey.currentState;
     if (st == null) return;
@@ -589,7 +583,6 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
     if (!dispatched) _setFormBusy(false);
   }
 
-  // ── Row actions ───────────────────────────────────────────────
   void _dispatchAuthorize(BuildContext context) {
     final ref = reference;
     if (ref == null || ref.isEmpty) return;
@@ -662,11 +655,11 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
   }
 
   Widget _busyLabel(
-    BuildContext context, {
-    required bool busy,
-    required String busyText,
-    required String idleText,
-  }) {
+      BuildContext context, {
+        required bool busy,
+        required String busyText,
+        required String idleText,
+      }) {
     if (!busy) return Text(idleText);
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -706,7 +699,7 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
         ),
         BlocListener<TransactionsBloc, TransactionsState>(
           listenWhen: (prev, next) =>
-              next is TransactionsLoadedState &&
+          next is TransactionsLoadedState &&
               (next.actionSuccess != null || next.actionError != null),
           listener: (context, state) {
             if (state is! TransactionsLoadedState) return;
@@ -766,7 +759,6 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
 
           final anyBusy = cashBusy || rowBusy;
 
-          // Per-button busy flags — only the clicked button spins.
           final deleteBusy = _pendingAction == _RowAction.delete;
           final authorizeBusy = _pendingAction == _RowAction.authorize;
           final unauthorizeBusy = _pendingAction == _RowAction.unauthorize;
@@ -779,8 +771,7 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
           final isAuthorized = stateText == 'Authorized';
 
           final loginName = _loginName(context);
-          final isMaker =
-              loaded == null ||
+          final isMaker = loaded == null ||
               (loaded.makerName != null &&
                   loginName != null &&
                   loaded.makerName == loginName);
@@ -811,7 +802,7 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
             isActionTrue: false,
             onAction: null,
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 520),
+              constraints: const BoxConstraints(maxHeight: 600),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -821,6 +812,10 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
 
                   if (_localError != null && _localError!.isNotEmpty)
                     _banner(_localError!, Theme.of(context).colorScheme.error),
+
+                  // ── NEW: audit strip ───────────────────────
+                  if (initial != null && _hasAuditData(initial))
+                    _TransactionAuditStrip(draft: initial),
 
                   Flexible(
                     child: CashTxnForm(
@@ -859,15 +854,13 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
                           label: Text(AppLocalizations.of(context)!.cancel),
                         ),
 
-                        // Pending + maker → Delete + Update
                         if (isEditing && isPending && isMaker) ...[
                           ZOutlineButton(
                             onPressed: anyBusy
                                 ? null
                                 : () => _dispatchDelete(context),
-                            backgroundHover: Theme.of(context)
-                                .colorScheme
-                                .error,
+                            backgroundHover:
+                            Theme.of(context).colorScheme.error,
                             icon: deleteBusy
                                 ? null
                                 : Icons.delete_outline_rounded,
@@ -891,7 +884,6 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
                           ),
                         ],
 
-                        // Pending + non-maker → Authorize
                         if (isEditing && isPending && !isMaker)
                           ZOutlineButton(
                             isActive: !authorizeBusy,
@@ -904,14 +896,12 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
                             label: _busyLabel(
                               context,
                               busy: authorizeBusy,
-                              busyText: AppLocalizations.of(context)!
-                                  .authorizing,
+                              busyText:
+                              AppLocalizations.of(context)!.authorizing,
                               idleText: AppLocalizations.of(context)!.authorize,
                             ),
                           ),
 
-                        // Authorized → Unauthorize · Reverse
-                        // Each button shows its own spinner.
                         if (isEditing && isAuthorized) ...[
                           ZOutlineButton(
                             isActive: !unauthorizeBusy,
@@ -943,7 +933,6 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
                           ),
                         ],
 
-                        // Create mode → Save
                         if (!isEditing)
                           ZOutlineButton(
                             isActive: !cashBusy,
@@ -968,6 +957,15 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
     );
   }
 
+  /// True when the draft carries any audit data worth rendering.
+  /// (Create-mode drafts have none, so the strip stays hidden.)
+  bool _hasAuditData(TransactionDraft d) =>
+      d.trnStateText != null ||
+          d.trnStatus != null ||
+          (d.maker ?? '').isNotEmpty ||
+          (d.checker ?? '').isNotEmpty ||
+          d.trnEntryDate != null;
+
   Widget _banner(String text, Color color) => Container(
     width: double.infinity,
     margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
@@ -987,6 +985,208 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
       ],
     ),
   );
+}
+
+// ═════════════════════════════════════════════════════════════════
+// AUDIT STRIP
+// ═════════════════════════════════════════════════════════════════
+
+/// Compact strip shown above the form in edit mode:
+///   ● PENDING   👤 MAKER: basir   ⏱ 2026-11-03 06:33
+class _TransactionAuditStrip extends StatelessWidget {
+  final TransactionDraft draft;
+  const _TransactionAuditStrip({required this.draft});
+
+  @override
+  Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
+
+    final statusLabel =
+        draft.trnStateText ?? _statusFallback(draft.trnStatus);
+    final palette = _StatusPalette.of(context, statusLabel);
+
+
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 10,
+        runSpacing: 6,
+        children: [
+          _AuditChip(
+            icon: Icons.circle,
+            iconColor: palette.fg,
+            iconSize: 8,
+            bg: palette.bg,
+            fg: palette.fg,
+            label: statusLabel.toUpperCase(),
+          ),
+          if ((draft.maker ?? '').isNotEmpty)
+            _AuditChip(
+              icon: Icons.person_outline,
+              iconColor: scheme.onSurfaceVariant,
+              bg: Colors.transparent,
+              fg: scheme.onSurfaceVariant,
+              label: '${tr.maker.toUpperCase()}: ${draft.maker}',
+              boldValue: true,
+            ),
+          if ((draft.checker ?? '').isNotEmpty)
+            _AuditChip(
+              icon: Icons.verified_user_outlined,
+              iconColor: scheme.onSurfaceVariant,
+              bg: Colors.transparent,
+              fg: scheme.onSurfaceVariant,
+              label: '${tr.authorizer.toUpperCase()}: ${draft.checker}',
+              boldValue: true,
+            ),
+          if (draft.trnEntryDate != null)
+            _AuditChip(
+              icon: Icons.schedule_outlined,
+              iconColor: scheme.onSurfaceVariant,
+              bg: Colors.transparent,
+              fg: scheme.onSurfaceVariant,
+              label: "${draft.trnEntryDate!.toFormattedDate()} | ${draft.trnEntryDate!.shamsiDateString}",
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Derive a status label when the API didn't send `trnStateText`.
+  String _statusFallback(int? status) {
+    switch (status) {
+      case 0:
+        return 'Pending';
+      case 1:
+        return 'Authorized';
+      case 2:
+        return 'Reversed';
+      case 3:
+        return 'Deleted';
+      default:
+        return 'Unknown';
+    }
+  }
+
+}
+
+/// Small rounded chip used inside the audit strip.
+class _AuditChip extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final double iconSize;
+  final Color bg;
+  final Color fg;
+  final String label;
+  final bool boldValue;
+
+  const _AuditChip({
+    required this.icon,
+    required this.iconColor,
+    required this.bg,
+    required this.fg,
+    required this.label,
+    this.iconSize = 12,
+    this.boldValue = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Split "KEY: value" so we can style the value separately.
+    final colonIdx = label.indexOf(':');
+    final keyPart =
+    colonIdx == -1 ? '' : label.substring(0, colonIdx + 1).trim();
+    final valuePart =
+    colonIdx == -1 ? label : label.substring(colonIdx + 1).trim();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: iconSize, color: iconColor),
+          const SizedBox(width: 5),
+          if (keyPart.isNotEmpty) ...[
+            Text(
+              keyPart,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w500,
+                color: fg.withValues(alpha: 0.75),
+                letterSpacing: 0.2,
+              ),
+            ),
+            const SizedBox(width: 3),
+          ],
+          Text(
+            valuePart,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight:
+              boldValue ? FontWeight.w700 : FontWeight.w500,
+              color: fg,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Dark/light-aware status palette.
+class _StatusPalette {
+  final Color bg;
+  final Color fg;
+  const _StatusPalette(this.bg, this.fg);
+
+  factory _StatusPalette.of(BuildContext context, String status) {
+    final isDark =
+        Theme.of(context).colorScheme.brightness == Brightness.dark;
+    final key = status.toLowerCase();
+
+    final (Color hue, Color lightFg, Color darkFg) = switch (key) {
+      'authorized' => (
+      const Color(0xFF22C55E),
+      const Color(0xFF166534),
+      const Color(0xFF86EFAC),
+      ),
+      'pending' => (
+      const Color(0xFFF59E0B),
+      const Color(0xFF92400E),
+      const Color(0xFFFCD34D),
+      ),
+      'reversed' => (
+      const Color(0xFF6366F1),
+      const Color(0xFF3730A3),
+      const Color(0xFFA5B4FC),
+      ),
+      'deleted' => (
+      const Color(0xFFEF4444),
+      const Color(0xFF991B1B),
+      const Color(0xFFFCA5A5),
+      ),
+      _ => (
+      const Color(0xFF9CA3AF),
+      const Color(0xFF374151),
+      const Color(0xFFE5E7EB),
+      ),
+    };
+
+    final bg = hue.withValues(alpha: isDark ? 0.20 : 0.14);
+    final fg = isDark ? darkFg : lightFg;
+    return _StatusPalette(bg, fg);
+  }
 }
 
 // ── Shared widgets ──────────────────────────────────────────────
@@ -1033,7 +1233,10 @@ class _AccountDetailsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme;
-    final title = Theme.of(context).textTheme.titleSmall?.copyWith(letterSpacing: 0.3,fontWeight: FontWeight.w500);
+    final title = Theme.of(context).textTheme.titleSmall?.copyWith(
+      letterSpacing: 0.3,
+      fontWeight: FontWeight.w500,
+    );
 
     Widget row(String k, String v, {bool bold = false}) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
@@ -1045,9 +1248,9 @@ class _AccountDetailsCard extends StatelessWidget {
               v,
               style: bold
                   ? title?.copyWith(
-                      color: color.primary,
-                      fontWeight: FontWeight.w700,
-                    )
+                color: color.primary,
+                fontWeight: FontWeight.w700,
+              )
                   : title,
             ),
           ),
@@ -1058,7 +1261,9 @@ class _AccountDetailsCard extends StatelessWidget {
     final isStakeholder = account.accCategory == _stakeholderCategory;
     final status = account.accStatus;
     final tr = AppLocalizations.of(context)!;
-    final effectiveCcy = account.accCurrency ?? effectiveCurrencyOverride ?? (fallbackCurrency.isEmpty ? '' : fallbackCurrency);
+    final effectiveCcy = account.accCurrency ??
+        effectiveCurrencyOverride ??
+        (fallbackCurrency.isEmpty ? '' : fallbackCurrency);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 2),
@@ -1070,14 +1275,27 @@ class _AccountDetailsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label.toUpperCase(), style: title?.copyWith(fontWeight: FontWeight.bold,letterSpacing: .05)),
+          Text(
+            label.toUpperCase(),
+            style: title?.copyWith(
+              fontWeight: FontWeight.bold,
+              letterSpacing: .05,
+            ),
+          ),
           const Divider(),
-          row(tr.accountNumber.toUpperCase(), account.accNumber?.toString() ?? ''),
+          row(tr.accountNumber.toUpperCase(),
+              account.accNumber?.toString() ?? ''),
           row(tr.accountName.toUpperCase(), account.accName ?? ''),
-          row(tr.balance.toUpperCase(), '${account.accBalance.toAmount()} ''${account.accCurrency ?? effectiveCcy}',
+          row(
+            tr.balance.toUpperCase(),
+            '${account.accBalance.toAmount()} '
+                '${account.accCurrency ?? effectiveCcy}',
           ),
           if (isStakeholder && status != null)
-            row(tr.status.toUpperCase(), status == 1 ? tr.active.toUpperCase() : tr.blocked.toUpperCase()),
+            row(
+              tr.status.toUpperCase(),
+              status == 1 ? tr.active.toUpperCase() : tr.blocked.toUpperCase(),
+            ),
         ],
       ),
     );
@@ -1138,7 +1356,8 @@ class _PendingAccountCard extends StatelessWidget {
             ],
           ),
           const Divider(),
-          row(AppLocalizations.of(context)!.accountNumber, accountNo.toString()),
+          row(AppLocalizations.of(context)!.accountNumber,
+              accountNo.toString()),
           row(AppLocalizations.of(context)!.currency, ccy),
         ],
       ),

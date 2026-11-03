@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/PrintSettings/bloc/Language/print_language_cubit.dart';
+import 'package:shipping/Features/Widgets/znavigator.dart';
 import 'package:shipping/Routes/Auth/bloc/auth_bloc.dart';
 import 'package:shipping/Routes/Auth/login.dart';
 import 'package:shipping/Routes/Home/View/Finance/View/Currencies/bloc/currencies_bloc.dart';
@@ -85,7 +86,6 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (_) => GeneralTabBloc()),
           BlocProvider(create: (_) => SettingsVisibleBloc()..add(LoadSettingsEvent())),
           BlocProvider(create: (_) => PrintLanguageCubit()),
-
           BlocProvider(create: (_) => BackupBloc(Repositories(ApiServices()))..add(LoadBackupsEvent())),
 
           ///Print Services ............................................................
@@ -159,13 +159,8 @@ class MyApp extends StatelessWidget {
                    listenWhen: (prev, curr) =>
                    curr is UnAuthenticatedState || (prev is AuthenticatedState && curr is AuthInitial),
                    listener: (context, state) {
-                     final navigator = Navigator.of(context, rootNavigator: true);
-
                      if (state is UnAuthenticatedState) {
-                       navigator.pushAndRemoveUntil(
-                         MaterialPageRoute(builder: (_) => const LoginView()),
-                             (route) => false,
-                       );
+                       ZNavigator.gotoReplacement(context: context, LoginView());
                      }
                    },
                     child: LoginView(),

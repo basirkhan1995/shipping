@@ -1499,4 +1499,113 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get accountDetails => 'جزئیات حساب';
+
+  @override
+  String get inTitle => 'آمد';
+
+  @override
+  String get outTitle => 'رفت';
+
+  @override
+  String get systemDate => 'تاریخ سیستم';
+
+  @override
+  String get gregorian => 'میلادی';
+
+  @override
+  String get shamsi => 'هجری شمسی';
+
+  @override
+  String get theme => 'تم';
+
+  @override
+  String get financialReports => 'گزارش‌های مالی';
+
+  @override
+  String get accountStatementHint => 'گردش یک حساب همراه با مانده جاری.';
+
+  @override
+  String get glStatementHint =>
+      'گردش و مانده‌های دفتر کل برای حساب انتخاب‌شده.';
+
+  @override
+  String get balanceSheetHint =>
+      'دارایی‌ها، بدهی‌ها و سرمایه تا تاریخ انتخاب‌شده.';
+
+  @override
+  String get trialBalanceHint =>
+      'مجموع بدهکار و بستانکار همراه با کنترل خودکار توازن.';
+
+  @override
+  String get transactionDetailsHint => 'جستجوی هر تراکنش با شماره مرجع.';
+
+  @override
+  String get cashBalanceHint => 'وضعیت نقدی شعبه فعلی.';
+
+  @override
+  String get treasuryHint => 'وضعیت نقدی در تمام شعب.';
+
+  @override
+  String get profitAndLossHint => 'گزارش درآمد و هزینه.';
+
+  @override
+  String get receivables => 'حساب‌های دریافتنی';
+
+  @override
+  String get receivablesHint => 'حساب‌هایی که مشتریان به شرکت بدهکار هستند.';
+
+  @override
+  String get payables => 'حساب‌های پرداختنی';
+
+  @override
+  String get payablesHint => 'حساب‌هایی که شرکت به تأمین‌کنندگان بدهکار است.';
+
+  @override
+  String get allBalancesHint => 'گزارش مانده تمامی حساب‌ها.';
+
+  @override
+  String get allTransactionsHint => 'تمام سوابق تراکنش‌ها.';
+
+  @override
+  String get userLogHint => 'فعالیت‌ها و گزارش‌های کاربران.';
+
+  @override
+  String get attendanceHint => 'سوابق حضور و غیاب.';
+
+  @override
+  String get transportCargo => 'حمل و نقل و باربری';
+
+  @override
+  String get shipments => 'محموله‌ها';
+
+  @override
+  String get shipmentsHint => 'فهرست کانتینرهای واردشده.';
+
+  @override
+  String get shipmentInvoice => 'فاکتور محموله';
+
+  @override
+  String get shipmentInvoiceHint =>
+      'فاکتور PDF یا اکسل مشتری بر اساس کانتینرها.';
+
+  @override
+  String get reportHint => 'برای مشاهده، یک گزارش را انتخاب کنید.';
+
+  @override
+  String get authorizationMakerOnly =>
+      'تنها ایجادکننده این تراکنش می‌تواند تأیید آن را لغو یا معکوس کند.';
+
+  @override
+  String get authorizationInvalidState =>
+      'این تراکنش در وضعیت مناسب برای تأیید قرار ندارد.';
+
+  @override
+  String get authorizationPending =>
+      'این تراکنش قبلاً در حالت در انتظار قرار گرفته است.';
+
+  @override
+  String get authorizationFailedProcess => 'این تراکنش قابل پردازش نیست.';
+
+  @override
+  String get authorizationFailed => 'تأیید تراکنش ناموفق بود.';
 }

@@ -116,7 +116,7 @@ class AppThemes {
 
   ThemeData theme(ColorScheme colorScheme, bool isLight) => ThemeData(
     useMaterial3: true,
-    fontFamily: "NotoSans",
+    fontFamily: "Vazir",
     brightness: colorScheme.brightness,
     colorScheme: colorScheme,
     // Enhanced AppBar with elevation and shadow
@@ -135,7 +135,7 @@ class AppThemes {
     ),
     // Enhanced text theme with better typography
     textTheme: textTheme.apply(
-      fontFamily: "NotoSans",
+      fontFamily: "Vazir",
       bodyColor: colorScheme.onSurface,
       displayColor: colorScheme.onSurface,
     ),

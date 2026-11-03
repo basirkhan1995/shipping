@@ -626,7 +626,8 @@ class _DesktopState extends State<_Desktop> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Account Statement"),
+        titleSpacing: 0,
+        title: Text(tr.accountStatement.toUpperCase()),
       ),
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: BlocBuilder<AuthBloc, AuthState>(

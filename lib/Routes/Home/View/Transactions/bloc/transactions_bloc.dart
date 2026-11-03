@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../../../../../../Services/api_exception.dart';
 import '../../../../../../../Services/repository.dart';
+import '../../../../../Services/localization_services.dart';
 import '../model/trn_model.dart';
 
 part 'transactions_event.dart';
@@ -88,10 +89,7 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
         successMessage: 'Transaction authorized.',
       );
 
-  Future<void> _onUnauthorize(
-      UnauthorizeTransactionEvent e,
-      Emitter<TransactionsState> emit,
-      ) =>
+  Future<void> _onUnauthorize(UnauthorizeTransactionEvent e, Emitter<TransactionsState> emit) =>
       _runRowAction(
         emit: emit,
         reference: e.reference,
@@ -165,6 +163,7 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
     required Future<Map<String, dynamic>> Function() action,
     required String successMessage,
   }) async {
+    final tr = localizationService.loc;
     final s = state;
     if (s is! TransactionsLoadedState) return;
 
@@ -203,10 +202,38 @@ class TransactionsBloc extends Bloc<TransactionsEvent, TransactionsState> {
       }
     } on ApiException catch (x) {
       final after = state;
+
+      String errorMessage;
+
+      switch (x.message) {
+        case 'only_maker_can_act':
+          errorMessage = tr.authorizationMakerOnly;
+          break;
+
+        case 'authorizationInvalidState':
+          errorMessage = tr.authorizationInvalidState;
+          break;
+
+        case 'authorizationPending':
+          errorMessage = tr.authorizationPending;
+          break;
+
+        case 'authorizationFailedProcess':
+          errorMessage = tr.authorizationFailedProcess;
+          break;
+
+        case 'authorizationFailed':
+          errorMessage = tr.authorizationFailed;
+          break;
+
+        default:
+          errorMessage = x.message;
+      }
+
       if (after is TransactionsLoadedState) {
         emit(after.copyWith(
           clearActionInProgress: true,
-          actionError: x.message,
+          actionError: errorMessage,
         ));
       }
     } catch (x) {

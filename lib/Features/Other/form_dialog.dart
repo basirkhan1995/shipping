@@ -101,13 +101,11 @@ class _ZFormDialogState extends State<ZFormDialog> {
             titlePadding: EdgeInsets.zero,
             actionsPadding: EdgeInsets.zero,
             content: Material(
-              color: widget.backgroundColor ??
-                  Theme.of(context).colorScheme.surface,
+              color: widget.backgroundColor ?? Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(4),
               clipBehavior: Clip.antiAlias,
               child: SizedBox(
-                width: widget.width ??
-                    MediaQuery.sizeOf(context).width * .4,
+                width: widget.width ?? MediaQuery.sizeOf(context).width * .4,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -140,8 +138,7 @@ class _ZFormDialogState extends State<ZFormDialog> {
   Widget buildAction(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
     return Padding(
-      padding: widget.padding ??
-          const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+      padding: widget.padding ?? const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

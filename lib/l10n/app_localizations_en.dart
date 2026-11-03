@@ -1502,4 +1502,117 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountDetails => 'Account Details';
+
+  @override
+  String get inTitle => 'IN';
+
+  @override
+  String get outTitle => 'OUT';
+
+  @override
+  String get systemDate => 'System Date';
+
+  @override
+  String get gregorian => 'Gregorian';
+
+  @override
+  String get shamsi => 'Hijri Shamsi';
+
+  @override
+  String get theme => 'Theme';
+
+  @override
+  String get financialReports => 'Financial Reports';
+
+  @override
+  String get accountStatementHint =>
+      'Ledger activity for a single account with running balance.';
+
+  @override
+  String get glStatementHint =>
+      'General ledger activity and balances for a chosen account.';
+
+  @override
+  String get balanceSheetHint =>
+      'Assets, liabilities and equity as of a chosen date.';
+
+  @override
+  String get trialBalanceHint =>
+      'Debit and credit totals with automatic balance check.';
+
+  @override
+  String get transactionDetailsHint =>
+      'Look up any transaction by its reference number.';
+
+  @override
+  String get cashBalanceHint => 'Cash position for the current branch.';
+
+  @override
+  String get treasuryHint => 'Cash position across all branches.';
+
+  @override
+  String get profitAndLossHint => 'Income & expense statement.';
+
+  @override
+  String get receivables => 'Receivables';
+
+  @override
+  String get receivablesHint =>
+      'Accounts where customers owe money to the business.';
+
+  @override
+  String get payables => 'Payables';
+
+  @override
+  String get payablesHint =>
+      'Accounts where the business owes money to suppliers.';
+
+  @override
+  String get allBalancesHint => 'All accounts balances report.';
+
+  @override
+  String get allTransactionsHint => 'All transactions records.';
+
+  @override
+  String get userLogHint => 'Users activities & logs.';
+
+  @override
+  String get attendanceHint => 'Present & Absent records.';
+
+  @override
+  String get transportCargo => 'Transport & Cargo';
+
+  @override
+  String get shipments => 'Shipments';
+
+  @override
+  String get shipmentsHint => 'List of Containers imported.';
+
+  @override
+  String get shipmentInvoice => 'Shipment Invoice';
+
+  @override
+  String get shipmentInvoiceHint =>
+      'PDF or EXCEL Invoice for customer out of containers.';
+
+  @override
+  String get reportHint => 'Choose a report to view.';
+
+  @override
+  String get authorizationMakerOnly =>
+      'Only the maker of this transaction can unauthorize or reverse it.';
+
+  @override
+  String get authorizationInvalidState =>
+      'This transaction is not in the right state to be authorized.';
+
+  @override
+  String get authorizationPending => 'This transaction is already pending.';
+
+  @override
+  String get authorizationFailedProcess =>
+      'The transaction could not be processed.';
+
+  @override
+  String get authorizationFailed => 'Authorization failed.';
 }
