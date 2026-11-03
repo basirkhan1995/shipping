@@ -19,16 +19,16 @@ class CashTxnLoading extends CashTxnState {
   const CashTxnLoading();
 }
 
-/// The transaction is loaded for edit. Carries the fields the dialog needs
-/// to gate buttons.
 class CashTxnLoadedForEdit extends CashTxnState {
-  final TransactionDraft draft;    // pre-filled values
-  final String? stateText;         // Pending | Authorized | Reversed | Deleted
+  final CashTxnDetail detail;      // ← NEW: full response for voucher
+  final TransactionDraft draft;
+  final String? stateText;
   final int? status;
   final String? makerName;
   final String? typeCode;
 
   const CashTxnLoadedForEdit({
+    required this.detail,
     required this.draft,
     this.stateText,
     this.status,
@@ -36,21 +36,29 @@ class CashTxnLoadedForEdit extends CashTxnState {
     this.typeCode,
   });
 
-  bool get isPending => stateText == 'Pending';
+  bool get isPending    => stateText == 'Pending';
   bool get isAuthorized => stateText == 'Authorized';
-  bool get isReversed => stateText == 'Reversed';
-  bool get isDeleted => stateText == 'Deleted';
-  bool get isEditing => draft.trnReference != null;
+  bool get isReversed   => stateText == 'Reversed';
+  bool get isDeleted    => stateText == 'Deleted';
+  bool get isEditing    => draft.trnReference != null;
 
   @override
-  List<Object?> get props => [draft, stateText, status, makerName, typeCode];
+  List<Object?> get props =>
+      [detail, draft, stateText, status, makerName, typeCode];
 }
 
 class CashTxnSuccess extends CashTxnState {
   final Map<String, dynamic> result;
-  const CashTxnSuccess(this.result);
+
+  /// Full typed detail of the saved transaction, ready for printing.
+  /// May be `null` if the save response only returned a reference and
+  /// the follow-up fetch failed.
+  final CashTxnDetail? detail;
+
+  const CashTxnSuccess(this.result, {this.detail});
+
   @override
-  List<Object?> get props => [result];
+  List<Object?> get props => [result, detail];
 }
 
 class CashTxnFailure extends CashTxnState {

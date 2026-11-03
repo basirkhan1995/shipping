@@ -37,6 +37,7 @@ import '../Routes/Home/View/Settings/View/Company/Storage/model/storage_model.da
 import '../Routes/Home/View/Settings/View/General/DefaultPermissions/model/permission_settings_model.dart';
 import '../Routes/Home/View/Settings/View/General/UserRole/model/role_model.dart';
 import '../Routes/Home/View/Stakeholder/model/stk_model.dart';
+import '../Routes/Home/View/Transactions/View/CashWD/model/wd_model.dart';
 import '../Routes/Home/View/Transactions/View/Exchange/model/ex_model.dart';
 import '../Routes/Home/View/Transactions/View/FundTransfer/model/ft_model.dart';
 import '../Routes/Home/View/Transactions/model/trn_model.dart';
@@ -1162,7 +1163,7 @@ class Repositories {
     );
   }
 
-  Future<Map<String, dynamic>> getCashTxnByRef({
+  Future<CashTxnDetail> getCashTxnByRef({
     required String reference,
     CancelToken? cancelToken,
   }) async {
@@ -1175,12 +1176,15 @@ class Repositories {
     final body = _asMap(response.data);
     if (body == null) throw ApiException('Invalid server response');
 
-    final msg = body['msg']?.toString().toLowerCase() ?? '';
-    if (msg == 'success') return body;
+    final detail = CashTxnDetail.fromJson(body);
+
+    if (detail.isSuccess) return detail;
 
     throw ApiException(
       body['error']?.toString() ??
-          (msg == 'not_found' ? 'Transaction not found.' : 'Failed to load transaction'),
+          ((detail.msg ?? '').toLowerCase() == 'not_found'
+              ? 'Transaction not found.'
+              : 'Failed to load transaction'),
     );
   }
 

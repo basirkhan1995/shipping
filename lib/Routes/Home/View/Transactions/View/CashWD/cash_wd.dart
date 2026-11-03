@@ -1,10 +1,14 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Date/shamsi_converter.dart';
+import 'package:shipping/Features/PrintSettings/print_preview.dart';
+import 'package:shipping/Features/PrintSettings/report_model.dart';
 import 'package:shipping/Features/Widgets/extensions.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/model/stk_model.dart';
+import 'package:shipping/Routes/Home/View/Transactions/View/CashWD/voucher/voucher.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../../../Features/Other/generic_textfield.dart';
 import '../../../../../../Features/Widgets/ztextfield.dart';
@@ -12,6 +16,7 @@ import '../../../../../../Features/Widgets/z_dialog.dart';
 import '../../../../../../Features/Widgets/toast.dart';
 import '../../../../../../Services/repository.dart';
 import '../../../../../Auth/bloc/auth_bloc.dart';
+import '../../../Settings/View/Company/CompanyProfile/bloc/company_profile_bloc.dart';
 import '../../../Stakeholder/View/StkAccount/bloc/stk_accounts_bloc.dart';
 import '../../../Stakeholder/View/StkAccount/bloc/stk_accounts_event.dart';
 import '../../../Stakeholder/View/StkAccount/bloc/stk_accounts_state.dart';
@@ -19,6 +24,11 @@ import '../../bloc/transactions_bloc.dart';
 import '../../model/trn_model.dart';
 import 'bloc/cash_txn_bloc.dart';
 import 'bloc/cash_txn_event.dart';
+import 'model/wd_model.dart';
+
+// ═════════════════════════════════════════════════════════════════
+// SPEC
+// ═════════════════════════════════════════════════════════════════
 
 /// Configuration that differs per transaction type.
 class CashTxnSpec {
@@ -61,6 +71,9 @@ class CashTxnForm extends StatefulWidget {
   final TransactionDraft? initialDraft;
   final String? stateText;
 
+  /// Notifies the dialog when the "Print" checkbox changes.
+  final ValueChanged<bool>? onPrintChanged;
+
   const CashTxnForm({
     super.key,
     required this.spec,
@@ -70,6 +83,7 @@ class CashTxnForm extends StatefulWidget {
     this.onSubmitRequested,
     this.initialDraft,
     this.stateText,
+    this.onPrintChanged,
   });
 
   @override
@@ -105,11 +119,12 @@ class CashTxnFormState extends State<CashTxnForm> {
 
   static const int _stakeholderCategory = 8;
 
+  /// Exposed so the dialog can read the current "Print" toggle.
+  bool get printEnabled => _print;
+
   bool get _isEditable =>
       widget.stateText == null || widget.stateText == 'Pending';
 
-  /// Effective account number — either the selected row's number or the
-  /// draft's number (edit mode before the row has loaded).
   int? get _effectiveAccountNo => _acc?.accNumber ?? _draftAccountNo;
 
   @override
@@ -117,6 +132,11 @@ class CashTxnFormState extends State<CashTxnForm> {
     super.initState();
     _ccy = widget.baseCurrency;
     _applyDraft(widget.initialDraft);
+
+    // keep the parent in sync from the start
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.onPrintChanged?.call(_print);
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -192,10 +212,6 @@ class CashTxnFormState extends State<CashTxnForm> {
     setState(() => _acc = found);
   }
 
-  /// Validates and dispatches the draft.
-  ///
-  /// Returns `true` when a `TransactionDraft` was actually sent to
-  /// `widget.onSubmit`, `false` when validation blocked it.
   bool submit() {
     if (!_isEditable) return false;
 
@@ -405,7 +421,10 @@ class CashTxnFormState extends State<CashTxnForm> {
         _Check(
           label: AppLocalizations.of(context)!.print,
           value: _print,
-          onChanged: (v) => setState(() => _print = v),
+          onChanged: (v) {
+            setState(() => _print = v);
+            widget.onPrintChanged?.call(v);
+          },
         ),
     ],
   );
@@ -472,7 +491,7 @@ class CashTxnFormState extends State<CashTxnForm> {
 }
 
 // ═════════════════════════════════════════════════════════════════
-// DIALOG
+// DIALOG ENTRY
 // ═════════════════════════════════════════════════════════════════
 
 Future<bool?> showCashTxnDialog(
@@ -538,6 +557,9 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
   bool _formBusy = false;
   _RowAction _pendingAction = _RowAction.none;
 
+  /// Mirrors the "Print" checkbox inside the form.
+  bool _shouldPrint = true;
+
   bool get _actionBusy => _pendingAction != _RowAction.none;
 
   CashTxnSpec get spec => widget.spec;
@@ -547,10 +569,118 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
 
   bool get _isEditing => reference != null && reference!.isNotEmpty;
 
+  // ═════════════════════════════════════════════════════════════
+  // AUTH
+  // ═════════════════════════════════════════════════════════════
+
   String? _loginName(BuildContext context) {
     final auth = context.read<AuthBloc>().state;
     return auth is AuthenticatedState ? auth.loginData.usrName : null;
   }
+
+  // ═════════════════════════════════════════════════════════════
+  // COMPANY
+  // ═════════════════════════════════════════════════════════════
+
+  /// Builds a [ReportModel] from [CompanyProfileBloc] state,
+  /// mirroring how the reference view populates it.
+  ReportModel _reportFromState(CompanyProfileState state) {
+    final report = ReportModel();
+    if (state is CompanyProfileLoadedState) {
+      report.comName = state.company.comName ?? '';
+      report.comAddress = state.company.addName ?? '';
+      report.compPhone = state.company.comPhone ?? '';
+      report.comEmail = state.company.comEmail ?? '';
+      report.comWhatsApp = state.company.comWhatsapp ?? '';
+      report.comWebsite = state.company.comWebsite ?? '';
+      report.comFacebook = state.company.comFb ?? '';
+      report.comInstagram = state.company.comInsta ?? '';
+      report.statementDate = DateTime.now().toFullDateTime;
+
+      final base64Logo = state.company.comLogo;
+      if (base64Logo != null && base64Logo.isNotEmpty) {
+        try {
+          report.comLogo = base64Decode(base64Logo);
+        } catch (_) {
+          report.comLogo = Uint8List(0);
+        }
+      }
+    }
+    return report;
+  }
+
+  // ═════════════════════════════════════════════════════════════
+  // PRINT
+  // ═════════════════════════════════════════════════════════════
+
+  void _printVoucher(BuildContext context, CashTxnDetail data) {
+    final company = _reportFromState(
+      context.read<CompanyProfileBloc>().state,
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (_) => PrintPreviewDialog<CashTxnDetail>(
+          data: data,
+          company: company,
+          buildPreview: ({
+            required data,
+            required language,
+            required orientation,
+            required pageFormat,
+          }) {
+            return CashTxnVoucherPrintSettings().printPreview(
+              company: company,
+              language: language,
+              orientation: orientation,
+              pageFormat: pageFormat,
+              data: data,
+            );
+          },
+          onPrint: ({
+            required data,
+            required language,
+            required orientation,
+            required pageFormat,
+            required selectedPrinter,
+            required copies,
+            required pages,
+          }) {
+            return CashTxnVoucherPrintSettings().printDocument(
+              company: company,
+              language: language,
+              orientation: orientation,
+              pageFormat: pageFormat,
+              selectedPrinter: selectedPrinter,
+              data: data,
+              copies: copies,
+              pages: pages,
+            );
+          },
+          onSave: ({
+            required data,
+            required language,
+            required orientation,
+            required pageFormat,
+          }) {
+            return CashTxnVoucherPrintSettings().createDocument(
+              data: data,
+              company: company,
+              language: language,
+              orientation: orientation,
+              pageFormat: pageFormat,
+            );
+          },
+        ),
+      );
+    });
+  }
+
+  // ═════════════════════════════════════════════════════════════
+  // BUSY HELPERS
+  // ═════════════════════════════════════════════════════════════
 
   void _clearLocalError() {
     if (_localError != null && mounted) {
@@ -576,6 +706,7 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
     final st = _formKey.currentState;
     if (st == null) return;
 
+    _shouldPrint = st.printEnabled;
     _clearLocalError();
     _setFormBusy(true);
 
@@ -583,13 +714,20 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
     if (!dispatched) _setFormBusy(false);
   }
 
+  // ═════════════════════════════════════════════════════════════
+  // ROW ACTIONS
+  // ═════════════════════════════════════════════════════════════
+
   void _dispatchAuthorize(BuildContext context) {
     final ref = reference;
     if (ref == null || ref.isEmpty) return;
     _clearLocalError();
     _setPendingAction(_RowAction.authorize);
     context.read<TransactionsBloc>().add(
-      AuthorizeTransactionEvent(reference: ref, userName: _loginName(context)),
+      AuthorizeTransactionEvent(
+        reference: ref,
+        userName: _loginName(context),
+      ),
     );
   }
 
@@ -612,7 +750,10 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
     _clearLocalError();
     _setPendingAction(_RowAction.reverse);
     context.read<TransactionsBloc>().add(
-      ReverseTransactionEvent(reference: ref, userName: _loginName(context)),
+      ReverseTransactionEvent(
+        reference: ref,
+        userName: _loginName(context),
+      ),
     );
   }
 
@@ -650,7 +791,10 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
     _setPendingAction(_RowAction.delete);
 
     context.read<TransactionsBloc>().add(
-      DeleteTransactionEvent(reference: ref, userName: _loginName(context)),
+      DeleteTransactionEvent(
+        reference: ref,
+        userName: _loginName(context),
+      ),
     );
   }
 
@@ -675,6 +819,10 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
     );
   }
 
+  // ═════════════════════════════════════════════════════════════
+  // BUILD
+  // ═════════════════════════════════════════════════════════════
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocListener(
@@ -683,6 +831,13 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
           listener: (context, state) {
             if (state is CashTxnSuccess) {
               _setFormBusy(false);
+
+              // ── AUTO PRINT ───────────────────────────────
+              if (_shouldPrint) {
+                final detail = state.detail;
+                if (detail != null) _printVoucher(context, detail);
+              }
+
               ToastManager.show(
                 context: context,
                 title: 'Saved',
@@ -756,7 +911,6 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
             return s.actionInProgress == ref;
           });
           final rowBusy = _actionBusy || blocRowBusy;
-
           final anyBusy = cashBusy || rowBusy;
 
           final deleteBusy = _pendingAction == _RowAction.delete;
@@ -808,12 +962,17 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (state is CashTxnFailure && state.message.isNotEmpty)
-                    _banner(state.message, Theme.of(context).colorScheme.error),
+                    _banner(
+                      state.message,
+                      Theme.of(context).colorScheme.error,
+                    ),
 
                   if (_localError != null && _localError!.isNotEmpty)
-                    _banner(_localError!, Theme.of(context).colorScheme.error),
+                    _banner(
+                      _localError!,
+                      Theme.of(context).colorScheme.error,
+                    ),
 
-                  // ── NEW: audit strip ───────────────────────
                   if (initial != null && _hasAuditData(initial))
                     _TransactionAuditStrip(draft: initial),
 
@@ -826,6 +985,7 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
                       initialDraft: initial,
                       stateText: stateText,
                       onSubmitRequested: _onFormSubmit,
+                      onPrintChanged: (v) => _shouldPrint = v,
                       onSubmit: (draft) {
                         _clearLocalError();
                         if (isEditing) {
@@ -854,6 +1014,22 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
                           label: Text(AppLocalizations.of(context)!.cancel),
                         ),
 
+                        // ── REPRINT (edit mode only) ───────────
+                        if (isEditing && loaded != null)
+                          ZOutlineButton(
+                            isActive: !anyBusy,
+                            onPressed: anyBusy
+                                ? null
+                                : () => _printVoucher(
+                              context,
+                              loaded.detail,
+                            ),
+                            icon: Icons.print_outlined,
+                            label: Text(
+                              AppLocalizations.of(context)!.print,
+                            ),
+                          ),
+
                         if (isEditing && isPending && isMaker) ...[
                           ZOutlineButton(
                             onPressed: anyBusy
@@ -867,7 +1043,8 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
                             label: _busyLabel(
                               context,
                               busy: deleteBusy,
-                              busyText: AppLocalizations.of(context)!.deleting,
+                              busyText:
+                              AppLocalizations.of(context)!.deleting,
                               idleText: AppLocalizations.of(context)!.delete,
                             ),
                           ),
@@ -878,7 +1055,8 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
                             label: _busyLabel(
                               context,
                               busy: cashBusy,
-                              busyText: AppLocalizations.of(context)!.updating,
+                              busyText:
+                              AppLocalizations.of(context)!.updating,
                               idleText: AppLocalizations.of(context)!.update,
                             ),
                           ),
@@ -898,7 +1076,8 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
                               busy: authorizeBusy,
                               busyText:
                               AppLocalizations.of(context)!.authorizing,
-                              idleText: AppLocalizations.of(context)!.authorize,
+                              idleText:
+                              AppLocalizations.of(context)!.authorize,
                             ),
                           ),
 
@@ -908,7 +1087,9 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
                             onPressed: anyBusy
                                 ? null
                                 : () => _dispatchUnauthorize(context),
-                            icon: unauthorizeBusy ? null : Icons.undo_rounded,
+                            icon: unauthorizeBusy
+                                ? null
+                                : Icons.undo_rounded,
                             label: _busyLabel(
                               context,
                               busy: unauthorizeBusy,
@@ -923,12 +1104,16 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
                             onPressed: anyBusy
                                 ? null
                                 : () => _dispatchReverse(context),
-                            icon: reverseBusy ? null : Icons.replay_rounded,
+                            icon: reverseBusy
+                                ? null
+                                : Icons.replay_rounded,
                             label: _busyLabel(
                               context,
                               busy: reverseBusy,
-                              busyText: AppLocalizations.of(context)!.reversing,
-                              idleText: AppLocalizations.of(context)!.reverse,
+                              busyText:
+                              AppLocalizations.of(context)!.reversing,
+                              idleText:
+                              AppLocalizations.of(context)!.reverse,
                             ),
                           ),
                         ],
@@ -941,7 +1126,8 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
                             label: _busyLabel(
                               context,
                               busy: cashBusy,
-                              busyText: AppLocalizations.of(context)!.saving,
+                              busyText:
+                              AppLocalizations.of(context)!.saving,
                               idleText: AppLocalizations.of(context)!.save,
                             ),
                           ),
@@ -958,7 +1144,6 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
   }
 
   /// True when the draft carries any audit data worth rendering.
-  /// (Create-mode drafts have none, so the strip stays hidden.)
   bool _hasAuditData(TransactionDraft d) =>
       d.trnStateText != null ||
           d.trnStatus != null ||
@@ -980,7 +1165,8 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
         Icon(Icons.warning_amber_rounded, color: color, size: 16),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(text, style: TextStyle(color: color, fontSize: 12)),
+          child:
+          Text(text, style: TextStyle(color: color, fontSize: 12)),
         ),
       ],
     ),
@@ -991,8 +1177,6 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
 // AUDIT STRIP
 // ═════════════════════════════════════════════════════════════════
 
-/// Compact strip shown above the form in edit mode:
-///   ● PENDING   👤 MAKER: basir   ⏱ 2026-11-03 06:33
 class _TransactionAuditStrip extends StatelessWidget {
   final TransactionDraft draft;
   const _TransactionAuditStrip({required this.draft});
@@ -1005,8 +1189,6 @@ class _TransactionAuditStrip extends StatelessWidget {
     final statusLabel =
         draft.trnStateText ?? _statusFallback(draft.trnStatus);
     final palette = _StatusPalette.of(context, statusLabel);
-
-
 
     return Container(
       width: double.infinity,
@@ -1052,14 +1234,14 @@ class _TransactionAuditStrip extends StatelessWidget {
               iconColor: scheme.onSurfaceVariant,
               bg: Colors.transparent,
               fg: scheme.onSurfaceVariant,
-              label: "${draft.trnEntryDate!.toFormattedDate()} | ${draft.trnEntryDate!.shamsiDateString}",
+              label:
+              "${draft.trnEntryDate!.toFormattedDate()} | ${draft.trnEntryDate!.shamsiDateString}",
             ),
         ],
       ),
     );
   }
 
-  /// Derive a status label when the API didn't send `trnStateText`.
   String _statusFallback(int? status) {
     switch (status) {
       case 0:
@@ -1074,10 +1256,8 @@ class _TransactionAuditStrip extends StatelessWidget {
         return 'Unknown';
     }
   }
-
 }
 
-/// Small rounded chip used inside the audit strip.
 class _AuditChip extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
@@ -1099,7 +1279,6 @@ class _AuditChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Split "KEY: value" so we can style the value separately.
     final colonIdx = label.indexOf(':');
     final keyPart =
     colonIdx == -1 ? '' : label.substring(0, colonIdx + 1).trim();
@@ -1133,8 +1312,7 @@ class _AuditChip extends StatelessWidget {
             valuePart,
             style: TextStyle(
               fontSize: 11,
-              fontWeight:
-              boldValue ? FontWeight.w700 : FontWeight.w500,
+              fontWeight: boldValue ? FontWeight.w700 : FontWeight.w500,
               color: fg,
             ),
           ),
@@ -1144,7 +1322,6 @@ class _AuditChip extends StatelessWidget {
   }
 }
 
-/// Dark/light-aware status palette.
 class _StatusPalette {
   final Color bg;
   final Color fg;
@@ -1205,7 +1382,8 @@ class _Check extends StatelessWidget {
     spacing: 5,
     children: [
       Checkbox(
-        visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+        visualDensity:
+        const VisualDensity(horizontal: -4, vertical: -4),
         value: value,
         onChanged: (v) => onChanged(v ?? false),
       ),
@@ -1214,7 +1392,6 @@ class _Check extends StatelessWidget {
   );
 }
 
-/// Full details card — mirrors the Fund Transfer version.
 class _AccountDetailsCard extends StatelessWidget {
   final StakeholderAccount account;
   final String fallbackCurrency;
@@ -1294,7 +1471,9 @@ class _AccountDetailsCard extends StatelessWidget {
           if (isStakeholder && status != null)
             row(
               tr.status.toUpperCase(),
-              status == 1 ? tr.active.toUpperCase() : tr.blocked.toUpperCase(),
+              status == 1
+                  ? tr.active.toUpperCase()
+                  : tr.blocked.toUpperCase(),
             ),
         ],
       ),
@@ -1302,8 +1481,6 @@ class _AccountDetailsCard extends StatelessWidget {
   }
 }
 
-/// Lightweight card shown while the full [StakeholderAccount] row is
-/// still loading in edit mode.
 class _PendingAccountCard extends StatelessWidget {
   final int accountNo;
   final String fallbackCurrency;
@@ -1346,7 +1523,9 @@ class _PendingAccountCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(label, style: title?.copyWith(fontWeight: FontWeight.bold)),
+              Text(label,
+                  style:
+                  title?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(width: 8),
               const SizedBox(
                 width: 12,

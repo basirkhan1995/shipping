@@ -55,30 +55,34 @@ abstract class PrintServices {
     }
   }
 
-  // ── English fonts ────────────────────────────────────────
+  // Load English fonts (regular and bold)
   static Future<void> _loadEnglishFonts() async {
     try {
-      final regular = await rootBundle.load(
-        'assets/fonts/OpenSans/OpenSans-Regular.ttf',
+      // Load regular font
+      final ByteData englishRegularData = await rootBundle.load(
+        'assets/fonts/Vazir/Vazirmatn-Regular.ttf',
       );
-      _englishRegular = pw.Font.ttf(regular);
+      _englishRegular = pw.Font.ttf(englishRegularData);
 
-      final bold = await rootBundle.load(
-        'assets/fonts/OpenSans/OpenSans-Bold.ttf',
+      // Load bold font
+      final ByteData englishBoldData = await rootBundle.load(
+        'assets/fonts/Vazir/Vazirmatn-Bold.ttf',
       );
-      _englishBold = pw.Font.ttf(bold);
+      _englishBold = pw.Font.ttf(englishBoldData);
     } catch (e) {
       debugPrint('❌ English font loading failed: $e');
       _englishRegular = _englishBold = pw.Font.courier();
     }
   }
 
-  // ── Persian fonts ────────────────────────────────────────
+  // Load Persian fonts with platform-specific handling
   static Future<void> _loadPersianFonts() async {
     try {
       if (kIsWeb) {
+        // For web, try Amiri first (better Arabic/Persian support)
         await _loadWebPersianFonts();
       } else {
+        // For mobile/desktop, use NotoNaskh
         await _loadNativePersianFonts();
       }
     } catch (e) {
@@ -89,30 +93,39 @@ abstract class PrintServices {
 
   static Future<void> _loadWebPersianFonts() async {
     try {
-      final regular = await rootBundle.load(
-        'assets/fonts/NotoNaskh/NotoNaskhArabic-Regular.ttf',
+      // Load regular font
+      final ByteData persianRegularData = await rootBundle.load(
+        'assets/fonts/Vazir/Vazirmatn-Regular.ttf',
       );
-      _persianRegular = pw.Font.ttf(regular);
+      _persianRegular = pw.Font.ttf(persianRegularData);
 
-      final bold = await rootBundle.load(
-        'assets/fonts/NotoNaskh/NotoNaskhArabic-Bold.ttf',
+      // Load bold font
+      final ByteData persianBoldData = await rootBundle.load(
+        'assets/fonts/Vazir/Vazirmatn-Bold.ttf',
       );
-      _persianBold = pw.Font.ttf(bold);
+      _persianBold = pw.Font.ttf(persianBoldData);
+
     } catch (e) {
       await _loadNativePersianFonts();
     }
   }
 
   static Future<void> _loadNativePersianFonts() async {
-    final regular = await rootBundle.load(
-      'assets/fonts/Amiri/Amiri-Regular.ttf',
-    );
-    _persianRegular = pw.Font.ttf(regular);
+    try {
 
-    final bold = await rootBundle.load(
-      'assets/fonts/Amiri/Amiri-Bold.ttf',
-    );
-    _persianBold = pw.Font.ttf(bold);
+      final ByteData persianRegularData = await rootBundle.load(
+        'assets/fonts/Vazir/Vazirmatn-Regular.ttf',
+      );
+      _persianRegular = pw.Font.ttf(persianRegularData);
+
+      final ByteData persianBoldData = await rootBundle.load(
+        'assets/fonts/Vazir/Vazirmatn-Bold.ttf',
+      );
+
+      _persianBold = pw.Font.ttf(persianBoldData);
+    } catch (e) {
+      rethrow;
+    }
   }
 
   // ── Font selection ───────────────────────────────────────
