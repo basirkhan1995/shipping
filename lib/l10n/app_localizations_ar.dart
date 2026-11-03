@@ -1474,4 +1474,22 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get usersHint => 'د کاروونکو، رولونو او لاسرسیو مدیریت';
+
+  @override
+  String get ccyName => 'ارز نوم';
+
+  @override
+  String get code => 'کد';
+
+  @override
+  String get allCurrencies => 'همه اسعار';
+
+  @override
+  String get localName => 'نام محلی';
+
+  @override
+  String get symbol => 'سمبول';
+
+  @override
+  String get flag => 'بیرق';
 }

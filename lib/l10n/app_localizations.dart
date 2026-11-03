@@ -1309,7 +1309,7 @@ abstract class AppLocalizations {
   /// No description provided for @maker.
   ///
   /// In en, this message translates to:
-  /// **'Txn Maker'**
+  /// **'Maker'**
   String get maker;
 
   /// No description provided for @cashDeposit.
@@ -2997,6 +2997,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manage user accounts, roles, and access permissions.'**
   String get usersHint;
+
+  /// No description provided for @ccyName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get ccyName;
+
+  /// No description provided for @code.
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get code;
+
+  /// No description provided for @allCurrencies.
+  ///
+  /// In en, this message translates to:
+  /// **'All Currencies'**
+  String get allCurrencies;
+
+  /// No description provided for @localName.
+  ///
+  /// In en, this message translates to:
+  /// **'Local name'**
+  String get localName;
+
+  /// No description provided for @symbol.
+  ///
+  /// In en, this message translates to:
+  /// **'Symbol'**
+  String get symbol;
+
+  /// No description provided for @flag.
+  ///
+  /// In en, this message translates to:
+  /// **'Flag'**
+  String get flag;
 }
 
 class _AppLocalizationsDelegate

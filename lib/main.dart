@@ -141,30 +141,44 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (_) => TxnTypesBloc(Repositories(ApiServices()))),
         ],
         child: BlocBuilder<LocalizationBloc, Locale>(
-          builder: (context, locale) {
-            return BlocBuilder<ThemeBloc, ThemeMode>(
-              builder: (context, themeMode) {
-                final theme = AppThemes(TextTheme.of(context));
-                return MaterialApp(
-                  themeMode: themeMode,
-                  locale: locale,
-                  title: 'ZShipping',
-                  darkTheme: theme.dark(),
-                  theme: theme.light(),
-                  debugShowCheckedModeBanner: false,
-                  localizationsDelegates:
-                  AppLocalizations.localizationsDelegates,
-                  supportedLocales: AppLocalizations.supportedLocales,
-                  home: LoginView(),
-                  builder: (context, child) {
-                    localizationService.update(AppLocalizations.of(context)!);
-                    return child!;
-                  },
-                );
-              },
-            );
-          },
-        ),
+         builder: (context, locale) {
+           return BlocBuilder<ThemeBloc, ThemeMode>(
+             builder: (context, themeMode) {
+               final theme = AppThemes(TextTheme.of(context));
+               return MaterialApp(
+                 themeMode: themeMode,
+                 locale: locale,
+                 title: 'ZShipping',
+                 darkTheme: theme.dark(),
+                 theme: theme.light(),
+                 debugShowCheckedModeBanner: false,
+                 localizationsDelegates:
+                 AppLocalizations.localizationsDelegates,
+                 supportedLocales: AppLocalizations.supportedLocales,
+                 home: BlocListener<AuthBloc, AuthState>(
+                   listenWhen: (prev, curr) =>
+                   curr is UnAuthenticatedState || (prev is AuthenticatedState && curr is AuthInitial),
+                   listener: (context, state) {
+                     final navigator = Navigator.of(context, rootNavigator: true);
+
+                     if (state is UnAuthenticatedState) {
+                       navigator.pushAndRemoveUntil(
+                         MaterialPageRoute(builder: (_) => const LoginView()),
+                             (route) => false,
+                       );
+                     }
+                   },
+                    child: LoginView(),
+                  ),
+                 builder: (context, child) {
+                   localizationService.update(AppLocalizations.of(context)!);
+                   return child!;
+                 },
+               );
+             },
+           );
+         },
+                ),
       ),
     );
   }

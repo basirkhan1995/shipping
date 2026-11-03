@@ -622,7 +622,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get type => 'Type';
 
   @override
-  String get maker => 'Txn Maker';
+  String get maker => 'Maker';
 
   @override
   String get cashDeposit => 'Cash Receipt';
@@ -1477,4 +1477,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get usersHint =>
       'Manage user accounts, roles, and access permissions.';
+
+  @override
+  String get ccyName => 'Name';
+
+  @override
+  String get code => 'Code';
+
+  @override
+  String get allCurrencies => 'All Currencies';
+
+  @override
+  String get localName => 'Local name';
+
+  @override
+  String get symbol => 'Symbol';
+
+  @override
+  String get flag => 'Flag';
 }

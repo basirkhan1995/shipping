@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flag/flag.dart';
+import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../../../../../../Features/Widgets/search_field.dart';
 import 'package:flutter/services.dart';
 
@@ -344,9 +345,9 @@ class _DesktopState extends State<_Desktop> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final color = Theme.of(context).colorScheme;
+    final tr = AppLocalizations.of(context)!;
     TextStyle? titleStyle =
-    textTheme.titleSmall?.copyWith(color: color.surface);
+    textTheme.titleSmall?.copyWith(letterSpacing: 1.2,fontSize: 12, fontWeight: FontWeight.bold);
 
     final shortcuts = {
       const SingleActivator(LogicalKeyboardKey.f1): onAdd,
@@ -368,17 +369,20 @@ class _DesktopState extends State<_Desktop> {
                   Expanded(
                     flex: 5,
                     child: Text(
-                      'All Currencies',
+                      tr.allCurrencies.toUpperCase(),
                       style: Theme.of(context)
                           .textTheme
                           .titleLarge
                           ?.copyWith(
+                          letterSpacing: 1.2,
+                          fontWeight: FontWeight.w500,
                           color: Theme.of(context).colorScheme.outline),
                     ),
                   ),
                   Expanded(
                     flex: 3,
                     child: ReusableSearchBar(
+
                       controller: searchController,
                       onChanged: (e) {
                         setState(() {});
@@ -391,16 +395,19 @@ class _DesktopState extends State<_Desktop> {
                       ZOutlineButton(
                         toolTip: 'F5',
                         width: 110,
+                        height: 38,
                         icon: Icons.refresh,
-                        label: const Text('Refresh'),
+                        label: Text(tr.refresh),
                         onPressed: onRefresh,
                       ),
                       const SizedBox(width: 8),
                       ZOutlineButton(
                         toolTip: 'F1',
+                        height: 38,
                         isActive: true,
                         width: 110,
-                        label: const Text('New'),
+                        icon: Icons.add,
+                        label: Text(tr.newKeyword),
                         onPressed: onAdd,
                       ),
                     ],
@@ -414,35 +421,40 @@ class _DesktopState extends State<_Desktop> {
               const EdgeInsets.symmetric(horizontal: 8.0, vertical: 5),
               margin: const EdgeInsets.symmetric(horizontal: 5.0),
               decoration: BoxDecoration(
-                color: color.primary.withValues(alpha: .9),
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.grey,
+                    width: 1.0,
+                  ),
+                ),
               ),
               child: Row(
                 children: [
                   SizedBox(
                     width: 50,
-                    child: Text("Flag", style: titleStyle),
+                    child: Text(tr.flag.toUpperCase(), style: titleStyle),
                   ),
                   SizedBox(
                     width: 60,
-                    child: Text("Code", style: titleStyle),
+                    child: Text(tr.code.toUpperCase(), style: titleStyle),
                   ),
                   SizedBox(
                     width: 220,
-                    child: Text("Name", style: titleStyle),
+                    child: Text(tr.ccyName.toUpperCase(), style: titleStyle),
                   ),
                   SizedBox(
                     width: 170,
-                    child: Text("Local Name", style: titleStyle),
+                    child: Text(tr.localeName.toUpperCase(), style: titleStyle),
                   ),
                   const Spacer(),
                   SizedBox(
                     width: 70,
-                    child: Text("Symbol", style: titleStyle),
+                    child: Text(tr.symbol.toUpperCase(), style: titleStyle),
                   ),
                   const SizedBox(width: 10),
                   SizedBox(
                     width: 60,
-                    child: Text("Status", style: titleStyle),
+                    child: Text(tr.status.toUpperCase(), style: titleStyle),
                   ),
                 ],
               ),

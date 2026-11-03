@@ -1474,4 +1474,22 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get usersHint => 'مدیریت کاربران، نقش‌ ها و دسترسی‌ ها';
+
+  @override
+  String get ccyName => 'نام ارز';
+
+  @override
+  String get code => 'کد';
+
+  @override
+  String get allCurrencies => 'همه اسعار';
+
+  @override
+  String get localName => 'نام محلی';
+
+  @override
+  String get symbol => 'سمبول';
+
+  @override
+  String get flag => 'بیرق';
 }

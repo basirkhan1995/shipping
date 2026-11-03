@@ -424,19 +424,9 @@ class _ReportCardState extends State<_ReportCard> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-
-    // ── Bigger icon + title, but still lighter than the original full
-    //    card (which was 44/52 icon, 22/26 inner, 15.5 title).
-    //   icon badge  32 / 38   →  44 / 52
-    //   inner icon  16 / 19   →  24 / 28
-    //   title       12.5/13.5 →  15 / 16
-    //   desc        10.5/11   →  12 / 12.5
-    //   padding      9 / 10.5 →  12 / 14
-    //   badge gap    9        →  12
-    //   title gap    3        →   4
     final iconSize = widget.compact ? 44.0 : 52.0;
     final innerIconSize = widget.compact ? 24.0 : 28.0;
-    final titleSize = widget.compact ? 15.0 : 16.0;
+    final titleSize = widget.compact ? 13.0 : 15.0;
     final descSize = widget.compact ? 12.0 : 12.5;
     final pad = widget.compact ? 12.0 : 14.0;
 
@@ -507,9 +497,10 @@ class _ReportCardState extends State<_ReportCard> {
 
                   // ── Title — larger, up to 2 lines so long names fit
                   Text(
-                    widget.title,
+                    widget.title.toUpperCase(),
                     style: TextStyle(
                       fontSize: titleSize,
+                      letterSpacing: 1,
                       fontWeight: FontWeight.w700,
                       height: 1.25,
                     ),

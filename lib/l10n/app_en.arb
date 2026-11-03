@@ -207,7 +207,7 @@
   "date": "Date",
   "reference": "Reference",
   "type": "Type",
-  "maker": "Txn Maker",
+  "maker": "Maker",
   "cashDeposit": "Cash Receipt",
   "cashWithdraw": "Cash Payment",
   "clearFilters": "Clear filters",
@@ -495,5 +495,11 @@
   "fieldsRequired": "Please fill all required fields",
   "fieldRequired": "Please fill all required fields",
   "salaryMustBeNumber": "Salary must be a valid number",
-  "usersHint": "Manage user accounts, roles, and access permissions."
+  "usersHint": "Manage user accounts, roles, and access permissions.",
+  "ccyName": "Name",
+  "code": "Code",
+  "allCurrencies": "All Currencies",
+  "localName": "Local name",
+  "symbol": "Symbol",
+  "flag": "Flag"
 }

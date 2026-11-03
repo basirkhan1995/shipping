@@ -77,8 +77,8 @@ class _DesktopViewState extends State<_DesktopView> {
     _TypeOption('CHWL'),
     _TypeOption('INCM'),
     _TypeOption('XPNS'),
-    _TypeOption('GLDR'),
-    _TypeOption('GLCR'),
+    // _TypeOption('GLDR'),
+    // _TypeOption('GLCR'),
     _TypeOption('ATAT'),
     _TypeOption('CRFX'),
     _TypeOption('BULK'),
@@ -812,34 +812,27 @@ class _DesktopViewState extends State<_DesktopView> {
   }
 
   Widget _buildTableHeader(ColorScheme color, TextTheme textTheme) {
-    final titleStyle = textTheme.titleSmall?.copyWith(color: color.surface);
+    final titleStyle = textTheme.titleSmall?.copyWith(letterSpacing: 1.2,fontSize: 12,fontWeight: FontWeight.bold);
     final tr = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.primary.withValues(alpha: .9),
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.grey,
+            width: 1.0,
+          ),
+        ),
       ),
       child: Row(
         children: [
-          SizedBox(width: 150, child: Text(tr.date, style: titleStyle)),
-          SizedBox(width: 200, child: Text(tr.reference, style: titleStyle)),
-          SizedBox(width: 150, child: Text(tr.type, style: titleStyle)),
-          SizedBox(width: 140, child: Text(tr.maker, style: titleStyle)),
-          Expanded(child: Text(tr.narration, style: titleStyle)),
-          SizedBox(
-            width: 180,
-            child: Text(
-              tr.amount,
-              textAlign: TextAlign.end,
-              style: titleStyle,
-            ),
-          ),
-          SizedBox(
-            width: 110,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Text(
-                tr.status,
+          SizedBox(width: 150, child: Text(tr.date.toUpperCase(), style: titleStyle)),
+          SizedBox(width: 200, child: Text(tr.reference.toUpperCase(), style: titleStyle)),
+          SizedBox(width: 150, child: Text(tr.type.toUpperCase(), style: titleStyle)),
+          SizedBox(width: 140, child: Text(tr.maker.toUpperCase(), style: titleStyle)),
+          Expanded(child: Text(tr.narration.toUpperCase(), style: titleStyle)),
+          SizedBox(width: 180, child: Text(tr.amount.toUpperCase(), textAlign: TextAlign.end, style: titleStyle),),
+          SizedBox(width: 110, child: Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Text(tr.status.toUpperCase(),
                 textAlign: TextAlign.end,
                 style: titleStyle,
               ),
@@ -1008,15 +1001,16 @@ class _RibbonButtonState extends State<_RibbonButton> {
                 ),
                 const SizedBox(height: 3),
                 SizedBox(
-                  height: 26,
+                  height: 32,
                   child: Center(
                     child: Text(
-                      widget.label,
+                      widget.label.toUpperCase(),
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: textTheme.labelSmall?.copyWith(
-                        fontSize: 13,
+                        fontSize: 12,
+                        letterSpacing: 1,
                         fontWeight: FontWeight.w600,
                         color: color.onSurface,
                         height: 1.15,
