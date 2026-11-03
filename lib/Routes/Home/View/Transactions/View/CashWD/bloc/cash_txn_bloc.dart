@@ -19,13 +19,10 @@ class CashTxnBloc extends Bloc<CashTxnEvent, CashTxnState> {
     on<CashTxnReset>((_, emit) => emit(const CashTxnIdle()));
   }
 
-  Future<void> _onLoad(
-      CashTxnLoadRequested e,
-      Emitter<CashTxnState> emit,
-      ) async {
+  Future<void> _onLoad(CashTxnLoadRequested e, Emitter<CashTxnState> emit) async {
     emit(const CashTxnLoading());
     try {
-      final body = await _repo.getCashTxnByReference(reference: e.reference);
+      final body = await _repo.getCashTxnByRef(reference: e.reference);
 
       if (body['msg'] != null && body['msg'] != 'success') {
         emit(CashTxnFailure(body['msg'].toString()));

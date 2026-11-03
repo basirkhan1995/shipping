@@ -54,73 +54,33 @@ class _TxnTypeDropDownState extends State<TxnTypeDropDown> {
   Widget build(BuildContext context) {
     return BlocBuilder<TxnTypesBloc, TxnTypesState>(
       builder: (context, state) {
-        final bool isLoading = state is TxnTypeLoadingState;
-
-        Widget buildTitle() {
-          if (isLoading) {
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  widget.title ?? AppLocalizations.of(context)!.users,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleSmall
-                      ?.copyWith(fontSize: 12),
-                ),
-                const SizedBox(width: 8),
-                const SizedBox(
-                  width: 15,
-                  height: 15,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ],
-            );
-          }
-          return Text(
-            widget.title ?? AppLocalizations.of(context)!.users,
-            style: Theme.of(context)
-                .textTheme
-                .titleSmall
-                ?.copyWith(fontSize: 12),
-          );
-        }
 
         if (state is TxnTypeErrorState) {
           return Text('Error: ${state.message}');
         }
-
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ZDropdown<TxnTypeModel>(
-              disableAction: widget.disableAction,
-              title: '',
-              height: widget.height,
-              items: state is TxnTypesLoadedState ? state.types : [],
-              multiSelect: widget.isMulti,
-              selectedItems: widget.isMulti ? _selectedMulti : [],
-              selectedItem: widget.isMulti ? null : _selectedSingle,
-              itemLabel: (user) => user.trntCode ?? '',
-              initialValue:
-              widget.title ?? AppLocalizations.of(context)!.users,
-              onMultiSelectChanged: widget.isMulti
-                  ? (selected) {
-                setState(() => _selectedMulti = selected);
-                widget.onMultiChanged(selected);
-              } : null,
-              onItemSelected: widget.isMulti
-                  ? (_) {}
-                  : (user) {
-                setState(() => _selectedSingle = user);
-                widget.onSingleChanged?.call(user);
-              },
-              isLoading: false,
-              customTitle: (widget.title != null && widget.title!.isNotEmpty)
-                  ? buildTitle()
-                  : const SizedBox.shrink(),
-            ),
-          ],
+        return ZDropdown<TxnTypeModel>(
+          disableAction: widget.disableAction,
+          title:  widget.title ?? AppLocalizations.of(context)!.users,
+          height: widget.height,
+          items: state is TxnTypesLoadedState ? state.types : [],
+          multiSelect: widget.isMulti,
+          selectedItems: widget.isMulti ? _selectedMulti : [],
+          selectedItem: widget.isMulti ? null : _selectedSingle,
+          itemLabel: (user) => user.trntCode ?? '',
+          initialValue:
+          widget.title ?? AppLocalizations.of(context)!.users,
+          onMultiSelectChanged: widget.isMulti
+              ? (selected) {
+            setState(() => _selectedMulti = selected);
+            widget.onMultiChanged(selected);
+          } : null,
+          onItemSelected: widget.isMulti
+              ? (_) {}
+              : (user) {
+            setState(() => _selectedSingle = user);
+            widget.onSingleChanged?.call(user);
+          },
+          isLoading: false,
         );
       },
     );

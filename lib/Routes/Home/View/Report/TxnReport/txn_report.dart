@@ -793,14 +793,13 @@ class _DesktopState extends State<_Desktop> {
     TextStyle? titleStyle = Theme.of(context)
         .textTheme
         .titleSmall
-        ?.copyWith(color: Theme.of(context).colorScheme.surface);
+        ?.copyWith(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1);
     final tr = AppLocalizations.of(context)!;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(tr.allTransactions),
         titleSpacing: 0,
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 10),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 14),
         actions: [
           if (hasAnyFilter)
             ZOutlineButton(
@@ -833,8 +832,9 @@ class _DesktopState extends State<_Desktop> {
                 currency: currency,
               ));
             },
-            icon: Icons.call_to_action_outlined,
-            label: Text(tr.apply),
+            isActive: true,
+            icon: Icons.filter_alt_outlined,
+            label: Text(tr.applyFilter),
           ),
         ],
       ),
@@ -946,10 +946,12 @@ class _DesktopState extends State<_Desktop> {
           Container(
             height: 35,
             decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .primary
-                  .withValues(alpha: .9),
+              border: Border(
+                bottom: BorderSide(
+                  color: Theme.of(context).colorScheme.outline.withValues(alpha: .3),
+                  width: 1.5,
+                ),
+              ),
             ),
             padding:
             const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8),
@@ -957,23 +959,23 @@ class _DesktopState extends State<_Desktop> {
             child: Row(
               children: [
                 SizedBox(
-                    width: 100, child: Text(tr.date, style: titleStyle)),
+                    width: 100, child: Text(tr.date.toUpperCase(), style: titleStyle)),
                 SizedBox(
-                    width: 220, child: Text(tr.reference, style: titleStyle)),
-                Expanded(child: Text(tr.narration, style: titleStyle)),
+                    width: 220, child: Text(tr.reference.toUpperCase(), style: titleStyle)),
+                Expanded(child: Text(tr.narration.toUpperCase(), style: titleStyle)),
                 SizedBox(
-                    width: 150, child: Text(tr.type, style: titleStyle)),
+                    width: 150, child: Text(tr.type.toUpperCase(), style: titleStyle)),
                 SizedBox(
-                    width: 100, child: Text(tr.maker, style: titleStyle)),
+                    width: 100, child: Text(tr.maker.toUpperCase(), style: titleStyle)),
                 SizedBox(
                     width: 100,
-                    child: Text(tr.authorizer, style: titleStyle)),
+                    child: Text(tr.authorizer.toUpperCase(), style: titleStyle)),
                 SizedBox(
-                    width: 100, child: Text(tr.status, style: titleStyle)),
+                    width: 100, child: Text(tr.status.toUpperCase(), style: titleStyle)),
                 SizedBox(
                   width: 150,
                   child: Text(
-                    tr.amount,
+                    tr.amount.toUpperCase(),
                     style: titleStyle,
                     textAlign: TextAlign.end,
                   ),
@@ -1022,8 +1024,8 @@ class _DesktopState extends State<_Desktop> {
                           color: index.isOdd
                               ? Theme.of(context)
                               .colorScheme
-                              .primary
-                              .withValues(alpha: .05)
+                              .outline
+                              .withValues(alpha: .08)
                               : Colors.transparent,
                         ),
                         padding: const EdgeInsets.symmetric(

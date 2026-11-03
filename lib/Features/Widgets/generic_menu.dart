@@ -42,7 +42,7 @@ class GenericMenuItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final fill = isSelected
-        ? scheme.primary.withValues(alpha: 0.1)
+        ? scheme.outline.withValues(alpha: 0.08)
         : unselectedColor;
 
     return Padding(

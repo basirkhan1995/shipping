@@ -105,7 +105,7 @@ class _DesktopView extends StatelessWidget {
         value: MenuName.shipment,
         label: AppLocalizations.of(context)!.shipment,
         screen: const ShipmentsView(),
-        icon: Icons.local_shipping_outlined,
+        icon: Icons.local_shipping_rounded,
       ),
       MenuDefinition(
         value: MenuName.settings,

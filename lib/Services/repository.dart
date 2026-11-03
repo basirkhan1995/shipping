@@ -1162,7 +1162,7 @@ class Repositories {
     );
   }
 
-  Future<Map<String, dynamic>> getCashTxnByReference({
+  Future<Map<String, dynamic>> getCashTxnByRef({
     required String reference,
     CancelToken? cancelToken,
   }) async {
