@@ -1495,4 +1495,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get flag => 'Flag';
+
+  @override
+  String get transactionHint =>
+      'View and manage all your financial transactions';
+
+  @override
+  String get accountDetails => 'Account Details';
 }

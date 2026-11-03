@@ -501,5 +501,7 @@
   "allCurrencies": "All Currencies",
   "localName": "Local name",
   "symbol": "Symbol",
-  "flag": "Flag"
+  "flag": "Flag",
+  "transactionHint": "View and manage all your financial transactions",
+  "accountDetails": "Account Details"
 }

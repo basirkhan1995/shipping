@@ -1492,4 +1492,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get flag => 'بیرق';
+
+  @override
+  String get transactionHint => 'خپلې ټولې مالي معاملې وګورئ او مدیریت یې کړئ';
+
+  @override
+  String get accountDetails => 'جزئیات حساب';
 }

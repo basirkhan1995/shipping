@@ -1,14 +1,10 @@
-// features/journal/cash/view/cash_txn_form.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/extensions.dart';
-import 'package:shipping/Features/Widgets/zbutton.dart'; // ZOutlineButton
+import 'package:shipping/Features/Widgets/zbutton.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/model/stk_model.dart';
 import 'package:shipping/l10n/app_localizations.dart';
-
-import '../../../../../../Features/Date/z_generic_date.dart';
 import '../../../../../../Features/Other/generic_textfield.dart';
 import '../../../../../../Features/Widgets/ztextfield.dart';
 import '../../../../../../Features/Widgets/z_dialog.dart';
@@ -247,7 +243,7 @@ class CashTxnFormState extends State<CashTxnForm> {
                 _AccountDetailsCard(
                   account: _acc!,
                   fallbackCurrency: widget.baseCurrency,
-                  label: tr.details,
+                  label: tr.accountDetails,
                   effectiveCurrencyOverride: _ccy,
                 )
               else if (_effectiveAccountNo != null)
@@ -255,7 +251,7 @@ class CashTxnFormState extends State<CashTxnForm> {
                   accountNo: _effectiveAccountNo!,
                   fallbackCurrency: widget.baseCurrency,
                   effectiveCurrency: _ccy ?? widget.baseCurrency,
-                  label: tr.details,
+                  label: tr.accountDetails,
                 ),
 
               _buildAmountField(),
@@ -402,7 +398,7 @@ class CashTxnFormState extends State<CashTxnForm> {
         _Check(
           label: AppLocalizations.of(context)!.setReminder,
           value: _reminder,
-          onChanged: (v) => setState(() => _reminder = v),
+          onChanged: _onReminderToggled,
         ),
       if (_isEditable)
         _Check(
@@ -413,12 +409,68 @@ class CashTxnFormState extends State<CashTxnForm> {
     ],
   );
 
-  Widget _buildReminderPicker() => ZDatePicker(
-    label: AppLocalizations.of(context)!.dueDate,
-    disablePastDate: true,
-    value: _reminderDate?.toIso8601String(),
-    onDateChanged: (v) => setState(() => _reminderDate = DateTime.tryParse(v)),
-  );
+  Future<void> _onReminderToggled(bool value) async {
+    if (!value) {
+      setState(() {
+        _reminder = false;
+        _reminderDate = null;
+      });
+      return;
+    }
+
+    // Turn on, then open the picker immediately.
+    setState(() => _reminder = true);
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _reminderDate ?? DateTime.now(),
+      firstDate: DateTime.now(),                       // no past dates
+      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+    );
+
+    if (!mounted) return;
+
+    if (picked == null) {
+      // User cancelled → roll the toggle back.
+      setState(() {
+        _reminder = false;
+        _reminderDate = null;
+      });
+      return;
+    }
+
+    setState(() => _reminderDate = picked);
+  }
+
+  Widget _buildReminderPicker() {
+    if (_reminderDate == null) return const SizedBox.shrink();
+
+    return InkWell(
+      onTap: _isEditable
+          ? () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: _reminderDate!,
+          firstDate: DateTime.now(),
+          lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+        );
+        if (!mounted || picked == null) return;
+        setState(() => _reminderDate = picked);
+      }
+          : null,
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: AppLocalizations.of(context)!.dueDate,
+          border: const OutlineInputBorder(),
+          suffixIcon: const Icon(Icons.calendar_today_outlined, size: 18),
+        ),
+        child: Text(
+          MaterialLocalizations.of(context)
+              .formatMediumDate(_reminderDate!),
+        ),
+      ),
+    );
+  }
 }
 
 // ═════════════════════════════════════════════════════════════════
@@ -981,13 +1033,13 @@ class _AccountDetailsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme;
-    final title = Theme.of(context).textTheme.titleSmall;
+    final title = Theme.of(context).textTheme.titleSmall?.copyWith(letterSpacing: 0.3,fontWeight: FontWeight.w500);
 
     Widget row(String k, String v, {bool bold = false}) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
-          SizedBox(width: 150, child: Text(k, style: title)),
+          SizedBox(width: 170, child: Text(k, style: title)),
           Expanded(
             child: Text(
               v,
@@ -1005,10 +1057,8 @@ class _AccountDetailsCard extends StatelessWidget {
 
     final isStakeholder = account.accCategory == _stakeholderCategory;
     final status = account.accStatus;
-    final effectiveCcy =
-        account.accCurrency ??
-        effectiveCurrencyOverride ??
-        (fallbackCurrency.isEmpty ? '' : fallbackCurrency);
+    final tr = AppLocalizations.of(context)!;
+    final effectiveCcy = account.accCurrency ?? effectiveCurrencyOverride ?? (fallbackCurrency.isEmpty ? '' : fallbackCurrency);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 2),
@@ -1020,17 +1070,14 @@ class _AccountDetailsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: title?.copyWith(fontWeight: FontWeight.bold)),
+          Text(label.toUpperCase(), style: title?.copyWith(fontWeight: FontWeight.bold,letterSpacing: .05)),
           const Divider(),
-          row('Account number', account.accNumber?.toString() ?? ''),
-          row('Account name', account.accName ?? ''),
-          row(
-            'Balance',
-            '${account.accBalance.toAmount()} '
-                '${account.accCurrency ?? effectiveCcy}',
+          row(tr.accountNumber.toUpperCase(), account.accNumber?.toString() ?? ''),
+          row(tr.accountName.toUpperCase(), account.accName ?? ''),
+          row(tr.balance.toUpperCase(), '${account.accBalance.toAmount()} ''${account.accCurrency ?? effectiveCcy}',
           ),
           if (isStakeholder && status != null)
-            row('Status', status == 1 ? 'Active' : 'Blocked'),
+            row(tr.status.toUpperCase(), status == 1 ? tr.active.toUpperCase() : tr.blocked.toUpperCase()),
         ],
       ),
     );
@@ -1091,8 +1138,8 @@ class _PendingAccountCard extends StatelessWidget {
             ],
           ),
           const Divider(),
-          row('Account number', accountNo.toString()),
-          row('Currency', ccy),
+          row(AppLocalizations.of(context)!.accountNumber, accountNo.toString()),
+          row(AppLocalizations.of(context)!.currency, ccy),
         ],
       ),
     );

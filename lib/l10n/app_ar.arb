@@ -439,5 +439,7 @@
   "allCurrencies": "همه اسعار",
   "localName": "نام محلی",
   "symbol": "سمبول",
-  "flag": "بیرق"
+  "flag": "بیرق",
+  "transactionHint": "خپلې ټولې مالي معاملې وګورئ او مدیریت یې کړئ",
+  "accountDetails": "جزئیات حساب"
 }

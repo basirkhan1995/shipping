@@ -3033,6 +3033,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Flag'**
   String get flag;
+
+  /// No description provided for @transactionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'View and manage all your financial transactions'**
+  String get transactionHint;
+
+  /// No description provided for @accountDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Details'**
+  String get accountDetails;
 }
 
 class _AppLocalizationsDelegate

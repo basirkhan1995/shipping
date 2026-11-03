@@ -8,10 +8,10 @@ import 'package:shipping/Routes/Home/View/Report/AccountStatement/acc_statement.
 import 'package:shipping/Routes/Home/View/Stakeholder/bloc/stakeholder_bloc.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/stk_form.dart';
 import 'package:shipping/l10n/app_localizations.dart';
-
 import '../../../../../../Features/Other/image_helper.dart';
 import '../../../../../../Features/Other/responsive_widget.dart';
 import '../../../Transactions/View/CashWD/cash_wd.dart';
+import '../../../Transactions/View/Exchange/exchange.dart';
 import '../../../Transactions/View/FundTransfer/fund_transfer.dart';
 import '../../model/stk_model.dart';
 import '../StkAccount/bloc/stk_accounts_bloc.dart';
@@ -97,6 +97,31 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
   }
 
   int? get _stkId => widget.ind.perId;
+
+  // ── Exchange dialog ─────────────────────────────────────────────
+  Future<void> _openExchangeDialog() async {
+    final usrName = _loginName();
+    if (usrName == null) return;
+
+    final saved = await showExchangeDialog(
+      context,
+      usrName: usrName,
+      baseCurrency: _baseCurrency(),
+    );
+
+    if (!mounted) return;
+    if (saved == true) {
+      _listNeedsRefresh = true;
+      _reloadProfile();
+      final tr = AppLocalizations.of(context)!;
+      ToastManager.show(
+        context: context,
+        title: tr.save,
+        message: tr.exchange,   // or tr.fxTransaction if that's the key you have
+        type: ToastType.success,
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -363,24 +388,33 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
       child: Scaffold(
         appBar: AppBar(
           titleSpacing: 0,
+          elevation: 0,
           title: Text(tr.profileOverview),
           actions: [
             _AppBarAction(
               icon: Icons.arrow_downward_rounded,
               tooltip: tr.cashDeposit,
+              label: tr.cashDeposit,
               onPressed: () => _openCashDialog('CHDP'),
             ),
             _AppBarAction(
               icon: Icons.arrow_upward_rounded,
               tooltip: tr.cashWithdraw,
+              label: tr.cashWithdraw,
               onPressed: () => _openCashDialog('CHWL'),
             ),
             _AppBarAction(
               icon: Icons.swap_horiz_rounded,
               tooltip: tr.fundTransfer,
+              label: tr.fundTransfer,
               onPressed: _openFundTransferDialog,
             ),
-            const SizedBox(width: 4),
+            _AppBarAction(
+              icon: Icons.swap_horiz_rounded,
+              tooltip: tr.exchange,
+              label: tr.exchange,
+              onPressed: _openExchangeDialog,
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
               child: ZOutlineButton(
@@ -388,7 +422,7 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
                 height: 36,
                 icon: Icons.add,
                 isActive: true,
-                label: Text(tr.addAccount),
+                label: Text(tr.addAccount.toUpperCase()),
               ),
             ),
             const SizedBox(width: 8),
@@ -768,46 +802,36 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// AppBar action button
-// ═══════════════════════════════════════════════════════════════════
 class _AppBarAction extends StatelessWidget {
   final IconData icon;
   final String tooltip;
-  final VoidCallback onPressed;
+  final String? label;          // shown next to the icon
+  final VoidCallback? onPressed; // null = disabled
 
   const _AppBarAction({
     required this.icon,
     required this.tooltip,
-    required this.onPressed,
+    this.label,
+    this.onPressed,
   });
 
   @override
   Widget build(BuildContext context) {
+    final button = ZOutlineButton(
+      onPressed: onPressed,
+      height: 36,
+      isActive: false,
+      icon: icon,
+      label: Text(
+        (label ?? tooltip).toUpperCase(),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Tooltip(
-        message: tooltip,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(6),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outlineVariant
-                    .withValues(alpha: .4),
-              ),
-            ),
-            child: Icon(
-              icon,
-              size: 18,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-        ),
-      ),
+      child: Tooltip(message: tooltip, child: button),
     );
   }
 }
@@ -845,9 +869,9 @@ class _AccountsSection extends StatelessWidget {
           child: Row(
             children: [
               Text(
-                tr.accounts,
+                tr.accounts.toUpperCase(),
                 style: Theme.of(context).textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
+                    ?.copyWith(fontWeight: FontWeight.w700,letterSpacing: 1),
               ),
               const SizedBox(width: 8),
               Container(
@@ -925,8 +949,6 @@ class _RecentTransactionsPanel extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: color.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1029,7 +1051,7 @@ class _RecentTransactionsPanel extends StatelessWidget {
                 SizedBox(
                   width: _wStatus,
                   child: Text(
-                    tr.status,
+                    tr.status.toUpperCase(),
                     textAlign: TextAlign.end,
                     style: _headerStyle(color),
                   ),
@@ -1074,7 +1096,7 @@ class _RecentTransactionsPanel extends StatelessWidget {
   }
 
   TextStyle _headerStyle(ColorScheme color) => TextStyle(
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: FontWeight.w700,
     letterSpacing: 1.0,
     color: color.onSurfaceVariant.withValues(alpha: .7),
@@ -1309,9 +1331,6 @@ class _DateCell extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Status pill
-// ═══════════════════════════════════════════════════════════════════
 class _TxnStatusPill extends StatelessWidget {
   final RecentTransaction tx;
   const _TxnStatusPill({required this.tx});
@@ -1319,20 +1338,60 @@ class _TxnStatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
-    final isAuth = tx.isAuthorized;
-    final bg = isAuth
-        ? const Color(0xFF22C55E).withValues(alpha: .12)
-        : const Color(0xFFF59E0B).withValues(alpha: .12);
-    final fg = isAuth ? const Color(0xFF166534) : const Color(0xFF92400E);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Normalize to the same keys _StatusPill uses in transactions_view.dart
+    final status = (tx.statusText ?? '').toLowerCase();
+
+    final (Color bg, Color fg, String label) = switch (status) {
+      'authorized' => (
+      const Color(0xFF22C55E).withValues(alpha: isDark ? 0.18 : 0.12),
+      isDark ? const Color(0xFF86EFAC) : const Color(0xFF166534),
+      tr.authorized,
+      ),
+      'pending' => (
+      const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.18 : 0.12),
+      isDark ? const Color(0xFFFCD34D) : const Color(0xFF92400E),
+      tr.pending,
+      ),
+      'reversed' => (
+      const Color(0xFF6366F1).withValues(alpha: isDark ? 0.20 : 0.12),
+      isDark ? const Color(0xFFA5B4FC) : const Color(0xFF3730A3),
+      tr.reversed,
+      ),
+      'deleted' => (
+      const Color(0xFFEF4444).withValues(alpha: isDark ? 0.18 : 0.12),
+      isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B),
+      tr.deleted,
+      ),
+    // Fallback — use isAuthorized as a hint when the server sends
+    // a status we don't recognize, otherwise show raw status text.
+      _ => tx.isAuthorized
+          ? (
+      const Color(0xFF22C55E).withValues(alpha: isDark ? 0.18 : 0.12),
+      isDark ? const Color(0xFF86EFAC) : const Color(0xFF166534),
+      tr.authorized,
+      )
+          : (
+      const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.18 : 0.12),
+      isDark ? const Color(0xFFFCD34D) : const Color(0xFF92400E),
+      tr.pending,
+      ),
+    };
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(8),
+        // Subtle border so the pill reads as a chip even when the
+        // tint is very close to the surface color.
+        border: Border.all(color: fg.withValues(alpha: 0.25), width: 1),
       ),
       child: Text(
-        tx.statusText ?? (isAuth ? tr.authorized : tr.pending),
+        label.toUpperCase(),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           fontSize: 9,
           fontWeight: FontWeight.w700,
@@ -1398,11 +1457,13 @@ class _BankCard extends StatelessWidget {
     required this.onStatement,
   });
 
+  static const double _radius = 22; // ← rounder corners for HD feel
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final (Color top, Color bottom) = _gradientFor(
-      account.accCurrency ?? 'UNK',
+      account.accCurrency ?? 'USD',
     );
 
     final isActive = account.accStatus == 1;
@@ -1412,29 +1473,67 @@ class _BankCard extends StatelessWidget {
     final currency = account.accCurrency ?? '—';
     final accountNumber = account.accNumber?.toString() ?? '—';
 
+    final borderRadius = BorderRadius.circular(_radius);
+
     return AspectRatio(
       aspectRatio: 1.586,
-      child: Container(
+      child: DecoratedBox(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [top, bottom],
-          ),
+          borderRadius: borderRadius,
           boxShadow: [
+            // Deep, soft shadow — makes the corner curve visible on any bg
             BoxShadow(
-              color: bottom.withValues(alpha: isDark ? .45 : .3),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-              spreadRadius: -4,
+              color: bottom.withValues(alpha: isDark ? .55 : .35),
+              blurRadius: 22,
+              offset: const Offset(0, 14),
+              spreadRadius: -6,
+            ),
+            // Tighter, darker second shadow for definition
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? .35 : .12),
+              blurRadius: 6,
+              offset: const Offset(0, 4),
+              spreadRadius: -2,
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: borderRadius,
           child: Stack(
             children: [
+              // ── Base gradient ─────────────────────────────────────
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [top, bottom],
+                    ),
+                  ),
+                ),
+              ),
+
+              // ── Diagonal glossy sheen across the top-left corner ──
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      stops: const [0, .35, .6, 1],
+                      colors: [
+                        Colors.white.withValues(alpha: .14),
+                        Colors.white.withValues(alpha: .04),
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: .08),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // ── Decorative circles (unchanged) ────────────────────
               Positioned(
                 right: -40,
                 top: -40,
@@ -1450,6 +1549,23 @@ class _BankCard extends StatelessWidget {
                 bottom: -50,
                 child: _circle(140, Colors.white.withValues(alpha: .05)),
               ),
+
+              // ── Inner highlight stroke (HD edge) ──────────────────
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(_radius - 1),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: .18),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // ── Content ───────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.all(18),
                 child: Column(
@@ -1479,10 +1595,10 @@ class _BankCard extends StatelessWidget {
                     ),
                     const Spacer(),
                     Text(
-                      'BALANCE',
+                      AppLocalizations.of(context)!.balance.toUpperCase(),
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: .55),
-                        fontSize: 9,
+                        fontSize: 10,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 1.5,
                       ),
@@ -1565,8 +1681,8 @@ class _BankCard extends StatelessWidget {
     final text = a.isUnlimited
         ? '∞ LIMIT'
         : (a.limitValue != null
-              ? 'LIMIT ${_formatAmount(a.limitValue!)}'
-              : null);
+        ? 'LIMIT ${_formatAmount(a.limitValue!)}'
+        : null);
     if (text == null) return const SizedBox.shrink();
     return Text(
       text,
@@ -1606,7 +1722,7 @@ class _BankCard extends StatelessWidget {
     final parts = value.toDouble().toStringAsFixed(2).split('.');
     final intPart = parts[0].replaceAllMapped(
       RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]},',
+          (m) => '${m[1]},',
     );
     return '$intPart.${parts[1]}';
   }

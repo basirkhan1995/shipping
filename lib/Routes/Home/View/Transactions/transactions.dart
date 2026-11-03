@@ -600,7 +600,7 @@ class _DesktopViewState extends State<_DesktopView> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildHeaderRow(textTheme, color),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               _buildRibbon(color, textTheme, login),
               const SizedBox(height: 10),
               _buildFilterRow(color, textTheme),
@@ -624,9 +624,18 @@ class _DesktopViewState extends State<_DesktopView> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
-          child: Text(
-            tr.transactions,
-            style: textTheme.titleLarge?.copyWith(color: color.outline),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                tr.transactions.toUpperCase(),
+                style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600,letterSpacing: 1),
+              ),
+              Text(
+                tr.transactionHint.toUpperCase(),
+                style: textTheme.bodySmall?.copyWith(color: color.outline,fontWeight: FontWeight.w400,fontSize: 11, letterSpacing: 1),
+              ),
+            ],
           ),
         ),
         if (_hasActiveFilters) ...[
@@ -1215,7 +1224,7 @@ class _TransactionRowWidget extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: isOdd ? color.primary.withValues(alpha: .04) : null,
+          color: isOdd ? color.outline.withValues(alpha: .06) : null,
         ),
         child: Row(
           children: [
@@ -1228,7 +1237,7 @@ class _TransactionRowWidget extends StatelessWidget {
                   Text(
                     row.entryDate.shamsiDateString,
                     style: textTheme.bodySmall?.copyWith(
-                      fontSize: 13,
+                      fontSize: 14,
                       fontWeight: FontWeight.w500,
                       color: color.onSurfaceVariant,
                     ),
@@ -1237,7 +1246,7 @@ class _TransactionRowWidget extends StatelessWidget {
                   Text(
                     row.entryDate.toFullDateTime,
                     style: textTheme.bodySmall?.copyWith(
-                      fontSize: 12,
+                      fontSize: 13,
                       color: color.onSurfaceVariant,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -1316,6 +1325,7 @@ class _TransactionRowWidget extends StatelessWidget {
                       textAlign: TextAlign.end,
                       style: textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w700,
+                        fontSize: 13
                       ),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
@@ -1326,7 +1336,7 @@ class _TransactionRowWidget extends StatelessWidget {
                     Text(
                       row.currencies,
                       style: textTheme.labelSmall?.copyWith(
-                        fontSize: 10,
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: color.onSurfaceVariant,
                       ),
@@ -1358,43 +1368,45 @@ class _StatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final status = row.statusText.toLowerCase();
     final tr = AppLocalizations.of(context)!;
-    final (_, fg, label) = switch (status) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final (bg, fg, label) = switch (status) {
       'authorized' => (
-      const Color(0xFF22C55E).withValues(alpha: .12),
-      const Color(0xFF166534),
+      const Color(0xFF22C55E).withValues(alpha: isDark ? 0.18 : 0.12),
+      isDark ? const Color(0xFF86EFAC) : const Color(0xFF166534),
       tr.authorized,
       ),
       'pending' => (
-      const Color(0xFFF59E0B).withValues(alpha: .12),
-      const Color(0xFF92400E),
+      const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.18 : 0.12),
+      isDark ? const Color(0xFFFCD34D) : const Color(0xFF92400E),
       tr.pending,
       ),
       'reversed' => (
-      const Color(0xFF6366F1).withValues(alpha: .12),
-      const Color(0xFF3730A3),
+      const Color(0xFF6366F1).withValues(alpha: isDark ? 0.20 : 0.12),
+      isDark ? const Color(0xFFA5B4FC) : const Color(0xFF3730A3),
       tr.reversed,
       ),
       'deleted' => (
-      const Color(0xFFEF4444).withValues(alpha: .12),
-      const Color(0xFF991B1B),
+      const Color(0xFFEF4444).withValues(alpha: isDark ? 0.18 : 0.12),
+      isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B),
       tr.deleted,
       ),
       _ => (
-      Colors.grey.withValues(alpha: .15),
-      Colors.grey.shade700,
+      Colors.grey.withValues(alpha: isDark ? 0.22 : 0.15),
+      isDark ? Colors.grey.shade300 : Colors.grey.shade700,
       row.statusText,
       ),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
       child: Text(
-        label,
+        label.toUpperCase(),
         textAlign: TextAlign.end,
         style: TextStyle(
-          fontSize: 12.5,
-          fontWeight: FontWeight.w500,
+          fontSize: 11.5,
+          fontWeight: FontWeight.w600,
           color: fg,
-          letterSpacing: 0.3,
+          letterSpacing: 0.4,
         ),
       ),
     );

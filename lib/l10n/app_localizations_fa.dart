@@ -1492,4 +1492,11 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get flag => 'بیرق';
+
+  @override
+  String get transactionHint =>
+      'تمامی تراکنش‌های مالی خود را مشاهده و مدیریت کنید';
+
+  @override
+  String get accountDetails => 'جزئیات حساب';
 }
