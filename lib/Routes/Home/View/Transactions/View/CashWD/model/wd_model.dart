@@ -105,6 +105,7 @@ class CashTxnLine extends Equatable {
   final String? ccy;
   final int? branch;
   final int? trdAccount;
+  final String? accName;
   final String? drCr;        // "Dr" / "Cr"
   final String? amount;      // raw string "510.0000" — keep for display
   final String? narration;
@@ -114,6 +115,7 @@ class CashTxnLine extends Equatable {
     this.ccy,
     this.branch,
     this.trdAccount,
+    this.accName,
     this.drCr,
     this.amount,
     this.narration,
@@ -143,6 +145,7 @@ class CashTxnLine extends Equatable {
       ccy:        _str(j['trdCcy']),
       branch:     _int(j['trdBranch']),
       trdAccount: _int(j['trdAccount']),
+      accName: _str(j['accName']),
       drCr:       _str(j['trdDrCr']),
       amount:     _str(j['trdAmount']),
       narration:  _str(j['trdNarration']),
@@ -152,7 +155,7 @@ class CashTxnLine extends Equatable {
 
   @override
   List<Object?> get props =>
-      [ccy, branch, trdAccount, drCr, amount, narration, entryDate];
+      [ccy, branch, trdAccount,accName, drCr, amount, narration, entryDate];
 }
 
 // ═════════════════════════════════════════════════════════════════

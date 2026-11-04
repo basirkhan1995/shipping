@@ -254,7 +254,7 @@ class _DesktopViewState extends State<_DesktopView> {
       case 'CHDP':
         return CashTxnSpec(
           typeCode: 'CHDP',
-          icon: Icons.arrow_upward_rounded,
+          icon: Icons.arrow_downward_rounded,
           title: (_) => tr.cashDeposit,
           accountInclude: '8',
           allowReminder: true,
@@ -262,7 +262,7 @@ class _DesktopViewState extends State<_DesktopView> {
       case 'CHWL':
         return CashTxnSpec(
           typeCode: 'CHWL',
-          icon: Icons.arrow_downward_rounded,
+          icon: Icons.arrow_upward_rounded,
           title: (_) => tr.cashWithdraw,
           accountInclude: '8',
           allowReminder: true,

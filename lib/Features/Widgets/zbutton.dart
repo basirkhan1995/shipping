@@ -67,10 +67,13 @@ class ZOutlineButtonState extends State<ZOutlineButton> {
     Widget button = OutlinedButton(
       style: ButtonStyle(
         padding: WidgetStateProperty.all(
-          const EdgeInsets.symmetric(horizontal: 12),
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
         ),
         minimumSize: WidgetStateProperty.all(
           Size(0, widget.height ?? 40),
+        ),
+        maximumSize: WidgetStateProperty.all(
+          Size(double.infinity, widget.height ?? 40),
         ),
         shape: WidgetStateProperty.all(
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(3)),
@@ -81,20 +84,29 @@ class ZOutlineButtonState extends State<ZOutlineButton> {
         ),
       ),
       onPressed: widget.disable ? null : widget.onPressed,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (widget.icon != null)
-              Icon(widget.icon, color: textColor, size: widget.iconSize),
-            if (widget.icon != null && widget.label !=null) const SizedBox(width: 5),
-            DefaultTextStyle.merge(
-              style: TextStyle(color: textColor),
-              child: widget.label ?? SizedBox(),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          if (widget.icon != null)
+            Icon(
+              widget.icon,
+              color: textColor,
+              size: widget.iconSize ?? 18,
             ),
-          ],
-        ),
+          if (widget.icon != null && widget.label != null)
+            const SizedBox(width: 5),
+          Flexible(
+            child: DefaultTextStyle.merge(
+              style: TextStyle(color: textColor),
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+              child: widget.label ?? const SizedBox(),
+            ),
+          ),
+        ],
       ),
     );
 

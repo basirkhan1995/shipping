@@ -49,7 +49,7 @@ class CashTxnBloc extends Bloc<CashTxnEvent, CashTxnState> {
         trdCcy:       subject.ccy,
         trdAmount:    subject.amountDisplay,
         trdNarration: subject.narration,
-        accName:      null,
+        accName:      subject.accName,
       );
 
       emit(CashTxnLoadedForEdit(
@@ -104,12 +104,22 @@ class CashTxnBloc extends Bloc<CashTxnEvent, CashTxnState> {
       Map<String, dynamic> result,
       String? fallbackRef,
       ) async {
+    // The POST/PUT now return the same flat shape as GET.
     try {
       if ((result['lines'] as List?)?.isNotEmpty == true) {
         return CashTxnDetail.fromJson(result);
       }
     } catch (_) {}
 
+    // Defensive: if the backend still wraps in "print", handle it.
+    final printData = result['print'];
+    if (printData is Map && (printData['lines'] as List?)?.isNotEmpty == true) {
+      try {
+        return CashTxnDetail.fromJson(Map<String, dynamic>.from(printData));
+      } catch (_) {}
+    }
+
+    // Fallback: reload by reference.
     final ref = (result['reference'] ?? fallbackRef)?.toString();
     if (ref == null || ref.isEmpty) return null;
 

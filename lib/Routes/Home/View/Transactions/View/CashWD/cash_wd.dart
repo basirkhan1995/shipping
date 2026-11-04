@@ -13,7 +13,6 @@ import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../../../Features/Other/generic_textfield.dart';
 import '../../../../../../Features/Widgets/ztextfield.dart';
 import '../../../../../../Features/Widgets/z_dialog.dart';
-import '../../../../../../Features/Widgets/toast.dart';
 import '../../../../../../Services/repository.dart';
 import '../../../../../Auth/bloc/auth_bloc.dart';
 import '../../../Settings/View/Company/CompanyProfile/bloc/company_profile_bloc.dart';
@@ -613,69 +612,68 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
   // PRINT
   // ═════════════════════════════════════════════════════════════
 
-  void _printVoucher(BuildContext context, CashTxnDetail data) {
+  Future<void> _printVoucher(BuildContext context, CashTxnDetail data) async {
     final company = _reportFromState(
       context.read<CompanyProfileBloc>().state,
     );
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (_) => PrintPreviewDialog<CashTxnDetail>(
-          data: data,
-          company: company,
-          buildPreview: ({
-            required data,
-            required language,
-            required orientation,
-            required pageFormat,
-          }) {
-            return CashTxnVoucherPrintSettings().printPreview(
-              company: company,
-              language: language,
-              orientation: orientation,
-              pageFormat: pageFormat,
-              data: data,
-            );
-          },
-          onPrint: ({
-            required data,
-            required language,
-            required orientation,
-            required pageFormat,
-            required selectedPrinter,
-            required copies,
-            required pages,
-          }) {
-            return CashTxnVoucherPrintSettings().printDocument(
-              company: company,
-              language: language,
-              orientation: orientation,
-              pageFormat: pageFormat,
-              selectedPrinter: selectedPrinter,
-              data: data,
-              copies: copies,
-              pages: pages,
-            );
-          },
-          onSave: ({
-            required data,
-            required language,
-            required orientation,
-            required pageFormat,
-          }) {
-            return CashTxnVoucherPrintSettings().createDocument(
-              data: data,
-              company: company,
-              language: language,
-              orientation: orientation,
-              pageFormat: pageFormat,
-            );
-          },
-        ),
-      );
-    });
+    // Directly await the dialog. No post-frame callback.
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PrintPreviewDialog<CashTxnDetail>(
+        data: data,
+        company: company,
+        buildPreview: ({
+          required data,
+          required language,
+          required orientation,
+          required pageFormat,
+        }) {
+          return CashTxnVoucherPrintSettings().printPreview(
+            company: company,
+            language: language,
+            orientation: orientation,
+            pageFormat: pageFormat,
+            data: data,
+          );
+        },
+        onPrint: ({
+          required data,
+          required language,
+          required orientation,
+          required pageFormat,
+          required selectedPrinter,
+          required copies,
+          required pages,
+        }) {
+          return CashTxnVoucherPrintSettings().printDocument(
+            company: company,
+            language: language,
+            orientation: orientation,
+            pageFormat: pageFormat,
+            selectedPrinter: selectedPrinter,
+            data: data,
+            copies: copies,
+            pages: pages,
+          );
+        },
+        onSave: ({
+          required data,
+          required language,
+          required orientation,
+          required pageFormat,
+        }) {
+          return CashTxnVoucherPrintSettings().createDocument(
+            data: data,
+            company: company,
+            language: language,
+            orientation: orientation,
+            pageFormat: pageFormat,
+          );
+        },
+      ),
+    );
   }
 
   // ═════════════════════════════════════════════════════════════
@@ -828,22 +826,17 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
     return MultiBlocListener(
       listeners: [
         BlocListener<CashTxnBloc, CashTxnState>(
-          listener: (context, state) {
+          listener: (context, state) async{
             if (state is CashTxnSuccess) {
               _setFormBusy(false);
 
-              // ── AUTO PRINT ───────────────────────────────
               if (_shouldPrint) {
                 final detail = state.detail;
-                if (detail != null) _printVoucher(context, detail);
+                if (detail != null) {
+                  await _printVoucher(context, detail);
+                }
               }
-
-              ToastManager.show(
-                context: context,
-                title: 'Saved',
-                message: 'Transaction saved.',
-                type: ToastType.success,
-              );
+              if (!context.mounted) return;
               Navigator.of(context).pop(true);
               return;
             }
@@ -854,8 +847,7 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
         ),
         BlocListener<TransactionsBloc, TransactionsState>(
           listenWhen: (prev, next) =>
-          next is TransactionsLoadedState &&
-              (next.actionSuccess != null || next.actionError != null),
+          next is TransactionsLoadedState && (next.actionSuccess != null || next.actionError != null),
           listener: (context, state) {
             if (state is! TransactionsLoadedState) return;
 
@@ -865,12 +857,12 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
               if (mounted && _localError != null) {
                 setState(() => _localError = null);
               }
-              ToastManager.show(
-                context: context,
-                title: 'Success',
-                message: success,
-                type: ToastType.success,
-              );
+              // ToastManager.show(
+              //   context: context,
+              //   title: 'Success',
+              //   message: success,
+              //   type: ToastType.success,
+              // );
               context.read<TransactionsBloc>().add(
                 const ClearRowActionSuccessEvent(),
               );

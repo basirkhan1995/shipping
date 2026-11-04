@@ -1607,4 +1607,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get authorizationFailed => 'تأیید ناکام شو.';
+
+  @override
+  String get newExchange => 'تبادله اسعار جدید';
 }

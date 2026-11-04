@@ -1615,4 +1615,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authorizationFailed => 'Authorization failed.';
+
+  @override
+  String get newExchange => 'New Exchange';
 }

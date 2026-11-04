@@ -475,5 +475,6 @@
   "authorizationInvalidState": "دا معامله د تأیید لپاره په مناسب حالت کې نه ده.",
   "authorizationPending": "دا معامله لا دمخه د انتظار په حالت کې ده.",
   "authorizationFailedProcess": "دا معامله پروسس نه شوه.",
-  "authorizationFailed": "تأیید ناکام شو."
+  "authorizationFailed": "تأیید ناکام شو.",
+  "newExchange": "تبادله اسعار جدید"
 }

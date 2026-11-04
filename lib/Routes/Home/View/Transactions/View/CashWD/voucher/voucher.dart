@@ -55,12 +55,17 @@ class CashTxnVoucherPrintSettings extends PrintServices {
       report: company,
       pageFormat: pageFormat,
     );
-
-    final bytes = await document.save();
-    await Printing.sharePdf(
-      bytes: bytes,
-      filename: '${data.reference ?? "voucher"}.pdf',
-    );
+    for (int i = 0; i < copies; i++) {
+      await Printing.directPrintPdf(
+        printer: selectedPrinter,
+        onLayout: (pw.PdfPageFormat format) async {
+          return document.save();
+        },
+      );
+      if (i < copies - 1) {
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+    }
   }
 
   // ── PREVIEW ──────────────────────────────────────────────
@@ -98,6 +103,9 @@ class CashTxnVoucherPrintSettings extends PrintServices {
 
     final isRtl = _isRtl(language);
 
+    // Pre-load contact icons once — reused on every voucher copy.
+    final icons = await _loadContactIcons();
+
     document.addPage(
       pw.MultiPage(
         crossAxisAlignment: pw.CrossAxisAlignment.center,
@@ -112,6 +120,7 @@ class CashTxnVoucherPrintSettings extends PrintServices {
             language: language,
             report: report,
             logo: logo,
+            icons: icons,
             isRtl: isRtl,
           ),
         ],
@@ -129,6 +138,7 @@ class CashTxnVoucherPrintSettings extends PrintServices {
     required String language,
     required ReportModel report,
     pw.ImageProvider? logo,
+    required _ContactIcons icons,
     required bool isRtl,
   }) {
     return pw.Column(
@@ -138,17 +148,19 @@ class CashTxnVoucherPrintSettings extends PrintServices {
           language: language,
           report: report,
           logo: logo,
+          icons: icons,
           isRtl: isRtl,
           isCopy: false,
         ),
-        pw.SizedBox(height: isRtl ? 3 : 16),
+        pw.SizedBox(height: isRtl ? 25 : 20),
         _cutLine(language, isRtl),
-        pw.SizedBox(height: isRtl ? 3 : 16),
+        pw.SizedBox(height: isRtl ? 25 : 20),
         _singleVoucher(
           data: data,
           language: language,
           report: report,
           logo: logo,
+          icons: icons,
           isRtl: isRtl,
           isCopy: true,
         ),
@@ -183,35 +195,28 @@ class CashTxnVoucherPrintSettings extends PrintServices {
     required String language,
     required ReportModel report,
     pw.ImageProvider? logo,
+    required _ContactIcons icons,
     required bool isRtl,
     required bool isCopy,
   }) {
     final subject = data.subjectLine;
     final contra = data.contraLine;
 
-    // Amount comes from the subject leg (or contra as fallback).
     final amountStr =
         subject?.amountDisplay ?? contra?.amountDisplay ?? '0.00';
     final ccy = (subject?.ccy ?? contra?.ccy ?? '').toUpperCase();
-    final amountText = '${_thousands(amountStr)} $ccy';
+    final ccyWord = _currencyWord(ccy, language);
 
-    // ── Amount in words (currency-word localized) ──────────
     final amtDouble = double.tryParse(amountStr.replaceAll(',', '')) ?? 0;
     final wordsLang = NumberToWords.getLanguageFromLocale(Locale(language));
-    final ccyWord = _currencyWord(ccy, language);
     final amountWords =
         '${NumberToWords.convert(amtDouble.round(), wordsLang)} $ccyWord';
 
-    final voucherDate =
-        '${data.entryDate?.toFullDateTime} | ${data.entryDate?.shamsiDateString}';
+    final voucherDate = '${data.entryDate?.toFullDateTime} | ${data.entryDate?.shamsiDateString}';
 
-    // Account display: only the subject side.
-    final accountValue =
-    subject == null ? '-' : '${subject.trdAccount ?? "-"}';
-
-    // Dynamic voucher title per type.
-    final titleKey = _titleKey(data);
-    final titleText = tr(text: titleKey, tr: language).toUpperCase();
+    final accountValue = subject == null
+        ? '-'
+        : _accountWithName(subject.trdAccount, subject.accName);
 
     return pw.Stack(
       children: [
@@ -220,7 +225,7 @@ class CashTxnVoucherPrintSettings extends PrintServices {
           pw.Positioned.fill(
             child: pw.Center(
               child: pw.Opacity(
-                opacity: 0.06,
+                opacity: 0.08,
                 child: pw.Container(
                   width: 320,
                   height: 320,
@@ -234,67 +239,35 @@ class CashTxnVoucherPrintSettings extends PrintServices {
         pw.Container(
           padding: pw.EdgeInsets.all(isRtl ? 10 : 14),
           decoration: pw.BoxDecoration(
-            border: pw.Border.all(width: 1.5, color: PdfColors.blueGrey800),
+            borderRadius: pw.BorderRadius.circular(5),
+           // border: pw.Border.all(width: 1.5, color: PdfColors.grey600),
           ),
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             mainAxisSize: pw.MainAxisSize.min,
             children: [
-              // ── Company header ───────────────────────────
-              _companyHeader(report, logo, isRtl, language),
-
-              pw.SizedBox(height: isRtl ? 5 : 8),
-              pw.Container(height: 1, color: PdfColors.grey300),
-              pw.SizedBox(height: isRtl ? 5 : 8),
-
-              // ── Title + date ─────────────────────────────
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Row(
-                    children: [
-                      zText(
-                        text: titleText,
-                        fontWeight: pw.FontWeight.bold,
-                        fontSize: isRtl ? 16 : 17,
-                        color: PdfColors.blueGrey900,
-                      ),
-                      if (isCopy) ...[
-                        pw.SizedBox(width: isRtl ? 8 : 10),
-                        pw.Container(
-                          padding: pw.EdgeInsets.symmetric(
-                            horizontal: isRtl ? 8 : 10,
-                          ),
-                          color: PdfColors.blueGrey50,
-                          child: zText(
-                            text: tr(text: 'copy', tr: language).toUpperCase(),
-                            fontSize: isRtl ? 9 : 10,
-                            fontWeight: pw.FontWeight.bold,
-                            color: PdfColors.blueGrey800,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  _labelValue(
-                    label: tr(text: 'date', tr: language),
-                    value: voucherDate,
-                    isRtl: isRtl,
-                    labelSize: isRtl ? 10 : 11,
-                    valueSize: isRtl ? 10 : 11,
-                    labelColor: PdfColors.blueGrey700,
-                    valueColor: PdfColors.blueGrey700,
-                    boldLabel: false,
-                  ),
-                ],
+              // ── 3-column header ──────────────────────────
+              _companyHeader(
+                report: report,
+                logo: logo,
+                icons: icons,
+                isRtl: isRtl,
+                language: language,
+                title: tr(text: 'cashVoucher', tr: language).toUpperCase(),
+                isCopy: isCopy,
               ),
 
-              pw.SizedBox(height: isRtl ? 6 : 7),
+              pw.SizedBox(height: isRtl ? 8 : 12),
 
               // ── Header fields ────────────────────────────
               _kvRow(
                 tr(text: 'trnType', tr: language),
                 tr(text: data.type ?? '-', tr: language),
+                isRtl,
+              ),
+              _kvRow(
+                tr(text: 'date', tr: language),
+                voucherDate,
                 isRtl,
               ),
               _kvRow(
@@ -317,8 +290,7 @@ class CashTxnVoucherPrintSettings extends PrintServices {
                 _statusLabel(data, language),
                 isRtl,
               ),
-
-              pw.SizedBox(height: isRtl ? 3 : 4),
+              pw.SizedBox(height: isRtl ? 3 : 0),
 
               // ── Narration ────────────────────────────────
               _kvRow(
@@ -327,33 +299,37 @@ class CashTxnVoucherPrintSettings extends PrintServices {
                 isRtl,
               ),
 
-              pw.SizedBox(height: isRtl ? 3 : 4),
+              pw.SizedBox(height: isRtl ? 3 : 0),
 
-              // ── Amount banner ────────────────────────────
+              // ── Amount banner (number LTR + currency RTL) ─
               pw.Container(
                 width: double.infinity,
-                padding: pw.EdgeInsets.symmetric(
-                  vertical: isRtl ? 3 : 2,
-                  horizontal: isRtl ? 8 : 10,
-                ),
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(width: 1, color: PdfColors.blueGrey100),
-                ),
                 child: pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
                     zText(
                       text: '${tr(text: 'amount', tr: language)}:',
                       fontSize: isRtl ? 11 : 12,
                       fontWeight: pw.FontWeight.bold,
                     ),
-                    pw.Directionality(
-                      textDirection: pw.TextDirection.ltr,
-                      child: zText(
-                        text: amountText,
-                        fontSize: isRtl ? 15 : 16,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
+                    pw.SizedBox(width: isRtl ? 85 : 132),
+                    pw.Row(
+                      mainAxisSize: pw.MainAxisSize.min,
+                      children: [
+                        pw.Directionality(
+                          textDirection: pw.TextDirection.ltr,
+                          child: zText(
+                            text: _thousands(amountStr),
+                            fontSize: isRtl ? 13 : 14,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                        pw.SizedBox(width: 4),
+                        zText(
+                          text: ccyWord,
+                          fontSize: isRtl ? 13 : 14,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -364,7 +340,6 @@ class CashTxnVoucherPrintSettings extends PrintServices {
               // ── Amount in words ──────────────────────────
               pw.Container(
                 width: double.infinity,
-                padding: pw.EdgeInsets.all(isRtl ? 7 : 3),
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
@@ -393,117 +368,159 @@ class CashTxnVoucherPrintSettings extends PrintServices {
     );
   }
 
-  // ═════════════════════════════════════════════════════════════
-  // PIECES
-  // ═════════════════════════════════════════════════════════════
-
-  pw.Widget _companyHeader(
-      ReportModel report,
-      pw.ImageProvider? logo,
-      bool isRtl,
-      String language,
-      ) {
+  pw.Widget _companyHeader({
+    required ReportModel report,
+    required pw.ImageProvider? logo,
+    required _ContactIcons icons,
+    required bool isRtl,
+    required String language,
+    required String title,
+    required bool isCopy,
+  }) {
     final name = (report.comName ?? '').trim();
     final address = (report.comAddress ?? '').trim();
-
-    // Build each contact pair as a separate widget so phone numbers
-    // don't reverse in RTL — labels use tr().
     final phone = (report.compPhone ?? '').trim();
     final whatsapp = (report.comWhatsApp ?? '').trim();
     final email = (report.comEmail ?? '').trim();
+    final website = (report.comWebsite ?? '').trim();
 
-    return pw.SizedBox(
+    // ── LEFT: logo + company name ─────────────────────────
+    pw.Widget leftColumn() => pw.Expanded(
+      flex: 3,
       child: pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.center,
         children: [
-          // Logo — small, leading edge.
           if (logo != null)
             pw.Container(
-              width: 70,
-              height: 70,
-              margin: pw.EdgeInsets.only(
-                right: isRtl ? 0 : 10,
-                left: isRtl ? 10 : 0,
-              ),
+              width: 62,
+              height: 62,
+              margin: const pw.EdgeInsets.symmetric(horizontal: 2),
               child: pw.Image(logo, fit: pw.BoxFit.contain),
             ),
-
-          // Company info
-          pw.Expanded(
-            child: pw.Column(
-              crossAxisAlignment: isRtl
-                  ? pw.CrossAxisAlignment.start
-                  : pw.CrossAxisAlignment.end,
-              children: [
-                if (name.isNotEmpty)
-                  zText(
-                    text: name,
-                    fontSize: isRtl ? 18 : 20,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.blueGrey900,
-                  ),
-                if (address.isNotEmpty) ...[
-                  pw.SizedBox(height: 1),
-                  zText(
-                    text: address,
-                    fontSize: isRtl ? 8.5 : 9,
-                    color: PdfColors.grey700,
-                  ),
-                ],
-                if (phone.isNotEmpty ||
-                    whatsapp.isNotEmpty ||
-                    email.isNotEmpty) ...[
-                  pw.SizedBox(height: 2),
-                  pw.Wrap(
-                    spacing: 10,
-                    runSpacing: 2,
-                    alignment: isRtl
-                        ? pw.WrapAlignment.end
-                        : pw.WrapAlignment.start,
-                    children: [
-                      if (phone.isNotEmpty)
-                        _labelValue(
-                          label: tr(text: 'tel', tr: language),
-                          value: phone,
-                          isRtl: isRtl,
-                          labelSize: isRtl ? 8.5 : 8.5,
-                          valueSize: isRtl ? 8.5 : 8.5,
-                          labelColor: PdfColors.grey600,
-                          valueColor: PdfColors.grey700,
-                          boldLabel: false,
-                        ),
-                      if (whatsapp.isNotEmpty)
-                        _labelValue(
-                          label: 'WhatsApp',
-                          value: whatsapp,
-                          isRtl: isRtl,
-                          labelSize: isRtl ? 8.5 : 8.5,
-                          valueSize: isRtl ? 8.5 : 8.5,
-                          labelColor: PdfColors.grey600,
-                          valueColor: PdfColors.grey700,
-                          boldLabel: false,
-                        ),
-                      if (email.isNotEmpty)
-                        _labelValue(
-                          label: 'Email',
-                          value: email,
-                          isRtl: isRtl,
-                          labelSize: isRtl ? 8.5 : 8.5,
-                          valueSize: isRtl ? 8.5 : 8.5,
-                          labelColor: PdfColors.grey600,
-                          valueColor: PdfColors.grey700,
-                          boldLabel: false,
-                        ),
-                    ],
-                  ),
-                ],
-              ],
+          if (name.isNotEmpty)
+            pw.Expanded(
+              child: zText(
+                text: name,
+                fontSize: isRtl ? 14 : 15,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.blueGrey900,
+              ),
             ),
-          ),
         ],
       ),
     );
+
+    // ── CENTER: title + copy chip ─────────────────────────
+    pw.Widget centerColumn() => pw.Expanded(
+      flex: 3,
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
+        children: [
+          zText(
+            text: title,
+            fontSize: isRtl ? 28 : 18,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColors.blueGrey900,
+          ),
+          if (isCopy) ...[
+            pw.SizedBox(height: 2),
+            pw.Container(
+              padding: const pw.EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 1,
+              ),
+              color: PdfColors.blueGrey50,
+              child: zText(
+                text: tr(text: 'copy', tr: language).toUpperCase(),
+                fontSize: isRtl ? 8 : 8.5,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.blueGrey800,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+
+    // ── RIGHT: contact column ─────────────────────────────
+    pw.Widget rightColumn() {
+      final rows = <pw.Widget>[];
+
+      void addRow(pw.ImageProvider? icon, String value) {
+        if (value.isEmpty) return;
+        rows.add(
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(bottom: 1.5),
+            child: pw.Row(
+              mainAxisSize: pw.MainAxisSize.min,
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
+              children: [
+                pw.Directionality(
+                  textDirection: pw.TextDirection.ltr,
+                  child: zText(
+                    text: value,
+                    fontSize: isRtl ? 8 : 8.5,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+                if (icon != null)
+                  pw.Container(
+                    width: 9,
+                    height: 9,
+                    margin: const pw.EdgeInsets.only(right: 4, left: 4),
+                    child: pw.Image(icon, fit: pw.BoxFit.contain),
+                  ),
+              ],
+            ),
+          ),
+        );
+      }
+      addRow(icons.phone, phone);
+      addRow(icons.whatsapp, whatsapp);
+      addRow(icons.email, email);
+      addRow(icons.website, website);
+      addRow(icons.location, address);
+
+      return pw.Expanded(
+        flex: 3,
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.end,
+          children: rows,
+        ),
+      );
+    }
+
+    return pw.Container(
+      padding: pw.EdgeInsets.symmetric(
+        horizontal: isRtl ? 6 : 8,
+        vertical: isRtl ? 5 : 6,
+      ),
+      decoration: pw.BoxDecoration(
+        borderRadius: pw.BorderRadius.circular(2),
+        border: pw.Border.all(width: 0.5, color: PdfColors.grey800),
+      ),
+      // ── Force LTR row layout so logo stays left and contacts
+      //    stay right in BOTH LTR and RTL documents. Inner text
+      //    still renders RTL per-string via zText.
+      child: pw.Directionality(
+        textDirection: pw.TextDirection.ltr,
+        child: pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.center,
+          children: [
+            leftColumn(),
+            pw.SizedBox(width: 6),
+            centerColumn(),
+            pw.SizedBox(width: 6),
+            rightColumn(),
+          ],
+        ),
+      ),
+    );
   }
+
+  // ═════════════════════════════════════════════════════════════
+  // PIECES
+  // ═════════════════════════════════════════════════════════════
 
   /// "Label : value" row.
   pw.Widget _kvRow(String label, String value, bool isRtl) {
@@ -532,44 +549,6 @@ class CashTxnVoucherPrintSettings extends PrintServices {
     );
   }
 
-  /// Renders "Label: value" where the label and the value can each be
-  /// laid out in their natural script direction. Prevents numbers /
-  /// emails / dates from being reversed inside an RTL line.
-  pw.Widget _labelValue({
-    required String label,
-    required String value,
-    required bool isRtl,
-    double labelSize = 10,
-    double valueSize = 10,
-    PdfColor? labelColor,
-    PdfColor? valueColor,
-    bool boldLabel = true,
-  }) {
-    return pw.Row(
-      mainAxisSize: pw.MainAxisSize.min,
-      crossAxisAlignment: pw.CrossAxisAlignment.center,
-      children: [
-        zText(
-          text: '$label:',
-          fontSize: labelSize,
-          fontWeight: boldLabel ? pw.FontWeight.bold : pw.FontWeight.normal,
-          color: labelColor ?? PdfColors.grey700,
-        ),
-        pw.SizedBox(width: 3),
-        // Force LTR for the value so digits, dates, emails, and
-        // reference codes never get reversed in RTL.
-        pw.Directionality(
-          textDirection: pw.TextDirection.ltr,
-          child: zText(
-            text: value,
-            fontSize: valueSize,
-            color: valueColor ?? PdfColors.grey900,
-          ),
-        ),
-      ],
-    );
-  }
-
   pw.Widget _signatures(CashTxnDetail data, String language, bool isRtl) {
     pw.Widget block(String label, String value) => pw.Expanded(
       child: pw.Column(
@@ -592,6 +571,11 @@ class CashTxnVoucherPrintSettings extends PrintServices {
       ),
     );
 
+    final subject = data.subjectLine;
+    final holder = subject == null
+        ? '___________'
+        : _accountWithName(subject.trdAccount, subject.accName);
+
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       children: [
@@ -607,7 +591,7 @@ class CashTxnVoucherPrintSettings extends PrintServices {
         pw.SizedBox(width: isRtl ? 15 : 20),
         block(
           tr(text: 'accountHolder', tr: language),
-          data.subjectLine?.trdAccount?.toString() ?? '___________',
+          holder,
         ),
       ],
     );
@@ -624,50 +608,22 @@ class CashTxnVoucherPrintSettings extends PrintServices {
         code.startsWith('ps');
   }
 
-  /// Pick the voucher title key by transaction type, with a Dr/Cr
-  /// fallback when the type is unknown.
-  String _titleKey(CashTxnDetail d) {
-    final t = (d.type ?? '').toUpperCase();
-
-    // Cash Deposit
-    if (t.contains('CHDP') || t.contains('CDP')) {
-      return 'cashReceipt';
+  /// "500000 - Basir Ahmad" or just "500000" when the name is missing.
+  String _accountWithName(int? number, String? name) {
+    final n = (name ?? '').trim();
+    if (n.isEmpty || n.toLowerCase() == 'null') {
+      return number?.toString() ?? '-';
     }
-    // Cash Withdraw / Withdrawal
-    if (t.contains('CHWL') ||
-        t.contains('CHWD') ||
-        t.contains('CWL') ||
-        t.contains('CWD')) {
-      return 'cashPayment';
-    }
-    // Expense
-    if (t.contains('XNPS') || t.contains('EXP')) {
-      return 'expenseV';
-    }
-    // Income
-    if (t.contains('INCM') || t.contains('INC')) {
-      return 'income';
-    }
-
-    // Fallback by Dr/Cr side of the subject leg.
-    final subject = d.subjectLine;
-    if (subject != null && subject.isCredit) {
-      return 'cashReceipt'; // money came IN
-    }
-    return 'cashPayment'; // money went OUT
+    return '${number ?? "-"} - $n';
   }
 
-  /// Localized currency word. In Persian (and Arabic/Pshto as they
-  /// share the same tr() entries) we return the translated word;
-  /// otherwise the currency code itself is returned.
+  /// Localized currency word. In Persian / Arabic / Pashto we return
+  /// the translated word; otherwise the currency code itself.
   String _currencyWord(String code, String language) {
     final upper = code.toUpperCase();
-    // Only the four supported codes get a translated word.
     if (upper == 'USD' || upper == 'AFN' || upper == 'EUR' || upper == 'CNY') {
       final key = 'ccy${upper[0]}${upper.substring(1).toLowerCase()}';
-      // keys: ccyUsd, ccyAfn, ccyEur, ccyCny
       final translated = tr(text: key, tr: language);
-      // tr() returns the key unchanged if not found — guard against that.
       if (translated != key) return translated;
     }
     return upper;
@@ -707,4 +663,44 @@ class CashTxnVoucherPrintSettings extends PrintServices {
     }
     return '$buf.$frac';
   }
+
+  /// Loads the small PNG icons used in the header, once per document.
+  Future<_ContactIcons> _loadContactIcons() async {
+    Future<pw.ImageProvider?> load(String path) async {
+      try {
+        final data = await rootBundle.load(path);
+        return pw.MemoryImage(data.buffer.asUint8List());
+      } catch (_) {
+        return null;
+      }
+    }
+
+    return _ContactIcons(
+      location: await load('assets/images/location.png'),
+      phone: await load('assets/images/phone.png'),
+      whatsapp: await load('assets/images/whatsapp.png'),
+      email: await load('assets/images/email.png'),
+      website: await load('assets/images/internet.png'),
+    );
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════
+// Small holder for the contact icons
+// ═════════════════════════════════════════════════════════════════
+
+class _ContactIcons {
+  final pw.ImageProvider? location;
+  final pw.ImageProvider? phone;
+  final pw.ImageProvider? whatsapp;
+  final pw.ImageProvider? email;
+  final pw.ImageProvider? website;
+
+  const _ContactIcons({
+    this.location,
+    this.phone,
+    this.whatsapp,
+    this.email,
+    this.website,
+  });
 }

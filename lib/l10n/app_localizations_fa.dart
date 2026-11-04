@@ -1608,4 +1608,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get authorizationFailed => 'تأیید تراکنش ناموفق بود.';
+
+  @override
+  String get newExchange => 'تبادله اسعار جدید';
 }

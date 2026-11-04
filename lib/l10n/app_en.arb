@@ -537,5 +537,6 @@
   "authorizationInvalidState": "This transaction is not in the right state to be authorized.",
   "authorizationPending": "This transaction is already pending.",
   "authorizationFailedProcess": "The transaction could not be processed.",
-  "authorizationFailed": "Authorization failed."
+  "authorizationFailed": "Authorization failed.",
+  "newExchange": "New Exchange"
 }

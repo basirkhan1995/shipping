@@ -1228,7 +1228,7 @@ Widget build(BuildContext context) {
         return ZFormDialog(
           width: 720,
           icon: Icons.swap_horiz_rounded,
-          title: isEditing ? 'Exchange · $reference' : 'New Exchange',
+          title: isEditing ? '${AppLocalizations.of(context)!.exchange} · $reference' : AppLocalizations.of(context)!.newExchange,
           isActionTrue: false,
           onAction: null,
           child: ConstrainedBox(

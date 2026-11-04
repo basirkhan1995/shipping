@@ -572,13 +572,13 @@
   },
   "accountStatement": {
     "en": "Account Statement",
-    "ar": "صورتحساب اشخاص",
-    "fa": "صورتحساب اشخاص"
+    "ar": "صورتحساب",
+    "fa": "صورتحساب"
   },
   "trnType": {
-    "en": "Transaction Code",
-    "ar": "معامله کد",
-    "fa": "کد معامله"
+    "en": "TXN Type",
+    "ar": "معامله دول",
+    "fa": "نوع معامله"
   },
   "CHDP": {
     "en": "Cash Deposit",
@@ -606,29 +606,29 @@
     "fa": "دریافت دفتر کل"
   },
   "XPNS": {
-    "en": "Expense",
+    "en": "Post Expense",
     "ar": "لګښت",
     "fa": "مصارف"
   },
   "INCM": {
-    "en": "Income (Profit)",
+    "en": "Post Income",
     "ar": "عواید",
     "fa": "عواید"
   },
   "EXCH": {
-    "en": "Cross Currency",
-    "ar": "متقابل ارز",
-    "fa": "ارز متقابل"
+    "en": "Exchange",
+    "ar": "تبادله اسعار",
+    "fa": "اسعارو تبادله"
   },
   "debit": {
     "en": "Debit",
-    "ar": "بدهکار",
-    "fa": "بدهکار"
+    "ar": "دبت",
+    "fa": "دبت"
   },
   "credit": {
     "en": "Credit",
-    "ar": "بسټانکار",
-    "fa": "بستانکار"
+    "ar": "کریدت",
+    "fa": "کریدت"
   },
   "authorizedBy": {
     "en": "Authorized by: ",
@@ -662,13 +662,13 @@
   },
   "withdrawal": {
     "en": "Withdrawal",
-    "ar": "دریافت",
-    "fa": "دریافت"
+    "ar": "پرداخت",
+    "fa": "پرداخت"
   },
   "deposit": {
     "en": "Deposit",
-    "ar": "پرداخت",
-    "fa": "پرداخت"
+    "ar": "دریافت",
+    "fa": "دریافت"
   },
   "balance": {
     "en": "Balance",
@@ -1584,37 +1584,37 @@
   "income": {
     "en": "Income Voucher",
     "fa": "سند درآمد",
-    "ps": "د عاید سند",
-    "ar": "سند إيراد"
+    "ps": "د عاید سند"
   },
   "tel": {
     "en": "Tel",
     "fa": "تلفن",
-    "ps": "تلیفون",
-    "ar": "هاتف"
+    "ps": "تلیفون"
   },
   "ccyUsd": {
     "en": "USD",
     "fa": "دالر",
-    "ps": "ډالر",
-    "ar": "دولار"
+    "ps": "ډالر"
   },
   "ccyAfn": {
     "en": "AFN",
     "fa": "افغانی",
-    "ps": "افغانۍ",
-    "ar": "أفغاني"
+    "ps": "افغانۍ"
   },
   "ccyEur": {
     "en": "EUR",
     "fa": "یورو",
-    "ps": "یورو",
-    "ar": "يورو"
+    "ps": "یورو"
   },
   "ccyCny": {
     "en": "CNY",
     "fa": "یوان",
-    "ps": "یوان",
-    "ar": "يوان"
+    "ps": "یوان"
+  },
+
+  "cashVoucher": {
+    "en": "Cash Voucher",
+    "fa": "سند نقدی",
+    "ps": "نغدي سند"
   }
 }

@@ -3249,6 +3249,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Authorization failed.'**
   String get authorizationFailed;
+
+  /// No description provided for @newExchange.
+  ///
+  /// In en, this message translates to:
+  /// **'New Exchange'**
+  String get newExchange;
 }
 
 class _AppLocalizationsDelegate

@@ -638,6 +638,10 @@ class _DesktopState extends State<_Desktop> {
             company.comAddress = auth.company?.comAddress ?? "";
             company.compPhone = auth.company?.comPhone ?? "";
             company.comEmail = auth.company?.comEmail ?? "";
+            company.comWhatsApp = auth.company?.comWhatsapp ?? "";
+            company.comWebsite = auth.company?.comWebsite ??"";
+            company.comFacebook = auth.company?.comFb ??"";
+            company.comInstagram = auth.company?.comInsta ??"";
             company.startDate = fromDate;
             company.endDate = toDate;
             company.statementDate = DateTime.now().toFullDateTime;

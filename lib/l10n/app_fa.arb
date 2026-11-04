@@ -537,5 +537,6 @@
   "authorizationInvalidState": "این تراکنش در وضعیت مناسب برای تأیید قرار ندارد.",
   "authorizationPending": "این تراکنش قبلاً در حالت در انتظار قرار گرفته است.",
   "authorizationFailedProcess": "این تراکنش قابل پردازش نیست.",
-  "authorizationFailed": "تأیید تراکنش ناموفق بود."
+  "authorizationFailed": "تأیید تراکنش ناموفق بود.",
+  "newExchange": "تبادله اسعار جدید"
 }
