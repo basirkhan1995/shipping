@@ -93,26 +93,31 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => PageOrientationCubit()),
           BlocProvider(create: (context) => PaperSizeCubit()),
           BlocProvider(create: (context) => PrinterCubit()),
+
           ///Auth
           BlocProvider(create: (_) => AuthBloc(Repositories(ApiServices()))),
           BlocProvider(create: (_) => UsersBloc(Repositories(ApiServices()))..add(LoadUsersEvent())),
           BlocProvider(create: (_) => UserRoleBloc(Repositories(ApiServices()))..add(LoadUserRolesEvent())),
           BlocProvider(create: (_) => PasswordBloc(Repositories(ApiServices()))),
+
           ///Stakeholders
           BlocProvider(create: (_) => StakeholderBloc(Repositories(ApiServices()))..add(GetStakeholdersEvent())),
           BlocProvider(create: (_) => StakeholderByIdBloc(Repositories(ApiServices()))),
           BlocProvider(create: (_) => StkAccountsBloc(Repositories(ApiServices()))),
           BlocProvider(create: (_) => EmployeeBloc(Repositories(ApiServices()))..add(LoadEmployeeEvent())),
           BlocProvider(create: (_) => AttendanceBloc(Repositories(ApiServices()))..add(LoadAttendanceEvent())),
+
           ///Currencies
           BlocProvider(create: (_) => CurrenciesBloc(Repositories(ApiServices()))..add(LoadCurrenciesEvent())),
           BlocProvider(create: (_) => TransactionsBloc(Repositories(ApiServices()))..add(LoadTransactionsEvent())),
           BlocProvider(create: (_) => ExchangeRateBloc(Repositories(ApiServices()))),
+
           ///GL Accounts
           BlocProvider(create: (_) => GlAccountsBloc(Repositories(ApiServices()))..add(LoadGlAccountEvent())),
           BlocProvider(create: (_) => GlCategoryBloc(Repositories(ApiServices()))),
           BlocProvider(create: (_) => ReminderBloc(Repositories(ApiServices()))),
           BlocProvider(create: (_) => PermissionSettingsBloc(Repositories(ApiServices()))..add(LoadPermissionsSettingsEvent())),
+
           ///Company Bloc
           BlocProvider(create: (_) => CompanyProfileBloc(Repositories(ApiServices()))..add(LoadCompanyProfileEvent())),
           BlocProvider(create: (_) => StorageBloc(Repositories(ApiServices()))..add(LoadStorageEvent())),

@@ -490,19 +490,17 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
               const Spacer(),
               if (!state.isEmpty) ...[
                 _pill(
-                  '${AppLocalizations.of(context)!.debit} '
-                      '${state.totalDebit.toStringAsFixed(2)}',
+                  '${AppLocalizations.of(context)!.totalDebit} '
+                      '${state.totalDebit.toAmount()}',
                   Colors.green,
                 ),
                 const SizedBox(width: 8),
-                _pill(
-                  '${AppLocalizations.of(context)!.credit} '
-                      '${state.totalCredit.toStringAsFixed(2)}',
+                _pill('${AppLocalizations.of(context)!.totalCredit} ''${state.totalCredit.toAmount()}',
                   Colors.blue,
                 ),
                 const SizedBox(width: 8),
                 _pill(
-                  'Diff ${state.difference.toStringAsFixed(2)}',
+                  '${AppLocalizations.of(context)!.diff} ${state.difference.toAmount()}',
                   state.isBalanced ? Colors.green : Colors.red,
                 ),
               ],
@@ -515,12 +513,12 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
 
         if (!state.isEmpty && state.hasCurrencyMix)
           _banner(
-            'Rows use different currencies. Pick one currency for all rows.',
+            AppLocalizations.of(context)!.rowsSameCcy,
             Colors.orange,
           ),
 
         if (!state.isEmpty && !state.isBalanced)
-          _banner('Total debit must equal total credit.', Colors.red),
+          _banner(AppLocalizations.of(context)!.totalDebitEqualCredit, Colors.red),
 
         Expanded(
           child: state.isEmpty
@@ -663,9 +661,8 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
   Widget _emptyState() => Center(
     child: widget.reference != null && widget.reference!.isNotEmpty
         ? const CircularProgressIndicator()
-        : const Text(
-      'Add at least two rows — one debit and one credit — '
-          'with the same total.',
+        : Text(
+      AppLocalizations.of(context)!.atLeastTwoRow,
       textAlign: TextAlign.center,
     ),
   );
@@ -673,13 +670,13 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
   Widget _pill(String label, Color color) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
     decoration: BoxDecoration(
-      color: color.withValues(alpha: .08),
-      borderRadius: BorderRadius.circular(4),
+      color: color.withValues(alpha: .05),
+      borderRadius: BorderRadius.circular(3),
       border: Border.all(color: color.withValues(alpha: .3)),
     ),
     child: Text(
-      label,
-      style: TextStyle(color: color, fontWeight: FontWeight.w600),
+      label.toUpperCase(),
+      style: TextStyle(color: color,letterSpacing: 1, fontWeight: FontWeight.w600),
     ),
   );
 

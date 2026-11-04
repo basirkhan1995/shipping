@@ -2707,7 +2707,7 @@ abstract class AppLocalizations {
   /// No description provided for @openInExplorer.
   ///
   /// In en, this message translates to:
-  /// **'Open In Eplorer'**
+  /// **'Open In Folder'**
   String get openInExplorer;
 
   /// No description provided for @restoreComplete.
@@ -3255,6 +3255,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New Exchange'**
   String get newExchange;
+
+  /// No description provided for @atLeastTwoRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least two rows — one debit and one credit — with the same total.'**
+  String get atLeastTwoRow;
+
+  /// No description provided for @totalDebitEqualCredit.
+  ///
+  /// In en, this message translates to:
+  /// **'Total debit must equal total credit.'**
+  String get totalDebitEqualCredit;
+
+  /// No description provided for @rowsSameCcy.
+  ///
+  /// In en, this message translates to:
+  /// **'Rows use different currencies. Pick one currency for all rows.'**
+  String get rowsSameCcy;
 }
 
 class _AppLocalizationsDelegate

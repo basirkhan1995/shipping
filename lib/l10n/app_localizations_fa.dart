@@ -382,7 +382,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get subCategory => 'بخش فرعی';
 
   @override
-  String get glAccount => 'حساب های سیستم';
+  String get glAccount => 'حسابهای سیستم';
 
   @override
   String get areYouSure => 'آیا مطمئین هستید؟';
@@ -933,7 +933,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get restoreDefault => 'بازگردانی به حالت اولیه';
 
   @override
-  String get counts => 'شمارش‌ها';
+  String get counts => 'ارقام';
 
   @override
   String get exchangeRateGraph => 'نمودار نرخ تبادله';
@@ -948,22 +948,22 @@ class AppLocalizationsFa extends AppLocalizations {
   String get digitalClock => 'ساعت دیجیتال';
 
   @override
-  String get exchangeRates => 'نرخ‌های تبادله';
+  String get exchangeRates => 'نرخ اسعار';
 
   @override
   String get profitLossGraph => 'نمودار سود و زیان';
 
   @override
-  String get reminderNotifications => 'اطلاعیه‌های یادآوری';
+  String get reminderNotifications => 'اطلاعیه‌ های یادآوری';
 
   @override
   String get currencyTab => 'تب اسعار';
 
   @override
-  String get currency => 'اسعار';
+  String get currency => 'ارز';
 
   @override
-  String get glAccounts => 'حساب‌های دفتر کل';
+  String get glAccounts => 'حسابهای سیستم';
 
   @override
   String get allTransactions => 'همه معاملات';
@@ -984,7 +984,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get ftSingleAccount => 'انتقال وجه تک‌حسابی';
 
   @override
-  String get ftMultiAccount => 'انتقال وجه چندحسابی';
+  String get ftMultiAccount => 'انتقال وجه گروهی';
 
   @override
   String get fxTransactions => 'معاملات ارزی';
@@ -993,7 +993,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get individuals => 'افراد';
 
   @override
-  String get allUsers => 'همه کاربران';
+  String get allUsers => 'همه یوزرها';
 
   @override
   String get userLog => 'سابقه کاربر';
@@ -1059,7 +1059,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get about => 'درباره';
 
   @override
-  String get accountStatementSingleDate => 'صورت‌حساب تاریخ واحد';
+  String get accountStatementSingleDate => 'صورتحساب تاریخ واحد';
 
   @override
   String get glStatementSingleDate => 'صورت‌حساب دفتر کل تاریخ واحد';
@@ -1080,10 +1080,10 @@ class AppLocalizationsFa extends AppLocalizations {
   String get productMovement => 'حرکت محصولات';
 
   @override
-  String get purchaseInvoices => 'بل‌های خرید';
+  String get purchaseInvoices => 'بل‌ های خرید';
 
   @override
-  String get saleInvoices => 'بل‌های فروش';
+  String get saleInvoices => 'بل‌ های فروش';
 
   @override
   String get allInvoices => 'همه بل‌ها';
@@ -1329,7 +1329,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get renameTitle => 'اصلاح نام';
 
   @override
-  String get openInExplorer => '';
+  String get openInExplorer => 'باز کردن پوشه';
 
   @override
   String get restoreComplete => 'بازگردانی موفق';
@@ -1611,4 +1611,16 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get newExchange => 'تبادله اسعار جدید';
+
+  @override
+  String get atLeastTwoRow =>
+      'حداقل دو ردیف، یک بدهکار و یک بستانکار، با مجموع برابر اضافه کنید.';
+
+  @override
+  String get totalDebitEqualCredit =>
+      'مجموع بدهکار باید با مجموع بستانکار برابر باشد.';
+
+  @override
+  String get rowsSameCcy =>
+      'ردیف‌ها از ارزهای متفاوت استفاده می‌کنند. لطفاً برای همه ردیف‌ها یک ارز یکسان انتخاب کنید.';
 }

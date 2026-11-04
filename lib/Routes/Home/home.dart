@@ -192,7 +192,7 @@ class _CompanyHeader extends StatelessWidget {
     final logo = company?.comLogo;
 
     // Wider avatar: 44px expanded, 34px collapsed.
-    final double logoSize = isExpanded ? 44 : 34;
+    final double logoSize = isExpanded ? 75 : 34;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -219,7 +219,7 @@ class _CompanyHeader extends StatelessWidget {
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: scheme.onSurface,
                 height: 1.2,

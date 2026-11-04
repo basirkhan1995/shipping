@@ -466,7 +466,7 @@ class _PrintPreviewDialogState<T> extends State<PrintPreviewDialog<T>> {
               Expanded(
                 child: ZOutlineButton(
                   width: double.infinity,
-                  height: 40,
+                  height: 35,
                   label: Text(locale.cancel),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
@@ -475,9 +475,11 @@ class _PrintPreviewDialogState<T> extends State<PrintPreviewDialog<T>> {
               Expanded(
                 child: ZOutlineButton(
                   width: double.infinity,
-                  height: 40,
-                  icon: Icons.picture_as_pdf_sharp,
-                  label: Text(locale.save),
+                  height: 35,
+                  isActive: true,
+                  icon: Icons.file_open_rounded,
+                  label: Text("PDF"),
+                  backgroundHover: Theme.of(context).colorScheme.error,
                   onPressed: _handleSave,
                 ),
               ),
@@ -488,7 +490,8 @@ class _PrintPreviewDialogState<T> extends State<PrintPreviewDialog<T>> {
             const SizedBox(height: 8),
             ZOutlineButton(
               width: double.infinity,
-              height: 40,
+              height: 35,
+              isActive: true,
               icon: Icons.share,
               label: Text(locale.share),
               onPressed: _isSharing ? null : _sharePDF,

@@ -324,8 +324,7 @@ class FundTransferFormState extends State<FundTransferForm> {
 
     return BlocListener<StkAccountsBloc, StkAccountsState>(
       listenWhen: (prev, next) =>
-      next is StkAccountsLoadedState &&
-          (_pendingFromAccountNo != null || _pendingToAccountNo != null),
+      next is StkAccountsLoadedState && (_pendingFromAccountNo != null || _pendingToAccountNo != null),
       listener: (context, state) {
         if (state is! StkAccountsLoadedState) return;
         _applyPendingAccountSync(state.accounts);

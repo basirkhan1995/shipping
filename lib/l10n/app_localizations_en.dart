@@ -1330,7 +1330,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get renameTitle => 'Rename';
 
   @override
-  String get openInExplorer => 'Open In Eplorer';
+  String get openInExplorer => 'Open In Folder';
 
   @override
   String get restoreComplete => 'Restore Completed';
@@ -1618,4 +1618,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get newExchange => 'New Exchange';
+
+  @override
+  String get atLeastTwoRow =>
+      'Add at least two rows — one debit and one credit — with the same total.';
+
+  @override
+  String get totalDebitEqualCredit => 'Total debit must equal total credit.';
+
+  @override
+  String get rowsSameCcy =>
+      'Rows use different currencies. Pick one currency for all rows.';
 }

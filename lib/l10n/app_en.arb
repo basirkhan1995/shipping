@@ -447,7 +447,7 @@
   "recentBackup": "Recent Backup",
   "restoreBackup": "Restore backup",
   "renameTitle": "Rename",
-  "openInExplorer": "Open In Eplorer",
+  "openInExplorer": "Open In Folder",
   "restoreComplete": "Restore Completed",
   "restoreSuccessMsg": "Database has been successfully restored.",
   "downloadBackup": "Download Backup",
@@ -538,5 +538,8 @@
   "authorizationPending": "This transaction is already pending.",
   "authorizationFailedProcess": "The transaction could not be processed.",
   "authorizationFailed": "Authorization failed.",
-  "newExchange": "New Exchange"
+  "newExchange": "New Exchange",
+  "atLeastTwoRow": "Add at least two rows — one debit and one credit — with the same total.",
+  "totalDebitEqualCredit": "Total debit must equal total credit.",
+  "rowsSameCcy": "Rows use different currencies. Pick one currency for all rows."
 }

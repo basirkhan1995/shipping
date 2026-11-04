@@ -380,7 +380,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get subCategory => 'فرعی بخش';
 
   @override
-  String get glAccount => 'حساب های سیستم';
+  String get glAccount => 'حسابهای سیستم';
 
   @override
   String get areYouSure => 'آیا مطمئین هستید؟';
@@ -931,193 +931,193 @@ class AppLocalizationsAr extends AppLocalizations {
   String get restoreDefault => 'اصلي حالت ته راګرځول';
 
   @override
-  String get counts => 'Counts';
+  String get counts => 'ارقام';
 
   @override
-  String get exchangeRateGraph => 'Exchange Rate Graph';
+  String get exchangeRateGraph => 'نمودار نرخ تبادله';
 
   @override
-  String get dailyTransactionsGraph => 'Daily Transactions Graph';
+  String get dailyTransactionsGraph => 'نمودار معاملات روزانه';
 
   @override
-  String get dailyTransactionTotals => 'Daily Transaction Totals';
+  String get dailyTransactionTotals => 'مجموع معاملات روزانه';
 
   @override
-  String get digitalClock => 'Digital Clock';
+  String get digitalClock => 'ساعت دیجیتال';
 
   @override
-  String get exchangeRates => 'Exchange Rates';
+  String get exchangeRates => 'نرخ اسعار';
 
   @override
-  String get profitLossGraph => 'Profit Loss Graph';
+  String get profitLossGraph => 'نمودار سود و زیان';
 
   @override
-  String get reminderNotifications => 'Reminder Notifications';
+  String get reminderNotifications => 'اطلاعیه‌های یادآوری';
 
   @override
-  String get currencyTab => 'Currency Tab';
+  String get currencyTab => 'تب اسعار';
 
   @override
-  String get currency => 'Currency';
+  String get currency => 'ارز';
 
   @override
-  String get glAccounts => 'GL Accounts';
+  String get glAccounts => 'حسابهای سیستم';
 
   @override
-  String get allTransactions => 'All Transactions';
+  String get allTransactions => 'همه معاملات';
 
   @override
-  String get authorizedTransaction => 'Authorized Transaction';
+  String get authorizedTransaction => 'معاملات مجاز';
 
   @override
-  String get pendingTransaction => 'Pending Transaction';
+  String get pendingTransaction => 'معاملات در انتظار';
 
   @override
-  String get incomeEntry => 'Income Entry';
+  String get incomeEntry => 'ثبت عواید';
 
   @override
-  String get expenseEntry => 'Expense Entry';
+  String get expenseEntry => 'ثبت مصارف';
 
   @override
-  String get ftSingleAccount => 'FT Single Account';
+  String get ftSingleAccount => 'انتقال وجه تک‌ حسابی';
 
   @override
-  String get ftMultiAccount => 'FT Multi Account';
+  String get ftMultiAccount => 'انتقال وجه گروهی';
 
   @override
-  String get fxTransactions => 'FX Transactions';
+  String get fxTransactions => 'معاملات ارزی';
 
   @override
-  String get individuals => 'Individuals';
+  String get individuals => 'افراد';
 
   @override
-  String get allUsers => 'All Users';
+  String get allUsers => 'همه یوزرها';
 
   @override
-  String get userLog => 'User Log';
+  String get userLog => 'سابقه کاربر';
 
   @override
-  String get shipping => 'Shipping';
+  String get shipping => 'حمل و نقل';
 
   @override
-  String get drivers => 'Drivers';
+  String get drivers => 'رانندگان';
 
   @override
-  String get vehicles => 'Vehicles';
+  String get vehicles => 'وسایط';
 
   @override
-  String get ordersTab => 'Orders Tab';
+  String get ordersTab => 'تب سفارشات';
 
   @override
-  String get estimateTab => 'Estimate Tab';
+  String get estimateTab => 'تب پیش‌بینی';
 
   @override
-  String get goodsShiftTab => 'Goods Shift Tab';
+  String get goodsShiftTab => 'تب جابجایی اموال';
 
   @override
-  String get adjustmentTab => 'Adjustment Tab';
+  String get adjustmentTab => 'تب تعدیلات';
 
   @override
-  String get purchase => 'Purchase';
+  String get purchase => 'خرید';
 
   @override
-  String get sale => 'Sale';
+  String get sale => 'فروش';
 
   @override
-  String get estimate => 'Estimate';
+  String get estimate => 'پیش‌بینی';
 
   @override
-  String get goodsShift => 'Goods Shift';
+  String get goodsShift => 'جابجایی اموال';
 
   @override
-  String get adjustment => 'Adjustment';
+  String get adjustment => 'تعدیل';
 
   @override
-  String get findInvoice => 'Find Invoice';
+  String get findInvoice => 'یافتن بل';
 
   @override
-  String get generalTab => 'General Tab';
+  String get generalTab => 'تب عمومی';
 
   @override
-  String get passwordChange => 'Password Change';
+  String get passwordChange => 'تغییر رمز';
 
   @override
-  String get rolesAndPermissions => 'Roles and Permissions';
+  String get rolesAndPermissions => 'نقش‌ها و دسترسی‌ها';
 
   @override
-  String get companyTab => 'Company Tab';
+  String get companyTab => 'تب شرکت';
 
   @override
-  String get transactionType => 'Transaction Type';
+  String get transactionType => 'نوع معامله';
 
   @override
-  String get products => 'Products';
+  String get products => 'محصولات';
 
   @override
-  String get about => 'About';
+  String get about => 'درباره';
 
   @override
-  String get accountStatementSingleDate => 'Account Statement Single Date';
+  String get accountStatementSingleDate => 'صورتحساب تاریخ واحد';
 
   @override
-  String get glStatementSingleDate => 'GL Statement Single Date';
+  String get glStatementSingleDate => 'صورت‌حساب دفتر کل تاریخ واحد';
 
   @override
-  String get glStatementPeriodicDate => 'GL Statement Periodic Date';
+  String get glStatementPeriodicDate => 'صورت‌حساب دفتر کل دوره‌ای';
 
   @override
-  String get creditors => 'Creditors';
+  String get creditors => 'طلبکاران';
 
   @override
-  String get debtors => 'Debtors';
+  String get debtors => 'بدهکاران';
 
   @override
-  String get stockAvailability => 'Stock Availability';
+  String get stockAvailability => 'موجودی اموال';
 
   @override
-  String get productMovement => 'Product Movement';
+  String get productMovement => 'حرکت محصولات';
 
   @override
-  String get purchaseInvoices => 'Purchase Invoices';
+  String get purchaseInvoices => 'بل‌ های خرید';
 
   @override
-  String get saleInvoices => 'Sale Invoices';
+  String get saleInvoices => 'بل‌ های فروش';
 
   @override
-  String get allInvoices => 'All Invoices';
+  String get allInvoices => 'همه بل‌ها';
 
   @override
-  String get cashBalanceAllBranch => 'Cash Balance All Branch';
+  String get cashBalanceAllBranch => 'بیلانس نقدی همه شعبات';
 
   @override
-  String get cashBalanceSingleBranch => 'Cash Balance Single Branch';
+  String get cashBalanceSingleBranch => 'بیلانس نقدی شعبه واحد';
 
   @override
-  String get trialBalance => 'Trial Balance';
+  String get trialBalance => 'بیلانس آزمایشی';
 
   @override
-  String get transactionDetails => 'Transaction Details';
+  String get transactionDetails => 'جزئیات معامله';
 
   @override
-  String get transactionsReport => 'Transactions Report';
+  String get transactionsReport => 'راپور معاملات';
 
   @override
-  String get allBalances => 'All Balances';
+  String get allBalances => 'همه بیلانس‌ها';
 
   @override
-  String get userRoleAndPermission => 'User Role and Permission';
+  String get userRoleAndPermission => 'نقش کاربر و دسترسی';
 
   @override
-  String get stakeholderAccount => 'Stakeholder Account';
+  String get stakeholderAccount => 'حساب سهامدار';
 
   @override
-  String get currencies => 'Currencies';
+  String get currencies => 'اسعار';
 
   @override
   String get balanceSheet => 'د بیلانس شیټ';
 
   @override
-  String get read => 'Read';
+  String get read => 'خواندن';
 
   @override
   String get language => 'ژبه';
@@ -1327,7 +1327,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get renameTitle => 'اصلاح نام';
 
   @override
-  String get openInExplorer => '';
+  String get openInExplorer => 'باز کردن پوشه';
 
   @override
   String get restoreComplete => 'بازگردانی موفق';
@@ -1610,4 +1610,16 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get newExchange => 'تبادله اسعار جدید';
+
+  @override
+  String get atLeastTwoRow =>
+      'لږ تر لږه دوه قطارونه اضافه کړئ، یو بدهکار او یو بستانکار، چې ټولیز مبلغ یې یو شان وي.';
+
+  @override
+  String get totalDebitEqualCredit =>
+      'د بدهکار ټولیز مبلغ باید د بستانکار له ټولیز مبلغ سره برابر وي.';
+
+  @override
+  String get rowsSameCcy =>
+      'قطارونه بېلابېل اسعار کاروي. مهرباني وکړئ د ټولو قطارونو لپاره یو شان اسعار وټاکئ.';
 }
