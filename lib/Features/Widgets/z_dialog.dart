@@ -110,18 +110,18 @@ class _ZFormDialogState extends State<ZFormDialog> {
                   autofocus: false,
                   child: Container(
                     margin: EdgeInsets.zero,
-                    padding: EdgeInsets.zero,
+                    padding: EdgeInsets.all(5),
                     width:
                     widget.width ?? MediaQuery.sizeOf(context).width * .4,
                     decoration: BoxDecoration(
                       border: Border.all(color: Theme.of(context).colorScheme.primary,width: 1),
                       color: widget.backgroundColor ?? Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(6),
                         boxShadow: [
                         BoxShadow(
-                        blurRadius: 3,
+                        blurRadius: 5,
                         color: Theme.of(context).colorScheme.primary,
-                        spreadRadius: 0
+                        spreadRadius: 0,
                       )]
                     ),
                     child: Column(

@@ -5,7 +5,6 @@ import 'package:shipping/Features/Widgets/extensions.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/model/stk_model.dart';
 import 'package:shipping/l10n/app_localizations.dart';
-
 import '../../../../../../../../Features/Widgets/z_dialog.dart';
 import '../../../../../../../../Features/Widgets/toast.dart';
 import '../../../../../../../../Features/Widgets/ztextfield.dart';
@@ -24,11 +23,11 @@ import 'bloc/bulk_transfer_state.dart';
 import 'model/bulk_model.dart';
 
 Future<bool?> showBulkTransferDialog(
-  BuildContext context, {
-  required String usrName,
-  required String baseCurrency,
-  String? reference,
-}) {
+    BuildContext context, {
+      required String usrName,
+      required String baseCurrency,
+      String? reference,
+    }) {
   return showDialog<bool>(
     context: context,
     barrierDismissible: false,
@@ -221,7 +220,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
         title: Text(tr.delete),
         content: Text(
           'Permanently delete transaction $ref?\n\n'
-          'This removes the header and every line. It cannot be undone.',
+              'This removes the header and every line. It cannot be undone.',
         ),
         actions: [
           TextButton(
@@ -251,11 +250,11 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
   }
 
   Widget _busyLabel(
-    BuildContext context, {
-    required bool busy,
-    required String busyText,
-    required String idleText,
-  }) {
+      BuildContext context, {
+        required bool busy,
+        required String busyText,
+        required String idleText,
+      }) {
     if (!busy) return Text(idleText);
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -429,12 +428,12 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
   }
 
   Widget _buildBody(
-    BuildContext context,
-    BulkTransferEditing state,
-    bool formBusy,
-    bool rowBusy,
-    bool anyBusy,
-  ) {
+      BuildContext context,
+      BulkTransferEditing state,
+      bool formBusy,
+      bool rowBusy,
+      bool anyBusy,
+      ) {
     final isPending = state.isPending;
     final isAuthorized = state.isAuthorized;
 
@@ -444,9 +443,9 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
         : null;
     final isMaker =
         state.isEditing &&
-        state.makerName != null &&
-        loginName != null &&
-        state.makerName == loginName;
+            state.makerName != null &&
+            loginName != null &&
+            state.makerName == loginName;
 
     // Per-button busy flags.
     final deleteBusy = _pendingAction == _RowAction.delete;
@@ -492,13 +491,13 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
               if (!state.isEmpty) ...[
                 _pill(
                   '${AppLocalizations.of(context)!.debit} '
-                  '${state.totalDebit.toStringAsFixed(2)}',
+                      '${state.totalDebit.toStringAsFixed(2)}',
                   Colors.green,
                 ),
                 const SizedBox(width: 8),
                 _pill(
                   '${AppLocalizations.of(context)!.credit} '
-                  '${state.totalCredit.toStringAsFixed(2)}',
+                      '${state.totalCredit.toStringAsFixed(2)}',
                   Colors.blue,
                 ),
                 const SizedBox(width: 8),
@@ -527,35 +526,35 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
           child: state.isEmpty
               ? _emptyState()
               : ListView.separated(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  itemCount: state.rows.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 6),
-                  itemBuilder: (_, i) {
-                    final row = state.rows[i];
-                    final isLast = i == state.rows.length - 1;
-                    final usedKeys = _usedAccountCcyKeys(row.rowId);
-                    return _BulkRowWidget(
-                      key: ValueKey(
-                        'row-${row.rowId}-'
-                        '${(usedKeys.toList()..sort()).join("|")}',
-                      ),
-                      index: i,
-                      row: row,
-                      controllers: _ctrlFor(row),
-                      headerCurrency: _headerCurrency,
-                      enabled:
-                          !anyBusy &&
-                          (!state.isEditing || (isPending && isMaker)),
-                      isLast: isLast,
-                      onRowComplete: isLast ? _onRowComplete : null,
-                      onChanged: _dispatch,
-                      usedAccountCcyKeys: usedKeys,
-                    );
-                  },
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
+            itemCount: state.rows.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 6),
+            itemBuilder: (_, i) {
+              final row = state.rows[i];
+              final isLast = i == state.rows.length - 1;
+              final usedKeys = _usedAccountCcyKeys(row.rowId);
+              return _BulkRowWidget(
+                key: ValueKey(
+                  'row-${row.rowId}-'
+                      '${(usedKeys.toList()..sort()).join("|")}',
                 ),
+                index: i,
+                row: row,
+                controllers: _ctrlFor(row),
+                headerCurrency: _headerCurrency,
+                enabled:
+                !anyBusy &&
+                    (!state.isEditing || (isPending && isMaker)),
+                isLast: isLast,
+                onRowComplete: isLast ? _onRowComplete : null,
+                onChanged: _dispatch,
+                usedAccountCcyKeys: usedKeys,
+              );
+            },
+          ),
         ),
 
         // ── Footer ───────────────────────────────────────────────
@@ -665,10 +664,10 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
     child: widget.reference != null && widget.reference!.isNotEmpty
         ? const CircularProgressIndicator()
         : const Text(
-            'Add at least two rows — one debit and one credit — '
-            'with the same total.',
-            textAlign: TextAlign.center,
-          ),
+      'Add at least two rows — one debit and one credit — '
+          'with the same total.',
+      textAlign: TextAlign.center,
+    ),
   );
 
   Widget _pill(String label, Color color) => Container(
@@ -719,14 +718,14 @@ class _RowControllers {
   final FocusNode narrationFocus = FocusNode();
 
   _RowControllers(BulkTransferRow row)
-    : account = TextEditingController(text: _initialAccountText(row)),
-      debit = TextEditingController(
-        text: row.debit > 0 ? row.debit.toStringAsFixed(2) : '',
-      ),
-      credit = TextEditingController(
-        text: row.credit > 0 ? row.credit.toStringAsFixed(2) : '',
-      ),
-      narration = TextEditingController(text: row.narration);
+      : account = TextEditingController(text: _initialAccountText(row)),
+        debit = TextEditingController(
+          text: row.debit > 0 ? row.debit.toStringAsFixed(2) : '',
+        ),
+        credit = TextEditingController(
+          text: row.credit > 0 ? row.credit.toStringAsFixed(2) : '',
+        ),
+        narration = TextEditingController(text: row.narration);
 
   static String _initialAccountText(BulkTransferRow row) {
     final hasName = row.accountName != null && row.accountName!.isNotEmpty;
@@ -788,6 +787,13 @@ class _BulkRowWidget extends StatefulWidget {
 class _BulkRowWidgetState extends State<_BulkRowWidget> {
   bool _focusedOnce = false;
 
+  /// ── PER-ROW LOADING FLAG ─────────────────────────────────
+  /// True only while THIS row is waiting for its own search results.
+  /// Because it lives inside `_BulkRowWidgetState`, each row has its
+  /// own copy — that's what keeps the spinner from showing on every
+  /// row when one row triggers a search.
+  bool _accountLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -798,6 +804,22 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
         widget.controllers.accountFocus.requestFocus();
       }
     });
+  }
+
+  /// Wraps the search so this row knows when *it* triggered a load.
+  void _triggerSearch(String query) {
+    if (!mounted) return;
+    setState(() => _accountLoading = true);
+    context.read<StkAccountsBloc>().add(
+      LoadStkAccountsEvent(query: query),
+    );
+  }
+
+  /// Wraps the "show all" trigger the same way.
+  void _triggerFetchAll() {
+    if (!mounted) return;
+    setState(() => _accountLoading = true);
+    context.read<StkAccountsBloc>().add(const LoadStkAccountsEvent());
   }
 
   void _onNarrationDone() {
@@ -819,299 +841,327 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
     final showCurrencyDrop =
         widget.row.accountNumber != null && widget.row.currency != null;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        spacing: 8,
-        children: [
-          // ── index badge ────────────────────────────────────────
-          Container(
-            width: 30,
-            height: 30,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: color.primary.withValues(alpha: .08),
-              shape: BoxShape.circle,
-            ),
-            child: Text(
-              '${widget.index + 1}',
-              style: TextStyle(
-                color: color.primary,
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
+    // Scope the spinner to this row only. The row's own `_accountLoading`
+    // is cleared the moment the bloc leaves loading state — see the
+    // BlocListener wrapped around the account field below.
+    final scopedLoading = _accountLoading;
+
+    return BlocListener<StkAccountsBloc, StkAccountsState>(
+      // Clear this row's spinner as soon as the bloc finishes loading.
+      listenWhen: (prev, next) =>
+      prev is StkAccountsLoadingState && next is! StkAccountsLoadingState,
+      listener: (_, _) {
+        if (mounted && _accountLoading) {
+          setState(() => _accountLoading = false);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          spacing: 8,
+          children: [
+            // ── index badge ──────────────────────────────────────
+            Container(
+              width: 30,
+              height: 30,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: color.primary.withValues(alpha: .08),
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                '${widget.index + 1}',
+                style: TextStyle(
+                  color: color.primary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
               ),
             ),
-          ),
 
-          // ── account picker + currency drop ─────────────────────
-          Expanded(
-            flex: 3,
-            child:
-                GenericTextField<
+            // ── account picker + currency drop ───────────────────
+            Expanded(
+              flex: 3,
+              child: GenericTextField<
                   StakeholderAccount,
                   StkAccountsBloc,
-                  StkAccountsState
-                >(
-                  controller: c.account,
-                  title: '',
-                  hintText: AppLocalizations.of(context)!.accNameOrNumber,
-                  isRequired: true,
-                  bloc: context.read<StkAccountsBloc>(),
-                  focusNode: c.accountFocus,
-                  textInputAction: TextInputAction.none,
-                  showAllOnFocus: true,
-                  fetchAllFunction: (bloc) =>
-                      bloc.add(const LoadStkAccountsEvent()),
-                  searchFunction: (bloc, q) {
-                    if (q.trim().isEmpty) return;
-                    bloc.add(LoadStkAccountsEvent(query: q));
-                  },
+                  StkAccountsState>(
+                controller: c.account,
+                title: '',
+                hintText: AppLocalizations.of(context)!.accNameOrNumber,
+                isRequired: true,
+                bloc: context.read<StkAccountsBloc>(),
+                focusNode: c.accountFocus,
+                textInputAction: TextInputAction.none,
+                showAllOnFocus: true,
 
-                  itemBuilder: (context, account) {
-                    final ownCcy = account.accCurrency;
-                    final effectiveCcy = (ownCcy != null && ownCcy.isNotEmpty)
-                        ? ownCcy
-                        : widget.headerCurrency;
-                    final matchesHeader = effectiveCcy == widget.headerCurrency;
+                // ── Loading is scoped per row ─────────────────
+                // `stateToLoading` returns TRUE only when THIS row
+                // launched a search — not when some other row did.
+                stateToLoading: (_) => scopedLoading,
+                loadingBuilder: (context) => scopedLoading
+                    ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+                    : const SizedBox.shrink(),
 
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 4,
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '${account.accNumber} · ${account.accName ?? ''}',
-                              style: const TextStyle(fontSize: 13),
-                            ),
+                fetchAllFunction: (_) => _triggerFetchAll(),
+                searchFunction: (_, q) {
+                  if (q.trim().isEmpty) return;
+                  _triggerSearch(q);
+                },
+
+                itemBuilder: (context, account) {
+                  final ownCcy = account.accCurrency;
+                  final effectiveCcy = (ownCcy != null && ownCcy.isNotEmpty)
+                      ? ownCcy
+                      : widget.headerCurrency;
+                  final matchesHeader =
+                      effectiveCcy == widget.headerCurrency;
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 4,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${account.accNumber} · ${account.accName ?? ''}',
+                            style: const TextStyle(fontSize: 13),
                           ),
-                          Row(
-                            spacing: 5,
-                            children: [
-                              Text(account.accBalance.toAmount()),
-                              Text(
-                                effectiveCcy,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: matchesHeader
-                                      ? color.primary
-                                      : color.error,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                        ),
+                        Row(
+                          spacing: 5,
+                          children: [
+                            Text(account.accBalance.toAmount()),
+                            Text(
+                              effectiveCcy,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: matchesHeader
+                                    ? color.primary
+                                    : color.error,
+                                fontWeight: FontWeight.w600,
                               ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
 
-                  itemToString: (a) =>
-                      '${a.accNumber} | ${a.accName} | '
-                      '${a.accCurrency ?? widget.headerCurrency}',
+                itemToString: (a) =>
+                '${a.accNumber} | ${a.accName} | '
+                    '${a.accCurrency ?? widget.headerCurrency}',
 
-                  stateToItems: (s) {
-                    if (s is! StkAccountsLoadedState) {
-                      return const <StakeholderAccount>[];
+                stateToItems: (s) {
+                  if (s is! StkAccountsLoadedState) {
+                    return const <StakeholderAccount>[];
+                  }
+
+                  const excluded = <int>{10101011};
+
+                  final ccyByAcc = <int, Set<String>>{};
+                  for (final a in s.accounts) {
+                    final n = a.accNumber;
+                    if (n == null) continue;
+                    final c = a.accCurrency;
+                    if (c == null || c.isEmpty) continue;
+                    ccyByAcc.putIfAbsent(n, () => <String>{}).add(c);
+                  }
+
+                  final filtered = <StakeholderAccount>[];
+                  for (final a in s.accounts) {
+                    if (excluded.contains(a.accNumber)) continue;
+
+                    final key = '${a.accNumber}::${a.accCurrency ?? ''}';
+                    final ownKey =
+                        '${widget.row.accountNumber ?? ''}::'
+                        '${widget.row.currency ?? ''}';
+                    if (key != ownKey &&
+                        widget.usedAccountCcyKeys.contains(key)) {
+                      continue;
                     }
 
-                    const excluded = <int>{10101011};
-
-                    final ccyByAcc = <int, Set<String>>{};
-                    for (final a in s.accounts) {
-                      final n = a.accNumber;
-                      if (n == null) continue;
-                      final c = a.accCurrency;
-                      if (c == null || c.isEmpty) continue;
-                      ccyByAcc.putIfAbsent(n, () => <String>{}).add(c);
+                    if (a.accCategory == 8) {
+                      filtered.add(a);
+                      continue;
                     }
 
-                    final filtered = <StakeholderAccount>[];
-                    for (final a in s.accounts) {
-                      if (excluded.contains(a.accNumber)) continue;
-
-                      final key = '${a.accNumber}::${a.accCurrency ?? ''}';
-                      final ownKey =
-                          '${widget.row.accountNumber ?? ''}::'
-                          '${widget.row.currency ?? ''}';
-                      if (key != ownKey &&
-                          widget.usedAccountCcyKeys.contains(key)) {
-                        continue;
-                      }
-
-                      if (a.accCategory == 8) {
-                        filtered.add(a);
-                        continue;
-                      }
-
-                      final n = a.accNumber;
-                      final isMultiCcy =
-                          n != null && (ccyByAcc[n]?.length ?? 0) > 1;
-                      if (isMultiCcy) {
-                        filtered.add(a);
-                        continue;
-                      }
-
-                      if (a.accCurrency == null ||
-                          a.accCurrency == widget.headerCurrency) {
-                        filtered.add(a);
-                      }
+                    final n = a.accNumber;
+                    final isMultiCcy =
+                        n != null && (ccyByAcc[n]?.length ?? 0) > 1;
+                    if (isMultiCcy) {
+                      filtered.add(a);
+                      continue;
                     }
 
-                    final seen = <String>{};
-                    return filtered.where((a) {
-                      final k = '${a.accNumber}::${a.accCurrency ?? ''}';
-                      if (seen.contains(k)) return false;
-                      seen.add(k);
-                      return true;
-                    }).toList();
-                  },
-                  stateToLoading: (s) => s is StkAccountsLoadingState,
+                    if (a.accCurrency == null ||
+                        a.accCurrency == widget.headerCurrency) {
+                      filtered.add(a);
+                    }
+                  }
 
-                  onSelected: (a) {
-                    if (!widget.enabled) return;
-                    final effectiveCcy = (a.accCurrency?.isNotEmpty == true)
-                        ? a.accCurrency!
-                        : widget.headerCurrency;
-                    c.account.text =
-                        '${a.accNumber} | ${a.accName ?? ''} | $effectiveCcy';
+                  final seen = <String>{};
+                  return filtered.where((a) {
+                    final k = '${a.accNumber}::${a.accCurrency ?? ''}';
+                    if (seen.contains(k)) return false;
+                    seen.add(k);
+                    return true;
+                  }).toList();
+                },
 
-                    widget.onChanged(
-                      BulkTransferUpdateRow(
-                        rowId: widget.row.rowId,
-                        accountNumber: a.accNumber,
-                        accountName: a.accName,
-                        currency: effectiveCcy,
-                      ),
-                    );
+                onSelected: (a) {
+                  if (!widget.enabled) return;
+                  final effectiveCcy = (a.accCurrency?.isNotEmpty == true)
+                      ? a.accCurrency!
+                      : widget.headerCurrency;
+                  c.account.text =
+                  '${a.accNumber} | ${a.accName ?? ''} | $effectiveCcy';
 
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) c.debitFocus.requestFocus();
-                    });
-                  },
-                  validator: (v) =>
-                      (widget.row.accountNumber == null) ? 'Required' : null,
+                  widget.onChanged(
+                    BulkTransferUpdateRow(
+                      rowId: widget.row.rowId,
+                      accountNumber: a.accNumber,
+                      accountName: a.accName,
+                      currency: effectiveCcy,
+                    ),
+                  );
 
-                  showCurrencySelector: showCurrencyDrop,
-                  isCurrencySelectorEnabled:
-                      widget.enabled && !_rowIsStakeholder,
-                  selectedCurrencyCodeOverride:
-                      widget.row.currency ?? widget.headerCurrency,
-                  onCurrencySelectorChanged: (ccy) {
-                    if (!widget.enabled) return;
-                    if (ccy?.ccyCode == null) return;
-                    widget.onChanged(
-                      BulkTransferUpdateRow(
-                        rowId: widget.row.rowId,
-                        currency: ccy!.ccyCode,
-                      ),
-                    );
-                  },
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) c.debitFocus.requestFocus();
+                  });
+                },
+                validator: (v) =>
+                (widget.row.accountNumber == null) ? 'Required' : null,
+
+                showCurrencySelector: showCurrencyDrop,
+                isCurrencySelectorEnabled:
+                widget.enabled && !_rowIsStakeholder,
+                selectedCurrencyCodeOverride:
+                widget.row.currency ?? widget.headerCurrency,
+                onCurrencySelectorChanged: (ccy) {
+                  if (!widget.enabled) return;
+                  if (ccy?.ccyCode == null) return;
+                  widget.onChanged(
+                    BulkTransferUpdateRow(
+                      rowId: widget.row.rowId,
+                      currency: ccy!.ccyCode,
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            // ── debit ───────────────────────────────────────────
+            SizedBox(
+              width: 130,
+              child: ZTextFieldEntitled(
+                controller: c.debit,
+                title: '',
+                isRequired: false,
+                isEnabled: widget.enabled,
+                focusNode: c.debitFocus,
+                textInputAction: TextInputAction.none,
+                hint: AppLocalizations.of(context)!.debit,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
                 ),
-          ),
-
-          // ── debit ─────────────────────────────────────────────
-          SizedBox(
-            width: 130,
-            child: ZTextFieldEntitled(
-              controller: c.debit,
-              title: '',
-              isRequired: false,
-              isEnabled: widget.enabled,
-              focusNode: c.debitFocus,
-              textInputAction: TextInputAction.none,
-              hint: AppLocalizations.of(context)!.debit,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+                inputFormat: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                ],
+                onFieldSubmitted: (_) => c.creditFocus.requestFocus(),
+                onChanged: (v) {
+                  if (!widget.enabled) return;
+                  final d = double.tryParse(v) ?? 0;
+                  if (d > 0) c.credit.clear();
+                  widget.onChanged(
+                    BulkTransferUpdateRow(
+                      rowId: widget.row.rowId,
+                      debit: d,
+                      credit: d > 0 ? 0 : widget.row.credit,
+                    ),
+                  );
+                },
               ),
-              inputFormat: [
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-              ],
-              onFieldSubmitted: (_) => c.creditFocus.requestFocus(),
-              onChanged: (v) {
-                if (!widget.enabled) return;
-                final d = double.tryParse(v) ?? 0;
-                if (d > 0) c.credit.clear();
-                widget.onChanged(
-                  BulkTransferUpdateRow(
-                    rowId: widget.row.rowId,
-                    debit: d,
-                    credit: d > 0 ? 0 : widget.row.credit,
-                  ),
-                );
-              },
             ),
-          ),
 
-          // ── credit ────────────────────────────────────────────
-          SizedBox(
-            width: 130,
-            child: ZTextFieldEntitled(
-              controller: c.credit,
-              title: '',
-              hint: AppLocalizations.of(context)!.credit,
-              isRequired: false,
-              isEnabled: widget.enabled,
-              focusNode: c.creditFocus,
-              textInputAction: TextInputAction.none,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+            // ── credit ──────────────────────────────────────────
+            SizedBox(
+              width: 130,
+              child: ZTextFieldEntitled(
+                controller: c.credit,
+                title: '',
+                hint: AppLocalizations.of(context)!.credit,
+                isRequired: false,
+                isEnabled: widget.enabled,
+                focusNode: c.creditFocus,
+                textInputAction: TextInputAction.none,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                inputFormat: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                ],
+                onFieldSubmitted: (_) => c.narrationFocus.requestFocus(),
+                onChanged: (v) {
+                  if (!widget.enabled) return;
+                  final cr = double.tryParse(v) ?? 0;
+                  if (cr > 0) c.debit.clear();
+                  widget.onChanged(
+                    BulkTransferUpdateRow(
+                      rowId: widget.row.rowId,
+                      credit: cr,
+                      debit: cr > 0 ? 0 : widget.row.debit,
+                    ),
+                  );
+                },
               ),
-              inputFormat: [
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-              ],
-              onFieldSubmitted: (_) => c.narrationFocus.requestFocus(),
-              onChanged: (v) {
-                if (!widget.enabled) return;
-                final cr = double.tryParse(v) ?? 0;
-                if (cr > 0) c.debit.clear();
-                widget.onChanged(
-                  BulkTransferUpdateRow(
-                    rowId: widget.row.rowId,
-                    credit: cr,
-                    debit: cr > 0 ? 0 : widget.row.debit,
-                  ),
-                );
-              },
             ),
-          ),
 
-          // ── narration ─────────────────────────────────────────
-          Expanded(
-            flex: 2,
-            child: ZTextFieldEntitled(
-              controller: c.narration,
-              hint: AppLocalizations.of(context)!.narration,
-              title: '',
-              isRequired: false,
-              isEnabled: widget.enabled,
-              focusNode: c.narrationFocus,
-              textInputAction: TextInputAction.none,
-              onFieldSubmitted: (_) {
-                if (!widget.enabled) return;
-                widget.onChanged(
-                  BulkTransferUpdateRow(
-                    rowId: widget.row.rowId,
-                    narration: c.narration.text,
-                  ),
-                );
-                _onNarrationDone();
-              },
-              onChanged: (v) {
-                if (!widget.enabled) return;
-                widget.onChanged(
-                  BulkTransferUpdateRow(rowId: widget.row.rowId, narration: v),
-                );
-              },
+            // ── narration ───────────────────────────────────────
+            Expanded(
+              flex: 2,
+              child: ZTextFieldEntitled(
+                controller: c.narration,
+                hint: AppLocalizations.of(context)!.narration,
+                title: '',
+                isRequired: false,
+                isEnabled: widget.enabled,
+                focusNode: c.narrationFocus,
+                textInputAction: TextInputAction.none,
+                onFieldSubmitted: (_) {
+                  if (!widget.enabled) return;
+                  widget.onChanged(
+                    BulkTransferUpdateRow(
+                      rowId: widget.row.rowId,
+                      narration: c.narration.text,
+                    ),
+                  );
+                  _onNarrationDone();
+                },
+                onChanged: (v) {
+                  if (!widget.enabled) return;
+                  widget.onChanged(
+                    BulkTransferUpdateRow(
+                      rowId: widget.row.rowId,
+                      narration: v,
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
 
-          // ── delete ────────────────────────────────────────────
-          _deleteButton(color),
-        ],
+            // ── delete ──────────────────────────────────────────
+            _deleteButton(color),
+          ],
+        ),
       ),
     );
   }
@@ -1148,8 +1198,8 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
             child: GestureDetector(
               onTap: enabled
                   ? () => context.read<BulkTransferBloc>().add(
-                      BulkTransferRemoveRow(widget.row.rowId),
-                    )
+                BulkTransferRemoveRow(widget.row.rowId),
+              )
                   : null,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
@@ -1162,15 +1212,19 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
                   border: Border.all(color: borderColor, width: 1),
                   boxShadow: enabled && hovering
                       ? [
-                          BoxShadow(
-                            color: color.error.withValues(alpha: .18),
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                          ),
-                        ]
+                    BoxShadow(
+                      color: color.error.withValues(alpha: .18),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                    ),
+                  ]
                       : null,
                 ),
-                child: Icon(Icons.delete_outline_rounded, size: 18, color: fg),
+                child: Icon(
+                  Icons.delete_outline_rounded,
+                  size: 18,
+                  color: fg,
+                ),
               ),
             ),
           ),

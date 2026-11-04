@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shipping/Features/Widgets/cover.dart';
 import '../../../../../../Features/Widgets/extensions.dart';
 import '../../../../../../Features/Widgets/zbutton.dart';
 import '../../../../../../Features/Other/generic_textfield.dart';
@@ -98,6 +99,13 @@ class ExchangeFormState extends State<ExchangeForm> {
   int _rateRequestId = 0;
   StreamSubscription<ExchangeRateState>? _rateSub;
   bool _print = true;
+
+  /// ── PER-FIELD LOADING FLAGS ──────────────────────────────
+  /// Each account picker owns its own spinner flag. When the debit
+  /// field triggers a search, only `_debitLoading` flips — so the
+  /// credit picker never shows a spinner it didn't cause.
+  bool _debitLoading = false;
+  bool _creditLoading = false;
 
   /// Inline validation error shown at the top of the form.
   String? _formError;
@@ -411,17 +419,6 @@ class ExchangeFormState extends State<ExchangeForm> {
   }
 
   // ── Two-way mirror ─────────────────────────────────────────
-  //
-  // Rate is AUTHORITATIVE and only changes when:
-  //   • the user edits the rate field
-  //   • the API returns a new rate
-  //   • currencies change (rate is cleared then fetched)
-  //
-  // Debit and credit amounts are DERIVED:
-  //   • typing debit   → credit = debit × rate
-  //   • typing credit  → debit  = credit ÷ rate
-  //   • typing rate    → credit = debit × rate
-  // ─────────────────────────────────────────────────────────────
   void _recalcCreditFromRate() {
     if (_mirroring) return;
     final amount = double.tryParse(_amountCtrl.text.replaceAll(',', ''));
@@ -545,8 +542,6 @@ class ExchangeFormState extends State<ExchangeForm> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Banner sits OUTSIDE the scroll view so it stays visible
-            // regardless of where the user has scrolled.
             if (_formError != null && _formError!.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
@@ -608,6 +603,10 @@ class ExchangeFormState extends State<ExchangeForm> {
     focusNode: _debitFocus,
     title: AppLocalizations.of(context)!.debitAccount,
     selected: _debitAcc,
+    isLoading: _debitLoading,
+    onLoadingChanged: (v) {
+      if (mounted) setState(() => _debitLoading = v);
+    },
     onSelected: (a) {
       _clearFormError();
       setState(() {
@@ -632,6 +631,10 @@ class ExchangeFormState extends State<ExchangeForm> {
     focusNode: _creditFocus,
     title: AppLocalizations.of(context)!.creditAccount,
     selected: _creditAcc,
+    isLoading: _creditLoading,
+    onLoadingChanged: (v) {
+      if (mounted) setState(() => _creditLoading = v);
+    },
     onSelected: (a) {
       _clearFormError();
       setState(() {
@@ -657,103 +660,123 @@ class ExchangeFormState extends State<ExchangeForm> {
     required String title,
     required StakeholderAccount? selected,
     required ValueChanged<StakeholderAccount> onSelected,
+    required bool isLoading,
+    required ValueChanged<bool> onLoadingChanged,
     int? excludeAccount,
     String? excludeCurrency,
     required bool isDebit,
     Set<int>? allowedCategories = const {1, 8},
   }) {
-    // Show the currency selector whenever we know the account is GL,
-    // either because it was picked (selected != null) or because we
-    // loaded an existing leg from the edit payload (selected == null
-    // but the leg exists). This makes the selector appear in edit
-    // mode before the user re-picks the account.
     final leg = isDebit ? _debitLeg : _creditLeg;
     final canShowCcySelector = _isEditable &&
         (selected?.accCategory == 1 ||
             (selected == null && leg != null));
 
-    return GenericTextField<StakeholderAccount, StkAccountsBloc,
-        StkAccountsState>(
-      key: key,
-      controller: controller,
-      title: title,
-      hintText: AppLocalizations.of(context)!.accNameOrNumber,
-      isRequired: true,
-      bloc: context.read<StkAccountsBloc>(),
-      focusNode: focusNode,
-      textInputAction: TextInputAction.none,
-      showAllOnFocus: false,
-      fetchAllFunction: null,
-      readOnly: !_isEditable,
-      searchFunction: (bloc, q) {
-        if (q.trim().isEmpty) return;
-        bloc.add(LoadStkAccountsEvent(query: q));
+    // The bloc is global, so every `GenericTextField` shares its
+    // loading state. To keep the spinner on the field that caused
+    // it, we wrap the widget in a `BlocListener` that flips the
+    // per-field flag OFF once the bloc finishes loading.
+    return BlocListener<StkAccountsBloc, StkAccountsState>(
+      listenWhen: (prev, next) =>
+      prev is StkAccountsLoadingState && next is! StkAccountsLoadingState,
+      listener: (_, _) {
+        if (isLoading) onLoadingChanged(false);
       },
-      itemBuilder: (context, account) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '${account.accNumber} | ${account.accName}',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            if (account.accCurrency != null)
+      child: GenericTextField<StakeholderAccount, StkAccountsBloc,
+          StkAccountsState>(
+        key: key,
+        controller: controller,
+        title: title,
+        hintText: AppLocalizations.of(context)!.accNameOrNumber,
+        isRequired: true,
+        bloc: context.read<StkAccountsBloc>(),
+        focusNode: focusNode,
+        textInputAction: TextInputAction.none,
+        showAllOnFocus: false,
+        fetchAllFunction: null,
+        readOnly: !_isEditable,
+
+        // ── Scoped loading: only THIS field's own flag ─────
+        stateToLoading: (_) => isLoading,
+        loadingBuilder: (context) => isLoading
+            ? const SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        )
+            : const SizedBox.shrink(),
+
+        searchFunction: (bloc, q) {
+          if (q.trim().isEmpty) return;
+          onLoadingChanged(true);
+          bloc.add(LoadStkAccountsEvent(query: q));
+        },
+
+        itemBuilder: (context, account) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
               Text(
-                '${account.accBalance} | ${account.accCurrency!}',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.outline,
-                ),
+                '${account.accNumber} | ${account.accName}',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyLarge
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
-          ],
+              if (account.accCurrency != null)
+                Text(
+                  '${account.accBalance} | ${account.accCurrency!}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+            ],
+          ),
         ),
+        itemToString: (a) =>
+        '${a.accNumber} | ${a.accName} | ${a.accCurrency ?? widget.baseCurrency}',
+        stateToItems: (s) {
+          if (s is! StkAccountsLoadedState) {
+            return const <StakeholderAccount>[];
+          }
+          return s.accounts.where((a) {
+            if (allowedCategories != null &&
+                !allowedCategories.contains(a.accCategory)) {
+              return false;
+            }
+
+            final rowCurrency =
+            _normalizeCurrency(a.accCurrency ?? widget.baseCurrency);
+            final selectedCurrency = _normalizeCurrency(excludeCurrency);
+
+            if (excludeAccount != null &&
+                a.accNumber == excludeAccount &&
+                rowCurrency == selectedCurrency) {
+              return false;
+            }
+            return true;
+          }).toList();
+        },
+        onSelected: onSelected,
+        showCurrencySelector: canShowCcySelector,
+        isCurrencySelectorEnabled: canShowCcySelector,
+        selectedCurrencyCodeOverride:
+        isDebit ? _debitCcyEffective : _creditCcyEffective,
+        onCurrencySelectorChanged: (CurrenciesModel? currency) {
+          final code = currency?.ccyCode;
+          if (code == null || code.isEmpty) return;
+          _clearFormError();
+          _changeSelectedCurrency(isDebit: isDebit, currencyCode: code);
+        },
+        validator: (_) {
+          if (!_isEditable) return null;
+          if (widget.initialDetail != null) return null;
+          return selected == null ? 'Required' : null;
+        },
       ),
-      itemToString: (a) =>
-      '${a.accNumber} | ${a.accName} | ${a.accCurrency ?? widget.baseCurrency}',
-      stateToItems: (s) {
-        if (s is! StkAccountsLoadedState) {
-          return const <StakeholderAccount>[];
-        }
-        return s.accounts.where((a) {
-          if (allowedCategories != null &&
-              !allowedCategories.contains(a.accCategory)) {
-            return false;
-          }
-
-          final rowCurrency =
-          _normalizeCurrency(a.accCurrency ?? widget.baseCurrency);
-          final selectedCurrency = _normalizeCurrency(excludeCurrency);
-
-          if (excludeAccount != null &&
-              a.accNumber == excludeAccount &&
-              rowCurrency == selectedCurrency) {
-            return false;
-          }
-          return true;
-        }).toList();
-      },
-      stateToLoading: (s) => s is StkAccountsLoadingState,
-      onSelected: onSelected,
-      showCurrencySelector: canShowCcySelector,
-      isCurrencySelectorEnabled: canShowCcySelector,
-      selectedCurrencyCodeOverride:
-      isDebit ? _debitCcyEffective : _creditCcyEffective,
-      onCurrencySelectorChanged: (CurrenciesModel? currency) {
-        final code = currency?.ccyCode;
-        if (code == null || code.isEmpty) return;
-        _clearFormError();
-        _changeSelectedCurrency(isDebit: isDebit, currencyCode: code);
-      },
-      validator: (_) {
-        if (!_isEditable) return null;
-        if (widget.initialDetail != null) return null;
-        return selected == null ? 'Required' : null;
-      },
     );
   }
 
@@ -786,7 +809,6 @@ class ExchangeFormState extends State<ExchangeForm> {
                 onChanged: (_) {
                   _clearFormError();
                   _amountSource = _AmountSource.amount;
-                  // debit → credit = debit × rate
                   final amount = double.tryParse(
                     _amountCtrl.text.replaceAll(',', ''),
                   );
@@ -826,8 +848,6 @@ class ExchangeFormState extends State<ExchangeForm> {
                 onChanged: (_) {
                   _clearFormError();
                   _amountSource = _AmountSource.creditAmount;
-                  // credit → debit = credit ÷ rate. Rate is never
-                  // changed from this field.
                   final credit = double.tryParse(
                     _creditAmountCtrl.text.replaceAll(',', ''),
                   );
@@ -915,8 +935,6 @@ class ExchangeFormState extends State<ExchangeForm> {
           onChanged: (_) {
             _clearFormError();
             _amountSource = _AmountSource.rate;
-            // The rate field is the ONLY place the user can change
-            // the rate. Typing here updates credit = debit × rate.
             final parsed =
             double.tryParse(_rateCtrl.text.replaceAll(',', ''));
             if (parsed != null && parsed > 0) {
@@ -1042,337 +1060,332 @@ Future<bool?> showExchangeDialog(
 }
 
 class _ExchangeDialog extends StatelessWidget {
-final String usrName;
-final String baseCurrency;
-final String? reference;
+  final String usrName;
+  final String baseCurrency;
+  final String? reference;
 
-const _ExchangeDialog({
-required this.usrName,
-required this.baseCurrency,
-this.reference,
-});
+  const _ExchangeDialog({
+    required this.usrName,
+    required this.baseCurrency,
+    this.reference,
+  });
 
-bool get _isEditing => reference != null && reference!.isNotEmpty;
+  bool get _isEditing => reference != null && reference!.isNotEmpty;
 
-String? _loginName(BuildContext context) {
-final auth = context.read<AuthBloc>().state;
-return auth is AuthenticatedState ? auth.loginData.usrName : null;
-}
+  String? _loginName(BuildContext context) {
+    final auth = context.read<AuthBloc>().state;
+    return auth is AuthenticatedState ? auth.loginData.usrName : null;
+  }
 
-void _dispatchAuthorize(BuildContext context) {
-final ref = reference;
-if (ref == null || ref.isEmpty) return;
-context.read<TransactionsBloc>().add(
-AuthorizeTransactionEvent(
-reference: ref,
-userName: _loginName(context),
-),
-);
-}
-
-void _dispatchUnauthorize(BuildContext context) {
-  final ref = reference;
-  if (ref == null || ref.isEmpty) return;
-  context.read<TransactionsBloc>().add(
-    UnauthorizeTransactionEvent(
-      reference: ref,
-      userName: _loginName(context),
-    ),
-  );
-}
-
-void _dispatchReverse(BuildContext context) {
-  final ref = reference;
-  if (ref == null || ref.isEmpty) return;
-  context.read<TransactionsBloc>().add(
-    ReverseTransactionEvent(
-      reference: ref,
-      userName: _loginName(context),
-    ),
-  );
-}
-
-Future<void> _dispatchDelete(BuildContext context) async {
-  final ref = reference;
-  if (ref == null || ref.isEmpty) return;
-
-  final tr = AppLocalizations.of(context)!;
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (dialogCtx) => AlertDialog(
-      title: Text(tr.delete),
-      content: Text(
-        'Delete exchange $ref?\n\n'
-            'The record will be marked as Deleted and its balance will be reversed.',
+  void _dispatchAuthorize(BuildContext context) {
+    final ref = reference;
+    if (ref == null || ref.isEmpty) return;
+    context.read<TransactionsBloc>().add(
+      AuthorizeTransactionEvent(
+        reference: ref,
+        userName: _loginName(context),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogCtx).pop(false),
-          child: Text(tr.cancel),
+    );
+  }
+
+  void _dispatchUnauthorize(BuildContext context) {
+    final ref = reference;
+    if (ref == null || ref.isEmpty) return;
+    context.read<TransactionsBloc>().add(
+      UnauthorizeTransactionEvent(
+        reference: ref,
+        userName: _loginName(context),
+      ),
+    );
+  }
+
+  void _dispatchReverse(BuildContext context) {
+    final ref = reference;
+    if (ref == null || ref.isEmpty) return;
+    context.read<TransactionsBloc>().add(
+      ReverseTransactionEvent(
+        reference: ref,
+        userName: _loginName(context),
+      ),
+    );
+  }
+
+  Future<void> _dispatchDelete(BuildContext context) async {
+    final ref = reference;
+    if (ref == null || ref.isEmpty) return;
+
+    final tr = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: Text(tr.delete),
+        content: Text(
+          'Delete exchange $ref?\n\n'
+              'The record will be marked as Deleted and its balance will be reversed.',
         ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.error,
-            foregroundColor: Theme.of(context).colorScheme.onError,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: Text(tr.cancel),
           ),
-          onPressed: () => Navigator.of(dialogCtx).pop(true),
-          child: Text(tr.delete),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            child: Text(tr.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    context.read<TransactionsBloc>().add(
+      DeleteTransactionEvent(
+        reference: ref,
+        userName: _loginName(context),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final formKey = GlobalKey<ExchangeFormState>();
+
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<ExchangeBloc, ExchangeState>(
+          listener: (context, state) {
+            if (state is ExchangeSubmitSuccess) {
+              ToastManager.show(
+                context: context,
+                title: 'Saved',
+                message: state.message,
+                type: ToastType.success,
+              );
+              context
+                  .read<ExchangeBloc>()
+                  .add(const ClearExchangeSuccessEvent());
+              Navigator.of(context).pop(true);
+            }
+          },
+        ),
+        BlocListener<TransactionsBloc, TransactionsState>(
+          listenWhen: (prev, next) =>
+          next is TransactionsLoadedState &&
+              (next.actionSuccess != null || next.actionError != null),
+          listener: (context, state) {
+            if (state is! TransactionsLoadedState) return;
+
+            final success = state.actionSuccess;
+            if (success != null) {
+              ToastManager.show(
+                context: context,
+                title: 'Success',
+                message: success,
+                type: ToastType.success,
+              );
+              context
+                  .read<TransactionsBloc>()
+                  .add(const ClearRowActionSuccessEvent());
+
+              final ref = reference;
+              if (ref != null && ref.isNotEmpty) {
+                if (success.toLowerCase().contains('deleted')) {
+                  Navigator.of(context).pop(true);
+                  return;
+                }
+                context
+                    .read<ExchangeBloc>()
+                    .add(LoadExchangeDetailEvent(ref));
+              }
+            }
+
+            final error = state.actionError;
+            if (error != null) {
+              ToastManager.show(
+                context: context,
+                title: 'Failed',
+                message: error,
+                type: ToastType.error,
+              );
+              context
+                  .read<TransactionsBloc>()
+                  .add(const ClearRowActionErrorEvent());
+            }
+          },
+        ),
+      ],
+      child: BlocBuilder<ExchangeBloc, ExchangeState>(
+        builder: (context, state) {
+          final busy = state is ExchangeSubmitting;
+          final loaded =
+          state is ExchangeDetailLoaded ? state.detail : null;
+          final stateText = loaded?.stateText;
+          final isPending = stateText == null || stateText == 'Pending';
+          final isAuthorized = stateText == 'Authorized';
+          final loginName = _loginName(context);
+          final isMaker = loaded == null || (loaded.maker.isNotEmpty && loginName != null && loaded.maker == loginName);
+          final isEditing = _isEditing;
+
+          if (isEditing && loaded == null && state is! ExchangeError) {
+            return ZFormDialog(
+              width: 720,
+              icon: Icons.swap_horiz_rounded,
+              title: 'Exchange · $reference',
+              isActionTrue: false,
+              onAction: null,
+              child: const SizedBox(
+                height: 220,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            );
+          }
+
+          return ZFormDialog(
+            width: 720,
+            icon: Icons.swap_horiz_rounded,
+            title: isEditing ? '${AppLocalizations.of(context)!.exchange} · $reference' : AppLocalizations.of(context)!.newExchange,
+            isActionTrue: false,
+            onAction: null,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 600),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (state is ExchangeError && state.message.isNotEmpty)
+                    _banner(
+                      state.message,
+                      Theme.of(context).colorScheme.error,
+                    ),
+                  Flexible(
+                    child: ExchangeForm(
+                      key: ValueKey(reference ?? 'new'),
+                      formKey: formKey,
+                      usrName: usrName,
+                      baseCurrency: baseCurrency,
+                      initialDetail: loaded,
+                      stateText: stateText,
+                      onSubmit: (result) {
+                        if (isEditing) {
+                          context.read<ExchangeBloc>().add(
+                            EditExchangeEvent(
+                              reference: result.reference!,
+                              usrName: result.usrName,
+                              debit: result.debit,
+                              credit: result.credit,
+                            ),
+                          );
+                        } else {
+                          context.read<ExchangeBloc>().add(
+                            AddExchangeEvent(
+                              usrName: result.usrName,
+                              debit: result.debit,
+                              credit: result.credit,
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ZOutlineButton(
+                          onPressed: () =>
+                              Navigator.of(context).pop(false),
+                          label: Text(
+                            AppLocalizations.of(context)!.cancel,
+                          ),
+                        ),
+                        if (isEditing && isPending && isMaker && !busy) ...[
+                          ZOutlineButton(
+                            onPressed: () => _dispatchDelete(context),
+                            backgroundHover: Theme.of(context).colorScheme.error,
+                            icon: Icons.delete_outline_rounded,
+                            label: Text(AppLocalizations.of(context)!.delete),
+                          ),
+                          ZOutlineButton(
+                            isActive: true,
+                            onPressed: () => formKey.currentState?.submit(),
+                            icon: Icons.save_alt_rounded,
+                            label: Text(AppLocalizations.of(context)!.save),
+                          ),
+                        ],
+                        if (isEditing &&
+                            isPending &&
+                            !isMaker &&
+                            loginName != null &&
+                            !busy) ...[
+                          ZOutlineButton(
+                            isActive: true,
+                            onPressed: () => _dispatchAuthorize(context),
+                            icon: Icons.check_circle_outline_rounded,
+                            label: Text(AppLocalizations.of(context)!.authorize),
+                          ),
+                        ],
+                        if (isEditing && isAuthorized && !busy) ...[
+                          ZOutlineButton(
+                            onPressed: () => _dispatchUnauthorize(context),
+                            icon: Icons.undo_rounded,
+                            label: Text(AppLocalizations.of(context)!.unauthorize),
+                          ),
+                          ZOutlineButton(
+                            onPressed: () => _dispatchReverse(context),
+                            icon: Icons.replay_rounded,
+                            label: Text(AppLocalizations.of(context)!.reverse),
+                          ),
+                        ],
+                        if (!isEditing)
+                          ZOutlineButton(
+                            isActive: true,
+                            onPressed: busy
+                                ? null
+                                : () => formKey.currentState?.submit(),
+                            icon: Icons.save_alt_rounded,
+                            label: Text(
+                              AppLocalizations.of(context)!.save,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _banner(String text, Color color) => Container(
+    width: double.infinity,
+    margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: .08),
+      borderRadius: BorderRadius.circular(4),
+      border: Border.all(color: color.withValues(alpha: .3)),
+    ),
+    child: Row(
+      children: [
+        Icon(Icons.warning_amber_rounded, color: color, size: 16),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(color: color, fontSize: 12),
+          ),
         ),
       ],
     ),
   );
-  if (confirmed != true || !context.mounted) return;
-
-  context.read<TransactionsBloc>().add(
-    DeleteTransactionEvent(
-      reference: ref,
-      userName: _loginName(context),
-    ),
-  );
-}
-
-@override
-Widget build(BuildContext context) {
-  final formKey = GlobalKey<ExchangeFormState>();
-
-  return MultiBlocListener(
-    listeners: [
-      BlocListener<ExchangeBloc, ExchangeState>(
-        listener: (context, state) {
-          if (state is ExchangeSubmitSuccess) {
-            ToastManager.show(
-              context: context,
-              title: 'Saved',
-              message: state.message,
-              type: ToastType.success,
-            );
-            context
-                .read<ExchangeBloc>()
-                .add(const ClearExchangeSuccessEvent());
-            Navigator.of(context).pop(true);
-          }
-        },
-      ),
-      BlocListener<TransactionsBloc, TransactionsState>(
-        listenWhen: (prev, next) =>
-        next is TransactionsLoadedState &&
-            (next.actionSuccess != null || next.actionError != null),
-        listener: (context, state) {
-          if (state is! TransactionsLoadedState) return;
-
-          final success = state.actionSuccess;
-          if (success != null) {
-            ToastManager.show(
-              context: context,
-              title: 'Success',
-              message: success,
-              type: ToastType.success,
-            );
-            context
-                .read<TransactionsBloc>()
-                .add(const ClearRowActionSuccessEvent());
-
-            final ref = reference;
-            if (ref != null && ref.isNotEmpty) {
-              if (success.toLowerCase().contains('deleted')) {
-                Navigator.of(context).pop(true);
-                return;
-              }
-              context
-                  .read<ExchangeBloc>()
-                  .add(LoadExchangeDetailEvent(ref));
-            }
-          }
-
-          final error = state.actionError;
-          if (error != null) {
-            ToastManager.show(
-              context: context,
-              title: 'Failed',
-              message: error,
-              type: ToastType.error,
-            );
-            context
-                .read<TransactionsBloc>()
-                .add(const ClearRowActionErrorEvent());
-          }
-        },
-      ),
-    ],
-    child: BlocBuilder<ExchangeBloc, ExchangeState>(
-      builder: (context, state) {
-        final busy = state is ExchangeSubmitting;
-        final loaded =
-        state is ExchangeDetailLoaded ? state.detail : null;
-        final stateText = loaded?.stateText;
-        final isPending = stateText == null || stateText == 'Pending';
-        final isAuthorized = stateText == 'Authorized';
-        final loginName = _loginName(context);
-        final isMaker = loaded == null || (loaded.maker.isNotEmpty && loginName != null && loaded.maker == loginName);
-        final isEditing = _isEditing;
-
-        if (isEditing && loaded == null && state is! ExchangeError) {
-          return ZFormDialog(
-            width: 720,
-            icon: Icons.swap_horiz_rounded,
-            title: 'Exchange · $reference',
-            isActionTrue: false,
-            onAction: null,
-            child: const SizedBox(
-              height: 220,
-              child: Center(child: CircularProgressIndicator()),
-            ),
-          );
-        }
-
-        return ZFormDialog(
-          width: 720,
-          icon: Icons.swap_horiz_rounded,
-          title: isEditing ? '${AppLocalizations.of(context)!.exchange} · $reference' : AppLocalizations.of(context)!.newExchange,
-          isActionTrue: false,
-          onAction: null,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 600),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (state is ExchangeError && state.message.isNotEmpty)
-                  _banner(
-                    state.message,
-                    Theme.of(context).colorScheme.error,
-                  ),
-                Flexible(
-                  child: ExchangeForm(
-                    key: ValueKey(reference ?? 'new'),
-                    formKey: formKey,
-                    usrName: usrName,
-                    baseCurrency: baseCurrency,
-                    initialDetail: loaded,
-                    stateText: stateText,
-                    onSubmit: (result) {
-                      if (isEditing) {
-                        context.read<ExchangeBloc>().add(
-                          EditExchangeEvent(
-                            reference: result.reference!,
-                            usrName: result.usrName,
-                            debit: result.debit,
-                            credit: result.credit,
-                          ),
-                        );
-                      } else {
-                        context.read<ExchangeBloc>().add(
-                          AddExchangeEvent(
-                            usrName: result.usrName,
-                            debit: result.debit,
-                            credit: result.credit,
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      ZOutlineButton(
-                        onPressed: () =>
-                            Navigator.of(context).pop(false),
-                        label: Text(
-                          AppLocalizations.of(context)!.cancel,
-                        ),
-                      ),
-                      // ── Maker, Pending → Delete + Update (Save) ──────────────────
-                      if (isEditing && isPending && isMaker && !busy) ...[
-                        ZOutlineButton(
-                          onPressed: () => _dispatchDelete(context),
-                          backgroundHover: Theme.of(context).colorScheme.error,
-                          icon: Icons.delete_outline_rounded,
-                          label: Text(AppLocalizations.of(context)!.delete),
-                        ),
-                        ZOutlineButton(
-                          isActive: true,
-                          onPressed: () => formKey.currentState?.submit(),
-                          icon: Icons.save_alt_rounded,
-                          label: Text(AppLocalizations.of(context)!.save),
-                        ),
-                      ],
-
-                      // ── Non-maker, Pending → Authorize ───────────────────────────
-                      if (isEditing &&
-                          isPending &&
-                          !isMaker &&
-                          loginName != null &&
-                          !busy) ...[
-                        ZOutlineButton(
-                          isActive: true,
-                          onPressed: () => _dispatchAuthorize(context),
-                          icon: Icons.check_circle_outline_rounded,
-                          label: Text(AppLocalizations.of(context)!.authorize),
-                        ),
-                      ],
-
-                      // ── Authorized → Unauthorize + Reverse ───────────────────────
-                      if (isEditing && isAuthorized && !busy) ...[
-                        ZOutlineButton(
-                          onPressed: () => _dispatchUnauthorize(context),
-                          icon: Icons.undo_rounded,
-                          label: Text(AppLocalizations.of(context)!.unauthorize),
-                        ),
-                        ZOutlineButton(
-                          onPressed: () => _dispatchReverse(context),
-                          icon: Icons.replay_rounded,
-                          label: Text(AppLocalizations.of(context)!.reverse),
-                        ),
-                      ],
-                      if (!isEditing)
-                        ZOutlineButton(
-                          isActive: true,
-                          onPressed: busy
-                              ? null
-                              : () => formKey.currentState?.submit(),
-                          icon: Icons.save_alt_rounded,
-                          label: Text(
-                            AppLocalizations.of(context)!.save,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    ),
-  );
-}
-
-Widget _banner(String text, Color color) => Container(
-  width: double.infinity,
-  margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-  decoration: BoxDecoration(
-    color: color.withValues(alpha: .08),
-    borderRadius: BorderRadius.circular(4),
-    border: Border.all(color: color.withValues(alpha: .3)),
-  ),
-  child: Row(
-    children: [
-      Icon(Icons.warning_amber_rounded, color: color, size: 16),
-      const SizedBox(width: 8),
-      Expanded(
-        child: Text(
-          text,
-          style: TextStyle(color: color, fontSize: 12),
-        ),
-      ),
-    ],
-  ),
-);
 }
 
 // Shared widgets
@@ -1403,8 +1416,6 @@ class _Check extends StatelessWidget {
   );
 }
 
-/// Inline red banner used to surface form validation errors inside the
-/// dialog instead of as a toast. Dismissible via the trailing X.
 class _InlineErrorBanner extends StatelessWidget {
   final String message;
   final VoidCallback? onDismiss;
@@ -1471,7 +1482,6 @@ class _AccountDetailsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme;
     final title = Theme.of(context).textTheme.titleSmall;
     final tr = AppLocalizations.of(context)!;
 
@@ -1492,13 +1502,9 @@ class _AccountDetailsCard extends StatelessWidget {
         : (account.accCurrency ??
         (fallbackCurrency.isEmpty ? '' : fallbackCurrency));
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 2),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: color.primary.withValues(alpha: .02),
-        borderRadius: BorderRadius.circular(5),
-      ),
+    return ZCover(
+      padding: const EdgeInsets.all(12),
+      radius: 8,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

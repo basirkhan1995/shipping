@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shipping/Features/Widgets/cover.dart';
 
 import '../../../../../../Features/Date/shamsi_converter.dart';
 import '../../../../../../Features/Widgets/extensions.dart';
@@ -99,6 +100,13 @@ class FundTransferFormState extends State<FundTransferForm> {
   String? _toCcyOverride;
 
   bool _print = true;
+
+  /// ── PER-FIELD LOADING FLAGS ──────────────────────────────
+  /// Each account picker owns its own spinner. When "from" searches,
+  /// only `_fromLoading` flips — "to" never shows a spinner it didn't
+  /// cause.
+  bool _fromLoading = false;
+  bool _toLoading = false;
 
   static const int _stakeholderCategory = 8;
 
@@ -398,6 +406,10 @@ class FundTransferFormState extends State<FundTransferForm> {
     isStakeholder: _fromIsStakeholder,
     currentCurrency: _fromCcyEffective,
     currencyOverride: _fromCcyEffective,
+    isLoading: _fromLoading,
+    onLoadingChanged: (v) {
+      if (mounted) setState(() => _fromLoading = v);
+    },
     allowedCategories: null,
     onCurrencySelected: (ccy) {
       final code = ccy?.ccyCode ?? widget.baseCurrency;
@@ -443,6 +455,10 @@ class FundTransferFormState extends State<FundTransferForm> {
     isStakeholder: _toIsStakeholder,
     currentCurrency: _toCcyEffective,
     currencyOverride: _toCcyEffective,
+    isLoading: _toLoading,
+    onLoadingChanged: (v) {
+      if (mounted) setState(() => _toLoading = v);
+    },
     allowedCategories: null,
     onCurrencySelected: (ccy) {
       final code = ccy?.ccyCode ?? widget.baseCurrency;
@@ -488,6 +504,8 @@ class FundTransferFormState extends State<FundTransferForm> {
     required bool isStakeholder,
     required String? currentCurrency,
     required String? currencyOverride,
+    required bool isLoading,
+    required ValueChanged<bool> onLoadingChanged,
     required ValueChanged<CurrenciesModel?> onCurrencySelected,
     required ValueChanged<StakeholderAccount> onSelected,
     Set<int>? allowedCategories = const {1, 8},
@@ -497,76 +515,99 @@ class FundTransferFormState extends State<FundTransferForm> {
     final accountNo = _accountNumberOf(controller);
     final showCcySelector = _isEditable && !isStakeholder && accountNo != null;
 
-    return GenericTextField<
-        StakeholderAccount,
-        StkAccountsBloc,
-        StkAccountsState>(
-      key: key,
-      controller: controller,
-      title: title,
-      hintText: AppLocalizations.of(context)!.accNameOrNumber,
-      isRequired: true,
-      bloc: context.read<StkAccountsBloc>(),
-      focusNode: focusNode,
-      textInputAction: TextInputAction.none,
-      showAllOnFocus: false,
-      fetchAllFunction: null,
-      readOnly: !_isEditable,
-      searchFunction: (bloc, q) {
-        if (q.trim().isEmpty) return;
-        bloc.add(
-          LoadStkAccountsEvent(query: q, perId: widget.perId),
-        );
+    // The bloc is global — every `GenericTextField` shares its loading
+    // state. Wrapping the field in a `BlocListener` that clears the
+    // local flag when the bloc leaves loading keeps the spinner scoped
+    // to whichever field actually triggered the request.
+    return BlocListener<StkAccountsBloc, StkAccountsState>(
+      listenWhen: (prev, next) =>
+      prev is StkAccountsLoadingState && next is! StkAccountsLoadingState,
+      listener: (_, _) {
+        if (isLoading) onLoadingChanged(false);
       },
-      itemBuilder: (context, account) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              _rowLabel(account),
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            Text(
-              _accountBadge(account),
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-          ],
+      child: GenericTextField<
+          StakeholderAccount,
+          StkAccountsBloc,
+          StkAccountsState>(
+        key: key,
+        controller: controller,
+        title: title,
+        hintText: AppLocalizations.of(context)!.accNameOrNumber,
+        isRequired: true,
+        bloc: context.read<StkAccountsBloc>(),
+        focusNode: focusNode,
+        textInputAction: TextInputAction.none,
+        showAllOnFocus: false,
+        fetchAllFunction: null,
+        readOnly: !_isEditable,
+
+        // ── Scoped loading: only THIS field's own flag ─────
+        stateToLoading: (_) => isLoading,
+        loadingBuilder: (context) => isLoading
+            ? const SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        )
+            : const SizedBox.shrink(),
+
+        searchFunction: (bloc, q) {
+          if (q.trim().isEmpty) return;
+          onLoadingChanged(true);
+          bloc.add(
+            LoadStkAccountsEvent(query: q, perId: widget.perId),
+          );
+        },
+
+        itemBuilder: (context, account) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _rowLabel(account),
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              Text(
+                _accountBadge(account),
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ],
+          ),
         ),
+        itemToString: _rowKey,
+        stateToItems: (s) {
+          if (s is! StkAccountsLoadedState) {
+            return const <StakeholderAccount>[];
+          }
+          return s.accounts.where((a) {
+            if (allowedCategories != null &&
+                !allowedCategories.contains(a.accCategory)) {
+              return false;
+            }
+            final rowCcy = (a.accCurrency ?? widget.baseCurrency)
+                .trim()
+                .toUpperCase();
+            final exCcy = (excludeCurrency ?? '').trim().toUpperCase();
+            if (excludeAccount != null &&
+                a.accNumber == excludeAccount &&
+                rowCcy == exCcy) {
+              return false;
+            }
+            return true;
+          }).toList();
+        },
+        onSelected: onSelected,
+        showCurrencySelector: showCcySelector,
+        isCurrencySelectorEnabled: _isEditable,
+        selectedCurrencyCodeOverride: currencyOverride,
+        onCurrencySelectorChanged: onCurrencySelected,
+        validator: (_) {
+          if (!_isEditable) return null;
+          if (widget.initialDetail != null) return null;
+          return selected == null ? 'Required' : null;
+        },
       ),
-      itemToString: _rowKey,
-      stateToItems: (s) {
-        if (s is! StkAccountsLoadedState) {
-          return const <StakeholderAccount>[];
-        }
-        return s.accounts.where((a) {
-          if (allowedCategories != null &&
-              !allowedCategories.contains(a.accCategory)) {
-            return false;
-          }
-          final rowCcy = (a.accCurrency ?? widget.baseCurrency)
-              .trim()
-              .toUpperCase();
-          final exCcy = (excludeCurrency ?? '').trim().toUpperCase();
-          if (excludeAccount != null &&
-              a.accNumber == excludeAccount &&
-              rowCcy == exCcy) {
-            return false;
-          }
-          return true;
-        }).toList();
-      },
-      stateToLoading: (s) => s is StkAccountsLoadingState,
-      onSelected: onSelected,
-      showCurrencySelector: showCcySelector,
-      isCurrencySelectorEnabled: _isEditable,
-      selectedCurrencyCodeOverride: currencyOverride,
-      onCurrencySelectorChanged: onCurrencySelected,
-      validator: (_) {
-        if (!_isEditable) return null;
-        if (widget.initialDetail != null) return null;
-        return selected == null ? 'Required' : null;
-      },
     );
   }
 
@@ -1398,13 +1439,9 @@ class _AccountDetailsCard extends StatelessWidget {
         effectiveCurrencyOverride ??
         (fallbackCurrency.isEmpty ? '' : fallbackCurrency);
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 2),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: color.primary.withValues(alpha: .02),
-        borderRadius: BorderRadius.circular(5),
-      ),
+    return ZCover(
+      padding: const EdgeInsets.all(12),
+      radius: 8,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1437,7 +1474,6 @@ class _LegDetailsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme;
     final title = Theme.of(context).textTheme.titleSmall;
     final tr = AppLocalizations.of(context)!;
 
@@ -1454,13 +1490,9 @@ class _LegDetailsCard extends StatelessWidget {
     final ccy =
     leg.currency.isNotEmpty ? leg.currency : (effectiveCurrency ?? '');
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 2),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: color.primary.withValues(alpha: .02),
-        borderRadius: BorderRadius.circular(5),
-      ),
+    return ZCover(
+      padding: const EdgeInsets.all(12),
+      radius: 8,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

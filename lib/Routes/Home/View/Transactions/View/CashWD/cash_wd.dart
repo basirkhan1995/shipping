@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Date/shamsi_converter.dart';
 import 'package:shipping/Features/PrintSettings/print_preview.dart';
 import 'package:shipping/Features/PrintSettings/report_model.dart';
+import 'package:shipping/Features/Widgets/cover.dart';
 import 'package:shipping/Features/Widgets/extensions.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/model/stk_model.dart';
@@ -63,6 +64,9 @@ class CashTxnForm extends StatefulWidget {
   final String baseCurrency;
   final ValueChanged<TransactionDraft> onSubmit;
 
+  /// True if the current logged-in user is the one who created this txn.
+  final bool isMaker;
+
   /// Optional external trigger so the dialog (mouse click) and the
   /// narration field (Enter key) go through the *same* submit path.
   final VoidCallback? onSubmitRequested;
@@ -75,6 +79,7 @@ class CashTxnForm extends StatefulWidget {
 
   const CashTxnForm({
     super.key,
+    this.isMaker = true,
     required this.spec,
     required this.usrName,
     required this.baseCurrency,
@@ -107,13 +112,10 @@ class CashTxnFormState extends State<CashTxnForm> {
   bool _reminder = false;
   DateTime? _reminderDate;
 
-  /// Edit-mode fallback: the account number from the loaded draft, kept
-  /// so we can (a) render the details card before the full row loads and
-  /// (b) fetch the full row by number.
+  /// Edit-mode fallback: the account number from the loaded draft.
   int? _draftAccountNo;
 
-  /// Pending sync request — set when we dispatch a load for a draft
-  /// account so the loaded row updates `_acc` once the bloc responds.
+  /// Pending sync request
   int? _pendingAccountNo;
 
   static const int _stakeholderCategory = 8;
@@ -121,8 +123,11 @@ class CashTxnFormState extends State<CashTxnForm> {
   /// Exposed so the dialog can read the current "Print" toggle.
   bool get printEnabled => _print;
 
-  bool get _isEditable =>
-      widget.stateText == null || widget.stateText == 'Pending';
+  /// Form is editable ONLY IF it is Pending (or new) AND the current user is the Maker.
+  bool get _isEditable {
+    final isPending = widget.stateText == null || widget.stateText == 'Pending';
+    return isPending && widget.isMaker;
+  }
 
   int? get _effectiveAccountNo => _acc?.accNumber ?? _draftAccountNo;
 
@@ -132,7 +137,6 @@ class CashTxnFormState extends State<CashTxnForm> {
     _ccy = widget.baseCurrency;
     _applyDraft(widget.initialDraft);
 
-    // keep the parent in sync from the start
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) widget.onPrintChanged?.call(_print);
     });
@@ -293,6 +297,7 @@ class CashTxnFormState extends State<CashTxnForm> {
         showAllOnFocus: false,
         fetchAllFunction: null,
         readOnly: !_isEditable,
+        isEnabled: _isEditable,
         searchFunction: (bloc, q) {
           if (q.trim().isEmpty) return;
           bloc.add(LoadStkAccountsEvent(query: q, perId: widget.spec.perId));
@@ -381,6 +386,7 @@ class CashTxnFormState extends State<CashTxnForm> {
     title: AppLocalizations.of(context)!.amount,
     isRequired: true,
     isEnabled: _isEditable,
+    readOnly: !_isEditable,
     focusNode: _amountFocus,
     textInputAction: TextInputAction.none,
     onFieldSubmitted: (_) => _narrationFocus.requestFocus(),
@@ -398,6 +404,7 @@ class CashTxnFormState extends State<CashTxnForm> {
     controller: _narrationCtrl,
     title: AppLocalizations.of(context)!.narration,
     isEnabled: _isEditable,
+    readOnly: !_isEditable,
     focusNode: _narrationFocus,
     textInputAction: TextInputAction.none,
     onFieldSubmitted: (_) => (widget.onSubmitRequested ?? submit)(),
@@ -581,8 +588,6 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
   // COMPANY
   // ═════════════════════════════════════════════════════════════
 
-  /// Builds a [ReportModel] from [CompanyProfileBloc] state,
-  /// mirroring how the reference view populates it.
   ReportModel _reportFromState(CompanyProfileState state) {
     final report = ReportModel();
     if (state is CompanyProfileLoadedState) {
@@ -617,7 +622,6 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
       context.read<CompanyProfileBloc>().state,
     );
 
-    // Directly await the dialog. No post-frame callback.
     await showDialog(
       context: context,
       barrierDismissible: false,
@@ -826,17 +830,21 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
     return MultiBlocListener(
       listeners: [
         BlocListener<CashTxnBloc, CashTxnState>(
-          listener: (context, state) async{
+          listener: (context, state) async {
             if (state is CashTxnSuccess) {
               _setFormBusy(false);
 
+              // ── AUTO PRINT ───────────────────────────────
               if (_shouldPrint) {
                 final detail = state.detail;
                 if (detail != null) {
                   await _printVoucher(context, detail);
                 }
               }
+
+              // Guard against async gap
               if (!context.mounted) return;
+
               Navigator.of(context).pop(true);
               return;
             }
@@ -847,7 +855,8 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
         ),
         BlocListener<TransactionsBloc, TransactionsState>(
           listenWhen: (prev, next) =>
-          next is TransactionsLoadedState && (next.actionSuccess != null || next.actionError != null),
+          next is TransactionsLoadedState &&
+              (next.actionSuccess != null || next.actionError != null),
           listener: (context, state) {
             if (state is! TransactionsLoadedState) return;
 
@@ -857,12 +866,6 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
               if (mounted && _localError != null) {
                 setState(() => _localError = null);
               }
-              // ToastManager.show(
-              //   context: context,
-              //   title: 'Success',
-              //   message: success,
-              //   type: ToastType.success,
-              // );
               context.read<TransactionsBloc>().add(
                 const ClearRowActionSuccessEvent(),
               );
@@ -976,6 +979,7 @@ class _CashTxnDialogState extends State<_CashTxnDialog> {
                       baseCurrency: baseCurrency,
                       initialDraft: initial,
                       stateText: stateText,
+                      isMaker: isMaker, // <-- PASSED HERE
                       onSubmitRequested: _onFormSubmit,
                       onPrintChanged: (v) => _shouldPrint = v,
                       onSubmit: (draft) {
@@ -1185,13 +1189,9 @@ class _TransactionAuditStrip extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(4),
-      ),
       child: Wrap(
         crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 10,
+        spacing: 2,
         runSpacing: 6,
         children: [
           _AuditChip(
@@ -1200,11 +1200,13 @@ class _TransactionAuditStrip extends StatelessWidget {
             iconSize: 8,
             bg: palette.bg,
             fg: palette.fg,
+            boldValue: true,
             label: statusLabel.toUpperCase(),
           ),
           if ((draft.maker ?? '').isNotEmpty)
             _AuditChip(
-              icon: Icons.person_outline,
+              icon: Icons.person,
+              iconSize: 15,
               iconColor: scheme.onSurfaceVariant,
               bg: Colors.transparent,
               fg: scheme.onSurfaceVariant,
@@ -1214,6 +1216,7 @@ class _TransactionAuditStrip extends StatelessWidget {
           if ((draft.checker ?? '').isNotEmpty)
             _AuditChip(
               icon: Icons.verified_user_outlined,
+              iconSize: 15,
               iconColor: scheme.onSurfaceVariant,
               bg: Colors.transparent,
               fg: scheme.onSurfaceVariant,
@@ -1222,7 +1225,8 @@ class _TransactionAuditStrip extends StatelessWidget {
             ),
           if (draft.trnEntryDate != null)
             _AuditChip(
-              icon: Icons.schedule_outlined,
+              icon: Icons.schedule_rounded,
+              iconSize: 15,
               iconColor: scheme.onSurfaceVariant,
               bg: Colors.transparent,
               fg: scheme.onSurfaceVariant,
@@ -1285,6 +1289,7 @@ class _AuditChip extends StatelessWidget {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(icon, size: iconSize, color: iconColor),
           const SizedBox(width: 5),
@@ -1434,16 +1439,13 @@ class _AccountDetailsCard extends StatelessWidget {
         effectiveCurrencyOverride ??
         (fallbackCurrency.isEmpty ? '' : fallbackCurrency);
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 2),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: color.primary.withValues(alpha: .02),
-        borderRadius: BorderRadius.circular(5),
-      ),
+    return ZCover(
+      padding: const EdgeInsets.all(12),
+      radius: 8,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          SizedBox(height: 2),
           Text(
             label.toUpperCase(),
             style: title?.copyWith(
@@ -1451,7 +1453,9 @@ class _AccountDetailsCard extends StatelessWidget {
               letterSpacing: .05,
             ),
           ),
+          SizedBox(height: 2),
           const Divider(),
+          SizedBox(height: 2),
           row(tr.accountNumber.toUpperCase(),
               account.accNumber?.toString() ?? ''),
           row(tr.accountName.toUpperCase(), account.accName ?? ''),
