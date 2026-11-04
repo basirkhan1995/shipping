@@ -2707,7 +2707,7 @@ abstract class AppLocalizations {
   /// No description provided for @openInExplorer.
   ///
   /// In en, this message translates to:
-  /// **'Open In Folder'**
+  /// **'Open in folder'**
   String get openInExplorer;
 
   /// No description provided for @restoreComplete.
@@ -3273,6 +3273,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rows use different currencies. Pick one currency for all rows.'**
   String get rowsSameCcy;
+
+  /// No description provided for @fileInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'File Info'**
+  String get fileInfo;
 }
 
 class _AppLocalizationsDelegate

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shipping/Routes/Home/View/Settings/View/General/UserProfile/user_profile.dart';
 import '../../../../../../Features/Other/responsive_widget.dart';
 import '../../../../../../Features/Widgets/generic_menu.dart';
 import '../../../../../../l10n/app_localizations.dart';
@@ -56,6 +57,13 @@ class _BaseGeneralView extends StatelessWidget {
           screen: const PermissionSettingsView(),
           icon: Icons.verified_user,
         ),
+
+      MenuDefinition(
+        value: GeneralTabName.profileSettings,
+        label: AppLocalizations.of(context)!.userProfile,
+        screen: const UserProfileView(),
+        icon: Icons.supervised_user_circle_rounded,
+      ),
     ];
 
     // Handle empty tabs case

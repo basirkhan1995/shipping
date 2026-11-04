@@ -1623,4 +1623,7 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get rowsSameCcy =>
       'ردیف‌ها از ارزهای متفاوت استفاده می‌کنند. لطفاً برای همه ردیف‌ها یک ارز یکسان انتخاب کنید.';
+
+  @override
+  String get fileInfo => 'معلومات فایل';
 }

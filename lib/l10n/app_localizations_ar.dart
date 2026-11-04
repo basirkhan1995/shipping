@@ -1622,4 +1622,7 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get rowsSameCcy =>
       'قطارونه بېلابېل اسعار کاروي. مهرباني وکړئ د ټولو قطارونو لپاره یو شان اسعار وټاکئ.';
+
+  @override
+  String get fileInfo => 'فایل معلومات';
 }

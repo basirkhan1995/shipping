@@ -106,7 +106,7 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (_) => StkAccountsBloc(Repositories(ApiServices()))),
           BlocProvider(create: (_) => EmployeeBloc(Repositories(ApiServices()))..add(LoadEmployeeEvent())),
           BlocProvider(create: (_) => AttendanceBloc(Repositories(ApiServices()))..add(LoadAttendanceEvent())),
-
+          // BlocProvider(create: (_) => UserProfileBloc(Repositories(ApiServices()))),
           ///Currencies
           BlocProvider(create: (_) => CurrenciesBloc(Repositories(ApiServices()))..add(LoadCurrenciesEvent())),
           BlocProvider(create: (_) => TransactionsBloc(Repositories(ApiServices()))..add(LoadTransactionsEvent())),

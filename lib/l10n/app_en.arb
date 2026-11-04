@@ -447,7 +447,7 @@
   "recentBackup": "Recent Backup",
   "restoreBackup": "Restore backup",
   "renameTitle": "Rename",
-  "openInExplorer": "Open In Folder",
+  "openInExplorer": "Open in folder",
   "restoreComplete": "Restore Completed",
   "restoreSuccessMsg": "Database has been successfully restored.",
   "downloadBackup": "Download Backup",
@@ -541,5 +541,6 @@
   "newExchange": "New Exchange",
   "atLeastTwoRow": "Add at least two rows — one debit and one credit — with the same total.",
   "totalDebitEqualCredit": "Total debit must equal total credit.",
-  "rowsSameCcy": "Rows use different currencies. Pick one currency for all rows."
+  "rowsSameCcy": "Rows use different currencies. Pick one currency for all rows.",
+  "fileInfo": "File Info"
 }

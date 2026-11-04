@@ -35,6 +35,7 @@ import '../Routes/Home/View/Settings/View/Company/Branches/model/branch_model.da
 import '../Routes/Home/View/Settings/View/Company/CompanyProfile/model/com_model.dart';
 import '../Routes/Home/View/Settings/View/Company/Storage/model/storage_model.dart';
 import '../Routes/Home/View/Settings/View/General/DefaultPermissions/model/permission_settings_model.dart';
+import '../Routes/Home/View/Settings/View/General/UserProfile/model/user_profile_model.dart';
 import '../Routes/Home/View/Settings/View/General/UserRole/model/role_model.dart';
 import '../Routes/Home/View/Stakeholder/model/stk_model.dart';
 import '../Routes/Home/View/Transactions/View/CashWD/model/wd_model.dart';
@@ -2743,6 +2744,110 @@ class Repositories {
     if (msg == 'notfound') throw ApiException('Attendance record not found.');
     if (msg == 'empty')    throw ApiException('Missing attendance id.');
     _fail(body, fallback: 'Failed to delete attendance');
+  }
+
+
+
+  // ═════════════════════════════════════════════════════════════════
+  // Logged-in user profile
+  //   GET    /users/profile.php?usrName=…
+  //   POST   /users/profile.php?action=update
+  //   POST   /users/profile.php?action=password
+  //   POST   /users/profile.php?action=photo
+  // ═════════════════════════════════════════════════════════════════
+
+  /// Load the whole profile of the logged-in user.
+  Future<UserProfile> getUserProfile({
+    required String usrName,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.get(
+      endpoint: '/setting/profile.php',
+      queryParams: {'usrName': usrName},
+      cancelToken: cancelToken,
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) {
+      throw ApiException('Invalid server response');
+    }
+
+    final msg = body['msg']?.toString().toLowerCase() ?? '';
+    if (msg.isNotEmpty && msg != 'success') {
+      _fail(body, fallback: 'Failed to load profile');
+    }
+
+    return UserProfile.fromJson(body);
+  }
+
+  /// Update name / last name / phone / email / DoB / gender + address.
+  /// Only the provided fields are sent — the server ignores the rest.
+  Future<UserProfile> updateUserProfile({
+    required UpdateUserProfileRequest request,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.put(
+      endpoint: '/setting/profile.php?action=update',
+      data: request.toJson(),
+      cancelToken: cancelToken,
+    );
+
+    final body = _requireSuccess(
+      response.data,
+      fallback: 'Failed to update profile',
+    );
+
+    return UserProfile.fromJson(body);
+  }
+
+  /// Change the logged-in user's password.
+  Future<void> changeProfilePassword({
+    required String usrName,
+    required String oldPassword,
+    required String newPassword,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.put(
+      endpoint: '/setting/profile.php?action=password',
+      data: {
+        'usrName': usrName,
+        'oldPassword': oldPassword,
+        'newPassword': newPassword,
+      },
+      cancelToken: cancelToken,
+    );
+
+    _requireSuccess(
+      response.data,
+      fallback: 'Failed to change password',
+    );
+  }
+
+  /// Upload / replace the profile photo.
+  /// Multipart like your existing `uploadStakeholderPhoto`.
+  Future<Map<String, dynamic>> uploadProfilePhoto({
+    required String usrName,
+    required Uint8List image,
+  }) async {
+    final fileName = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+    final formData = FormData.fromMap({
+      'usrName': usrName,
+      'image': MultipartFile.fromBytes(
+        image,
+        filename: fileName,
+        contentType: MediaType('image', 'jpeg'),
+      ),
+    });
+
+    final response = await _api.uploadFile(                    // POST multipart
+      endpoint: '/setting/profile.php?action=photo',
+      data: formData,
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+    return body;
   }
 
 }

@@ -175,6 +175,32 @@ class ApiServices {
     }
   }
 
+  Future<Response> uploadFileWithMethod({
+    required String endpoint,
+    required FormData data,
+    String method = 'POST',                     // defaults to old behaviour
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    ProgressCallback? onSendProgress,
+  }) async {
+    try {
+      return await _dio.request(
+        endpoint,
+        data: data,
+        cancelToken: cancelToken,
+        options: Options(
+          method: method,
+          headers: headers,
+        ),
+        onSendProgress: onSendProgress,
+      );
+    } on DioException catch (e) {
+      throw _handleError(e);
+    } catch (e) {
+      throw ApiException(e.toString());
+    }
+  }
+
   /* -------------------------------------------------------------------------- */
   /*                                   PUT                                      */
   /* -------------------------------------------------------------------------- */

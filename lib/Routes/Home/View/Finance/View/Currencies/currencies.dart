@@ -5,7 +5,6 @@ import 'package:flag/flag.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../../../../../../Features/Widgets/search_field.dart';
 import 'package:flutter/services.dart';
-
 import '../../../../../../Features/Other/global_shortcut.dart';
 import '../../../../../../Features/Other/responsive_widget.dart';
 import '../../../../../../Features/Widgets/alert_dialog.dart';

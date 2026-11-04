@@ -1330,7 +1330,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get renameTitle => 'Rename';
 
   @override
-  String get openInExplorer => 'Open In Folder';
+  String get openInExplorer => 'Open in folder';
 
   @override
   String get restoreComplete => 'Restore Completed';
@@ -1629,4 +1629,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get rowsSameCcy =>
       'Rows use different currencies. Pick one currency for all rows.';
+
+  @override
+  String get fileInfo => 'File Info';
 }
