@@ -131,13 +131,13 @@ class ApiServices {
     }
   }
 
-  /* -------------------------------------------------------------------------- */
-  /*                                   GET                                      */
-  /* -------------------------------------------------------------------------- */
-
+  // ═════════════════════════════════════════════════════════════════
+  // GET
+  // ═════════════════════════════════════════════════════════════════
   Future<Response> get({
     required String endpoint,
     Map<String, dynamic>? queryParams,
+    Map<String, dynamic>? headers,
     CancelToken? cancelToken,
   }) async {
     try {
@@ -145,6 +145,7 @@ class ApiServices {
         endpoint,
         queryParameters: queryParams,
         cancelToken: cancelToken,
+        options: headers == null ? null : Options(headers: headers),
       );
     } on DioException catch (e) {
       throw _handleError(e);
@@ -160,6 +161,7 @@ class ApiServices {
   Future<Response> post({
     required String endpoint,
     required dynamic data,
+    Map<String, dynamic>? headers,
     CancelToken? cancelToken,
   }) async {
     try {
@@ -167,6 +169,7 @@ class ApiServices {
         endpoint,
         data: data,
         cancelToken: cancelToken,
+        options: headers == null ? null : Options(headers: headers),
       );
     } on DioException catch (e) {
       throw _handleError(e);
@@ -204,10 +207,10 @@ class ApiServices {
   /* -------------------------------------------------------------------------- */
   /*                                   PUT                                      */
   /* -------------------------------------------------------------------------- */
-
   Future<Response> put({
     required String endpoint,
     required dynamic data,
+    Map<String, dynamic>? headers,        // <-- NEW
     CancelToken? cancelToken,
   }) async {
     try {
@@ -215,6 +218,7 @@ class ApiServices {
         endpoint,
         data: data,
         cancelToken: cancelToken,
+        options: headers == null ? null : Options(headers: headers),
       );
     } on DioException catch (e) {
       throw _handleError(e);
@@ -231,6 +235,7 @@ class ApiServices {
     required String endpoint,
     dynamic data,
     Map<String, dynamic>? queryParams,
+    Map<String, dynamic>? headers,        // <-- NEW
     CancelToken? cancelToken,
   }) async {
     try {
@@ -239,6 +244,7 @@ class ApiServices {
         data: data,
         queryParameters: queryParams,
         cancelToken: cancelToken,
+        options: headers == null ? null : Options(headers: headers),
       );
     } on DioException catch (e) {
       throw _handleError(e);

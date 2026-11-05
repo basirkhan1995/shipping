@@ -69,7 +69,7 @@ class _DesktopView extends StatelessWidget {
 
     final tabs = <ZTabItem<SettingsTabName>>[
       ZTabItem(
-        value: SettingsTabName.system,
+        value: SettingsTabName.general,
         label: AppLocalizations.of(context)!.generalSettings,
         screen: const GeneralView(),
       ),

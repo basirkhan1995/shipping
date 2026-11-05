@@ -19,11 +19,13 @@ class LoginData {
   final DateTime? usrEntryDate;
   final int? usrBranch;
   final String? brcName;
+  final String? token;
   final List<UsrPermission>? permissions;
   final Company? company;
 
   LoginData({
     this.usrName,
+    this.token,
     this.usrId,
     this.usrFullName,
     this.usrPhoto,
@@ -47,6 +49,7 @@ class LoginData {
     String? perPhone,
     DateTime? usrEntryDate,
     int? usrBranch,
+    String? token,
     String? brcName,
     List<UsrPermission>? permissions,
     Company? company,
@@ -54,6 +57,7 @@ class LoginData {
       LoginData(
         usrName: usrName ?? this.usrName,
         usrId: usrId ?? this.usrId,
+        token: token ?? this.token,
         usrFullName: usrFullName ?? this.usrFullName,
         usrPhoto: usrPhoto ?? this.usrPhoto,
         usrRole: usrRole ?? this.usrRole,
@@ -77,6 +81,7 @@ class LoginData {
     usrEntryDate: json["usrEntryDate"] == null ? null : DateTime.parse(json["usrEntryDate"]),
     usrBranch: json["usrBranch"],
     brcName: json["brcName"],
+    token: json["token"] as String?,
     permissions: json["permissions"] == null ? [] : List<UsrPermission>.from(json["permissions"]!.map((x) => UsrPermission.fromMap(x))),
     company: json["company"] == null ? null : Company.fromMap(json["company"]),
   );
@@ -94,6 +99,7 @@ class LoginData {
     "brcName": brcName,
     "permissions": permissions == null ? [] : List<dynamic>.from(permissions!.map((x) => x.toMap())),
     "company": company?.toMap(),
+    "token": token,
   };
 }
 

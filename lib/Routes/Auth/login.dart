@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shipping/Features/Widgets/utils.dart';
 import 'package:shipping/Routes/Auth/bloc/auth_bloc.dart';
-import 'package:shipping/Routes/Home/home.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../Features/Widgets/ztextfield.dart';
 import '../../../../Themes/Ui/theme_selector.dart';
@@ -133,10 +131,7 @@ class _LoginViewState extends State<LoginView> {
           current is NoSubscriptionState ||
           current is EmailVerificationState,
       listener: (context, state) {
-        if (state is AuthenticatedState) {
-          // ✅ Login succeeded → navigate to Home.
-          Utils.goto(context, const HomeView());
-        } else if (state is AuthErrorState) {
+     if (state is AuthErrorState) {
           setState(() => _error = state.message);
         } else if (state is ForceChangePasswordState) {
           // TODO: navigate to force-change-password page.

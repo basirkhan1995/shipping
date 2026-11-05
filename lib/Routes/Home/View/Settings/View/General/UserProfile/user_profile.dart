@@ -143,12 +143,21 @@ class _ProfileBody extends StatelessWidget {
     return BlocListener<UserProfileBloc, UserProfileState>(
       listenWhen: (p, c) => c.message != null,
       listener: (context, state) {
+        // 1) Show the toast (existing behaviour)
         ToastManager.show(
           context: context,
           title: state.isError ? 'Error' : 'Success',
           message: state.message!,
           type: state.isError ? ToastType.error : ToastType.success,
         );
+
+        // 2) If the write succeeded, refresh the auth loginData
+        //    so header / sidebar / permissions re-read the latest profile.
+        if (!state.isError && _needsAuthRefresh(state)) {
+          context.read<AuthBloc>().add(RefreshProfileEvent(usrName));
+        }
+
+        // 3) Clear the one-shot message
         context.read<UserProfileBloc>().add(const ClearProfileMessage());
       },
       child: BlocBuilder<UserProfileBloc, UserProfileState>(
@@ -176,6 +185,12 @@ class _ProfileBody extends StatelessWidget {
       ),
     );
   }
+
+  /// Which success states should trigger a full auth refresh?
+  bool _needsAuthRefresh(UserProfileState s) =>
+      s is UserProfileSaved ||       // details update
+          s is ProfilePasswordChanged || // password change
+          s is ProfilePhotoUploaded;     // photo upload
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -201,7 +216,7 @@ class _ProfileContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme;
-    final padding = EdgeInsets.all(_isWide ? 16 : 12);
+    final padding = EdgeInsets.all(_isWide ? 5 : 12);
 
     if (!_isWide) {
       return SingleChildScrollView(
@@ -330,7 +345,6 @@ class _ProfileCard extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           if (profile.user.usrName.isNotEmpty) ...[
-            const SizedBox(height: 2),
             Text(
               '@${profile.user.usrName}',
               style: TextStyle(
@@ -339,16 +353,7 @@ class _ProfileCard extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: 8),
-          if ((profile.personal.perPhone ?? '').isNotEmpty)
-            _chip(
-              icon: Icons.phone,
-              label: profile.personal.perPhone!,
-              fg: color.primary,
-              bg: color.primary.withValues(alpha: .08),
-            ),
           if ((profile.personal.perEmail ?? '').isNotEmpty) ...[
-            const SizedBox(height: 5),
             _chip(
               icon: Icons.email_outlined,
               label: profile.personal.perEmail!,
@@ -356,69 +361,99 @@ class _ProfileCard extends StatelessWidget {
               bg: color.surfaceContainerHighest.withValues(alpha: .5),
             ),
           ],
-          const SizedBox(height: 20),
-          _sectionDivider(color, tr.profile.toUpperCase()),
+          if ((profile.personal.perPhone ?? '').isNotEmpty)
+            _chip(
+              icon: Icons.phone,
+              label: profile.personal.perPhone!,
+              fg: color.primary,
+              bg: color.primary.withValues(alpha: .08),
+            ),
+
           const SizedBox(height: 14),
-          _info(
-            context,
-            icon: Icons.badge_outlined,
-            title: 'Gender',
-            value: profile.personal.perGender ?? '',
-          ),
-          if (profile.personal.perDoB != null)
-            _info(
-              context,
-              icon: Icons.cake_outlined,
-              title: 'Date of birth',
-              value: _formatDate(profile.personal.perDoB!),
-            ),
-          if ((profile.personal.perENIDNo ?? '').isNotEmpty)
-            _info(
-              context,
-              icon: Icons.credit_card_outlined,
-              title: 'National ID',
-              value: profile.personal.perENIDNo!,
-            ),
+          _sectionDivider(color, tr.profile.toUpperCase()),
+          const SizedBox(height: 10),
+
+              _info(
+                context,
+                icon: Icons.badge_outlined,
+                title: tr.gender,
+                value: profile.personal.perGender ?? '',
+              ),
+              if (profile.personal.perDoB != null)
+                _info(
+                  context,
+                  icon: Icons.cake_outlined,
+                  title: tr.dob,
+                  value: _formatDate(profile.personal.perDoB!),
+                ),
+              if ((profile.personal.perENIDNo ?? '').isNotEmpty)
+                _info(
+                  context,
+                  icon: Icons.credit_card_outlined,
+                  title: tr.nationalId,
+                  value: profile.personal.perENIDNo!,
+                ),
+
+
+          _sectionDivider(color, tr.address.toUpperCase()),
+          const SizedBox(height: 10),
+
           if (profile.address != null) ...[
-            if ((profile.address!.addName ?? '').isNotEmpty)
+            if ((profile.address!.addName ?? '').isNotEmpty)...[
               _info(
                 context,
                 icon: Icons.location_on_outlined,
-                title: 'Address',
+                title: tr.address,
                 value: profile.address!.addName!,
               ),
-            if ((profile.address!.addCity ?? '').isNotEmpty)
-              _info(
-                context,
-                icon: Icons.location_city_outlined,
-                title: 'City',
-                value: profile.address!.addCity!,
-              ),
-            if ((profile.address!.addProvince ?? '').isNotEmpty)
-              _info(
-                context,
-                icon: Icons.map_outlined,
-                title: 'Province',
-                value: profile.address!.addProvince!,
-              ),
-            if ((profile.address!.addCountry ?? '').isNotEmpty)
-              _info(
-                context,
-                icon: Icons.public_outlined,
-                title: 'Country',
-                value: profile.address!.addCountry!,
-              ),
-            if ((profile.address!.addZipCode ?? '').isNotEmpty)
-              _info(
-                context,
-                icon: Icons.markunread_mailbox_outlined,
-                title: 'Zip code',
-                value: profile.address!.addZipCode!,
-              ),
+              const SizedBox(height: 10),
+            ],
+
+            Row(
+              spacing: 5,
+              children: [
+                if ((profile.address!.addCity ?? '').isNotEmpty)
+                  Expanded(
+                    child: _info(
+                      context,
+                      icon: Icons.location_city_outlined,
+                      title: tr.city,
+                      value: profile.address!.addCity!,
+                    ),
+                  ),
+                if ((profile.address!.addProvince ?? '').isNotEmpty)
+                  Expanded(
+                    child: _info(
+                      context,
+                      icon: Icons.map_outlined,
+                      title: tr.province,
+                      value: profile.address!.addProvince!,
+                    ),
+                  ),
+                if ((profile.address!.addCountry ?? '').isNotEmpty)
+                  Expanded(
+                    child: _info(
+                      context,
+                      icon: Icons.public_outlined,
+                      title: tr.country,
+                      value: profile.address!.addCountry!,
+                    ),
+                  ),
+                if ((profile.address!.addZipCode ?? '').isNotEmpty)
+                  Expanded(
+                    child: _info(
+                      context,
+                      icon: Icons.markunread_mailbox_outlined,
+                      title: tr.zipCode,
+                      value: profile.address!.addZipCode!,
+                    ),
+                  ),
+              ],
+            ),
           ],
-          const SizedBox(height: 20),
-          _sectionDivider(color, 'ACCOUNT'),
-          const SizedBox(height: 12),
+          const SizedBox(height: 5),
+          _sectionDivider(color, tr.account.toUpperCase()),
+          const SizedBox(height: 5),
           Row(
             children: [
               Icon(
@@ -432,7 +467,7 @@ class _ProfileCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                profile.user.isEnabled ? 'Active' : 'Disabled',
+                profile.user.isEnabled ? tr.active : tr.blocked,
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -687,35 +722,32 @@ class _ActionPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _ActionCard(
-          icon: Icons.person_outline_rounded,
-          title: 'Personal details',
+          icon: Icons.perm_identity_rounded,
+          title: tr.editProfile.toUpperCase(),
           subtitle:
-          'Update your name, phone, email, date of birth and address.',
-          actionLabel: 'Edit details',
+          tr.editProfileHint,
           busy: saving,
           onAction: () => _openEditDialog(context),
         ),
         const SizedBox(height: 14),
         _ActionCard(
           icon: Icons.lock_outline_rounded,
-          title: 'Password',
-          subtitle: 'Change the password used to sign in to your account.',
-          actionLabel: 'Change password',
+          title: tr.changePassowrd,
+          subtitle: tr.changePasswordHint,
           busy: passwordBusy,
           onAction: () => _openPasswordDialog(context),
         ),
         const SizedBox(height: 14),
         _ActionCard(
           icon: Icons.photo_camera_outlined,
-          title: 'Profile photo',
-          subtitle: progress != null
-              ? 'Uploading… ${(progress! * 100).toStringAsFixed(0)}%'
-              : 'Upload a new photo for your profile.',
-          actionLabel: photoBusy ? 'Uploading…' : 'Upload photo',
+          title: tr.profilePhoto.toUpperCase(),
+          subtitle: progress != null ? '${tr.uploading} ${(progress! * 100).toStringAsFixed(0)}%'
+              : tr.profilePhotoHint,
           busy: photoBusy,
           onAction: () => _pickAndUpload(context),
         ),
@@ -778,7 +810,6 @@ class _ActionCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  final String actionLabel;
   final bool busy;
   final VoidCallback onAction;
 
@@ -786,7 +817,6 @@ class _ActionCard extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
-    required this.actionLabel,
     required this.busy,
     required this.onAction,
   });
@@ -795,65 +825,68 @@ class _ActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: color.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: color.outlineVariant.withValues(alpha: 0.4),
+    return InkWell(
+      onTap: busy ? null : onAction,
+      child: Container(
+        decoration: BoxDecoration(
+          color: color.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: color.outlineVariant.withValues(alpha: 0.4),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: color.shadow.withValues(alpha: 0.04),
+              blurRadius: 5,
+              offset: const Offset(0, 1),
+            ),
+          ],
         ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: color.primary.withValues(alpha: .1),
-              borderRadius: BorderRadius.circular(12),
+        padding: const EdgeInsets.all(15),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: color.primary.withValues(alpha: .05),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: color.primary, size: 25),
             ),
-            child: Icon(icon, color: color.primary, size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: color.onSurfaceVariant,
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: color.onSurfaceVariant,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          ZOutlineButton(
-            onPressed: busy ? null : onAction,
-            height: 36,
-            isActive: false,
-            icon: busy ? null : Icons.arrow_forward_rounded,
-            label: busy
-                ? const SizedBox(
+            const SizedBox(width: 12),
+            busy ? const SizedBox(
               width: 14,
               height: 14,
               child: CircularProgressIndicator(strokeWidth: 2),
-            )
-                : Text(actionLabel.toUpperCase()),
-          ),
-        ],
+            ) : Icon(Icons.arrow_forward_ios_rounded,size: 18),
+
+          ],
+        ),
       ),
     );
   }

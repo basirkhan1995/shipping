@@ -1625,4 +1625,21 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get fileInfo => 'فایل معلومات';
+
+  @override
+  String get profilePhoto => 'پروفایل عکس';
+
+  @override
+  String get editProfileHint =>
+      'خپل نوم، د ټیلیفون شمېره، برېښنالیک، د زېږون نېټه او پته تازه کړئ.';
+
+  @override
+  String get changePasswordHint =>
+      'هغه پټنوم بدل کړئ چې د خپل حساب ته د ننوتلو لپاره یې کاروئ.';
+
+  @override
+  String get profilePhotoHint => 'د خپل پروفایل لپاره نوی انځور وټاکئ';
+
+  @override
+  String get uploading => 'درحال بارگیری...';
 }

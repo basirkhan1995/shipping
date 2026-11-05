@@ -65,6 +65,35 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     });
 
+    on<RefreshProfileEvent>((event, emit) async {
+      final current = state;
+      if (current is! AuthenticatedState) return;
+
+      try {
+        final response = await _repo.fetchProfile(username: event.username);
+
+        final msg = response['msg']?.toString().toLowerCase() ?? '';
+        if (msg.isNotEmpty && msg != 'success') {
+          switch (msg) {
+            case 'incorrect':
+            case 'username required':
+            // Only *this* really means the server doesn't know the user.
+              emit(UnAuthenticatedState());
+              return;
+            default:
+            // Unknown server message — keep the current session.
+              return;
+          }
+        }
+
+        // Authoritative refresh: no copyWith clobbering.
+        final refreshed = LoginData.fromMap(response);
+        emit(AuthenticatedState(refreshed));
+      } on ApiException {
+        return;
+      }
+    });
+
     on<OnLogoutEvent>((event, emit){
       emit(UnAuthenticatedState());
     });

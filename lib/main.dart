@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/PrintSettings/bloc/Language/print_language_cubit.dart';
-import 'package:shipping/Features/Widgets/znavigator.dart';
 import 'package:shipping/Routes/Auth/bloc/auth_bloc.dart';
 import 'package:shipping/Routes/Auth/login.dart';
 import 'package:shipping/Routes/Home/View/Finance/View/Currencies/bloc/currencies_bloc.dart';
@@ -52,6 +51,7 @@ import 'Routes/Home/View/Report/TxnReport/bloc/txn_report_bloc.dart';
 import 'Routes/Home/View/Settings/bloc/settings_tab_bloc.dart';
 import 'Routes/Home/View/Stakeholder/View/StakeholderById/bloc/stakeholder_by_id_bloc.dart';
 import 'Routes/Home/bloc/menu_bloc.dart';
+import 'Routes/Home/home.dart';
 import 'Services/api_services.dart';
 import 'Services/localization_services.dart';
 import 'Services/repository.dart';
@@ -160,16 +160,14 @@ class MyApp extends StatelessWidget {
                  localizationsDelegates:
                  AppLocalizations.localizationsDelegates,
                  supportedLocales: AppLocalizations.supportedLocales,
-                 home: BlocListener<AuthBloc, AuthState>(
-                   listenWhen: (prev, curr) =>
-                   curr is UnAuthenticatedState || (prev is AuthenticatedState && curr is AuthInitial),
-                   listener: (context, state) {
-                     if (state is UnAuthenticatedState) {
-                       ZNavigator.gotoReplacement(context: context, LoginView());
+                 home: BlocBuilder<AuthBloc, AuthState>(
+                   builder: (context, state) {
+                     if (state is AuthenticatedState) {
+                       return const HomeView();
                      }
+                     return const LoginView();
                    },
-                    child: LoginView(),
-                  ),
+                 ),
                  builder: (context, child) {
                    localizationService.update(AppLocalizations.of(context)!);
                    return child!;

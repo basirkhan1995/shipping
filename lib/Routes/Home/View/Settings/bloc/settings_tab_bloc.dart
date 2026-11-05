@@ -5,7 +5,7 @@ part 'settings_tab_event.dart';
 part 'settings_tab_state.dart';
 
 class SettingsTabBloc extends Bloc<SettingsTabEvent, SettingsTabState> {
-  SettingsTabBloc() : super(SettingsTabState(tabs: SettingsTabName.system)) {
+  SettingsTabBloc() : super(SettingsTabState(tabs: SettingsTabName.general)) {
     on<SettingsOnChangeEvent>((event, emit) {
       emit(SettingsTabState(tabs: event.tab));
     });

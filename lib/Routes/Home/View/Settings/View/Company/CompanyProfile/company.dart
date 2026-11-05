@@ -550,18 +550,28 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm>
       body: SafeArea(
         child: BlocConsumer<CompanyProfileBloc, CompanyProfileState>(
           listener: (context, state) {
-            if (state is CompanyProfileLoadedState) {
-              _updateControllers(state);
+            // ── Save succeeded ────────────────────────────────────────────
+            // Refresh AuthBloc so LoginData.company is up to date, exit edit
+            // mode, and show exactly one toast.
+            if (state is CompanyProfileSuccessState) {
+              context.read<AuthBloc>().add(RefreshProfileEvent(login.usrName!));
 
               if (isUpdateMode) {
                 setState(() => isUpdateMode = false);
-                ToastManager.show(
-                  context: context,
-                  message: locale.successMsg,
-                  title: locale.successTitle,
-                  type: ToastType.success,
-                );
               }
+
+              ToastManager.show(
+                context: context,
+                message: locale.successMsg,
+                title: locale.successTitle,
+                type: ToastType.success,
+              );
+            }
+
+            // ── Data arrived / refreshed ──────────────────────────────────
+            // Sync controllers only. NO toast, NO isUpdateMode here.
+            if (state is CompanyProfileLoadedState) {
+              _updateControllers(state);
             }
           },
           builder: (context, state) {

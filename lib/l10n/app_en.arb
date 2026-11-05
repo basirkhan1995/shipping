@@ -542,5 +542,10 @@
   "atLeastTwoRow": "Add at least two rows — one debit and one credit — with the same total.",
   "totalDebitEqualCredit": "Total debit must equal total credit.",
   "rowsSameCcy": "Rows use different currencies. Pick one currency for all rows.",
-  "fileInfo": "File Info"
+  "fileInfo": "File Info",
+  "profilePhoto": "Profile Photo",
+  "editProfileHint": "Update your name, phone, email, date of birth and address.",
+  "changePasswordHint": "Change the password used to sign in to your account.",
+  "profilePhotoHint": "Update your profile photo",
+  "uploading": "Uploading..."
 }

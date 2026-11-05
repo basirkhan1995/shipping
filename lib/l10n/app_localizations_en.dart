@@ -1632,4 +1632,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fileInfo => 'File Info';
+
+  @override
+  String get profilePhoto => 'Profile Photo';
+
+  @override
+  String get editProfileHint =>
+      'Update your name, phone, email, date of birth and address.';
+
+  @override
+  String get changePasswordHint =>
+      'Change the password used to sign in to your account.';
+
+  @override
+  String get profilePhotoHint => 'Update your profile photo';
+
+  @override
+  String get uploading => 'Uploading...';
 }

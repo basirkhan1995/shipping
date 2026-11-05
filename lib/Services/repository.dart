@@ -231,6 +231,26 @@ class Repositories {
     return body;
   }
 
+  Future<Map<String, dynamic>> fetchProfile({
+    required String username,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.get(
+      endpoint: '/user/login.php',
+      queryParams: {'username': username},
+      cancelToken: cancelToken,
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) {
+      throw ApiException('Invalid server response');
+    }
+
+    return body;
+  }
+
+
+
   // ═════════════════════════════════════════════════════════════════
   // Stakeholders
   // ═════════════════════════════════════════════════════════════════

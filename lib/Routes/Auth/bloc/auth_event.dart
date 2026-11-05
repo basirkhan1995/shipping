@@ -19,6 +19,14 @@ class OnLogoChangeEvent extends AuthEvent{
   List<Object?> get props => [];
 }
 
+class RefreshProfileEvent extends AuthEvent{
+  final String username;
+
+  const RefreshProfileEvent(this.username);
+  @override
+  List<Object?> get props => [username];
+}
+
 class OnLogoutEvent extends AuthEvent{
   @override
   List<Object?> get props => [];

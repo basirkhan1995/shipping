@@ -3279,6 +3279,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'File Info'**
   String get fileInfo;
+
+  /// No description provided for @profilePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Photo'**
+  String get profilePhoto;
+
+  /// No description provided for @editProfileHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Update your name, phone, email, date of birth and address.'**
+  String get editProfileHint;
+
+  /// No description provided for @changePasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the password used to sign in to your account.'**
+  String get changePasswordHint;
+
+  /// No description provided for @profilePhotoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Update your profile photo'**
+  String get profilePhotoHint;
+
+  /// No description provided for @uploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading...'**
+  String get uploading;
 }
 
 class _AppLocalizationsDelegate

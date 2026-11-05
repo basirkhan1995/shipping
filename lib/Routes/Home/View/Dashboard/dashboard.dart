@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shipping/Features/Other/image_helper.dart';
 import 'package:shipping/Features/Widgets/cover.dart';
 import 'package:shipping/Features/Widgets/digital_clock.dart';
 import 'package:shipping/Routes/Auth/bloc/auth_bloc.dart';
 import 'package:shipping/Routes/Home/View/Finance/View/Reminder/reminder_widget.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/Backup/backup.dart';
-import 'package:shipping/Services/api_services.dart';
+import 'package:shipping/Routes/Home/View/Settings/View/General/bloc/general_tab_bloc.dart';
+import 'package:shipping/Routes/Home/View/Settings/bloc/settings_tab_bloc.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../Features/Other/responsive_widget.dart';
 import '../../bloc/menu_bloc.dart';
@@ -363,16 +365,9 @@ class _DesktopTopBar extends StatelessWidget {
 
     final authState = context.watch<AuthBloc>().state;
     final user = authState is AuthenticatedState ? authState.loginData : null;
-
     final fullName = user?.usrFullName ?? user?.usrName ?? 'Guest';
     final username = user?.usrName ?? '';
-
     final rawPhoto = user?.usrPhoto?.trim();
-    final hasPhoto = rawPhoto != null &&
-        rawPhoto.isNotEmpty &&
-        rawPhoto.toLowerCase() != 'null' &&
-        rawPhoto.toLowerCase() != 'undefined';
-    final photoUrl = hasPhoto ? "${ApiServices.imageUrl}$rawPhoto" : null;
 
     return Container(
       height: 64,
@@ -431,14 +426,19 @@ class _DesktopTopBar extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           ZCover(
-            radius: 50,
-            padding: const EdgeInsets.all(5),
+            radius: 20,
+            padding: const EdgeInsets.symmetric(horizontal: 12,vertical: 5),
             child: PopupMenuButton<String>(
+              menuPadding: EdgeInsetsGeometry.all(5),
               tooltip: 'Account',
               offset: const Offset(0, 48),
               onSelected: (value) {
                 if (value == 'logout') {
                   context.read<AuthBloc>().add(OnLogoutEvent());
+                }if(value == "edit"){
+                  context.read<MenuBloc>().add(MenuOnChangedEvent(MenuName.settings));
+                  context.read<SettingsTabBloc>().add(SettingsOnChangeEvent(SettingsTabName.general));
+                  context.read<GeneralTabBloc>().add(GeneralTabOnChangedEvent(GeneralTabName.profileSettings));
                 }
               },
               itemBuilder: (context) => [
@@ -451,6 +451,7 @@ class _DesktopTopBar extends StatelessWidget {
                       Text(
                         fullName,
                         style: TextStyle(
+                          letterSpacing: 1,
                           fontWeight: FontWeight.w600,
                           color: scheme.onSurface,
                         ),
@@ -467,13 +468,24 @@ class _DesktopTopBar extends StatelessWidget {
                   ),
                 ),
                 const PopupMenuDivider(),
-                const PopupMenuItem(
+                PopupMenuItem(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit, size: 18),
+                      SizedBox(width: 8),
+                      Text(AppLocalizations.of(context)!.editProfile),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                 PopupMenuItem(
                   value: 'logout',
                   child: Row(
                     children: [
                       Icon(Icons.logout, size: 18),
                       SizedBox(width: 8),
-                      Text('Logout'),
+                      Text(AppLocalizations.of(context)!.logout),
                     ],
                   ),
                 ),
@@ -481,23 +493,7 @@ class _DesktopTopBar extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircleAvatar(
-                    radius: 15,
-                    backgroundColor: scheme.primaryContainer,
-                    backgroundImage: photoUrl != null && photoUrl.isNotEmpty
-                        ? NetworkImage(photoUrl)
-                        : null,
-                    child: photoUrl == null || photoUrl.isEmpty
-                        ? Text(
-                      _initials(fullName),
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: scheme.onPrimaryContainer,
-                      ),
-                    )
-                        : null,
-                  ),
+                  ImageHelper.stakeholderProfile(imageName: rawPhoto,size: 30),
                   const SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -546,13 +542,6 @@ class _DesktopTopBar extends StatelessWidget {
     return 'Good night';
   }
 
-  String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.isEmpty || parts.first.isEmpty) return '?';
-    if (parts.length == 1) return parts.first.characters.first.toUpperCase();
-    return (parts.first.characters.first + parts.last.characters.first)
-        .toUpperCase();
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════════

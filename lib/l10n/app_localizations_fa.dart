@@ -1626,4 +1626,21 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get fileInfo => 'معلومات فایل';
+
+  @override
+  String get profilePhoto => 'عکس پروفایل';
+
+  @override
+  String get editProfileHint =>
+      'نام، شماره تلفن، ایمیل، تاریخ تولد و آدرس خود را به‌روزرسانی کنید.';
+
+  @override
+  String get changePasswordHint =>
+      'گذرواژه‌ای را که برای ورود به حساب خود استفاده می‌کنید تغییر دهید.';
+
+  @override
+  String get profilePhotoHint => 'عکس جدیدی برای پروفایل خود انتخاب کنید';
+
+  @override
+  String get uploading => 'درحال بارگیری...';
 }
