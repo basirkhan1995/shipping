@@ -4,6 +4,25 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../l10n/Bloc/localizations_bloc.dart';
 
 // =====================================================================
+// MenuHeightMode
+// =====================================================================
+/// How [GenericMenuWithScreen]'s sidebar computes its height.
+enum MenuHeightMode {
+  /// Stretches to the full available height of the parent.
+  /// Requires a bounded height from the parent (e.g. inside a `Row`
+  /// whose parent is `Expanded` / `SizedBox` / `Scaffold.body`).
+  full,
+
+  /// Shrinks to fit its children (header + items + footer).
+  /// Safe inside a `Column` or `SingleChildScrollView`.
+  content,
+
+  /// Uses an explicit pixel height from [GenericMenuWithScreen.menuFixedHeight].
+  /// Must be finite.
+  fixed,
+}
+
+// =====================================================================
 // GenericMenuItem
 // =====================================================================
 class GenericMenuItem extends StatelessWidget {
@@ -50,21 +69,19 @@ class GenericMenuItem extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
-        // The whole tile is a rounded Material — InkWell ripples paint on it
-        // cleanly, and the animated fill is the Material's own color, so
-        // there's no opaque layer between the ink and the surface.
         decoration: BoxDecoration(
           color: fill,
           borderRadius: BorderRadius.circular(borderRadius),
         ),
         clipBehavior: Clip.antiAlias,
         child: Material(
-          color: Colors.transparent, // let the animated fill show
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(borderRadius),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onTap,
-            hoverColor: scheme.primary.withValues(alpha: isSelected? 0 : 0.05),
+            hoverColor:
+            scheme.primary.withValues(alpha: isSelected ? 0 : 0.05),
             highlightColor: scheme.primary.withValues(alpha: 0.05),
             splashColor: Colors.transparent,
             child: Stack(
@@ -72,7 +89,10 @@ class GenericMenuItem extends StatelessWidget {
                 // ── Fluent selection indicator (left/right bar)
                 Positioned.fill(
                   child: Align(
-                    alignment: context.read<LocalizationBloc>().state.languageCode ==
+                    alignment: context
+                        .read<LocalizationBloc>()
+                        .state
+                        .languageCode ==
                         'en'
                         ? Alignment.centerLeft
                         : Alignment.centerRight,
@@ -85,7 +105,6 @@ class GenericMenuItem extends StatelessWidget {
                       curve: Curves.easeOutExpo,
                       builder: (context, height, child) {
                         return AnimatedContainer(
-
                           duration: const Duration(milliseconds: 220),
                           curve: Curves.easeOutCubic,
                           width: isSelected ? 3.5 : 2,
@@ -121,8 +140,7 @@ class GenericMenuItem extends StatelessWidget {
                               : unselectedTextColor,
                         ),
 
-                      if (isExpanded && icon != null)
-                        const SizedBox(width: 6),
+                      if (isExpanded && icon != null) const SizedBox(width: 6),
 
                       if (isExpanded)
                         Expanded(
@@ -137,7 +155,12 @@ class GenericMenuItem extends StatelessWidget {
                             ),
                             child: Text(
                               label,
-                              style: TextStyle(fontWeight: isSelected? FontWeight.w600 : FontWeight.w500,letterSpacing: 1),
+                              style: TextStyle(
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                                letterSpacing: 1,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -183,6 +206,17 @@ class GenericMenuWithScreen<T> extends StatefulWidget {
   /// 🔹 Widget to show when no items are available
   final Widget? emptyStateWidget;
 
+  /// 🔹 How the sidebar computes its height.
+  ///
+  /// * [MenuHeightMode.full] (default) — stretches to the parent's height.
+  /// * [MenuHeightMode.content] — wraps children; safe inside a `Column`
+  ///   or `SingleChildScrollView`.
+  /// * [MenuHeightMode.fixed] — uses [menuFixedHeight]; must be finite.
+  final MenuHeightMode menuHeightMode;
+
+  /// 🔹 Only consulted when [menuHeightMode] == [MenuHeightMode.fixed].
+  final double? menuFixedHeight;
+
   const GenericMenuWithScreen({
     super.key,
     this.menuWidth,
@@ -201,6 +235,8 @@ class GenericMenuWithScreen<T> extends StatefulWidget {
     this.padding,
     this.margin,
     this.isExpanded = true,
+    this.menuHeightMode = MenuHeightMode.full,
+    this.menuFixedHeight,
   });
 
   @override
@@ -230,6 +266,32 @@ class _GenericMenuWithScreenState<T> extends State<GenericMenuWithScreen<T>> {
     _fixInvalidSelection();
   }
 
+  // ── Height resolution ───────────────────────────────────────────────
+  /// Value passed to `AnimatedContainer.height`.
+  ///
+  /// - [MenuHeightMode.full]    → `double.infinity` (stretch to parent)
+  /// - [MenuHeightMode.content] → `null`             (size to children)
+  /// - [MenuHeightMode.fixed]   → [menuFixedHeight]  (must be finite)
+  double? get _resolvedMenuHeight {
+    switch (widget.menuHeightMode) {
+      case MenuHeightMode.full:
+        return double.infinity;
+      case MenuHeightMode.content:
+        return null;
+      case MenuHeightMode.fixed:
+        assert(
+        widget.menuFixedHeight != null && widget.menuFixedHeight!.isFinite,
+        'menuFixedHeight must be a finite value when menuHeightMode is fixed',
+        );
+        return widget.menuFixedHeight;
+    }
+  }
+
+  /// True only in content mode — controls `Column.mainAxisSize` and
+  /// `Expanded` vs `Flexible` for the inner list / empty-state.
+  bool get _isContentMode =>
+      widget.menuHeightMode == MenuHeightMode.content;
+
   void _fixInvalidSelection() {
     if (widget.items.isEmpty) return;
 
@@ -256,7 +318,7 @@ class _GenericMenuWithScreenState<T> extends State<GenericMenuWithScreen<T>> {
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             width: isMenuExpanded ? maxScreenSize : minScreenSize,
-            height: double.infinity,
+            height: _resolvedMenuHeight,
             margin: widget.margin ??
                 const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
             padding: EdgeInsets.zero,
@@ -269,13 +331,17 @@ class _GenericMenuWithScreenState<T> extends State<GenericMenuWithScreen<T>> {
                 BoxShadow(
                   blurRadius: 3,
                   spreadRadius: 2,
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .03),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest
+                      .withValues(alpha: .03),
                 ),
               ],
               borderRadius: BorderRadius.circular(5),
               color: Theme.of(context).colorScheme.surfaceContainerLow,
             ),
             child: Column(
+              mainAxisSize: _isContentMode ? MainAxisSize.min : MainAxisSize.max,
               children: [
                 Padding(
                   padding:
@@ -289,7 +355,7 @@ class _GenericMenuWithScreenState<T> extends State<GenericMenuWithScreen<T>> {
                               .colorScheme
                               .primary
                               .withValues(alpha: .06),
-                          borderRadius: BorderRadius.circular(3),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: IconButton(
                           hoverColor: Colors.transparent,
@@ -315,12 +381,46 @@ class _GenericMenuWithScreenState<T> extends State<GenericMenuWithScreen<T>> {
                   const SizedBox(height: 8),
                 ],
 
-                Expanded(
+                _isContentMode
+                    ? Flexible(
                   child: Center(
                     child: widget.emptyStateWidget ??
                         (isMenuExpanded
                             ? Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment:
+                          MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.menu_open_rounded,
+                              size: 32,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: .3),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'No menu items available',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withValues(alpha: .5),
+                              ),
+                            ),
+                          ],
+                        )
+                            : const SizedBox.shrink()),
+                  ),
+                )
+                    : Expanded(
+                  child: Center(
+                    child: widget.emptyStateWidget ??
+                        (isMenuExpanded
+                            ? Column(
+                          mainAxisAlignment:
+                          MainAxisAlignment.center,
                           children: [
                             Icon(
                               Icons.menu_open_rounded,
@@ -441,18 +541,25 @@ class _GenericMenuWithScreenState<T> extends State<GenericMenuWithScreen<T>> {
               duration: const Duration(milliseconds: 300),
               width: isMenuExpanded ? maxScreenSize : minScreenSize,
               clipBehavior: Clip.hardEdge,
-              height: double.infinity,
-              margin: widget.margin ?? const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+              height: _resolvedMenuHeight,
+              margin: widget.margin ??
+                  const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
               padding: EdgeInsets.zero,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: .1),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: .1),
                 ),
                 boxShadow: [
                   BoxShadow(
                     blurRadius: 3,
                     spreadRadius: 2,
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .03),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest
+                        .withValues(alpha: .03),
                   ),
                 ],
                 borderRadius: BorderRadius.circular(5),
@@ -462,6 +569,8 @@ class _GenericMenuWithScreenState<T> extends State<GenericMenuWithScreen<T>> {
                 padding:
                 const EdgeInsets.symmetric(horizontal: 0.0, vertical: 2),
                 child: Column(
+                  mainAxisSize:
+                  _isContentMode ? MainAxisSize.min : MainAxisSize.max,
                   children: [
                     /// Toggle arrow
                     Padding(
@@ -470,27 +579,28 @@ class _GenericMenuWithScreenState<T> extends State<GenericMenuWithScreen<T>> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primary
-                                  .withValues(alpha: .06),
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                            child: IconButton(
-                              hoverColor: Colors.transparent,
-                              highlightColor: Colors.transparent,
-                              icon: Icon(isMenuExpanded
-                                  ? Icons.chevron_left
-                                  : Icons.chevron_right),
-                              onPressed: () {
-                                setState(() {
-                                  isMenuExpanded = !isMenuExpanded;
-                                });
-                              },
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
+                          InkWell(
+                            hoverColor: Colors.transparent,
+                            highlightColor: Colors.transparent,
+                            onTap: (){
+                              setState(() {
+                                isMenuExpanded = !isMenuExpanded;
+                              });
+                            },
+                            child: Container(
+                              padding: EdgeInsetsGeometry.all(3),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withValues(alpha: .06),
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              child: Center(
+                                child: Icon(isMenuExpanded
+                                    ? Icons.chevron_left
+                                    : Icons.chevron_right,size: 20,),
+                              ),
                             ),
                           ),
                         ],
@@ -504,12 +614,15 @@ class _GenericMenuWithScreenState<T> extends State<GenericMenuWithScreen<T>> {
                     ],
 
                     /// Menu list
-                    Expanded(
+                    _isContentMode
+                        ? Flexible(
                       child: ListView(
+                        shrinkWrap: true,
                         padding: EdgeInsets.zero,
                         children: widget.items.map((item) {
                           return GenericMenuItem(
-                            isSelected: item.value == widget.selectedValue,
+                            isSelected:
+                            item.value == widget.selectedValue,
                             onTap: () {
                               widget.onChanged(item.value);
                             },
@@ -517,13 +630,46 @@ class _GenericMenuWithScreenState<T> extends State<GenericMenuWithScreen<T>> {
                             icon: item.icon,
                             fontSize: widget.fontSize,
                             isExpanded: isMenuExpanded,
-                            padding: widget.padding ?? const EdgeInsets.symmetric(horizontal: 5.0, vertical: 5),
-                            margin: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 3),
+                            padding: widget.padding ??
+                                const EdgeInsets.symmetric(
+                                    horizontal: 5.0, vertical: 5),
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 2.0, vertical: 3),
                             borderRadius: widget.borderRadius,
                             selectedColor: widget.selectedColor,
                             unselectedColor: widget.unselectedColor,
                             selectedTextColor: widget.selectedTextColor,
-                            unselectedTextColor: widget.unselectedTextColor,
+                            unselectedTextColor:
+                            widget.unselectedTextColor,
+                          );
+                        }).toList(),
+                      ),
+                    )
+                        : Expanded(
+                      child: ListView(
+                        padding: EdgeInsets.zero,
+                        children: widget.items.map((item) {
+                          return GenericMenuItem(
+                            isSelected:
+                            item.value == widget.selectedValue,
+                            onTap: () {
+                              widget.onChanged(item.value);
+                            },
+                            label: item.label,
+                            icon: item.icon,
+                            fontSize: widget.fontSize,
+                            isExpanded: isMenuExpanded,
+                            padding: widget.padding ??
+                                const EdgeInsets.symmetric(
+                                    horizontal: 5.0, vertical: 5),
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 2.0, vertical: 3),
+                            borderRadius: widget.borderRadius,
+                            selectedColor: widget.selectedColor,
+                            unselectedColor: widget.unselectedColor,
+                            selectedTextColor: widget.selectedTextColor,
+                            unselectedTextColor:
+                            widget.unselectedTextColor,
                           );
                         }).toList(),
                       ),

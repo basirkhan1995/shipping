@@ -124,6 +124,7 @@ class _BaseGeneralView extends StatelessWidget {
           return GenericMenuWithScreen(
             isExpanded: false,
             menuWidth: 220,
+            menuHeightMode: MenuHeightMode.content,
             selectedColor: colorScheme.primary.withValues(alpha: .09),
             selectedTextColor: colorScheme.onSurface,
             unselectedTextColor: colorScheme.secondary,

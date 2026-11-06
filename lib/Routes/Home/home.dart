@@ -69,6 +69,7 @@ class _DesktopView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     final currentTab = context.select((MenuBloc bloc) => bloc.state.tabs);
     final menuItems = [
       MenuDefinition(
@@ -120,6 +121,7 @@ class _DesktopView extends StatelessWidget {
         icon: Icons.insert_drive_file_outlined,
       ),
     ];
+
     if (menuItems.isEmpty) {
       return Center(
         child: Column(
@@ -128,7 +130,8 @@ class _DesktopView extends StatelessWidget {
             Icon(
               Icons.no_accounts_rounded,
               size: 48,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .3),
+              color:
+              Theme.of(context).colorScheme.onSurface.withValues(alpha: .3),
             ),
             const SizedBox(height: 16),
             Text(
@@ -136,7 +139,8 @@ class _DesktopView extends StatelessWidget {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .5),
+                color:
+                Theme.of(context).colorScheme.onSurface.withValues(alpha: .5),
               ),
             ),
             const SizedBox(height: 8),
@@ -144,13 +148,15 @@ class _DesktopView extends StatelessWidget {
               "Please contact administrator",
               style: TextStyle(
                 fontSize: 14,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: .4),
+                color:
+                Theme.of(context).colorScheme.onSurface.withValues(alpha: .4),
               ),
             ),
           ],
         ),
       );
     }
+
     return Scaffold(
       body: Center(
         child: GenericMenuWithScreen<MenuName>(
@@ -165,16 +171,19 @@ class _DesktopView extends StatelessWidget {
           },
           items: menuItems,
           selectedColor: Theme.of(context).colorScheme.primary.withAlpha(23),
-          selectedTextColor: Theme.of(context).colorScheme.primary.withAlpha(230),
+          selectedTextColor:
+          Theme.of(context).colorScheme.primary.withAlpha(230),
           unselectedTextColor: Theme.of(context).colorScheme.secondary,
 
           // ── Company logo + name at the top of the sidebar ──
-          menuHeaderBuilder: (isExpanded) => _CompanyHeader(isExpanded: isExpanded),
+          menuHeaderBuilder: (isExpanded) =>
+              _CompanyHeader(isExpanded: isExpanded),
         ),
       ),
     );
   }
 }
+
 /// Header shown at the top of the desktop sidebar: company logo + name.
 class _CompanyHeader extends StatelessWidget {
   final bool isExpanded;
@@ -191,7 +200,7 @@ class _CompanyHeader extends StatelessWidget {
     final companyName = company?.comName ?? 'Company';
     final logo = company?.comLogo;
 
-    // Wider avatar: 44px expanded, 34px collapsed.
+    // Wider avatar: 75px expanded, 34px collapsed.
     final double logoSize = isExpanded ? 75 : 34;
 
     return Container(
@@ -205,7 +214,7 @@ class _CompanyHeader extends StatelessWidget {
         children: [
           // ── Logo on top ──
           _CompanyLogo(
-            logoBase64: logo,
+            logo: logo,
             scheme: scheme,
             size: logoSize,
           ),
@@ -232,29 +241,58 @@ class _CompanyHeader extends StatelessWidget {
   }
 }
 
-/// Company logo with initials fallback.
+/// Company logo widget. Handles three input shapes:
+///
+///   1. `data:image/...;base64,...`  → strip prefix, decode, Image.memory
+///   2. `https://...` or `http://...` → Image.network (cached)
+///   3. Raw base64 (legacy)           → Image.memory (decoded inline)
+///   4. Anything else / empty         → fallback icon
 class _CompanyLogo extends StatelessWidget {
-  /// Raw base64 string from the server (NOT a path).
-  final String? logoBase64;
+  /// `comLogo` value from the server. Could be:
+  ///   - a `data:` URL  (current server contract)
+  ///   - an `http(s):` URL (future server contract)
+  ///   - raw base64 (legacy, still supported for safety)
+  final String? logo;
   final ColorScheme scheme;
   final double size;
 
   const _CompanyLogo({
-    required this.logoBase64,
+    required this.logo,
     required this.scheme,
     this.size = 36,
   });
 
-  bool _isValidImageBytes(Uint8List bytes) {
+  static bool _isValidImageBytes(Uint8List bytes) {
     if (bytes.length < 12) return false;
-    if (bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) return true; // JPEG
-    if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) return true; // PNG
-    if (bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x38) return true; // GIF
-    if (bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46 &&
-        bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50) {
-      return true; // WebP
+    // JPEG
+    if (bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) return true;
+    // PNG
+    if (bytes[0] == 0x89 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x4E &&
+        bytes[3] == 0x47) {
+      return true;
     }
-    if (bytes[0] == 0x42 && bytes[1] == 0x4D) return true; // BMP
+    // GIF
+    if (bytes[0] == 0x47 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46 &&
+        bytes[3] == 0x38) {
+      return true;
+    }
+    // WebP
+    if (bytes[0] == 0x52 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46 &&
+        bytes[3] == 0x46 &&
+        bytes[8] == 0x57 &&
+        bytes[9] == 0x45 &&
+        bytes[10] == 0x42 &&
+        bytes[11] == 0x50) {
+      return true;
+    }
+    // BMP
+    if (bytes[0] == 0x42 && bytes[1] == 0x4D) return true;
     return false;
   }
 
@@ -272,39 +310,7 @@ class _CompanyLogo extends StatelessWidget {
     ),
   );
 
-  @override
-  Widget build(BuildContext context) {
-    // Fixed-size circular frame — mirrors the profile's fixed Container.
-    final frame = Container(
-      width: size,
-      height: size,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: scheme.primaryContainer,
-        border: Border.all(
-          color: scheme.primary.withValues(alpha: 0.1),
-        ),
-      ),
-    );
-
-    final raw = logoBase64;
-    if (raw == null || raw.isEmpty) {
-      return frame; // child: fallback icon
-    }
-
-    // Decode base64 exactly like the profile does.
-    Uint8List bytes;
-    try {
-      bytes = base64Decode(raw);
-    } catch (_) {
-      return _fallback();
-    }
-
-    if (!_isValidImageBytes(bytes)) {
-      return _fallback();
-    }
-
+  Widget _buildImage(Uint8List bytes) {
     return ClipOval(
       child: Image.memory(
         bytes,
@@ -315,5 +321,56 @@ class _CompanyLogo extends StatelessWidget {
         errorBuilder: (_, _, _) => _fallback(),
       ),
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final raw = logo;
+
+    // No logo → fallback.
+    if (raw == null || raw.isEmpty) {
+      return _fallback();
+    }
+
+    // Case 1: real HTTP(S) URL → Image.network (cached by image cache).
+    if (raw.startsWith('http://') || raw.startsWith('https://')) {
+      return ClipOval(
+        child: Image.network(
+          raw,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          gaplessPlayback: true,
+          errorBuilder: (_, _, _) => _fallback(),
+        ),
+      );
+    }
+
+    // Case 2: data: URL → extract base64 payload, decode to bytes.
+    // (Image.network cannot handle data: URIs on desktop/web reliably.)
+    String base64Payload = raw;
+    if (raw.startsWith('data:')) {
+      final commaIndex = raw.indexOf(',');
+      if (commaIndex == -1 || commaIndex == raw.length - 1) {
+        return _fallback();
+      }
+      base64Payload = raw.substring(commaIndex + 1);
+    }
+
+    // Case 3: raw base64 (legacy) OR extracted payload from data: URL.
+    Uint8List bytes;
+    try {
+      // Strip any whitespace/newlines that can break decoding.
+      base64Payload = base64Payload.trim().replaceAll(RegExp(r'\s+'), '');
+      bytes = base64Decode(base64Payload);
+    } catch (_) {
+      return _fallback();
+    }
+
+    if (!_isValidImageBytes(bytes)) {
+      return _fallback();
+    }
+
+    return _buildImage(bytes);
   }
 }

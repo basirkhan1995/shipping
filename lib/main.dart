@@ -95,7 +95,7 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => PrinterCubit()),
 
           ///Auth
-          BlocProvider(create: (_) => AuthBloc(Repositories(ApiServices()))),
+          BlocProvider(create: (_) => AuthBloc(Repositories(ApiServices()))..add(RestoreSessionEvent())),
           BlocProvider(create: (_) => UsersBloc(Repositories(ApiServices()))..add(LoadUsersEvent())),
           BlocProvider(create: (_) => UserRoleBloc(Repositories(ApiServices()))..add(LoadUserRolesEvent())),
           BlocProvider(create: (_) => PasswordBloc(Repositories(ApiServices()))),

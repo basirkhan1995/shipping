@@ -38,3 +38,8 @@ class OnResetAuthState extends AuthEvent{
   List<Object?> get props => [];
 }
 
+/// Fired once at startup to rehydrate a remembered session.
+class RestoreSessionEvent extends AuthEvent {
+  @override
+  List<Object?> get props => [];
+}

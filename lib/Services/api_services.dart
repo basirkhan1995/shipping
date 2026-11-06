@@ -4,6 +4,17 @@ import 'api_exception.dart';
 import 'localization_services.dart';
 
 class ApiServices {
+  static String? _authToken;
+
+  /// Call from AuthBloc on login success, on session restore, and
+  /// pass null on logout. All future requests inherit the token.
+  static void setAuthToken(String? token) {
+    _authToken = token;
+    debugPrint(
+      '🔐 setAuthToken=${token == null ? "null" : "…${token.substring(token.length - 8)}"}',
+    );
+  }
+
   static const String baseUrl = "https://www.ferdawsbelalnabizada.com/rapi";
   static const String imageUrl =
       "https://www.ferdawsbelalnabizada.com/images/personal/";
@@ -26,10 +37,28 @@ class ApiServices {
       ),
     );
 
-    // ────────────────────────────────────────────────────────────────
-    // Log interceptor — DEBUG ONLY.
-    // Goes AFTER _dio = Dio(...) because _dio must exist first.
-    // ────────────────────────────────────────────────────────────────
+    // ── 1. Auth interceptor: attach Bearer token to every request ──
+    // Must be added BEFORE LogInterceptor so the log reflects the
+    // final headers (including Authorization).
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          final t = _authToken;
+          if (t != null && t.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $t';
+          }
+          if (kDebugMode) {
+            debugPrint(
+              '🔐 auth → ${options.method} ${options.uri} '
+                  'token=${t == null ? "null" : "…${t.substring(t.length - 8)}"}',
+            );
+          }
+          handler.next(options);
+        },
+      ),
+    );
+
+    // ── 2. Log interceptor: DEBUG ONLY ──
     if (kDebugMode) {
       _dio.interceptors.add(
         LogInterceptor(
@@ -86,18 +115,32 @@ class ApiServices {
 
         String message;
         switch (status) {
-          case 400: message = serverMessage ?? tr.badRequest; break;
-          case 401: message = serverMessage ?? tr.unAuthorized; break;
-          case 403: message = serverMessage ?? tr.forbidden; break;
-          case 404: message = serverMessage ?? tr.url404; break;
-          case 405: message = serverMessage ?? tr.notAllowedError; break;
-          case 500: message = serverMessage ?? tr.internalServerError; break;
-          case 503: message = serverMessage ?? tr.serviceUnavailable; break;
-          default:  message = serverMessage ?? "${tr.serverError}: $status";
+          case 400:
+            message = serverMessage ?? tr.badRequest;
+            break;
+          case 401:
+            message = serverMessage ?? tr.unAuthorized;
+            break;
+          case 403:
+            message = serverMessage ?? tr.forbidden;
+            break;
+          case 404:
+            message = serverMessage ?? tr.url404;
+            break;
+          case 405:
+            message = serverMessage ?? tr.notAllowedError;
+            break;
+          case 500:
+            message = serverMessage ?? tr.internalServerError;
+            break;
+          case 503:
+            message = serverMessage ?? tr.serviceUnavailable;
+            break;
+          default:
+            message = serverMessage ?? "${tr.serverError}: $status";
         }
         return ApiException(message, statusCode: status, code: code);
 
-    // 🎯 THE FIX: don't hide JSON parse failures as "network error"
       case DioExceptionType.unknown:
         final raw = e.response?.data;
         final statusCode = e.response?.statusCode;
@@ -123,9 +166,7 @@ class ApiServices {
 
       default:
         return ApiException(
-          e.message?.isNotEmpty == true
-              ? e.message!
-              : tr.networkError,
+          e.message?.isNotEmpty == true ? e.message! : tr.networkError,
           statusCode: e.response?.statusCode,
         );
     }
@@ -181,7 +222,7 @@ class ApiServices {
   Future<Response> uploadFileWithMethod({
     required String endpoint,
     required FormData data,
-    String method = 'POST',                     // defaults to old behaviour
+    String method = 'POST',
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
     ProgressCallback? onSendProgress,
@@ -210,7 +251,7 @@ class ApiServices {
   Future<Response> put({
     required String endpoint,
     required dynamic data,
-    Map<String, dynamic>? headers,        // <-- NEW
+    Map<String, dynamic>? headers,
     CancelToken? cancelToken,
   }) async {
     try {
@@ -235,7 +276,7 @@ class ApiServices {
     required String endpoint,
     dynamic data,
     Map<String, dynamic>? queryParams,
-    Map<String, dynamic>? headers,        // <-- NEW
+    Map<String, dynamic>? headers,
     CancelToken? cancelToken,
   }) async {
     try {

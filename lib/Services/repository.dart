@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' hide MultipartFile;
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shipping/Services/config.dart';
+import '../Routes/Auth/model/token.dart';
 import '../Routes/Home/View/Dashboard/model/ds_model.dart';
 import '../Routes/Home/View/Finance/View/Currencies/model/ccy_model.dart';
 import '../Routes/Home/View/Finance/View/EOY/model/eoy_model.dart';
@@ -49,6 +50,16 @@ class Repositories {
   final ApiServices _api;
 
   const Repositories(this._api);
+
+  // Remember-me window. Bump here if policy changes.
+  static const Duration _rememberDuration = Duration(days: 6);
+  static const String _sessionKey = 'auth.session.v1';
+
+  // Lazy singleton so `Repositories` can stay cheap to construct.
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(migrateOnAlgorithmChange: true),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+  );
 
   // ═════════════════════════════════════════════════════════════════
 // Reminders
@@ -216,6 +227,21 @@ class Repositories {
   // ═════════════════════════════════════════════════════════════════
   // Authentication
   // ═════════════════════════════════════════════════════════════════
+  // Future<Map<String, dynamic>> login({
+  //   required String username,
+  //   required String password,
+  // }) async {
+  //   final response = await _api.post(
+  //     endpoint: '/user/login.php',
+  //     data: {'usrName': username, 'usrPass': password},
+  //   );
+  //   final body = _asMap(response.data);
+  //   if (body == null) {
+  //     throw ApiException('Invalid server response');
+  //   }
+  //   return body;
+  // }
+
   Future<Map<String, dynamic>> login({
     required String username,
     required String password,
@@ -225,16 +251,14 @@ class Repositories {
       data: {'usrName': username, 'usrPass': password},
     );
     final body = _asMap(response.data);
-    if (body == null) {
-      throw ApiException('Invalid server response');
-    }
+    if (body == null) throw ApiException('Invalid server response');
     return body;
   }
-
   Future<Map<String, dynamic>> fetchProfile({
     required String username,
     CancelToken? cancelToken,
   }) async {
+
     final response = await _api.get(
       endpoint: '/user/login.php',
       queryParams: {'username': username},
@@ -249,6 +273,84 @@ class Repositories {
     return body;
   }
 
+  /// Persist a login session for 6 days. Call after successful login
+  /// when remember-me is checked. Aborts if the server gave no token.
+  Future<void> saveSession({required Map<String, dynamic> loginData}) async {
+    final token = loginData['token']?.toString();
+    if (token == null || token.isEmpty) {
+      return;
+    }
+
+    // NO TRIM — keep comLogo (a data: URL now) in the blob.
+    // Secure storage write is larger, but cold start renders the logo in frame 1.
+
+    int expiresAt;
+    try {
+      final existing = await _secureStorage.read(key: _sessionKey);
+      if (existing != null && existing.isNotEmpty) {
+        final old = jsonDecode(existing) as Map<String, dynamic>;
+        final oldExpiry = old['expiresAt'] as int?;
+        final now = DateTime.now().millisecondsSinceEpoch;
+        expiresAt = (oldExpiry != null && oldExpiry > now)
+            ? oldExpiry
+            : now + _rememberDuration.inMilliseconds;
+      } else {
+        expiresAt =
+            DateTime.now().add(_rememberDuration).millisecondsSinceEpoch;
+      }
+    } catch (_) {
+      expiresAt =
+          DateTime.now().add(_rememberDuration).millisecondsSinceEpoch;
+    }
+
+    final payload = <String, dynamic>{
+      'token': token,
+      'expiresAt': expiresAt,
+      'loginData': loginData,
+    };
+
+    await _secureStorage.write(key: _sessionKey, value: jsonEncode(payload));
+  }
+
+  /// Returns null if absent, corrupt, or expired.
+  /// Expired/corrupt entries are deleted on read.
+  Future<RememberedSession?> readSession() async {
+    final raw = await _secureStorage.read(key: _sessionKey);
+    if (raw == null || raw.isEmpty) return null;
+
+    try {
+      final map = jsonDecode(raw) as Map<String, dynamic>;
+      final token = map['token'] as String?;
+      final expiresAt = map['expiresAt'] as int?;
+      final loginData = map['loginData'] as Map<String, dynamic>?;
+
+      if (token == null || token.isEmpty || expiresAt == null || loginData == null) {
+        await clearSession();
+        return null;
+      }
+
+      final expiry = DateTime.fromMillisecondsSinceEpoch(expiresAt);
+      if (DateTime.now().isAfter(expiry)) {
+        await clearSession();
+        return null;
+      }
+
+      // Enforce consistency so LoginData.fromMap picks up the same token.
+      loginData['token'] = token;
+
+      return RememberedSession(
+        token: token,
+        loginData: loginData,
+        expiresAt: expiry,
+      );
+    } catch (e) {
+      await clearSession();
+      return null;
+    }
+  }
+
+  /// Wipe the remembered session. Idempotent. Safe to call any time.
+  Future<void> clearSession() => _secureStorage.delete(key: _sessionKey);
 
 
   // ═════════════════════════════════════════════════════════════════
@@ -1166,8 +1268,6 @@ class Repositories {
         'usrName': userName,
       },
     );
-
-    debugPrint('DELETE RAW: ${response.data}');
 
     final body = _asMap(response.data);
     if (body == null) {

@@ -416,7 +416,6 @@ class _ProfileCard extends StatelessWidget {
                   Expanded(
                     child: _info(
                       context,
-                      icon: Icons.location_city_outlined,
                       title: tr.city,
                       value: profile.address!.addCity!,
                     ),
@@ -425,7 +424,6 @@ class _ProfileCard extends StatelessWidget {
                   Expanded(
                     child: _info(
                       context,
-                      icon: Icons.map_outlined,
                       title: tr.province,
                       value: profile.address!.addProvince!,
                     ),
@@ -434,7 +432,6 @@ class _ProfileCard extends StatelessWidget {
                   Expanded(
                     child: _info(
                       context,
-                      icon: Icons.public_outlined,
                       title: tr.country,
                       value: profile.address!.addCountry!,
                     ),
@@ -443,7 +440,6 @@ class _ProfileCard extends StatelessWidget {
                   Expanded(
                     child: _info(
                       context,
-                      icon: Icons.markunread_mailbox_outlined,
                       title: tr.zipCode,
                       value: profile.address!.addZipCode!,
                     ),
@@ -570,7 +566,7 @@ class _ProfileCard extends StatelessWidget {
 
   Widget _info(
       BuildContext context, {
-        required IconData icon,
+         IconData? icon,
         required String title,
         required String value,
       }) {
@@ -582,15 +578,18 @@ class _ProfileCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(7),
-            decoration: BoxDecoration(
-              color: color.primary.withValues(alpha: .08),
-              borderRadius: BorderRadius.circular(8),
+          if(icon!=null)...[
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: color.primary.withValues(alpha: .08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 16, color: color.primary),
             ),
-            child: Icon(icon, size: 16, color: color.primary),
-          ),
-          const SizedBox(width: 10),
+            const SizedBox(width: 10),
+          ],
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

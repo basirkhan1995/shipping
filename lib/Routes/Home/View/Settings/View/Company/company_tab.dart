@@ -78,8 +78,9 @@ class _CompanyTabsViewState extends State<CompanyTabsView> {
           return GenericMenuWithScreen(
             isExpanded: false,
             menuWidth: 190,
-            padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 8),
-            margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
+            menuHeightMode: MenuHeightMode.content,
+            //padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 8),
+            //margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
             selectedColor:
             Theme.of(context).colorScheme.primary.withValues(alpha: .09),
             selectedTextColor: Theme.of(context).colorScheme.primary,
