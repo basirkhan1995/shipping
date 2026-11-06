@@ -553,7 +553,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get backup => 'پشتیبان‌ گیری';
 
   @override
-  String get generalSettings => 'تنظیمات عمومی';
+  String get generalSettings => 'عمومی';
 
   @override
   String get fiscalYear => 'ختم سال مالی';

@@ -551,7 +551,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get backup => 'بیک اپ';
 
   @override
-  String get generalSettings => 'عمومی تنظیمات';
+  String get generalSettings => 'عمومی';
 
   @override
   String get fiscalYear => 'د مالي کال تړل';

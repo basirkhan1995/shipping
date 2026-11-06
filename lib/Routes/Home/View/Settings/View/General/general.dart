@@ -48,7 +48,7 @@ class _BaseGeneralView extends StatelessWidget {
           value: GeneralTabName.system,
           label: AppLocalizations.of(context)!.systemSettings,
           screen: const SystemView(),
-          icon: Icons.settings,
+          icon: Icons.display_settings_rounded,
         ),
       if (login.hasPermission(67) ?? false)
         MenuDefinition(

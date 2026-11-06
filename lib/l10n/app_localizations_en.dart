@@ -552,7 +552,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backup => 'Backup';
 
   @override
-  String get generalSettings => 'General Settings';
+  String get generalSettings => 'General';
 
   @override
   String get fiscalYear => 'End of year';

@@ -1171,7 +1171,7 @@ abstract class AppLocalizations {
   /// No description provided for @generalSettings.
   ///
   /// In en, this message translates to:
-  /// **'General Settings'**
+  /// **'General'**
   String get generalSettings;
 
   /// No description provided for @fiscalYear.

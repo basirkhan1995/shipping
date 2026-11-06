@@ -347,7 +347,11 @@ class _GenericMenuWithScreenState<T> extends State<GenericMenuWithScreen<T>> {
                   padding:
                   const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                    // 🔧 FIX: center the toggle button when collapsed,
+                    // right-align it when expanded.
+                    mainAxisAlignment: isMenuExpanded
+                        ? MainAxisAlignment.end
+                        : MainAxisAlignment.center,
                     children: [
                       Container(
                         decoration: BoxDecoration(
@@ -577,7 +581,11 @@ class _GenericMenuWithScreenState<T> extends State<GenericMenuWithScreen<T>> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 4, vertical: 2),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
+                        // 🔧 FIX: center the toggle button when collapsed,
+                        // right-align it when expanded.
+                        mainAxisAlignment: isMenuExpanded
+                            ? MainAxisAlignment.end
+                            : MainAxisAlignment.center,
                         children: [
                           InkWell(
                             hoverColor: Colors.transparent,
@@ -588,18 +596,18 @@ class _GenericMenuWithScreenState<T> extends State<GenericMenuWithScreen<T>> {
                               });
                             },
                             child: Container(
-                              padding: EdgeInsetsGeometry.all(3),
+                              padding: EdgeInsets.all(isMenuExpanded? 3 : 5),
                               decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .primary
-                                    .withValues(alpha: .06),
+                                color: Theme.of(context).colorScheme.outline.withValues(alpha: .06),
                                 borderRadius: BorderRadius.circular(15),
                               ),
                               child: Center(
-                                child: Icon(isMenuExpanded
-                                    ? Icons.chevron_left
-                                    : Icons.chevron_right,size: 20,),
+                                child: Icon(
+                                  isMenuExpanded
+                                      ? Icons.chevron_left
+                                      : Icons.dehaze_rounded,
+                                  size: 20,
+                                ),
                               ),
                             ),
                           ),
