@@ -3,9 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../l10n/Bloc/localizations_bloc.dart';
 
-// =====================================================================
-// MenuHeightMode
-// =====================================================================
 /// How [GenericMenuWithScreen]'s sidebar computes its height.
 enum MenuHeightMode {
   /// Stretches to the full available height of the parent.
@@ -159,7 +156,7 @@ class GenericMenuItem extends StatelessWidget {
                                 fontWeight: isSelected
                                     ? FontWeight.w600
                                     : FontWeight.w500,
-                                letterSpacing: 1,
+                                letterSpacing: 0.3,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),

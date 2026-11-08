@@ -3,9 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Routes/Home/View/HR/hr.dart';
+import 'package:shipping/Routes/Home/View/Products/products.dart';
+import 'package:shipping/Routes/Home/View/Settings/View/Company/bloc/company_settings_menu_bloc.dart';
+import 'package:shipping/Routes/Home/View/Settings/bloc/settings_tab_bloc.dart';
 import 'package:shipping/Routes/Home/View/Shipments/shipments.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/all_stakeholder.dart';
 import 'package:shipping/Routes/Home/View/Transactions/transactions.dart';
+import 'package:shipping/Routes/Home/View/Transfer/transfer.dart';
 import '../../../../Features/Other/responsive_widget.dart';
 import '../../Features/Widgets/generic_menu.dart';
 import '../../l10n/app_localizations.dart';
@@ -13,7 +17,9 @@ import '../Auth/bloc/auth_bloc.dart';
 import 'View/Dashboard/dashboard.dart';
 import 'View/Finance/finance.dart';
 import 'View/Report/report.dart';
+import 'View/Settings/Visibility/bloc/settings_visible_bloc.dart';
 import 'View/Settings/settings.dart';
+import 'View/Stock/Orders/Ui/orders.dart';
 import 'bloc/menu_bloc.dart';
 
 class HomeView extends StatelessWidget {
@@ -71,6 +77,7 @@ class _DesktopView extends StatelessWidget {
   Widget build(BuildContext context) {
 
     final currentTab = context.select((MenuBloc bloc) => bloc.state.tabs);
+    final visibility = context.watch<SettingsVisibleBloc>().state;
     final menuItems = [
       MenuDefinition(
         value: MenuName.dashboard,
@@ -82,7 +89,7 @@ class _DesktopView extends StatelessWidget {
         value: MenuName.finance,
         label: AppLocalizations.of(context)!.finance,
         screen: const FinanceView(),
-        icon: Icons.money,
+        icon: Icons.monetization_on_rounded,
       ),
       MenuDefinition(
         value: MenuName.hr,
@@ -102,11 +109,34 @@ class _DesktopView extends StatelessWidget {
         screen: const StakeholderView(),
         icon: Icons.people,
       ),
+      if(visibility.orders)...[
+        MenuDefinition(
+          value: MenuName.stock,
+          label: AppLocalizations.of(context)!.stock,
+          screen: const OrdersView(),
+          icon: Icons.shopify_rounded,
+        ),
+        MenuDefinition(
+          value: MenuName.products,
+          label: AppLocalizations.of(context)!.products,
+          screen: const ProductsView(),
+          icon: Icons.production_quantity_limits_rounded,
+        ),
+      ],
+
+    if(visibility.shipping)
       MenuDefinition(
         value: MenuName.shipment,
         label: AppLocalizations.of(context)!.shipment,
         screen: const ShipmentsView(),
-        icon: Icons.local_shipping_rounded,
+        icon: Icons.transform_rounded,
+      ),
+      if(visibility.moneyTransfer)
+      MenuDefinition(
+        value: MenuName.transfer,
+        label: AppLocalizations.of(context)!.transfer,
+        screen: const TransferView(),
+        icon: Icons.attach_money_rounded,
       ),
       MenuDefinition(
         value: MenuName.settings,
@@ -222,16 +252,23 @@ class _CompanyHeader extends StatelessWidget {
           // ── Name below (hidden when collapsed) ──
           if (isExpanded) ...[
             const SizedBox(height: 6),
-            Text(
-              companyName,
-              maxLines: 2,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: scheme.onSurface,
-                height: 1.2,
+            InkWell(
+              onTap: (){
+                context.read<MenuBloc>().add(MenuOnChangedEvent(MenuName.settings));
+                context.read<SettingsTabBloc>().add(SettingsOnChangeEvent(SettingsTabName.company));
+                context.read<CompanySettingsMenuBloc>().add(CompanySettingsOnChangedEvent(CompanySettingsMenuName.profile));
+              },
+              child: Text(
+                companyName,
+                maxLines: 2,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: scheme.onSurface,
+                  height: 1.2,
+                ),
               ),
             ),
           ],

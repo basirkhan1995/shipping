@@ -881,7 +881,7 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
             Expanded(
               flex: 3,
               child: GenericTextField<
-                  StakeholderAccount,
+                  StkAccountModel,
                   StkAccountsBloc,
                   StkAccountsState>(
                 controller: c.account,
@@ -959,7 +959,7 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
 
                 stateToItems: (s) {
                   if (s is! StkAccountsLoadedState) {
-                    return const <StakeholderAccount>[];
+                    return const <StkAccountModel>[];
                   }
 
                   const excluded = <int>{10101011};
@@ -973,7 +973,7 @@ class _BulkRowWidgetState extends State<_BulkRowWidget> {
                     ccyByAcc.putIfAbsent(n, () => <String>{}).add(c);
                   }
 
-                  final filtered = <StakeholderAccount>[];
+                  final filtered = <StkAccountModel>[];
                   for (final a in s.accounts) {
                     if (excluded.contains(a.accNumber)) continue;
 

@@ -443,10 +443,7 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm>
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(5),
                       border: Border.all(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withValues(alpha: .09),
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: .09),
                       ),
                     ),
                     // ── FIX: was Image.memory(_companyLogo) ──
@@ -481,8 +478,9 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm>
                 children: [
                   Text(
                     state.company.comName ?? "",
-                    style: Theme.of(context).textTheme.titleLarge,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                   ),
+                  SizedBox(height: 3),
                   if (state.company.comEmail != null &&
                       state.company.comEmail!.isNotEmpty)
                     Text(state.company.comEmail ?? ""),
@@ -500,14 +498,13 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm>
                   ZOutlineButton(
                     icon: Icons.edit,
                     isActive: true,
-                    label: Text(locale.editProfile),
+                    label: Text(locale.edit),
                     onPressed: () {
                       setState(() => isUpdateMode = true);
                     },
                   ),
                 if (isUpdateMode) ...[
                   ZOutlineButton(
-                    icon: Icons.clear,
                     backgroundHover: Theme.of(context).colorScheme.error,
                     label: Text(locale.cancel),
                     onPressed: _cancelUpdate,

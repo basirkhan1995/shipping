@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shipping/Features/Widgets/extensions.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../../Features/Other/image_helper.dart';
+import '../../../../Auth/bloc/auth_bloc.dart';
+import '../View/Security/verify_lock.dart';
 import '../model/stk_model.dart';
 
 class EntityWidget extends StatelessWidget {
-  final IndividualsModel stakeholder;
+  final StakeholdersModel stakeholder;
 
   /// Alternate row background based on index parity.
   final bool isEven;
@@ -29,9 +33,7 @@ class EntityWidget extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    final rowBg = isEven
-        ? scheme.surface
-        : scheme.surfaceContainerHighest;
+    final rowBg = isEven ? scheme.surface : scheme.surfaceContainerHighest;
 
     final balances = stakeholder.balancesByCurrency;
     final hasActive = stakeholder.hasActiveAccount;
@@ -52,8 +54,8 @@ class EntityWidget extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // ── Avatar ──
-              _avatar(scheme),
+              // ── Avatar (with lock badge) ──
+              _avatarWithBadge(scheme),
 
               const SizedBox(width: 12),
 
@@ -80,8 +82,7 @@ class EntityWidget extends StatelessWidget {
                         if (stakeholder.perPhone != null &&
                             stakeholder.perPhone!.isNotEmpty) ...[
                           Icon(Icons.phone_outlined,
-                              size: 11,
-                              color: scheme.onSurfaceVariant),
+                              size: 11, color: scheme.onSurfaceVariant),
                           const SizedBox(width: 3),
                           Text(
                             stakeholder.perPhone!,
@@ -95,8 +96,7 @@ class EntityWidget extends StatelessWidget {
                         if (stakeholder.perEmail != null &&
                             stakeholder.perEmail!.isNotEmpty) ...[
                           Icon(Icons.email_outlined,
-                              size: 11,
-                              color: scheme.onSurfaceVariant),
+                              size: 11, color: scheme.onSurfaceVariant),
                           const SizedBox(width: 3),
                           Flexible(
                             child: Text(
@@ -141,28 +141,26 @@ class EntityWidget extends StatelessWidget {
                   ),
                 ),
 
-              // ── Balances ──
+              // ── Balances (masked if locked) ──
               Expanded(
                 flex: 4,
                 child: _balanceStack(balances, scheme, textTheme),
               ),
               const SizedBox(width: 8),
+
               // ── Status dot ──
               Container(
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: hasActive
-                      ? const Color(0xFF22C55E)
-                      : scheme.error,
+                  color: hasActive ? const Color(0xFF22C55E) : scheme.error,
                 ),
               ),
-
               const SizedBox(width: 6),
 
               // ── Menu ──
-              _menu(scheme,AppLocalizations.of(context)!),
+              _menu(context, scheme, AppLocalizations.of(context)!),
             ],
           ),
         ),
@@ -170,18 +168,50 @@ class EntityWidget extends StatelessWidget {
     );
   }
 
-  // ── Avatar with Hero ──────────────────────────────────────────────
-  Widget _avatar(ColorScheme scheme) {
-    return Hero(
-      tag: 'stakeholder_img_${stakeholder.perId}',
-      flightShuttleBuilder: _buildHeroShuttle,
-      child: ImageHelper.stakeholderProfile(
-        imageName: stakeholder.imageProfile,
-        size: 40,
-        shapeStyle: ShapeStyle.circle,
-        placeholderColor: scheme.primaryContainer,
-        placeholderIcon: Icons.person,
-        errorIcon: Icons.person,
+  // ── Avatar with lock badge stacked on the corner ─────────────────
+  Widget _avatarWithBadge(ColorScheme scheme) {
+    return SizedBox(
+      width: 46,
+      height: 46,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          // Avatar
+          Hero(
+            tag: 'stakeholder_img_${stakeholder.perId}',
+            flightShuttleBuilder: _buildHeroShuttle,
+            child: ImageHelper.stakeholderProfile(
+              imageName: stakeholder.imageProfile,
+              size: 40,
+              shapeStyle: ShapeStyle.circle,
+              placeholderColor: scheme.primaryContainer,
+              placeholderIcon: Icons.person,
+              errorIcon: Icons.person,
+            ),
+          ),
+
+          // Lock badge on the bottom-right corner
+          if (stakeholder.isLocked)
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Container(
+                width: 18,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: scheme.error,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: scheme.surface, width: 2),
+                ),
+                child: Icon(
+                  Icons.lock,
+                  size: 9,
+                  color: scheme.onError,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -193,7 +223,6 @@ class EntityWidget extends StatelessWidget {
       BuildContext fromHeroContext,
       BuildContext toHeroContext,
       ) {
-    // Preserve the circular shape during flight.
     return ClipOval(
       child: Material(
         color: Colors.transparent,
@@ -202,15 +231,17 @@ class EntityWidget extends StatelessWidget {
     );
   }
 
-  // ── Balances stacked, one line per currency ──────────────────────
+  // ── Balances stacked; masked when locked ─────────────────────────
   Widget _balanceStack(
       Map<String, double> balances,
       ColorScheme scheme,
       TextTheme textTheme,
       ) {
+    final masked = stakeholder.isLocked;
+
     if (balances.isEmpty) {
       return Text(
-        'No balance',
+        masked ? 'Hidden' : 'No balance',
         style: textTheme.bodySmall?.copyWith(
           fontSize: 11,
           color: scheme.onSurfaceVariant.withValues(alpha: 0.5),
@@ -230,14 +261,27 @@ class EntityWidget extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  _formatAmount(e.value),
-                  style: textTheme.bodySmall?.copyWith(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: scheme.onSurface,
+                if (masked) ...[
+                  Icon(Icons.lock, size: 10, color: scheme.onSurfaceVariant),
+                  const SizedBox(width: 3),
+                  Text(
+                    '••••••',
+                    style: textTheme.bodySmall?.copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: scheme.onSurfaceVariant,
+                      letterSpacing: 1.5,
+                    ),
                   ),
-                ),
+                ] else
+                  Text(
+                    e.value.toAmount(),
+                    style: textTheme.bodySmall?.copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: scheme.onSurface,
+                    ),
+                  ),
                 const SizedBox(width: 4),
                 Text(
                   e.key,
@@ -255,17 +299,38 @@ class EntityWidget extends StatelessWidget {
     );
   }
 
-  String _formatAmount(double value) {
-    final parts = value.toStringAsFixed(2).split('.');
-    final intPart = parts[0].replaceAllMapped(
-      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-          (m) => '${m[1]},',
+  // ── Admin-only lock/unlock permission ────────────────────────────
+  bool _canManageLock(BuildContext context) {
+    final auth = context.read<AuthBloc>().state;
+    if (auth is! AuthenticatedState) return false;
+
+    final role = auth.loginData.usrRole?.toLowerCase();
+    return role == 'super' || role == 'admin' || role == 'ceo';
+  }
+
+  Future<void> _handleLockTap(
+      BuildContext context, {
+        required bool lock,
+      }) async {
+    final perID = stakeholder.perId;
+    if (perID == null) return;
+
+    await LockVerifyDialog.show(
+      context,
+      perID: perID,
+      stakeholderName: stakeholder.fullName,
+      mode: lock ? LockVerifyMode.lock : LockVerifyMode.unlock,
     );
-    return '$intPart.${parts[1]}';
   }
 
   // ── ⋯ menu ────────────────────────────────────────────────────────
-  Widget _menu(ColorScheme scheme,AppLocalizations tr) {
+  Widget _menu(
+      BuildContext context,
+      ColorScheme scheme,
+      AppLocalizations tr,
+      ) {
+    final canLock = _canManageLock(context);
+
     return PopupMenuButton<String>(
       tooltip: 'Options',
       padding: EdgeInsets.zero,
@@ -283,6 +348,12 @@ class EntityWidget extends StatelessWidget {
           case 'delete':
             onTapDelete?.call();
             break;
+          case 'lock':
+            _handleLockTap(context, lock: true);
+            break;
+          case 'unlock':
+            _handleLockTap(context, lock: false);
+            break;
         }
       },
       itemBuilder: (_) => [
@@ -291,9 +362,9 @@ class EntityWidget extends StatelessWidget {
           height: 40,
           child: Row(
             children: [
-              Icon(Icons.visibility_outlined, size: 16),
-              SizedBox(width: 10),
-              Text(tr.view, style: TextStyle(fontSize: 13)),
+              const Icon(Icons.visibility_outlined, size: 16),
+              const SizedBox(width: 10),
+              Text(tr.view, style: const TextStyle(fontSize: 13)),
             ],
           ),
         ),
@@ -302,16 +373,40 @@ class EntityWidget extends StatelessWidget {
           height: 40,
           child: Row(
             children: [
-              Icon(Icons.edit_outlined, size: 16),
-              SizedBox(width: 10),
-              Text(tr.edit, style: TextStyle(fontSize: 13)),
+              const Icon(Icons.edit_outlined, size: 16),
+              const SizedBox(width: 10),
+              Text(tr.edit, style: const TextStyle(fontSize: 13)),
             ],
           ),
         ),
+        if (canLock) ...[
+          const PopupMenuDivider(),
+          PopupMenuItem(
+            value: stakeholder.isLocked ? 'unlock' : 'lock',
+            height: 40,
+            child: Row(
+              children: [
+                Icon(
+                  stakeholder.isLocked
+                      ? Icons.lock_open_outlined
+                      : Icons.lock_outline,
+                  size: 16,
+                  color: scheme.primary,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  stakeholder.isLocked ? tr.unlock : tr.lock,
+                  style: TextStyle(fontSize: 13, color: scheme.primary),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const PopupMenuDivider(),
         PopupMenuItem(
           value: 'delete',
           height: 40,
-          child: _DeleteMenuItem(),
+          child: const _DeleteMenuItem(),
         ),
       ],
     );

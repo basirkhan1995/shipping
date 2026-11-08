@@ -42,11 +42,13 @@ class SettingsVisibleBloc extends Bloc<SettingsVisibleEvent, SettingsVisibilityS
   Future<void> updateSettingsEvent(UpdateSettingsEvent event, Emitter<SettingsVisibilityState> emit) async {
 
     final updated = SettingsVisibilityState(
+      moneyTransfer: event.moneyTransfer ?? state.moneyTransfer,
+      shipping: event.shipping ?? state.shipping,
       stock: event.stock ?? state.stock,
       benefit: event.benefit ?? state.benefit,
       attendance: event.attendance ?? state.attendance,
       exchangeRate: event.exchangeRate ?? state.exchangeRate,
-      currencyRates: event.currencyRates ?? state.currencyRates, // Changed parameter name
+      currencyRates: event.currencyRates ?? state.currencyRates,
       dashboardClock: event.dashboardClock ?? state.dashboardClock,
       quickAccess: event.quickAccess ?? state.quickAccess,
       recentTransactions: event.recentTransactions ?? state.recentTransactions,

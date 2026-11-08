@@ -175,7 +175,7 @@ class _DesktopState extends State<_Desktop> {
 
               /// Account
               if(widget.isEnable == false)...[
-                GenericTextField<StakeholderAccount, StkAccountsBloc, StkAccountsState>(
+                GenericTextField<StkAccountModel, StkAccountsBloc, StkAccountsState>(
                   showAllOnFocus: true,
                   controller: account,
                   title: tr.accounts,

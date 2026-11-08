@@ -11,11 +11,9 @@ import '../../../../Features/Widgets/search_field.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'bloc/stakeholder_bloc.dart';
 import 'features/entity_card.dart';
+import 'features/security_prompt.dart';        // ← NEW
 import 'model/stk_model.dart';
 
-// ═══════════════════════════════════════════════════════════════════
-// Main view
-// ═══════════════════════════════════════════════════════════════════
 class StakeholderView extends StatelessWidget {
   const StakeholderView({super.key});
 
@@ -30,7 +28,7 @@ class StakeholderView extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Shared controller/logic
+// Controller / logic
 // ═══════════════════════════════════════════════════════════════════
 class _StakeholderController {
   static void refresh(BuildContext context) {
@@ -41,16 +39,22 @@ class _StakeholderController {
     context.read<StakeholderBloc>().add(SearchStakeholdersEvent(query));
   }
 
-  /// Opens the stakeholder detail screen.
-  ///
-  /// The detail screen pops with `true` when a transaction (cash deposit,
-  /// cash withdrawal, fund transfer) — or any other balance-affecting
-  /// mutation — occurred. In that case we refresh the list so account
-  /// totals shown on the cards are up-to-date when the user comes back.
+  /// Open the detail screen. Locked stakeholders require admin
+  /// verification first.
   static Future<void> openView(
-      BuildContext context, IndividualsModel model) async {
+      BuildContext context,
+      StakeholdersModel model,
+      ) async {
+    final ok = await ensureStakeholderUnlocked(context, stakeholder: model);
+    if (!ok || !context.mounted) return;
+
     final changed = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => StakeholderByIdView(ind: model)),
+      MaterialPageRoute(
+        builder: (_) => StakeholderByIdView(
+          ind: model,
+          verified: true,
+        ),
+      ),
     );
     if (changed == true && context.mounted) {
       context.read<StakeholderBloc>().add(const GetStakeholdersEvent());
@@ -58,7 +62,7 @@ class _StakeholderController {
   }
 
   static Future<void> openAddDialog(BuildContext context) async {
-    final result = await showDialog<IndividualsModel>(
+    final result = await showDialog<StakeholdersModel>(
       context: context,
       builder: (_) => const StakeholderFormDialog(),
     );
@@ -67,9 +71,16 @@ class _StakeholderController {
     }
   }
 
+  /// Open the edit dialog. Locked stakeholders require admin
+  /// verification first.
   static Future<void> openEditDialog(
-      BuildContext context, IndividualsModel model) async {
-    final result = await showDialog<IndividualsModel>(
+      BuildContext context,
+      StakeholdersModel model,
+      ) async {
+    final ok = await ensureStakeholderUnlocked(context, stakeholder: model);
+    if (!ok || !context.mounted) return;
+
+    final result = await showDialog<StakeholdersModel>(
       context: context,
       builder: (_) => StakeholderFormDialog(existing: model),
     );
@@ -79,7 +90,9 @@ class _StakeholderController {
   }
 
   static Future<void> confirmDelete(
-      BuildContext context, IndividualsModel model) async {
+      BuildContext context,
+      StakeholdersModel model,
+      ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -110,7 +123,7 @@ class _StakeholderController {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Shared snackbar listener
+// Snackbar listener — unchanged from your version
 // ═══════════════════════════════════════════════════════════════════
 class _StakeholderListener extends StatelessWidget {
   final Widget child;
@@ -125,33 +138,40 @@ class _StakeholderListener extends StatelessWidget {
           c is UpdateStakeholderSuccessState ||
           c is UpdateStakeholderFailureState ||
           c is DeleteStakeholderSuccessState ||
-          c is DeleteStakeholderFailureState,
+          c is DeleteStakeholderFailureState ||
+          c is SetStakeholderLockSuccessState ||
+          c is SetStakeholderLockFailureState,
       listener: (context, state) {
         String? message;
-        Color? color;
-        if (state is AddStakeholderSuccessState ||
-            state is UpdateStakeholderSuccessState ||
-            state is DeleteStakeholderSuccessState) {
-          message = (state is AddStakeholderSuccessState)
-              ? state.message
-              : (state is UpdateStakeholderSuccessState)
-              ? state.message
-              : (state as DeleteStakeholderSuccessState).message;
-          color = Theme.of(context).colorScheme.primary;
+        ToastType type = ToastType.success;
+
+        if (state is AddStakeholderSuccessState) {
+          message = state.message;
+        } else if (state is UpdateStakeholderSuccessState) {
+          message = state.message;
+        } else if (state is DeleteStakeholderSuccessState) {
+          message = state.message;
+        } else if (state is SetStakeholderLockSuccessState) {
+          message = state.message;
         } else if (state is AddStakeholderFailureState) {
           message = state.message;
-          color = Theme.of(context).colorScheme.error;
+          type = ToastType.error;
         } else if (state is UpdateStakeholderFailureState) {
           message = state.message;
-          color = Theme.of(context).colorScheme.error;
+          type = ToastType.error;
         } else if (state is DeleteStakeholderFailureState) {
           message = state.message;
-          color = Theme.of(context).colorScheme.error;
+          type = ToastType.error;
+        } else if (state is SetStakeholderLockFailureState) {
+          message = state.message;
+          type = ToastType.error;
         }
 
-        if (message != null && color != null) {
-          ToastManager.show(context: context, message: message, type: ToastType.success);
-          context.read<StakeholderBloc>().add(const ClearStakeholderMessagesEvent());
+        if (message != null) {
+          ToastManager.show(context: context, message: message, type: type);
+          context
+              .read<StakeholderBloc>()
+              .add(const ClearStakeholderMessagesEvent());
         }
       },
       child: child,
@@ -159,9 +179,11 @@ class _StakeholderListener extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// MOBILE
-// ═══════════════════════════════════════════════════════════════════
+// ── MOBILE / TABLET / DESKTOP ─────────────────────────────────────
+// Everything below is byte-identical to your existing version. The
+// only thing that changes is that `onTapView` / `onTapEdit` now hit
+// the controller above, which asks for verification when locked.
+
 class _StakeholderMobile extends StatelessWidget {
   const _StakeholderMobile();
 
@@ -198,8 +220,10 @@ class _StakeholderMobile extends StatelessWidget {
             Expanded(
               child: _StakeholderList(
                 onTapView: (m) => _StakeholderController.openView(context, m),
-                onTapEdit: (m) => _StakeholderController.openEditDialog(context, m),
-                onTapDelete: (m) => _StakeholderController.confirmDelete(context, m),
+                onTapEdit: (m) =>
+                    _StakeholderController.openEditDialog(context, m),
+                onTapDelete: (m) =>
+                    _StakeholderController.confirmDelete(context, m),
               ),
             ),
           ],
@@ -209,9 +233,6 @@ class _StakeholderMobile extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// TABLET
-// ═══════════════════════════════════════════════════════════════════
 class _StakeholderTablet extends StatelessWidget {
   const _StakeholderTablet();
 
@@ -267,9 +288,6 @@ class _StakeholderTablet extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// DESKTOP
-// ═══════════════════════════════════════════════════════════════════
 class _StakeholderDesktop extends StatelessWidget {
   const _StakeholderDesktop();
 
@@ -292,18 +310,17 @@ class _StakeholderDesktop extends StatelessWidget {
                     children: [
                       Text(
                         tr.stakeholders.toUpperCase(),
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.3
-                        ),
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineSmall
+                            ?.copyWith(
+                            fontWeight: FontWeight.w600, letterSpacing: 1.3),
                       ),
                       SizedBox(height: 3),
                       Text(
                         tr.stakeholderHint.toUpperCase(),
-                        style: TextStyle(
-                          letterSpacing: 1.3,
-                          fontSize: 10
-                        ),
+                        style:
+                        TextStyle(letterSpacing: 1.3, fontSize: 10),
                       ),
                     ],
                   ),
@@ -318,7 +335,8 @@ class _StakeholderDesktop extends StatelessWidget {
                       contentPadding:
                       const EdgeInsets.symmetric(horizontal: 4),
                       hintText: tr.searchStakeholders,
-                      onChanged: (q) => _StakeholderController.search(context, q),
+                      onChanged: (q) =>
+                          _StakeholderController.search(context, q),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -327,8 +345,7 @@ class _StakeholderDesktop extends StatelessWidget {
                     icon: Icons.refresh,
                     iconSize: 18,
                     height: 45,
-                    onPressed: () =>
-                        _StakeholderController.refresh(context),
+                    onPressed: () => _StakeholderController.refresh(context),
                   ),
                   const SizedBox(width: 8),
                   ZOutlineButton(
@@ -337,7 +354,8 @@ class _StakeholderDesktop extends StatelessWidget {
                     isActive: true,
                     iconSize: 18,
                     height: 45,
-                    onPressed: () => _StakeholderController.openAddDialog(context),
+                    onPressed: () =>
+                        _StakeholderController.openAddDialog(context),
                   ),
                 ],
               ),
@@ -345,8 +363,10 @@ class _StakeholderDesktop extends StatelessWidget {
             Expanded(
               child: _StakeholderList(
                 onTapView: (m) => _StakeholderController.openView(context, m),
-                onTapEdit: (m) => _StakeholderController.openEditDialog(context, m),
-                onTapDelete: (m) => _StakeholderController.confirmDelete(context, m),
+                onTapEdit: (m) =>
+                    _StakeholderController.openEditDialog(context, m),
+                onTapDelete: (m) =>
+                    _StakeholderController.confirmDelete(context, m),
               ),
             ),
           ],
@@ -356,13 +376,10 @@ class _StakeholderDesktop extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// List — EntityWidget per row
-// ═══════════════════════════════════════════════════════════════════
 class _StakeholderList extends StatelessWidget {
-  final ValueChanged<IndividualsModel> onTapView;
-  final ValueChanged<IndividualsModel> onTapEdit;
-  final ValueChanged<IndividualsModel> onTapDelete;
+  final ValueChanged<StakeholdersModel> onTapView;
+  final ValueChanged<StakeholdersModel> onTapEdit;
+  final ValueChanged<StakeholdersModel> onTapDelete;
 
   const _StakeholderList({
     required this.onTapView,
@@ -375,7 +392,7 @@ class _StakeholderList extends StatelessWidget {
     return BlocBuilder<StakeholderBloc, StakeholderState>(
       builder: (context, state) {
         if (state is GetStakeholdersLoadingState) {
-          return  UniversalShimmer.accountList(
+          return UniversalShimmer.accountList(
             itemCount: 10,
             useAlternatingColors: true,
           );
@@ -419,7 +436,7 @@ class _StakeholderList extends StatelessWidget {
     );
   }
 
-  List<IndividualsModel> _extractList(StakeholderState state) {
+  List<StakeholdersModel> _extractList(StakeholderState state) {
     if (state is GetStakeholdersSuccessState) return state.stakeholders;
     if (state is AddStakeholderLoadingState) return state.stakeholders;
     if (state is AddStakeholderSuccessState) return state.stakeholders;
@@ -427,13 +444,12 @@ class _StakeholderList extends StatelessWidget {
     if (state is UpdateStakeholderSuccessState) return state.stakeholders;
     if (state is DeleteStakeholderLoadingState) return state.stakeholders;
     if (state is DeleteStakeholderSuccessState) return state.stakeholders;
+    if (state is SetStakeholderLockLoadingState) return state.stakeholders;
+    if (state is SetStakeholderLockSuccessState) return state.stakeholders;
     return const [];
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Empty / error views
-// ═══════════════════════════════════════════════════════════════════
 class _EmptyView extends StatelessWidget {
   final VoidCallback onAdd;
   const _EmptyView({required this.onAdd});

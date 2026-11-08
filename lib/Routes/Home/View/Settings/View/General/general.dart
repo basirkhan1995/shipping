@@ -62,7 +62,7 @@ class _BaseGeneralView extends StatelessWidget {
         value: GeneralTabName.profileSettings,
         label: AppLocalizations.of(context)!.userProfile,
         screen: const UserProfileView(),
-        icon: Icons.supervised_user_circle_rounded,
+        icon: Icons.location_history,
       ),
     ];
 
@@ -198,7 +198,7 @@ class _BaseGeneralView extends StatelessWidget {
   }
 }
 
-// Mobile View
+// Mobile Purchase
 class _MobileGeneralView extends StatelessWidget {
   const _MobileGeneralView();
 
@@ -210,7 +210,7 @@ class _MobileGeneralView extends StatelessWidget {
   }
 }
 
-// Desktop/Tablet View
+// Desktop/Tablet Purchase
 class _DesktopGeneralView extends StatelessWidget {
   const _DesktopGeneralView();
 

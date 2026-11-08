@@ -3,7 +3,7 @@ import '../../../model/stk_model.dart';
 
 abstract class StkAccountsState extends Equatable {
   final int? perId;
-  final List<StakeholderAccount> accounts;
+  final List<StkAccountModel> accounts;
   final String? successMessage;
   final String? errorMessage;
 

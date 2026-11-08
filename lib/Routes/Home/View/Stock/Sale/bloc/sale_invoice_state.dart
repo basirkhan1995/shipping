@@ -1,0 +1,287 @@
+part of 'sale_invoice_bloc.dart';
+
+enum PaymentMode { cash, credit, mixed }
+
+abstract class SaleInvoiceState extends Equatable {
+  const SaleInvoiceState();
+}
+
+class SaleInvoiceInitial extends SaleInvoiceState {
+  @override
+  List<Object> get props => [];
+}
+
+class SaleInvoiceError extends SaleInvoiceState {
+  final String message;
+  const SaleInvoiceError(this.message);
+  @override
+  List<Object> get props => [message];
+}
+
+class SaleInvoiceLoaded extends SaleInvoiceState {
+  final List<SaleInvoiceItem> items;
+  final List<SalePaymentRecord> payments;
+  final StkAccountModel? customerAccount;
+  final String? orderDate;
+  final StakeholdersModel? customer;
+  final PaymentMode paymentMode;
+  final List<StorageModel>? storages;
+  final double generalDiscount;
+  final double? exchangeRate;
+  final DiscountType generalDiscountType;
+  final String? fromCurrency;
+  final String? toCurrency;
+  final double extraCharges;
+  final double cashPayment;
+  final String? cashCurrency;
+  final double cashExchangeRate;
+  final String? trnRef;
+  final String? remark;
+  final String? ordName;
+  final int? orderId;
+
+  const SaleInvoiceLoaded({
+    required this.items,
+    required this.payments,
+    this.customer,
+    this.customerAccount,
+    this.orderDate,
+    this.paymentMode = PaymentMode.cash,
+    this.storages,
+    this.generalDiscount = 0.0,
+    this.exchangeRate,
+    this.extraCharges = 0.0,
+    this.generalDiscountType = DiscountType.percentage,
+    this.fromCurrency,
+    this.toCurrency,
+    this.cashPayment = 0.0,
+    this.cashCurrency,
+    this.cashExchangeRate = 1.0,
+    this.trnRef,
+    this.remark,
+    this.ordName,
+    this.orderId,
+  });
+
+  bool get needsExchangeRate {
+    if (customerAccount == null) return false;
+    final accountCurrency = customerAccount!.accCurrency ?? '';
+    final baseCurr = fromCurrency ?? '';
+    return accountCurrency.isNotEmpty &&
+        baseCurr.isNotEmpty &&
+        accountCurrency != baseCurr;
+  }
+
+  bool get isExchangeRateLoading => exchangeRate != null && exchangeRate! < 0;
+
+  double get safeExchangeRate {
+    if (exchangeRate == null || exchangeRate! <= 0) return 1.0;
+    return exchangeRate!;
+  }
+
+  double get subtotal {
+    return items.fold(0.0, (sum, item) => sum + (item.effectiveQty * (item.salePrice ?? 0)));
+  }
+  double get totalItemDiscount {
+    return items.fold(0.0, (sum, item) => sum + item.discountAmount);
+  }
+
+  double get totalAfterItemDiscount {
+    return items.fold(0.0, (sum, item) => sum + item.totalSale);
+  }
+
+  double get totalPurchaseCost {
+    return items.fold(0.0, (sum, item) => sum + (item.effectiveQty * (item.purPrice ?? 0)));
+  }
+
+  double get generalDiscountAmount {
+    if (generalDiscount <= 0) return 0;
+    if (generalDiscountType == DiscountType.percentage) {
+      return totalAfterItemDiscount * (generalDiscount / 100);
+    } else {
+      return generalDiscount;
+    }
+  }
+
+  double get grandTotal => totalAfterItemDiscount - generalDiscountAmount + extraCharges;
+
+  double get grandTotalLocal {
+    if (!needsExchangeRate) return grandTotal;
+    return grandTotal * safeExchangeRate;
+  }
+
+  double get totalLocalAmount {
+    if (!needsExchangeRate) return grandTotal;
+    return grandTotal * safeExchangeRate;
+  }
+
+  double get cashPaymentLocal {
+    if (!needsExchangeRate) return cashPayment;
+    return cashPayment * safeExchangeRate;
+  }
+
+  double get creditAmountLocal {
+    if (!needsExchangeRate) return creditAmount;
+    return creditAmount * safeExchangeRate;
+  }
+
+
+  double get totalProfit {
+    final netSaleAmount = totalAfterItemDiscount - generalDiscountAmount;
+    return netSaleAmount - totalPurchaseCost;
+  }
+
+  double get profitPercentage {
+    if (totalPurchaseCost > 0) {
+      return (totalProfit / totalPurchaseCost) * 100;
+    }
+    return 0.0;
+  }
+
+  double get creditAmount {
+    if (paymentMode == PaymentMode.credit) {
+      return grandTotal;
+    } else if (paymentMode == PaymentMode.mixed) {
+      return grandTotal - cashPayment;
+    }
+    return 0.0;
+  }
+
+  double get currentBalance {
+    if (customerAccount != null) {
+      return double.tryParse(customerAccount!.accBalance.toAmount()) ?? 0.0;
+    }
+    return 0.0;
+  }
+
+  double get newBalance {
+    return currentBalance - creditAmountLocal;
+  }
+
+  bool get isFormValid {
+    if (customer == null) return false;
+
+    // Allow cash mode with no account
+    if (paymentMode == PaymentMode.cash && cashPayment > 0) {
+      // Cash mode is valid even without account
+    }
+    // For mixed or credit, account is required
+    else if (paymentMode != PaymentMode.cash && customerAccount == null) {
+      return false;
+    }
+
+    // For cash mode, cash payment must be > 0
+    if (paymentMode == PaymentMode.cash && cashPayment <= 0) return false;
+
+    if (items.isEmpty) return false;
+
+    for (var item in items) {
+      if (item.productId.isEmpty ||
+          item.productName.isEmpty ||
+          item.storageId == 0 ||
+          item.storageName.isEmpty ||
+          item.salePrice == null ||
+          item.salePrice! <= 0 ||
+          item.qty <= 0) {
+        return false;
+      }
+    }
+
+    if (paymentMode == PaymentMode.mixed) {
+      if (cashPayment <= 0 || cashPayment >= grandTotal) return false;
+    }
+
+    if (generalDiscountType == DiscountType.amount && generalDiscount > grandTotal + generalDiscountAmount) {
+      return false;
+    }
+
+    return true;
+  }
+
+  SaleInvoiceLoaded copyWith({
+    List<SaleInvoiceItem>? items,
+    List<SalePaymentRecord>? payments,
+    StkAccountModel? customerAccount,
+    StakeholdersModel? customer,
+    PaymentMode? paymentMode,
+    List<StorageModel>? storages,
+    double? generalDiscount,
+    DiscountType? generalDiscountType,
+    double? exchangeRate,
+    String? fromCurrency,
+    String? toCurrency,
+    double? extraCharges,
+    double? cashPayment,
+    String? cashCurrency,
+    double? cashExchangeRate,
+    String? trnRef,
+    String? remark,
+    String? ordName,
+    int? orderId,
+    String? orderDate,
+  }) {
+    return SaleInvoiceLoaded(
+      items: items ?? this.items,
+      payments: payments ?? this.payments,
+      customer: customer ?? this.customer,
+      customerAccount: customerAccount ?? this.customerAccount,
+      paymentMode: paymentMode ?? this.paymentMode,
+      storages: storages ?? this.storages,
+      generalDiscount: generalDiscount ?? this.generalDiscount,
+      generalDiscountType: generalDiscountType ?? this.generalDiscountType,
+      exchangeRate: exchangeRate ?? this.exchangeRate,
+      fromCurrency: fromCurrency ?? this.fromCurrency,
+      toCurrency: toCurrency ?? this.toCurrency,
+      extraCharges: extraCharges ?? this.extraCharges,
+      cashPayment: cashPayment ?? this.cashPayment,
+      cashCurrency: cashCurrency ?? this.cashCurrency,
+      cashExchangeRate: cashExchangeRate ?? this.cashExchangeRate,
+      trnRef: trnRef ?? this.trnRef,
+      remark: remark ?? this.remark,
+      ordName: ordName ?? this.ordName,
+      orderId: orderId ?? this.orderId,
+      orderDate: orderDate ?? this.orderDate
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+    items, payments, customer, customerAccount, paymentMode, storages,
+    generalDiscount, generalDiscountType, exchangeRate, fromCurrency,
+    toCurrency, extraCharges, cashPayment, cashCurrency, cashExchangeRate, trnRef, remark, ordName, orderId, orderDate
+  ];
+}
+
+class SaleInvoiceSaving extends SaleInvoiceLoaded {
+  const SaleInvoiceSaving({
+    required super.items,
+    required super.payments,
+    super.customer,
+    super.customerAccount,
+    required super.cashPayment,
+    super.paymentMode,
+    super.storages,
+    super.generalDiscount,
+    super.generalDiscountType,
+    super.exchangeRate,
+    super.fromCurrency,
+    super.toCurrency,
+    super.extraCharges,
+    super.cashCurrency,
+    super.cashExchangeRate,
+  });
+}
+
+class SaleInvoiceSaved extends SaleInvoiceState {
+  final bool success;
+  final String? invoiceNumber;
+  final SaleInvoiceLoaded? invoiceData;
+  const SaleInvoiceSaved(this.success, {this.invoiceNumber, this.invoiceData});
+  @override
+  List<Object?> get props => [success, invoiceNumber, invoiceData];
+}
+
+class SaleInvoiceLoading extends SaleInvoiceState {
+  @override
+  List<Object> get props => [];
+}

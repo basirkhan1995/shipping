@@ -235,7 +235,7 @@ class _MobileState extends State<_Mobile> {
                   child: Column(
                     children: [
                       // Account Selection
-                      GenericTextField<StakeholderAccount, StkAccountsBloc, StkAccountsState>(
+                      GenericTextField<StkAccountModel, StkAccountsBloc, StkAccountsState>(
                         showAllOnFocus: true,
                         controller: accountController,
                         title: tr.accounts,
@@ -281,7 +281,7 @@ class _MobileState extends State<_Mobile> {
                         ),
                         stateToItems: (state) {
                           if (state is! StkAccountsLoadedState) {
-                            return const <StakeholderAccount>[];
+                            return const <StkAccountModel>[];
                           }
                           // ✅ Show only stakeholder accounts (accCategory == 8)
                           return state.accounts
@@ -678,7 +678,7 @@ class _DesktopState extends State<_Desktop> {
                             SizedBox(
                               width: 350,
                               child:  // Account Selection
-                              GenericTextField<StakeholderAccount, StkAccountsBloc, StkAccountsState>(
+                              GenericTextField<StkAccountModel, StkAccountsBloc, StkAccountsState>(
                                 showAllOnFocus: true,
                                 controller: accountController,
                                 title: tr.accounts,
@@ -724,7 +724,7 @@ class _DesktopState extends State<_Desktop> {
                                 ),
                                 stateToItems: (state) {
                                   if (state is! StkAccountsLoadedState) {
-                                    return const <StakeholderAccount>[];
+                                    return const <StkAccountModel>[];
                                   }
                                   // ✅ Show only stakeholder accounts (accCategory == 8)
                                   return state.accounts

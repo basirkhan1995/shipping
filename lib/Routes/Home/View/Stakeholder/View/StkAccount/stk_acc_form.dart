@@ -13,7 +13,7 @@ class StkAccountFormDialog extends StatefulWidget {
   final int perId;
 
   /// null = add mode, non-null = edit mode.
-  final StakeholderAccount? account;
+  final StkAccountModel? account;
 
   const StkAccountFormDialog({
     super.key,

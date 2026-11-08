@@ -476,7 +476,7 @@ class _Body extends StatelessWidget {
         if (state is AllBalancesInitial) {
           return NoDataWidget(
             title: tr.accounts,
-            message: "View all account balances here",
+            message: "Purchase all account balances here",
             enableAction: false,
           );
         }

@@ -49,8 +49,8 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
   late int _status;
 
   // ── Linked model picks ──────────────────────────────────────────
-  IndividualsModel? _selectedStakeholder;
-  StakeholderAccount? _selectedAccount;
+  StakeholdersModel? _selectedStakeholder;
+  StkAccountModel? _selectedAccount;
   int? _perId;
   int? _accNumber;
 
@@ -145,7 +145,7 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
           "${d.month.toString().padLeft(2, '0')}-"
           "${d.day.toString().padLeft(2, '0')}";
 
-  void _applyStakeholder(IndividualsModel s) {
+  void _applyStakeholder(StakeholdersModel s) {
     setState(() {
       _perId = s.perId;
       _selectedStakeholder = s;
@@ -156,7 +156,7 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
     context.read<StkAccountsBloc>().add(LoadStkAccountsEvent(perId: _perId));
   }
 
-  void _applyStakeholderById(IndividualsModel s) {
+  void _applyStakeholderById(StakeholdersModel s) {
     setState(() {
       _selectedStakeholder = s;
       _stakeholderCtrl.text =
@@ -164,7 +164,7 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
     });
   }
 
-  void _applyAccount(StakeholderAccount a) {
+  void _applyAccount(StkAccountModel a) {
     setState(() {
       _selectedAccount = a;
       _accNumber = a.accNumber;
@@ -307,7 +307,7 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
                   children: [
                     // ── Stakeholder picker (add only) ─────────────
                     if (!_isEdit) ...[
-                      GenericTextField<IndividualsModel, StakeholderBloc,
+                      GenericTextField<StakeholdersModel, StakeholderBloc,
                           StakeholderState>(
                         focusNode: fnStakeholder,
                         textInputAction: TextInputAction.next,
@@ -368,7 +368,7 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
                     ],
 
                     // ── Account picker ────────────────────────────
-                    GenericTextField<StakeholderAccount, StkAccountsBloc,
+                    GenericTextField<StkAccountModel, StkAccountsBloc,
                         StkAccountsState>(
                       focusNode: fnAccount,
                       textInputAction: TextInputAction.next,

@@ -1649,4 +1649,452 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get uploading => 'Uploading...';
+
+  @override
+  String get transfer => 'Money Transfer';
+
+  @override
+  String get completed => 'Completed';
+
+  @override
+  String get confirm => 'Confirm';
+
+  @override
+  String get orders => 'Orders';
+
+  @override
+  String get orderSubtitle => 'Manage purchase & sale';
+
+  @override
+  String get party => 'Party';
+
+  @override
+  String get invoiceType => 'Invoice';
+
+  @override
+  String get totalInvoice => 'Total Invoice';
+
+  @override
+  String get deselectAll => 'Deselect All';
+
+  @override
+  String get newSale => 'New Sale';
+
+  @override
+  String get newPurchase => 'New Purchase';
+
+  @override
+  String get goodShift => 'Goods Shift';
+
+  @override
+  String get productName => 'Product name';
+
+  @override
+  String get batchTitle => 'Batch';
+
+  @override
+  String get unitPrice => 'Unit Price';
+
+  @override
+  String get searchProducts => 'Search Products';
+
+  @override
+  String get pricing => 'Prices';
+
+  @override
+  String get avgPrice => 'Average';
+
+  @override
+  String get recentPrice => 'Recent';
+
+  @override
+  String get sellPrice => 'Sell Price';
+
+  @override
+  String get landedCost => 'Landed Cost';
+
+  @override
+  String get productDetails => 'Product Details';
+
+  @override
+  String get available => 'Available';
+
+  @override
+  String get productCode => 'Product Code';
+
+  @override
+  String get madeIn => 'Made in';
+
+  @override
+  String get totalItems => 'Total Items';
+
+  @override
+  String get productImages => 'Product Images';
+
+  @override
+  String get nameAndDescriptions => 'Name & Descriptions';
+
+  @override
+  String get newProduct => 'New Product';
+
+  @override
+  String get productAlreadyExist => 'Product already exists.';
+
+  @override
+  String get stockPaper => 'Stock Paper';
+
+  @override
+  String get saleEntry => 'Sale Entry';
+
+  @override
+  String get customers => 'Customers';
+
+  @override
+  String get paymentSummary => 'Payment Summary';
+
+  @override
+  String get newBalance => 'New Balance';
+
+  @override
+  String get cash => 'Cash';
+
+  @override
+  String get cashPayment => 'Cash Payment';
+
+  @override
+  String get cashAmount => 'Cash Amount';
+
+  @override
+  String get fullCashPayment => 'Full Cash Payment';
+
+  @override
+  String get payment => 'Payment';
+
+  @override
+  String get selectAccount => 'Select Account';
+
+  @override
+  String get discount => 'Discount';
+
+  @override
+  String get addItem => 'Add Item';
+
+  @override
+  String get selectCustomer => 'Please select a customer';
+
+  @override
+  String get invalidCashAmount => 'Invalid cash payment amount';
+
+  @override
+  String get selectCreditAccountMsg => 'Please select a credit account';
+
+  @override
+  String get addItemMsg => 'Please add at least one item';
+
+  @override
+  String get addProductMsg => 'Please select a product for all items';
+
+  @override
+  String get addValidPrice => 'Please enter a valid sale price';
+
+  @override
+  String get addValidQty => 'Please enter a valid quantity';
+
+  @override
+  String get notEnoughMsg => 'Not enough stock:';
+
+  @override
+  String get overLimitMessage => 'Transaction amount exceeds the allowed limit';
+
+  @override
+  String get accountBlockedMessage => 'The account is blocked';
+
+  @override
+  String get invoiceSummary => 'Invoice Summary';
+
+  @override
+  String get subtotal => 'Subtotal';
+
+  @override
+  String get itemDiscounts => 'Item Discounts';
+
+  @override
+  String get afterItemDiscount => 'After Item Discount';
+
+  @override
+  String get generalDiscount => 'General Discount';
+
+  @override
+  String get extraCharges => 'Extra Charges';
+
+  @override
+  String get accountInformation => 'Account Information';
+
+  @override
+  String get amountAddedToAr => 'Receivable amount';
+
+  @override
+  String get localAmount => 'Local Amount';
+
+  @override
+  String get addAgain => 'Add Again';
+
+  @override
+  String get duplicateEntry => 'Duplicate Entry';
+
+  @override
+  String get combinedPayment => 'Combined Payment';
+
+  @override
+  String get orderSummary => 'Order Summary';
+
+  @override
+  String get applyDiscount => 'Apply Discount';
+
+  @override
+  String get mixTitle => 'AR & Cash';
+
+  @override
+  String get totalQty => 'Total QTY';
+
+  @override
+  String get grade => 'Grade';
+
+  @override
+  String get model => 'Model';
+
+  @override
+  String get basicInformation => 'Basic Information';
+
+  @override
+  String get addNewProduct => 'Add New Producd';
+
+  @override
+  String get supplier => 'Supplier';
+
+  @override
+  String get purchaseEntry => 'Purchase Entry';
+
+  @override
+  String get invoiceNumber => 'Invoice No';
+
+  @override
+  String get payableAmount => 'Payable Amount';
+
+  @override
+  String get accountPayable => 'Account Payable';
+
+  @override
+  String get excelTitle => 'EXCEL';
+
+  @override
+  String get manageProducts => 'Manage your products';
+
+  @override
+  String get importComplete => 'Import has been successfully completed.';
+
+  @override
+  String get inserted => 'Inserted';
+
+  @override
+  String get skipped => 'Skipped';
+
+  @override
+  String get errored => 'Errored';
+
+  @override
+  String get productCategory => 'Product Categories';
+
+  @override
+  String get invoiceBatch => 'Invoice Batch';
+
+  @override
+  String get invoiceBatchHint => 'Active batch in invoices';
+
+  @override
+  String get invoiceSettings => 'Invoice Settings';
+
+  @override
+  String get invoiceProfitHint =>
+      'Show or hide profit & loss inside the sale invoice.';
+
+  @override
+  String get inventoryHint =>
+      'Product purchase, sale & goods shifting between wharehouses.';
+
+  @override
+  String get stockReport => 'Stock';
+
+  @override
+  String get stockInOut => 'IN | OUT';
+
+  @override
+  String get stockActions => 'Stock Actions';
+
+  @override
+  String get fromStorage => 'From Storage';
+
+  @override
+  String get toStorage => 'To Storage';
+
+  @override
+  String get totalIn => 'Total IN';
+
+  @override
+  String get totalOut => 'Total OUT';
+
+  @override
+  String get stockBalance => 'Balance';
+
+  @override
+  String get inAndOut => 'IN | OUT';
+
+  @override
+  String get movement => 'Movement';
+
+  @override
+  String get stockRecord => 'Stock Record';
+
+  @override
+  String get noProductSelectedTitle => 'No product';
+
+  @override
+  String get noProductSelectedMsg => 'No product is selected to report';
+
+  @override
+  String get invoice => 'Invoice';
+
+  @override
+  String get orderId => 'Order ID';
+
+  @override
+  String get clear => 'Clear';
+
+  @override
+  String get allProducts => 'All Products';
+
+  @override
+  String get mostSold => 'Most Sold';
+
+  @override
+  String get lessSold => 'Least Sold';
+
+  @override
+  String get notSold => 'Not Sold';
+
+  @override
+  String get outOfStock => 'Out of stock';
+
+  @override
+  String get lowStock => 'Low stock';
+
+  @override
+  String get marketValue => 'Markel Value';
+
+  @override
+  String get shippingAndTransfer => 'Shipping & Money Transfer';
+
+  @override
+  String get shippingHint =>
+      'Manage shipments, track deliveries, and monitor shipping operations.';
+
+  @override
+  String get moneyTransferHint =>
+      'Send, receive, and manage money transfers securely.';
+
+  @override
+  String get noPermissionMessage =>
+      'You don\'t have permission to access this feature.';
+
+  @override
+  String get lock => 'Lock';
+
+  @override
+  String get unlock => 'Unlock';
+
+  @override
+  String get lockVerifyTitle => 'Verification';
+
+  @override
+  String get lockVerifyLockTitle => 'Lock';
+
+  @override
+  String get lockVerifyUnlockTitle => 'Unlock';
+
+  @override
+  String get lockVerifyLockExplanation =>
+      'Locking will hide this stakeholder\'s financial data from all users until an admin unlocks it.';
+
+  @override
+  String get lockVerifyUnlockExplanation =>
+      'Enter your admin password to unlock this stakeholder.';
+
+  @override
+  String get lockVerifyVerifyExplanation =>
+      'This stakeholder is locked. Enter your admin password to view it.';
+
+  @override
+  String get lockVerifyLockAction => 'Lock';
+
+  @override
+  String get lockVerifyUnlockAction => 'Unlock';
+
+  @override
+  String get lockVerifyContinueAction => 'Continue';
+
+  @override
+  String get lockVerifyCancel => 'Cancel';
+
+  @override
+  String get lockVerifyPasswordLabel => 'Admin password';
+
+  @override
+  String get lockVerifyPasswordHint => 'Enter your password';
+
+  @override
+  String get lockVerifySignedInAs => 'Signed in as';
+
+  @override
+  String get lockVerifyVerifiedTitle => 'Verified';
+
+  @override
+  String get lockVerifyVerifiedSubtitle => 'Access granted';
+
+  @override
+  String get lockVerifyRelockingIn => 'Re-locking in';
+
+  @override
+  String get lockVerifyRequired => 'Required';
+
+  @override
+  String get lockVerifyFailed => 'Verification failed';
+
+  @override
+  String get lockVerifyWrongPassword => 'Wrong password';
+
+  @override
+  String get lockedBalancesNotice =>
+      'Balances are hidden. Ask an admin to unlock this profile.';
+
+  @override
+  String get lockVerifyDeniedWrongPassword => 'Invalid username or password.';
+
+  @override
+  String get lockVerifyDeniedWrongRole =>
+      'Your role is not allowed to modify stakeholder locks.';
+
+  @override
+  String get lockVerifyDeniedServerError =>
+      'Verification failed. Please try again.';
+
+  @override
+  String get lockVerifyDeniedNetwork =>
+      'Network error. Please check your connection.';
+
+  @override
+  String get lockVerifyDeniedMissingUser =>
+      'You must be signed in to perform this action.';
+
+  @override
+  String get lockVerifyDeniedPasswordRequired => 'Please enter your password.';
 }

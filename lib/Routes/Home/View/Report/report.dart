@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/znavigator.dart';
 import 'package:shipping/Routes/Home/View/Report/AllBalances/all_balances.dart';
 import 'package:shipping/Routes/Home/View/Report/CashBalances/all_cash.dart';
 import 'package:shipping/Routes/Home/View/Report/IncomeStatement/income_statement.dart';
+import 'package:shipping/Routes/Home/View/Report/Inventory/Cardx/Ui/cardx.dart';
+import 'package:shipping/Routes/Home/View/Report/Inventory/OrdersReport/Ui/order_report.dart';
+import 'package:shipping/Routes/Home/View/Report/Inventory/StockAvailability/product_report.dart';
 import 'package:shipping/Routes/Home/View/Report/TrialBalance/trial_balance.dart';
 import 'package:shipping/Routes/Home/View/Report/TxnReport/txn_report.dart';
 import 'package:shipping/Routes/Home/View/Report/UserLog/user_log_report.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../Features/Other/responsive_widget.dart';
+import '../Settings/Visibility/bloc/settings_visible_bloc.dart';
 import 'AccountStatement/acc_statement.dart';
 import 'ArAndAp/ar_ap.dart';
 import 'BalanceSheet/balance_sheet.dart';
@@ -84,7 +89,7 @@ class _ReportBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final tr = AppLocalizations.of(context)!;
-
+    final visibility = context.watch<SettingsVisibleBloc>().state;
     // ── Sections. Each has its own title and its own grid of cards. ─
     final sections = <_ReportSection>[
       _ReportSection(
@@ -205,7 +210,41 @@ class _ReportBody extends StatelessWidget {
         ],
       ),
 
+      // ── Stock SECTION ────────────────────────────────────────
+      if(visibility.orders)
+      _ReportSection(
+        title: tr.stock.toUpperCase(),
+        reports: [
+          _ReportData(
+            icon: Icons.shopping_basket_outlined,
+            title: tr.stock.toUpperCase(),
+            description: tr.userLogHint,
+            onTap: (ctx) => ZNavigator.goto(context: ctx, const StockRecordReportView()),
+          ),
+          _ReportData(
+            icon: Icons.shopping_cart_checkout_rounded,
+            title: tr.products.toUpperCase(),
+            description: tr.attendanceHint,
+            onTap: (ctx) =>
+                ZNavigator.goto(context: ctx, const ProductReportView()),
+          ),
+          _ReportData(
+            icon: Icons.shopping_cart_checkout_rounded,
+            title: tr.saleInvoices.toUpperCase(),
+            description: tr.attendanceHint,
+            onTap: (ctx) => ZNavigator.goto(context: ctx, const OrderReportView(orderName: "Sale")),
+          ),
+          _ReportData(
+            icon: Icons.shopping_cart_checkout_rounded,
+            title: tr.purchaseInvoices.toUpperCase(),
+            description: tr.attendanceHint,
+            onTap: (ctx) => ZNavigator.goto(context: ctx, const OrderReportView(orderName: "Purchase")),
+          ),
+        ],
+      ),
+
       // ── TRANSPORT SECTION ─────────────────────────────────
+      if(visibility.shipping)
       _ReportSection(
         title: tr.transportCargo,
         reports: [
@@ -285,9 +324,7 @@ class _ReportBody extends StatelessWidget {
             builder: (context, constraints) {
               final cols = _columnsFor(constraints.maxWidth);
               const gap = 9.0;
-              final cardWidth =
-                  (constraints.maxWidth - gap * (cols - 1)) / cols;
-
+              final cardWidth = (constraints.maxWidth - gap * (cols - 1)) / cols;
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -301,10 +338,7 @@ class _ReportBody extends StatelessWidget {
                     Wrap(
                       spacing: gap,
                       runSpacing: gap,
-                      children: sections[s]
-                          .reports
-                          .map(
-                            (r) => SizedBox(
+                      children: sections[s].reports.map((r) => SizedBox(
                           width: cardWidth,
                           child: _ReportCard(
                             icon: r.icon,
@@ -360,7 +394,7 @@ class _SectionHeader extends StatelessWidget {
         Text(
           title,
           style: TextStyle(
-            fontSize: 10.5,
+            fontSize: 14.5,
             fontWeight: FontWeight.w700,
             letterSpacing: 1.1,
             color: primary,

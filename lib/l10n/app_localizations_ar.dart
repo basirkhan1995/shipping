@@ -255,7 +255,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get software_company => 'سافټویر شرکت';
 
   @override
-  String get finance => 'مالی';
+  String get finance => 'مالی مدیریت';
 
   @override
   String get hr => 'بشری منابع';
@@ -264,7 +264,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get stakeholders => 'سهم لرونکی';
 
   @override
-  String get transactions => 'معاملات';
+  String get transactions => 'تراکنش ها';
 
   @override
   String get shipment => 'محموله ها';
@@ -1051,7 +1051,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get transactionType => 'نوع معامله';
 
   @override
-  String get products => 'محصولات';
+  String get products => 'کالا ها';
 
   @override
   String get about => 'درباره';
@@ -1642,4 +1642,450 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get uploading => 'درحال بارگیری...';
+
+  @override
+  String get transfer => 'حواله ها';
+
+  @override
+  String get completed => 'تکمیل شده';
+
+  @override
+  String get confirm => 'تایید کردن';
+
+  @override
+  String get orders => 'فرمایشات';
+
+  @override
+  String get orderSubtitle => 'مدیریت خرید و فروش';
+
+  @override
+  String get party => 'طرف حساب';
+
+  @override
+  String get invoiceType => 'نوع بل';
+
+  @override
+  String get totalInvoice => 'مجموعه بل';
+
+  @override
+  String get deselectAll => 'لغو انتخاب همه';
+
+  @override
+  String get newSale => 'بل فروش';
+
+  @override
+  String get newPurchase => 'بل خرید';
+
+  @override
+  String get goodShift => 'انتقال اجناس';
+
+  @override
+  String get productName => 'نام جنس';
+
+  @override
+  String get batchTitle => 'مقدار';
+
+  @override
+  String get unitPrice => 'نرخ';
+
+  @override
+  String get searchProducts => 'جستجو اجناس';
+
+  @override
+  String get pricing => 'قیمت ها';
+
+  @override
+  String get avgPrice => 'اوسط';
+
+  @override
+  String get recentPrice => 'آخرین خرید';
+
+  @override
+  String get sellPrice => 'قیمت فروش';
+
+  @override
+  String get landedCost => 'قیمت تمامشد';
+
+  @override
+  String get productDetails => 'جزئیات کالا';
+
+  @override
+  String get available => 'موجود';
+
+  @override
+  String get productCode => 'کد محصول';
+
+  @override
+  String get madeIn => 'ساخت';
+
+  @override
+  String get totalItems => 'مجموعه اجناس';
+
+  @override
+  String get productImages => 'تصاویر';
+
+  @override
+  String get nameAndDescriptions => 'نام و جزئیات';
+
+  @override
+  String get newProduct => 'محصول جدید';
+
+  @override
+  String get productAlreadyExist => 'این محصول از قبل موجود است';
+
+  @override
+  String get stockPaper => 'سند انبار';
+
+  @override
+  String get saleEntry => 'ثبت فروش';
+
+  @override
+  String get customers => 'مشتریان';
+
+  @override
+  String get paymentSummary => 'جزئیات پرداخت';
+
+  @override
+  String get newBalance => 'بیلانس نهایی';
+
+  @override
+  String get cash => 'نقدی';
+
+  @override
+  String get cashPayment => 'پرداخت نقدی';
+
+  @override
+  String get cashAmount => 'مبلغ نقدی';
+
+  @override
+  String get fullCashPayment => 'پرداخت نقدی';
+
+  @override
+  String get payment => 'پرداخت';
+
+  @override
+  String get selectAccount => 'انتخاب حساب';
+
+  @override
+  String get discount => 'تخفیف';
+
+  @override
+  String get addItem => 'سطر جدید';
+
+  @override
+  String get selectCustomer => 'مهرباني وکړئ پېرودونکی وټاکئ';
+
+  @override
+  String get invalidCashAmount => 'د نغدي تادیې اندازه سمه نه ده';
+
+  @override
+  String get selectCreditAccountMsg => 'مهرباني وکړئ اعتباري حساب وټاکئ';
+
+  @override
+  String get addItemMsg => 'مهرباني وکړئ لږ تر لږه یو توکی اضافه کړئ';
+
+  @override
+  String get addProductMsg => 'مهرباني وکړئ د ټولو توکو لپاره محصول وټاکئ';
+
+  @override
+  String get addValidPrice => 'مهرباني وکړئ د پلور معتبره بیه دننه کړئ';
+
+  @override
+  String get addValidQty => 'مهرباني وکړئ معتبر مقدار دننه کړئ';
+
+  @override
+  String get notEnoughMsg => 'کافي موجودي نشته:';
+
+  @override
+  String get overLimitMessage =>
+      'د راکړې ورکړې اندازه له ټاکلي حد څخه زیاته ده';
+
+  @override
+  String get accountBlockedMessage => 'حساب بند شوی دی';
+
+  @override
+  String get invoiceSummary => 'د بل لنډیز';
+
+  @override
+  String get subtotal => 'فرعي مجموعه';
+
+  @override
+  String get itemDiscounts => 'د توکو تخفیفونه';
+
+  @override
+  String get afterItemDiscount => 'له توکو د تخفیف وروسته';
+
+  @override
+  String get generalDiscount => 'عمومي تخفیف';
+
+  @override
+  String get extraCharges => 'اضافي لګښتونه';
+
+  @override
+  String get accountInformation => 'جزئیات حساب';
+
+  @override
+  String get amountAddedToAr => 'مبلغ قابل دریافت';
+
+  @override
+  String get localAmount => 'مبلغ محلی';
+
+  @override
+  String get addAgain => 'تکرار دوباره';
+
+  @override
+  String get duplicateEntry => 'ورودی تکراری';
+
+  @override
+  String get combinedPayment => 'پرداخت نقدی و حساب';
+
+  @override
+  String get orderSummary => 'جزئیات فرمایش';
+
+  @override
+  String get applyDiscount => 'اعمال تخفیف';
+
+  @override
+  String get mixTitle => 'نقدی و دریافتنی';
+
+  @override
+  String get totalQty => 'کل تعداد';
+
+  @override
+  String get grade => 'درجه';
+
+  @override
+  String get model => 'مدل';
+
+  @override
+  String get basicInformation => 'معلومات اولیه';
+
+  @override
+  String get addNewProduct => 'محصول جدید';
+
+  @override
+  String get supplier => 'فروشنده';
+
+  @override
+  String get purchaseEntry => 'بل خرید';
+
+  @override
+  String get invoiceNumber => 'نمبر بل';
+
+  @override
+  String get payableAmount => 'مبلغ قابل پرداخت';
+
+  @override
+  String get accountPayable => 'قابل پرداخت';
+
+  @override
+  String get excelTitle => 'اکسل';
+
+  @override
+  String get manageProducts => 'محصولات خود را تنظیم کنید';
+
+  @override
+  String get importComplete => 'ورود محصولات موفقانه ثبت گردید';
+
+  @override
+  String get inserted => 'وارده';
+
+  @override
+  String get skipped => 'لغوشده';
+
+  @override
+  String get errored => 'خطا شده';
+
+  @override
+  String get productCategory => 'نوع کالا ها';
+
+  @override
+  String get invoiceBatch => 'بل عمده';
+
+  @override
+  String get invoiceBatchHint => 'فعال سازی تعداد عمده در بل ها';
+
+  @override
+  String get invoiceSettings => 'تنظیمات بل';
+
+  @override
+  String get invoiceProfitHint => 'فعال و غیرفعال سازی سود و زیان در بل فروش';
+
+  @override
+  String get inventoryHint => 'خرید و فروش محصولات و انتقال اموال بین گدام ها';
+
+  @override
+  String get stockReport => 'موجودی انبار';
+
+  @override
+  String get stockInOut => 'گردش کالا';
+
+  @override
+  String get stockActions => 'عملیات خرید و فروش';
+
+  @override
+  String get fromStorage => 'از گدام';
+
+  @override
+  String get toStorage => 'به گدام';
+
+  @override
+  String get totalIn => 'ورودی ها';
+
+  @override
+  String get totalOut => 'خروجی ها';
+
+  @override
+  String get stockBalance => 'موجودی';
+
+  @override
+  String get inAndOut => 'ورود | خروج';
+
+  @override
+  String get movement => 'ورود | خروج';
+
+  @override
+  String get stockRecord => 'اجناس گدام';
+
+  @override
+  String get noProductSelectedTitle => 'کالا یافت نشد';
+
+  @override
+  String get noProductSelectedMsg => 'هیچ کالا برای گزارش انتخاب نشده است';
+
+  @override
+  String get invoice => 'بل';
+
+  @override
+  String get orderId => 'نمبربل';
+
+  @override
+  String get clear => 'پاک کردن';
+
+  @override
+  String get allProducts => 'ټول محصولات';
+
+  @override
+  String get mostSold => 'تر ټولو ډېر پلورل شوي';
+
+  @override
+  String get lessSold => 'تر ټولو لږ پلورل شوي';
+
+  @override
+  String get notSold => 'نه دي پلورل شوي';
+
+  @override
+  String get outOfStock => 'ناموجود';
+
+  @override
+  String get lowStock => 'تعداد کم';
+
+  @override
+  String get marketValue => 'کل ارزش بازار';
+
+  @override
+  String get shippingAndTransfer => 'باربری و حواله ها';
+
+  @override
+  String get shippingHint =>
+      'لېږدونې اداره کړئ، سپارنې تعقیب کړئ او د بار وړلو عملیات وڅارئ.';
+
+  @override
+  String get moneyTransferHint =>
+      'د پیسو لېږدونه په خوندي ډول واستوئ، ترلاسه یې کړئ او مدیریت یې کړئ.';
+
+  @override
+  String get noPermissionMessage => 'تاسو دې برخې ته د لاسرسي اجازه نه لرئ.';
+
+  @override
+  String get lock => 'قفل کردن';
+
+  @override
+  String get unlock => 'باز کردن';
+
+  @override
+  String get lockVerifyTitle => 'تایید';
+
+  @override
+  String get lockVerifyLockTitle => 'بندول';
+
+  @override
+  String get lockVerifyUnlockTitle => 'خلاصول';
+
+  @override
+  String get lockVerifyLockExplanation =>
+      'بندول به دې شخص مالي معلومات له ټولو کاروونکو څخه تر هغه پټوي چې یو مدیر یې خلاص کړي.';
+
+  @override
+  String get lockVerifyUnlockExplanation =>
+      'د دې شخص د خلاصولو لپاره خپل مدیر پټنوم ولیکئ.';
+
+  @override
+  String get lockVerifyVerifyExplanation =>
+      'دا شخص بند دی. د لیدلو لپاره خپل مدیر پټنوم ولیکئ.';
+
+  @override
+  String get lockVerifyLockAction => 'بندول';
+
+  @override
+  String get lockVerifyUnlockAction => 'خلاصول';
+
+  @override
+  String get lockVerifyContinueAction => 'دوام';
+
+  @override
+  String get lockVerifyCancel => 'لغوه';
+
+  @override
+  String get lockVerifyPasswordLabel => 'د مدیر پټنوم';
+
+  @override
+  String get lockVerifyPasswordHint => 'خپل پټنوم ولیکئ';
+
+  @override
+  String get lockVerifySignedInAs => 'د دې په توګه ننوتلی';
+
+  @override
+  String get lockVerifyVerifiedTitle => 'تایید شو';
+
+  @override
+  String get lockVerifyVerifiedSubtitle => 'لاسرسی ورکړل شو';
+
+  @override
+  String get lockVerifyRelockingIn => 'بیا بندیدل په';
+
+  @override
+  String get lockVerifyRequired => 'اړین';
+
+  @override
+  String get lockVerifyFailed => 'تایید ناکام';
+
+  @override
+  String get lockVerifyWrongPassword => 'پټنوم غلط دی';
+
+  @override
+  String get lockedBalancesNotice =>
+      'موجودي پټ دي. د دې پروفایل د خلاصولو لپاره له مدیر وغواړئ.';
+
+  @override
+  String get lockVerifyDeniedWrongPassword => 'کارن نوم یا پټنوم غلط دی.';
+
+  @override
+  String get lockVerifyDeniedWrongRole =>
+      'ستاسو رول د دې شخص قفل بدلولو اجازه نه لري.';
+
+  @override
+  String get lockVerifyDeniedServerError =>
+      'تایید ناکام شو. مهرباني وکړئ بیا هڅه وکړئ.';
+
+  @override
+  String get lockVerifyDeniedNetwork =>
+      'د شبکې تېروتنه. مهرباني وکړئ خپل انټرنیټ وګورئ.';
+
+  @override
+  String get lockVerifyDeniedMissingUser =>
+      'د دې کار لپاره باید لاسلیک شوی یاست.';
+
+  @override
+  String get lockVerifyDeniedPasswordRequired => 'مهرباني وکړئ پټنوم ولیکئ.';
 }

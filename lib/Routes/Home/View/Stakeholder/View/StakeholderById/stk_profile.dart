@@ -1,6 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shipping/Features/Widgets/extensions.dart';
 import 'package:shipping/Features/Widgets/toast.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
 import 'package:shipping/Features/Widgets/znavigator.dart';
@@ -24,20 +24,31 @@ import 'bloc/stakeholder_by_id_state.dart';
 import '../../../../../../Features/Date/shamsi_converter.dart';
 import '../../../../../Auth/bloc/auth_bloc.dart';
 import '../../../Settings/View/Company/CompanyProfile/bloc/company_profile_bloc.dart';
+import '../../View/Security/bloc/stk_security_bloc.dart';
 
 // ═══════════════════════════════════════════════════════════════════
 // Entry point
 // ═══════════════════════════════════════════════════════════════════
 class StakeholderByIdView extends StatelessWidget {
-  final IndividualsModel ind;
-  const StakeholderByIdView({super.key, required this.ind});
+  final StakeholdersModel ind;
+
+  /// Optional hint — if `true`, the caller already verified at the
+  /// moment of navigation. The actual lock state is re-evaluated live
+  /// against `StkSecurityBloc`, so this is only a starting point.
+  final bool verified;
+
+  const StakeholderByIdView({
+    super.key,
+    required this.ind,
+    this.verified = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return ResponsiveLayout(
-      mobile: _StakeholderByIdMobile(ind: ind),
-      tablet: _StakeholderByIdDesktop(ind: ind),
-      desktop: _StakeholderByIdDesktop(ind: ind),
+      mobile: _StakeholderByIdMobile(ind: ind, verified: verified),
+      tablet: _StakeholderByIdDesktop(ind: ind, verified: verified),
+      desktop: _StakeholderByIdDesktop(ind: ind, verified: verified),
     );
   }
 }
@@ -46,8 +57,9 @@ class StakeholderByIdView extends StatelessWidget {
 // MOBILE
 // ═══════════════════════════════════════════════════════════════════
 class _StakeholderByIdMobile extends StatelessWidget {
-  final IndividualsModel ind;
-  const _StakeholderByIdMobile({required this.ind});
+  final StakeholdersModel ind;
+  final bool verified;
+  const _StakeholderByIdMobile({required this.ind, required this.verified});
 
   @override
   Widget build(BuildContext context) {
@@ -62,8 +74,9 @@ class _StakeholderByIdMobile extends StatelessWidget {
 // DESKTOP / TABLET
 // ═══════════════════════════════════════════════════════════════════
 class _StakeholderByIdDesktop extends StatefulWidget {
-  final IndividualsModel ind;
-  const _StakeholderByIdDesktop({required this.ind});
+  final StakeholdersModel ind;
+  final bool verified;
+  const _StakeholderByIdDesktop({required this.ind, required this.verified});
 
   @override
   State<_StakeholderByIdDesktop> createState() =>
@@ -71,23 +84,25 @@ class _StakeholderByIdDesktop extends StatefulWidget {
 }
 
 class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
-  IndividualsModel? individual;
+  StakeholdersModel? individual;
   String? fullName;
 
-  /// Set to `true` whenever an action on this screen modifies data that the
-  /// stakeholders list (StakeholderBloc) displays — i.e. account balances.
-  ///
-  /// When `true`, the screen pops with `true` so the caller (StakeholderView)
-  /// can refresh its list without a manual pull-to-refresh.
   bool _listNeedsRefresh = false;
 
+  /// Re-checks the security bloc every 15s. Needed because the bloc's
+  /// own TTL timer can be paused while the app is in the background,
+  /// and we want to re-lock the moment we notice the expiry.
+  Timer? _recheckTimer;
+
+  static const Duration _recheckEvery = Duration(seconds: 15);
+
   static Widget _buildHeroShuttle(
-    BuildContext flightContext,
-    Animation<double> animation,
-    HeroFlightDirection direction,
-    BuildContext fromHeroContext,
-    BuildContext toHeroContext,
-  ) {
+      BuildContext flightContext,
+      Animation<double> animation,
+      HeroFlightDirection direction,
+      BuildContext fromHeroContext,
+      BuildContext toHeroContext,
+      ) {
     return ClipOval(
       child: Material(
         color: Colors.transparent,
@@ -98,7 +113,33 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
 
   int? get _stkId => widget.ind.perId;
 
-  // ── Exchange dialog ─────────────────────────────────────────────
+  // ── Balances visibility (live) ────────────────────────────────
+  bool get _canSeeBalances {
+    // Not locked → always visible.
+    if (!widget.ind.isLocked) return true;
+    // Locked → visible only while the security bloc says this perID
+    // is currently verified and not expired.
+    final id = _stkId;
+    if (id == null) return false;
+    return context.read<StkSecurityBloc>().isUnlockedFor(id);
+  }
+
+  String _fmtMoney(num? v, {String? ccy}) {
+    if (v == null) return '—';
+    if (!_canSeeBalances) {
+      return ccy == null || ccy.isEmpty ? '••••••' : '•••••• $ccy';
+    }
+    final s = v.toDouble().toStringAsFixed(2);
+    final parts = s.split('.');
+    final intPart = parts[0].replaceAllMapped(
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+          (m) => '${m[1]},',
+    );
+    final formatted = '$intPart.${parts[1]}';
+    return ccy == null || ccy.isEmpty ? formatted : '$formatted $ccy';
+  }
+
+  // ── Exchange dialog ───────────────────────────────────────────
   Future<void> _openExchangeDialog() async {
     final usrName = _loginName();
     if (usrName == null) return;
@@ -117,7 +158,7 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
       ToastManager.show(
         context: context,
         title: tr.save,
-        message: tr.exchange,   // or tr.fxTransaction if that's the key you have
+        message: tr.exchange,
         type: ToastType.success,
       );
     }
@@ -136,17 +177,39 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
         context.read<StkAccountsBloc>().add(
           LoadStkAccountsEvent(perId: _stkId!),
         );
-      }
-
-      if (_stkId != null) {
         context.read<StakeholderByIdBloc>().add(
           LoadStakeholderByIdEvent(stkId: _stkId!),
         );
       }
     });
+
+    // Periodic security recheck — catches "verified expired while the
+    // app was backgrounded" that the bloc's own Timer might miss.
+    _recheckTimer = Timer.periodic(_recheckEvery, (_) => _recheckSecurity());
   }
 
-  String _composeName(IndividualsModel m) {
+  @override
+  void dispose() {
+    _recheckTimer?.cancel();
+    super.dispose();
+  }
+
+  void _recheckSecurity() {
+    if (!mounted) return;
+    final id = _stkId;
+    if (id == null) return;
+
+    final sec = context.read<StkSecurityBloc>();
+    final s = sec.state;
+
+    // The bloc thinks we're verified, but the TTL has expired (e.g.
+    // device slept through the timer). Ask the bloc to relock.
+    if (s is StkSecurityVerified && !sec.isUnlockedFor(id)) {
+      sec.add(RelockEvent(id));
+    }
+  }
+
+  String _composeName(StakeholdersModel m) {
     final first = m.perName ?? '';
     final last = m.perLastName ?? '';
     final combined = '$first $last'.trim();
@@ -172,7 +235,6 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
     );
   }
 
-  // ── Current user / base currency ────────────────────────────────
   String? _loginName() {
     final auth = context.read<AuthBloc>().state;
     return auth is AuthenticatedState ? auth.loginData.usrName : null;
@@ -186,7 +248,6 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
     return '';
   }
 
-  // ── Cash specs for CHDP / CHWL ──────────────────────────────────
   CashTxnSpec _cashSpecFor(BuildContext context, String code) {
     final tr = AppLocalizations.of(context)!;
     switch (code) {
@@ -213,7 +274,6 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
     }
   }
 
-  // ── Cash dialog ─────────────────────────────────────────────────
   Future<void> _openCashDialog(String code) async {
     final usrName = _loginName();
     if (usrName == null) return;
@@ -239,7 +299,6 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
     }
   }
 
-  // ── Fund-transfer dialog ────────────────────────────────────────
   Future<void> _openFundTransferDialog() async {
     final usrName = _loginName();
     if (usrName == null) return;
@@ -264,14 +323,13 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
     }
   }
 
-  // ── Edit profile ────────────────────────────────────────────────
-  Future<void> _onEditProfile(IndividualsModel data) async {
+  Future<void> _onEditProfile(StakeholdersModel data) async {
     if (data.perId == null) {
       _showError('Edit profile', 'perId is null');
       return;
     }
     try {
-      final updated = await showDialog<IndividualsModel>(
+      final updated = await showDialog<StakeholdersModel>(
         context: context,
         builder: (_) => StakeholderFormDialog(existing: data),
       );
@@ -283,7 +341,6 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
     }
   }
 
-  // ── Add account ─────────────────────────────────────────────────
   Future<void> _onAddAccount() async {
     if (_stkId == null) {
       _showError('Add account', 'perId is null');
@@ -302,8 +359,7 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
     }
   }
 
-  // ── Edit account ────────────────────────────────────────────────
-  Future<void> _onEditAccount(StakeholderAccount account) async {
+  Future<void> _onEditAccount(StkAccountModel account) async {
     if (account.accNumber == null) {
       _showError('Edit account', 'accNumber is null');
       return;
@@ -320,21 +376,18 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
     }
   }
 
-  // ── Statement ───────────────────────────────────────────────────
-  Future<void> _onStatement(StakeholderAccount account) async {
+  Future<void> _onStatement(StkAccountModel account) async {
     if (account.accNumber == null) {
       _showError('Statement', 'accNumber is null');
       return;
     }
-
     ZNavigator.goto(
       context: context,
       AccountStatementView(initialAccountNumber: account.accNumber),
     );
   }
 
-  // ── Delete account ──────────────────────────────────────────────
-  Future<void> _onDeleteAccount(StakeholderAccount account) async {
+  Future<void> _onDeleteAccount(StkAccountModel account) async {
     if (account.accNumber == null) {
       _showError('Delete account', 'accNumber is null');
       return;
@@ -346,7 +399,7 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
           title: const Text('Delete account'),
           content: Text(
             'Delete "${account.accName ?? account.accNumber}"? '
-            'This cannot be undone.',
+                'This cannot be undone.',
           ),
           actions: [
             TextButton(
@@ -385,156 +438,202 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
         if (didPop) return;
         Navigator.of(context).pop(_listNeedsRefresh);
       },
-      child: Scaffold(
-        appBar: AppBar(
-          titleSpacing: 0,
-          elevation: 0,
-          title: Text(tr.profileOverview),
-          actions: [
-            _AppBarAction(
-              icon: Icons.arrow_downward_rounded,
-              tooltip: tr.cashDeposit,
-              label: tr.cashDeposit,
-              onPressed: () => _openCashDialog('CHDP'),
-            ),
-            _AppBarAction(
-              icon: Icons.arrow_upward_rounded,
-              tooltip: tr.cashWithdraw,
-              label: tr.cashWithdraw,
-              onPressed: () => _openCashDialog('CHWL'),
-            ),
-            _AppBarAction(
-              icon: Icons.swap_horiz_rounded,
-              tooltip: tr.fundTransfer,
-              label: tr.fundTransfer,
-              onPressed: _openFundTransferDialog,
-            ),
-            _AppBarAction(
-              icon: Icons.swap_horiz_rounded,
-              tooltip: tr.exchange,
-              label: tr.exchange,
-              onPressed: _openExchangeDialog,
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
-              child: ZOutlineButton(
-                onPressed: _onAddAccount,
-                height: 36,
-                icon: Icons.add,
-                isActive: true,
-                label: Text(tr.addAccount.toUpperCase()),
+      child: BlocListener<StkSecurityBloc, StkSecurityState>(
+        // Whenever the security state leaves "verified" (expiry,
+        // manual relock, error) — rebuild so balances re-mask.
+        listenWhen: (prev, curr) =>
+        curr is StkSecurityInitial || curr is StkSecurityDenied,
+        listener: (context, _) {
+          if (mounted) setState(() {});
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            titleSpacing: 0,
+            elevation: 0,
+            title: Text(tr.profileOverview),
+            actions: [
+              _AppBarAction(
+                icon: Icons.arrow_downward_rounded,
+                tooltip: tr.cashDeposit,
+                label: tr.cashDeposit,
+                onPressed: () => _openCashDialog('CHDP'),
               ),
-            ),
-            const SizedBox(width: 8),
-          ],
-        ),
-        body: BlocListener<StakeholderBloc, StakeholderState>(
-          listenWhen: (p, c) =>
-              c is UpdateStakeholderSuccessState ||
-              c is UpdateStakeholderFailureState,
-          listener: (context, state) {
-            if (state is UpdateStakeholderSuccessState) {
-              _listNeedsRefresh = true;
-              _reloadProfile();
-            } else if (state is UpdateStakeholderFailureState) {
-              ToastManager.show(
-                context: context,
-                title: tr.failed,
-                message: 'Update failed: ${state.message}',
-                type: ToastType.error,
-              );
-            }
-          },
-          child: BlocListener<StkAccountsBloc, StkAccountsState>(
+              _AppBarAction(
+                icon: Icons.arrow_upward_rounded,
+                tooltip: tr.cashWithdraw,
+                label: tr.cashWithdraw,
+                onPressed: () => _openCashDialog('CHWL'),
+              ),
+              _AppBarAction(
+                icon: Icons.swap_horiz_rounded,
+                tooltip: tr.fundTransfer,
+                label: tr.fundTransfer,
+                onPressed: _openFundTransferDialog,
+              ),
+              _AppBarAction(
+                icon: Icons.swap_horiz_rounded,
+                tooltip: tr.exchange,
+                label: tr.exchange,
+                onPressed: _openExchangeDialog,
+              ),
+              Padding(
+                padding:
+                const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+                child: ZOutlineButton(
+                  onPressed: _onAddAccount,
+                  height: 36,
+                  icon: Icons.add,
+                  isActive: true,
+                  label: Text(tr.addAccount.toUpperCase()),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
+          body: BlocListener<StakeholderBloc, StakeholderState>(
             listenWhen: (p, c) =>
-                (c is StkAccountsLoadedState && c.successMessage != null) ||
-                (c is StkAccountsFailureState && c.errorMessage != null),
+            c is UpdateStakeholderSuccessState ||
+                c is UpdateStakeholderFailureState,
             listener: (context, state) {
-              if (state is StkAccountsLoadedState &&
-                  state.successMessage != null) {
+              if (state is UpdateStakeholderSuccessState) {
                 _listNeedsRefresh = true;
                 _reloadProfile();
-                ToastManager.show(
-                  context: context,
-                  title: tr.successTitle,
-                  message: '${state.successMessage}',
-                  type: ToastType.success,
-                );
-              } else if (state is StkAccountsFailureState) {
+              } else if (state is UpdateStakeholderFailureState) {
                 ToastManager.show(
                   context: context,
                   title: tr.failed,
-                  message: '${state.errorMessage}',
+                  message: 'Update failed: ${state.message}',
                   type: ToastType.error,
                 );
               }
-              context.read<StkAccountsBloc>().add(
-                const ClearStkAccountMessagesEvent(),
-              );
             },
-            child: BlocBuilder<StakeholderByIdBloc, StakeholderByIdState>(
-              builder: (context, state) {
-                if (state is StakeholderByIdLoadedState) {
-                  individual = state.stk;
-                  fullName = _composeName(state.stk);
+            child: BlocListener<StkAccountsBloc, StkAccountsState>(
+              listenWhen: (p, c) =>
+              (c is StkAccountsLoadedState &&
+                  c.successMessage != null) ||
+                  (c is StkAccountsFailureState && c.errorMessage != null),
+              listener: (context, state) {
+                if (state is StkAccountsLoadedState &&
+                    state.successMessage != null) {
+                  _listNeedsRefresh = true;
+                  _reloadProfile();
+                  ToastManager.show(
+                    context: context,
+                    title: tr.successTitle,
+                    message: '${state.successMessage}',
+                    type: ToastType.success,
+                  );
+                } else if (state is StkAccountsFailureState) {
+                  ToastManager.show(
+                    context: context,
+                    title: tr.failed,
+                    message: '${state.errorMessage}',
+                    type: ToastType.error,
+                  );
                 }
-
-                final data = individual ?? widget.ind;
-                final accounts = data.accounts;
-                final recent = data.recentTransactions;
-
-                return Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
-                          child: _buildProfileContent(context, color, data),
-                        ),
-                      ),
-                      Container(
-                        width: 1,
-                        color: color.outlineVariant.withValues(alpha: 0.5),
-                      ),
-                      Expanded(
-                        flex: 8,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              SizedBox(
-                                height: 250,
-                                child: _AccountsSection(
-                                  accounts: accounts,
-                                  ownerName: fullName ?? '—',
-                                  isLoading:
-                                      state is StakeholderByIdLoadingState,
-                                  onEdit: _onEditAccount,
-                                  onDelete: _onDeleteAccount,
-                                  onStatement: _onStatement,
-                                ),
-                              ),
-                              if (recent.isNotEmpty) ...[
-                                const SizedBox(height: 12),
-                                Expanded(
-                                  child: _RecentTransactionsPanel(
-                                    transactions: recent,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                context.read<StkAccountsBloc>().add(
+                  const ClearStkAccountMessagesEvent(),
                 );
               },
+              child: BlocBuilder<StakeholderByIdBloc, StakeholderByIdState>(
+                builder: (context, state) {
+                  if (state is StakeholderByIdLoadedState) {
+                    individual = state.stk;
+                    fullName = _composeName(state.stk);
+                  }
+
+                  final data = individual ?? widget.ind;
+                  final accounts = data.accounts;
+                  final recent = data.recentTransactions;
+
+                  return Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+                            child: _buildProfileContent(context, color, data),
+                          ),
+                        ),
+                        Container(
+                          width: 1,
+                          color: color.outlineVariant.withValues(alpha: 0.5),
+                        ),
+                        Expanded(
+                          flex: 8,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (!_canSeeBalances)
+                                  Container(
+                                    margin: const EdgeInsets.fromLTRB(
+                                        0, 8, 0, 4),
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color:
+                                      color.error.withValues(alpha: .08),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: color.error
+                                            .withValues(alpha: .3),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.lock,
+                                            size: 16, color: color.error),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            tr.lockedBalancesNotice,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: color.error,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                SizedBox(
+                                  height: 250,
+                                  child: _AccountsSection(
+                                    accounts: accounts,
+                                    ownerName: fullName ?? '—',
+                                    isLoading:
+                                    state is StakeholderByIdLoadingState,
+                                    masked: !_canSeeBalances,
+                                    fmtMoney: _fmtMoney,
+                                    onEdit: _onEditAccount,
+                                    onDelete: _onDeleteAccount,
+                                    onStatement: _onStatement,
+                                  ),
+                                ),
+                                if (recent.isNotEmpty) ...[
+                                  const SizedBox(height: 12),
+                                  Expanded(
+                                    child: _RecentTransactionsPanel(
+                                      transactions: recent,
+                                      masked: !_canSeeBalances,
+                                      fmtMoney: _fmtMoney,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -546,10 +645,10 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
   // Profile column
   // ═══════════════════════════════════════════════════════════════
   Widget _buildProfileContent(
-    BuildContext context,
-    ColorScheme color,
-    IndividualsModel data,
-  ) {
+      BuildContext context,
+      ColorScheme color,
+      StakeholdersModel data,
+      ) {
     final dob = data.perDoB;
     final tr = AppLocalizations.of(context)!;
     return Column(
@@ -599,7 +698,8 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
                   shape: BoxShape.circle,
                   border: Border.all(color: color.surface, width: 2),
                 ),
-                child: const Icon(Icons.edit, size: 15, color: Colors.white),
+                child:
+                const Icon(Icons.edit, size: 15, color: Colors.white),
               ),
             ),
           ],
@@ -607,8 +707,10 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
         const SizedBox(height: 8),
         Text(
           fullName ?? '—',
-          style: Theme.of(context).textTheme.titleLarge
-              ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.3),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.3,
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
@@ -750,11 +852,11 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
   }
 
   Widget _infoSection(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String value,
-  }) {
+      BuildContext context, {
+        required IconData icon,
+        required String title,
+        required String value,
+      }) {
     final color = Theme.of(context).colorScheme;
     if (value.isEmpty) return const SizedBox.shrink();
 
@@ -805,8 +907,8 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
 class _AppBarAction extends StatelessWidget {
   final IconData icon;
   final String tooltip;
-  final String? label;          // shown next to the icon
-  final VoidCallback? onPressed; // null = disabled
+  final String? label;
+  final VoidCallback? onPressed;
 
   const _AppBarAction({
     required this.icon,
@@ -837,20 +939,24 @@ class _AppBarAction extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Accounts section
+// Accounts section — carries the masker down
 // ═══════════════════════════════════════════════════════════════════
 class _AccountsSection extends StatelessWidget {
-  final List<StakeholderAccount> accounts;
+  final List<StkAccountModel> accounts;
   final String ownerName;
   final bool isLoading;
-  final ValueChanged<StakeholderAccount> onEdit;
-  final ValueChanged<StakeholderAccount> onDelete;
-  final ValueChanged<StakeholderAccount> onStatement;
+  final bool masked;
+  final String Function(num? v, {String? ccy}) fmtMoney;
+  final ValueChanged<StkAccountModel> onEdit;
+  final ValueChanged<StkAccountModel> onDelete;
+  final ValueChanged<StkAccountModel> onStatement;
 
   const _AccountsSection({
     required this.accounts,
     required this.ownerName,
     required this.isLoading,
+    required this.masked,
+    required this.fmtMoney,
     required this.onEdit,
     required this.onDelete,
     required this.onStatement,
@@ -870,12 +976,15 @@ class _AccountsSection extends StatelessWidget {
             children: [
               Text(
                 tr.accounts.toUpperCase(),
-                style: Theme.of(context).textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700,letterSpacing: 1),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1,
+                ),
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: color.primary.withValues(alpha: .1),
                   borderRadius: BorderRadius.circular(10),
@@ -898,26 +1007,28 @@ class _AccountsSection extends StatelessWidget {
               : accounts.isEmpty
               ? const _EmptyAccounts()
               : SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: Wrap(
-                    spacing: 16,
-                    runSpacing: 16,
-                    children: accounts
-                        .map(
-                          (a) => SizedBox(
-                            width: 320,
-                            child: _BankCard(
-                              account: a,
-                              ownerName: ownerName,
-                              onEdit: () => onEdit(a),
-                              onDelete: () => onDelete(a),
-                              onStatement: () => onStatement(a),
-                            ),
-                          ),
-                        )
-                        .toList(),
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: accounts
+                  .map(
+                    (a) => SizedBox(
+                  width: 320,
+                  child: _BankCard(
+                    account: a,
+                    ownerName: ownerName,
+                    masked: masked,
+                    fmtMoney: fmtMoney,
+                    onEdit: () => onEdit(a),
+                    onDelete: () => onDelete(a),
+                    onStatement: () => onStatement(a),
                   ),
                 ),
+              )
+                  .toList(),
+            ),
+          ),
         ),
       ],
     );
@@ -925,11 +1036,18 @@ class _AccountsSection extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Recent transactions panel
+// Recent transactions panel — carries the masker down
 // ═══════════════════════════════════════════════════════════════════
 class _RecentTransactionsPanel extends StatelessWidget {
   final List<RecentTransaction> transactions;
-  const _RecentTransactionsPanel({required this.transactions});
+  final bool masked;
+  final String Function(num? v, {String? ccy}) fmtMoney;
+
+  const _RecentTransactionsPanel({
+    required this.transactions,
+    required this.masked,
+    required this.fmtMoney,
+  });
 
   static const double _wDate = 100;
   static const double _wRef = 220;
@@ -978,10 +1096,8 @@ class _RecentTransactionsPanel extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: color.primary.withValues(alpha: .1),
                     borderRadius: BorderRadius.circular(10),
@@ -1067,28 +1183,30 @@ class _RecentTransactionsPanel extends StatelessWidget {
             child: isEmpty
                 ? _EmptyTransactions(color: color)
                 : ListView.separated(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.zero,
-                    itemCount: transactions.length,
-                    separatorBuilder: (_, _) => Divider(
-                      height: 1,
-                      color: color.outlineVariant.withValues(alpha: 0.2),
-                    ),
-                    itemBuilder: (context, i) {
-                      return _RecentTxnRow(
-                        tx: transactions[i],
-                        color: color,
-                        textTheme: textTheme,
-                        wDate: _wDate,
-                        wRef: _wRef,
-                        wAccount: _wAccount,
-                        wAmount: _wAmount,
-                        wBalance: _wBalance,
-                        wStatus: _wStatus,
-                        gap: _gap,
-                      );
-                    },
-                  ),
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
+              itemCount: transactions.length,
+              separatorBuilder: (_, _) => Divider(
+                height: 1,
+                color: color.outlineVariant.withValues(alpha: 0.2),
+              ),
+              itemBuilder: (context, i) {
+                return _RecentTxnRow(
+                  tx: transactions[i],
+                  color: color,
+                  textTheme: textTheme,
+                  masked: masked,
+                  fmtMoney: fmtMoney,
+                  wDate: _wDate,
+                  wRef: _wRef,
+                  wAccount: _wAccount,
+                  wAmount: _wAmount,
+                  wBalance: _wBalance,
+                  wStatus: _wStatus,
+                  gap: _gap,
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -1104,12 +1222,14 @@ class _RecentTransactionsPanel extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// One recent-transaction row
+// One recent-transaction row — now uses fmtMoney
 // ═══════════════════════════════════════════════════════════════════
 class _RecentTxnRow extends StatelessWidget {
   final RecentTransaction tx;
   final ColorScheme color;
   final TextTheme textTheme;
+  final bool masked;
+  final String Function(num? v, {String? ccy}) fmtMoney;
   final double wDate;
   final double wRef;
   final double wAccount;
@@ -1122,6 +1242,8 @@ class _RecentTxnRow extends StatelessWidget {
     required this.tx,
     required this.color,
     required this.textTheme,
+    required this.masked,
+    required this.fmtMoney,
     required this.wDate,
     required this.wRef,
     required this.wAccount,
@@ -1136,13 +1258,18 @@ class _RecentTxnRow extends StatelessWidget {
   IconData get _arrowIcon =>
       _isDebitIn ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded;
 
+  /// Uses the shared masker for the amount (with sign) and the running
+  /// balance. When [masked], the shared masker returns `••••••` — the
+  /// same one used on the cards, so the two views stay in sync.
   String get _signedAmount {
+    final body = fmtMoney(tx.amount, ccy: tx.currency);
+    if (masked) return body;
     final sign = _isDebitIn ? '+' : '−';
-    final raw = tx.amount.toAmount();
-    final body = raw.toAmount();
-    final ccy = tx.currency ?? '';
-    return ccy.isEmpty ? '$sign$body' : '$sign$body $ccy';
+    return '$sign$body';
   }
+
+  String get _runningBalance =>
+      fmtMoney(tx.runningBalance, ccy: tx.currency);
 
   @override
   Widget build(BuildContext context) {
@@ -1248,12 +1375,14 @@ class _RecentTxnRow extends StatelessWidget {
           SizedBox(
             width: wBalance,
             child: Text(
-              tx.formattedRunningBalance,
+              _runningBalance,
               textAlign: TextAlign.end,
               style: textTheme.bodySmall?.copyWith(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: balanceNegative ? color.error : color.onSurface,
+                color: (masked || !balanceNegative)
+                    ? color.onSurface
+                    : color.error,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -1274,7 +1403,7 @@ class _RecentTxnRow extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Date cell
+// Date cell — unchanged
 // ═══════════════════════════════════════════════════════════════════
 class _DateCell extends StatelessWidget {
   final RecentTransaction tx;
@@ -1297,8 +1426,7 @@ class _DateCell extends StatelessWidget {
     }
 
     final shamsi = raw.shamsiDateString;
-    final gregorian =
-        '${raw.year.toString().padLeft(4, '0')}-'
+    final gregorian = '${raw.year.toString().padLeft(4, '0')}-'
         '${raw.month.toString().padLeft(2, '0')}-'
         '${raw.day.toString().padLeft(2, '0')}';
 
@@ -1331,6 +1459,9 @@ class _DateCell extends StatelessWidget {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// Status pill — unchanged
+// ═══════════════════════════════════════════════════════════════════
 class _TxnStatusPill extends StatelessWidget {
   final RecentTransaction tx;
   const _TxnStatusPill({required this.tx});
@@ -1340,7 +1471,6 @@ class _TxnStatusPill extends StatelessWidget {
     final tr = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Normalize to the same keys _StatusPill uses in transactions_view.dart
     final status = (tx.statusText ?? '').toLowerCase();
 
     final (Color bg, Color fg, String label) = switch (status) {
@@ -1364,8 +1494,6 @@ class _TxnStatusPill extends StatelessWidget {
       isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B),
       tr.deleted,
       ),
-    // Fallback — use isAuthorized as a hint when the server sends
-    // a status we don't recognize, otherwise show raw status text.
       _ => tx.isAuthorized
           ? (
       const Color(0xFF22C55E).withValues(alpha: isDark ? 0.18 : 0.12),
@@ -1384,8 +1512,6 @@ class _TxnStatusPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(8),
-        // Subtle border so the pill reads as a chip even when the
-        // tint is very close to the surface color.
         border: Border.all(color: fg.withValues(alpha: 0.25), width: 1),
       ),
       child: Text(
@@ -1404,7 +1530,7 @@ class _TxnStatusPill extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Empty state
+// Empty state — unchanged
 // ═══════════════════════════════════════════════════════════════════
 class _EmptyTransactions extends StatelessWidget {
   final ColorScheme color;
@@ -1440,11 +1566,13 @@ class _EmptyTransactions extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Bank card
+// Bank card — uses fmtMoney for balance + limit
 // ═══════════════════════════════════════════════════════════════════
 class _BankCard extends StatelessWidget {
-  final StakeholderAccount account;
+  final StkAccountModel account;
   final String ownerName;
+  final bool masked;
+  final String Function(num? v, {String? ccy}) fmtMoney;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onStatement;
@@ -1452,12 +1580,14 @@ class _BankCard extends StatelessWidget {
   const _BankCard({
     required this.account,
     required this.ownerName,
+    required this.masked,
+    required this.fmtMoney,
     required this.onEdit,
     required this.onDelete,
     required this.onStatement,
   });
 
-  static const double _radius = 22; // ← rounder corners for HD feel
+  static const double _radius = 22;
 
   @override
   Widget build(BuildContext context) {
@@ -1481,14 +1611,12 @@ class _BankCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: borderRadius,
           boxShadow: [
-            // Deep, soft shadow — makes the corner curve visible on any bg
             BoxShadow(
               color: bottom.withValues(alpha: isDark ? .55 : .35),
               blurRadius: 22,
               offset: const Offset(0, 14),
               spreadRadius: -6,
             ),
-            // Tighter, darker second shadow for definition
             BoxShadow(
               color: Colors.black.withValues(alpha: isDark ? .35 : .12),
               blurRadius: 6,
@@ -1501,7 +1629,6 @@ class _BankCard extends StatelessWidget {
           borderRadius: borderRadius,
           child: Stack(
             children: [
-              // ── Base gradient ─────────────────────────────────────
               Positioned.fill(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -1513,8 +1640,6 @@ class _BankCard extends StatelessWidget {
                   ),
                 ),
               ),
-
-              // ── Diagonal glossy sheen across the top-left corner ──
               Positioned.fill(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -1532,8 +1657,6 @@ class _BankCard extends StatelessWidget {
                   ),
                 ),
               ),
-
-              // ── Decorative circles (unchanged) ────────────────────
               Positioned(
                 right: -40,
                 top: -40,
@@ -1549,8 +1672,6 @@ class _BankCard extends StatelessWidget {
                 bottom: -50,
                 child: _circle(140, Colors.white.withValues(alpha: .05)),
               ),
-
-              // ── Inner highlight stroke (HD edge) ──────────────────
               Positioned.fill(
                 child: IgnorePointer(
                   child: DecoratedBox(
@@ -1564,8 +1685,6 @@ class _BankCard extends StatelessWidget {
                   ),
                 ),
               ),
-
-              // ── Content ───────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.all(18),
                 child: Column(
@@ -1610,7 +1729,12 @@ class _BankCard extends StatelessWidget {
                       children: [
                         Flexible(
                           child: Text(
-                            _formatAmount(account.accBalance),
+                            masked
+                                ? '••••••'
+                                : fmtMoney(
+                              account.accBalance,
+                              ccy: null,
+                            ),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 24,
@@ -1631,8 +1755,10 @@ class _BankCard extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        _BalancePositionBadge(balance: account.accBalance),
+                        if (!masked) ...[
+                          const SizedBox(width: 8),
+                          _BalancePositionBadge(balance: account.accBalance),
+                        ],
                       ],
                     ),
                     const Spacer(),
@@ -1662,7 +1788,7 @@ class _BankCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        _limitLabel(account),
+                        _limitLabel(account, masked: masked),
                         const SizedBox(width: 6),
                         _StatusDot(isActive: isActive),
                       ],
@@ -1677,11 +1803,11 @@ class _BankCard extends StatelessWidget {
     );
   }
 
-  Widget _limitLabel(StakeholderAccount a) {
+  Widget _limitLabel(StkAccountModel a, {required bool masked}) {
     final text = a.isUnlimited
         ? '∞ LIMIT'
         : (a.limitValue != null
-        ? 'LIMIT ${_formatAmount(a.limitValue!)}'
+        ? 'LIMIT ${masked ? "••••" : fmtMoney(a.limitValue!, ccy: null)}'
         : null);
     if (text == null) return const SizedBox.shrink();
     return Text(
@@ -1717,20 +1843,8 @@ class _BankCard extends StatelessWidget {
         return (const Color(0xFF334155), const Color(0xFF0F172A));
     }
   }
-
-  String _formatAmount(num value) {
-    final parts = value.toDouble().toStringAsFixed(2).split('.');
-    final intPart = parts[0].replaceAllMapped(
-      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-          (m) => '${m[1]},',
-    );
-    return '$intPart.${parts[1]}';
-  }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Debtor / Creditor badge
-// ═══════════════════════════════════════════════════════════════════
 class _BalancePositionBadge extends StatelessWidget {
   final double balance;
   const _BalancePositionBadge({required this.balance});
@@ -1761,22 +1875,22 @@ class _BalancePositionBadge extends StatelessWidget {
   (String, Color, Color) _resolve(double balance, {AppLocalizations? tr}) {
     if (balance < 0) {
       return (
-        tr!.debitor.toUpperCase(),
-        const Color(0xFFEF4444).withValues(alpha: .18),
-        const Color(0xFFFECACA),
+      tr!.debitor.toUpperCase(),
+      const Color(0xFFEF4444).withValues(alpha: .18),
+      const Color(0xFFFECACA),
       );
     }
     if (balance > 0) {
       return (
-        tr!.creditor.toUpperCase(),
-        const Color(0xFF22C55E).withValues(alpha: .18),
-        const Color(0xFFBBF7D0),
+      tr!.creditor.toUpperCase(),
+      const Color(0xFF22C55E).withValues(alpha: .18),
+      const Color(0xFFBBF7D0),
       );
     }
     return (
-      tr!.noBalance.toUpperCase(),
-      Colors.white.withValues(alpha: .18),
-      Colors.white.withValues(alpha: .85),
+    tr!.noBalance.toUpperCase(),
+    Colors.white.withValues(alpha: .18),
+    Colors.white.withValues(alpha: .85),
     );
   }
 }
@@ -1939,14 +2053,12 @@ class _EmptyAccounts extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Shimmer placeholders — skeleton bank cards shown while loading.
+// Shimmer — unchanged
 // ═══════════════════════════════════════════════════════════════════
 
 class _ShimmerAccounts extends StatelessWidget {
   const _ShimmerAccounts() : count = 3;
 
-  /// How many skeleton cards to show. Two fits comfortably on most
-  /// desktop widths; bump to 3 if you typically show more.
   final int count;
 
   @override
@@ -1958,7 +2070,7 @@ class _ShimmerAccounts extends StatelessWidget {
         runSpacing: 16,
         children: List.generate(
           count,
-          (_) => const SizedBox(width: 320, child: _ShimmerBankCard()),
+              (_) => const SizedBox(width: 320, child: _ShimmerBankCard()),
         ),
       ),
     );
@@ -1968,8 +2080,6 @@ class _ShimmerAccounts extends StatelessWidget {
 class _ShimmerBankCard extends StatelessWidget {
   const _ShimmerBankCard();
 
-  // Match the fallback gradient of `_BankCard._gradientFor('UNK')`
-  // so the loading card reads as the same visual family.
   static const _top = Color(0xFF334155);
   static const _bottom = Color(0xFF0F172A);
 
@@ -2127,8 +2237,6 @@ class _ShimmerBankCard extends StatelessWidget {
   );
 }
 
-/// A single shimmer bar. Dependency-free — drives its own
-/// `AnimationController` so no `shimmer` package is required.
 class _ShimmerBar extends StatefulWidget {
   final double width;
   final double height;
@@ -2166,7 +2274,7 @@ class _ShimmerBarState extends State<_ShimmerBar>
     return AnimatedBuilder(
       animation: _c,
       builder: (context, _) {
-        final t = _c.value; // 0..1
+        final t = _c.value;
         return Container(
           width: widget.width,
           height: widget.height,

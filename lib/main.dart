@@ -14,11 +14,15 @@ import 'package:shipping/Routes/Home/View/HR/View/Attendance/bloc/attendance_blo
 import 'package:shipping/Routes/Home/View/HR/View/Employees/bloc/employee_bloc.dart';
 import 'package:shipping/Routes/Home/View/HR/View/Users/bloc/users_bloc.dart';
 import 'package:shipping/Routes/Home/View/HR/bloc/hrtab_bloc.dart';
+import 'package:shipping/Routes/Home/View/Products/SingleProduct/single_product_bloc.dart';
+import 'package:shipping/Routes/Home/View/Products/bloc/products_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/AccountStatement/bloc/acc_statement_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/AllBalances/bloc/all_balances_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/ArAndAp/bloc/ar_ap_report_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/CashBalances/bloc/cash_balances_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/IncomeStatement/bloc/income_statement_bloc.dart';
+import 'package:shipping/Routes/Home/View/Report/Inventory/Cardx/bloc/stock_record_bloc.dart';
+import 'package:shipping/Routes/Home/View/Report/Inventory/StockAvailability/bloc/product_report_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/TrialBalance/bloc/trial_balance_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/TxnByReference/bloc/txn_ref_report_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/UserLog/bloc/user_log_bloc.dart';
@@ -33,9 +37,15 @@ import 'package:shipping/Routes/Home/View/Settings/View/General/DefaultPermissio
 import 'package:shipping/Routes/Home/View/Settings/View/General/Security/bloc/password_bloc.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/General/UserRole/bloc/user_role_bloc.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/General/bloc/general_tab_bloc.dart';
+import 'package:shipping/Routes/Home/View/Settings/View/ProductCategory/bloc/pro_cat_bloc.dart';
 import 'package:shipping/Routes/Home/View/Settings/Visibility/bloc/settings_visible_bloc.dart';
+import 'package:shipping/Routes/Home/View/Stakeholder/View/Security/bloc/stk_security_bloc.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/View/StkAccount/bloc/stk_accounts_bloc.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/bloc/stakeholder_bloc.dart';
+import 'package:shipping/Routes/Home/View/Stock/GoodsShift/bloc/goods_shift_bloc.dart';
+import 'package:shipping/Routes/Home/View/Stock/Orders/bloc/orders_bloc.dart';
+import 'package:shipping/Routes/Home/View/Stock/Purchase/bloc/purchase_invoice_bloc.dart';
+import 'package:shipping/Routes/Home/View/Stock/Sale/bloc/sale_invoice_bloc.dart';
 import 'package:shipping/Routes/Home/View/Transactions/View/Bulk/bloc/bulk_transfer_bloc.dart';
 import 'package:shipping/Routes/Home/View/Transactions/View/Exchange/bloc/exchange_bloc.dart';
 import 'package:shipping/Routes/Home/View/Transactions/View/FundTransfer/bloc/fund_transfer_bloc.dart';
@@ -46,6 +56,7 @@ import 'Features/PrintSettings/bloc/Printer/printer_cubit.dart';
 import 'Routes/Home/View/Dashboard/bloc/dashboard_stats_bloc.dart';
 import 'Routes/Home/View/Report/BalanceSheet/bloc/balance_sheet_bloc.dart';
 import 'Routes/Home/View/Report/GLStatement/bloc/gl_statement_bloc.dart';
+import 'Routes/Home/View/Report/Inventory/OrdersReport/bloc/order_report_bloc.dart';
 import 'Routes/Home/View/Report/TxnReport/TxnTypes/bloc/txn_types_bloc.dart';
 import 'Routes/Home/View/Report/TxnReport/bloc/txn_report_bloc.dart';
 import 'Routes/Home/View/Settings/bloc/settings_tab_bloc.dart';
@@ -144,6 +155,19 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (_) => TxnReportBloc(Repositories(ApiServices()))),
           BlocProvider(create: (_) => UserLogBloc(Repositories(ApiServices()))),
           BlocProvider(create: (_) => TxnTypesBloc(Repositories(ApiServices()))),
+          BlocProvider(create: (_) => StkSecurityBloc(Repositories(ApiServices()))),
+          ///Stock Report
+          BlocProvider(create: (_) => StockRecordBloc(Repositories(ApiServices()))),
+          BlocProvider(create: (_) => OrderReportBloc(Repositories(ApiServices()))),
+          BlocProvider(create: (_) => ProductReportBloc(Repositories(ApiServices()))),
+          ///Orders Bloc
+          BlocProvider(create: (_) => OrdersBloc(Repositories(ApiServices()))..add(LoadOrdersEvent())),
+          BlocProvider(create: (_) => ProductsBloc(Repositories(ApiServices()))..add(LoadProductsEvent())),
+          BlocProvider(create: (_) => ProCatBloc(Repositories(ApiServices()))..add(LoadProCatEvent())),
+          BlocProvider(create: (_) => PurchaseInvoiceBloc(Repositories(ApiServices()))),
+          BlocProvider(create: (_) => SaleInvoiceBloc(Repositories(ApiServices()))),
+          BlocProvider(create: (_) => SingleProductBloc(Repositories(ApiServices()))),
+          BlocProvider(create: (_) => GoodsShiftBloc(Repositories(ApiServices()))),
         ],
         child: BlocBuilder<LocalizationBloc, Locale>(
          builder: (context, locale) {

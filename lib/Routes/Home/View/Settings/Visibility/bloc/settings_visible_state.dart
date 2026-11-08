@@ -6,6 +6,8 @@ enum DateType {
 }
 
 class SettingsVisibilityState extends Equatable {
+  final bool shipping;
+  final bool moneyTransfer;
   final bool stock;
   final bool attendance;
   final bool exchangeRate;
@@ -27,6 +29,8 @@ class SettingsVisibilityState extends Equatable {
 
   const SettingsVisibilityState({
     this.stock = false,
+    this.moneyTransfer = false,
+    this.shipping = false,
     this.attendance = false,
     this.benefit = true,
     this.exchangeRate = true,
@@ -48,14 +52,16 @@ class SettingsVisibilityState extends Equatable {
 
   factory SettingsVisibilityState.fromMap(Map<String, dynamic> map) {
     return SettingsVisibilityState(
-      stock: map['stock'] ?? false,
+      stock: map['Purchase'] ?? false,
+      moneyTransfer: map['moneyTransfer'] ?? false,
+      shipping: map['shipping'] ?? false,
       benefit: map['benefit'] ?? true,
       attendance: map['attendance'] ?? false,
       exchangeRate: map['exchangeRate'] ?? true,
-      currencyRates: map['currencyRates'] ?? false, // Changed from 'currencyUsd' to match toMap
-      dashboardClock: map['dashboardClock'] ?? true, // Changed from 'clock' to match toMap
-      isDateExpiry: map['isDateExpiry'] ?? false, // Added null check
-      quickAccess: map['quickAccess'] ?? true, // Changed default to match constructor
+      currencyRates: map['currencyRates'] ?? false,
+      dashboardClock: map['dashboardClock'] ?? true,
+      isDateExpiry: map['isDateExpiry'] ?? false,
+      quickAccess: map['quickAccess'] ?? true,
       recentTransactions: map['recentTransactions'] ?? false,
       dateType: _dateTypeFromString(map['dateType'] ?? 'gregorian'),
       dateFormat: map['dateFormat'] ?? 'yyyy-MM-dd',
@@ -71,15 +77,17 @@ class SettingsVisibilityState extends Equatable {
 
   Map<String, dynamic> toMap() {
     return {
-      'stock': stock,
+      'Purchase': stock,
+      'moneyTransfer': moneyTransfer,
+      'shipping': shipping,
       'attendance': attendance,
-      'exchangeRate': exchangeRate, // Changed from 'currencyAfn' to match fromMap
+      'exchangeRate': exchangeRate,
       'benefit': benefit,
-      'currencyRates': currencyRates, // Changed from 'currencyUsd' to match fromMap
-      'dashboardClock': dashboardClock, // Changed from 'clock' to match fromMap
+      'currencyRates': currencyRates,
+      'dashboardClock': dashboardClock,
       'dateType': dateType.name,
       'dateFormat': dateFormat,
-      'isDateExpiry': isDateExpiry, // Changed from 'dateExpiry' to match fromMap
+      'isDateExpiry': isDateExpiry,
       'quickAccess': quickAccess,
       'recentTransactions': recentTransactions,
       'profitAndLoss': profitAndLoss,
@@ -101,6 +109,8 @@ class SettingsVisibilityState extends Equatable {
 
   @override
   List<Object?> get props => [
+    moneyTransfer,
+    shipping,
     stock,
     attendance,
     exchangeRate,

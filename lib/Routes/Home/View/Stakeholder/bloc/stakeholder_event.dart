@@ -33,14 +33,14 @@ class SearchStakeholdersEvent extends StakeholderEvent {
 
 // ── Write ─────────────────────────────────────────────
 class AddStakeholderEvent extends StakeholderEvent {
-  final IndividualsModel model;
+  final StakeholdersModel model;
   const AddStakeholderEvent(this.model);
   @override
   List<Object?> get props => [model];
 }
 
 class UpdateStakeholderEvent extends StakeholderEvent {
-  final IndividualsModel model;
+  final StakeholdersModel model;
   const UpdateStakeholderEvent(this.model);
   @override
   List<Object?> get props => [model];
@@ -67,4 +67,22 @@ class UploadStkProfileImageEvent extends StakeholderEvent {
   });
   @override
   List<Object?> get props => [perId, image];
+}
+
+class ClearStakeholderSearchEvent extends StakeholderEvent {
+  const ClearStakeholderSearchEvent();
+  @override
+  List<Object?> get props => [];
+}
+
+// ── Lock / Unlock (write only — verification is done by StkSecurityBloc) ──
+class SetStakeholderLockEvent extends StakeholderEvent {
+  final int perID;
+  final bool locked; // true = lock, false = unlock
+  const SetStakeholderLockEvent({
+    required this.perID,
+    required this.locked,
+  });
+  @override
+  List<Object?> get props => [perID, locked];
 }

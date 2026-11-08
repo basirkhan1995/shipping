@@ -81,8 +81,8 @@ class ExchangeFormState extends State<ExchangeForm> {
   final _creditAmountFocus = FocusNode();
   final _narrationFocus = FocusNode();
 
-  StakeholderAccount? _debitAcc;
-  StakeholderAccount? _creditAcc;
+  StkAccountModel? _debitAcc;
+  StkAccountModel? _creditAcc;
   ExchangeLeg? _debitLeg;
   ExchangeLeg? _creditLeg;
 
@@ -217,7 +217,7 @@ class ExchangeFormState extends State<ExchangeForm> {
 
     final currentState = context.read<StkAccountsBloc>().state;
     if (currentState is StkAccountsLoadedState) {
-      StakeholderAccount? matching;
+      StkAccountModel? matching;
       for (final account in currentState.accounts) {
         if (account.accNumber == accountNo &&
             account.accCurrency == currencyCode) {
@@ -245,7 +245,7 @@ class ExchangeFormState extends State<ExchangeForm> {
 
   void _applyCurrencyAccountRow({
     required bool isDebit,
-    required StakeholderAccount account,
+    required StkAccountModel account,
     required int accountNo,
     required String currencyCode,
   }) {
@@ -266,14 +266,14 @@ class ExchangeFormState extends State<ExchangeForm> {
     });
   }
 
-  void _syncPendingCurrencyRows(List<StakeholderAccount> rows) {
+  void _syncPendingCurrencyRows(List<StkAccountModel> rows) {
     final debitNo = _pendingDebitAccountNo;
     final debitCcy = _pendingDebitCurrency;
     final creditNo = _pendingCreditAccountNo;
     final creditCcy = _pendingCreditCurrency;
 
-    StakeholderAccount? debitMatch;
-    StakeholderAccount? creditMatch;
+    StkAccountModel? debitMatch;
+    StkAccountModel? creditMatch;
     for (final account in rows) {
       if (debitNo != null &&
           debitCcy != null &&
@@ -658,8 +658,8 @@ class ExchangeFormState extends State<ExchangeForm> {
     required TextEditingController controller,
     required FocusNode focusNode,
     required String title,
-    required StakeholderAccount? selected,
-    required ValueChanged<StakeholderAccount> onSelected,
+    required StkAccountModel? selected,
+    required ValueChanged<StkAccountModel> onSelected,
     required bool isLoading,
     required ValueChanged<bool> onLoadingChanged,
     int? excludeAccount,
@@ -682,7 +682,7 @@ class ExchangeFormState extends State<ExchangeForm> {
       listener: (_, _) {
         if (isLoading) onLoadingChanged(false);
       },
-      child: GenericTextField<StakeholderAccount, StkAccountsBloc,
+      child: GenericTextField<StkAccountModel, StkAccountsBloc,
           StkAccountsState>(
         key: key,
         controller: controller,
@@ -740,7 +740,7 @@ class ExchangeFormState extends State<ExchangeForm> {
         '${a.accNumber} | ${a.accName} | ${a.accCurrency ?? widget.baseCurrency}',
         stateToItems: (s) {
           if (s is! StkAccountsLoadedState) {
-            return const <StakeholderAccount>[];
+            return const <StkAccountModel>[];
           }
           return s.accounts.where((a) {
             if (allowedCategories != null &&
@@ -1466,7 +1466,7 @@ class _InlineErrorBanner extends StatelessWidget {
 }
 
 class _AccountDetailsCard extends StatelessWidget {
-  final StakeholderAccount account;
+  final StkAccountModel account;
   final String fallbackCurrency;
   final String label;
   final String? effectiveCurrency;

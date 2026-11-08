@@ -90,8 +90,8 @@ class FundTransferFormState extends State<FundTransferForm> {
   final _amountFocus = FocusNode();
   final _narrationFocus = FocusNode();
 
-  StakeholderAccount? _fromAcc;
-  StakeholderAccount? _toAcc;
+  StkAccountModel? _fromAcc;
+  StkAccountModel? _toAcc;
 
   FundTransferLeg? _fromLeg;
   FundTransferLeg? _toLeg;
@@ -208,10 +208,10 @@ class FundTransferFormState extends State<FundTransferForm> {
     });
   }
 
-  void _applyPendingAccountSync(List<StakeholderAccount> rows) {
+  void _applyPendingAccountSync(List<StkAccountModel> rows) {
     bool changed = false;
-    StakeholderAccount? newFrom = _fromAcc;
-    StakeholderAccount? newTo = _toAcc;
+    StkAccountModel? newFrom = _fromAcc;
+    StkAccountModel? newTo = _toAcc;
 
     final fromNo = _pendingFromAccountNo;
     final fromCcy = _pendingFromCcy;
@@ -377,7 +377,7 @@ class FundTransferFormState extends State<FundTransferForm> {
     );
   }
 
-  String _rowKey(StakeholderAccount a) => _rowKeyFromParts(
+  String _rowKey(StkAccountModel a) => _rowKeyFromParts(
     a.accNumber,
     a.accName,
     a.accCurrency ?? widget.baseCurrency,
@@ -390,7 +390,7 @@ class FundTransferFormState extends State<FundTransferForm> {
     return '$n | $nm | $c';
   }
 
-  String _rowLabel(StakeholderAccount a) {
+  String _rowLabel(StkAccountModel a) {
     final n = a.accNumber?.toString() ?? '';
     final nm = a.accName ?? '';
     return '$n | $nm';
@@ -499,14 +499,14 @@ class FundTransferFormState extends State<FundTransferForm> {
     required TextEditingController controller,
     required FocusNode focusNode,
     required String title,
-    required StakeholderAccount? selected,
+    required StkAccountModel? selected,
     required bool isStakeholder,
     required String? currentCurrency,
     required String? currencyOverride,
     required bool isLoading,
     required ValueChanged<bool> onLoadingChanged,
     required ValueChanged<CurrenciesModel?> onCurrencySelected,
-    required ValueChanged<StakeholderAccount> onSelected,
+    required ValueChanged<StkAccountModel> onSelected,
     Set<int>? allowedCategories = const {1, 8},
     int? excludeAccount,
     String? excludeCurrency,
@@ -525,7 +525,7 @@ class FundTransferFormState extends State<FundTransferForm> {
         if (isLoading) onLoadingChanged(false);
       },
       child: GenericTextField<
-          StakeholderAccount,
+          StkAccountModel,
           StkAccountsBloc,
           StkAccountsState>(
         key: key,
@@ -577,7 +577,7 @@ class FundTransferFormState extends State<FundTransferForm> {
         itemToString: _rowKey,
         stateToItems: (s) {
           if (s is! StkAccountsLoadedState) {
-            return const <StakeholderAccount>[];
+            return const <StkAccountModel>[];
           }
           return s.accounts.where((a) {
             if (allowedCategories != null &&
@@ -610,7 +610,7 @@ class FundTransferFormState extends State<FundTransferForm> {
     );
   }
 
-  String _accountBadge(StakeholderAccount a) {
+  String _accountBadge(StkAccountModel a) {
     final balance = a.accBalance.toAmount();
     final ccy = a.accCurrency ?? widget.baseCurrency;
     return '$balance $ccy'.trim();
@@ -1392,7 +1392,7 @@ class _Check extends StatelessWidget {
 }
 
 class _AccountDetailsCard extends StatelessWidget {
-  final StakeholderAccount account;
+  final StkAccountModel account;
   final String fallbackCurrency;
   final String label;
   final String? effectiveCurrencyOverride;

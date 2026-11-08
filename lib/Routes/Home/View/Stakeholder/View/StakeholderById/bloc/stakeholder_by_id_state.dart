@@ -17,7 +17,7 @@ class StakeholderByIdLoadingState extends StakeholderByIdState {
 }
 
 class StakeholderByIdLoadedState extends StakeholderByIdState {
-  final IndividualsModel stk;
+  final StakeholdersModel stk;
   const StakeholderByIdLoadedState(this.stk);
   @override
   List<Object?> get props => [stk];

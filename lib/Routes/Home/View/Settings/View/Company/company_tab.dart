@@ -35,7 +35,7 @@ class _CompanyTabsViewState extends State<CompanyTabsView> {
           value: CompanySettingsMenuName.profile,
           label: AppLocalizations.of(context)!.profile,
           screen: const CompanySettingsView(),
-          icon: Icons.settings,
+          icon: Icons.location_history,
         ),
       if (login.hasPermission(70) ?? false)
         MenuDefinition(
@@ -49,7 +49,7 @@ class _CompanyTabsViewState extends State<CompanyTabsView> {
           value: CompanySettingsMenuName.storage,
           label: AppLocalizations.of(context)!.storage,
           screen: const StorageView(),
-          icon: Icons.inventory_2_rounded,
+          icon: Icons.storage,
         ),
     ];
 
@@ -79,8 +79,6 @@ class _CompanyTabsViewState extends State<CompanyTabsView> {
             isExpanded: false,
             menuWidth: 190,
             menuHeightMode: MenuHeightMode.content,
-            //padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 8),
-            //margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
             selectedColor:
             Theme.of(context).colorScheme.primary.withValues(alpha: .09),
             selectedTextColor: Theme.of(context).colorScheme.primary,

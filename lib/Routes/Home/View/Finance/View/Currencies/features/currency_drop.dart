@@ -1,4 +1,4 @@
-// lib/Routes/Home/View/Finance/View/Currencies/features/currency_drop.dart
+// lib/Routes/Home/Purchase/Finance/Purchase/Currencies/features/currency_drop.dart
 import 'package:flag/flag_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

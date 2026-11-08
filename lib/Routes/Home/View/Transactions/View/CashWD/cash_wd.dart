@@ -106,7 +106,7 @@ class CashTxnFormState extends State<CashTxnForm> {
   final _amountFocus = FocusNode();
   final _narrationFocus = FocusNode();
 
-  StakeholderAccount? _acc;
+  StkAccountModel? _acc;
   String? _ccy;
   bool _print = true;
   bool _reminder = false;
@@ -197,11 +197,11 @@ class CashTxnFormState extends State<CashTxnForm> {
     super.dispose();
   }
 
-  void _applyPendingAccountSync(List<StakeholderAccount> rows) {
+  void _applyPendingAccountSync(List<StkAccountModel> rows) {
     final pending = _pendingAccountNo;
     if (pending == null) return;
 
-    StakeholderAccount? found;
+    StkAccountModel? found;
     for (final a in rows) {
       if (a.accNumber == pending) {
         found = a;
@@ -286,7 +286,7 @@ class CashTxnFormState extends State<CashTxnForm> {
   }
 
   Widget _buildAccountPicker() =>
-      GenericTextField<StakeholderAccount, StkAccountsBloc, StkAccountsState>(
+      GenericTextField<StkAccountModel, StkAccountsBloc, StkAccountsState>(
         controller: _accountCtrl,
         title: AppLocalizations.of(context)!.accounts,
         hintText: AppLocalizations.of(context)!.accNameOrNumber,
@@ -322,7 +322,7 @@ class CashTxnFormState extends State<CashTxnForm> {
         itemToString: (a) => '${a.accNumber} | ${a.accName}',
         stateToItems: (s) {
           if (s is! StkAccountsLoadedState) {
-            return const <StakeholderAccount>[];
+            return const <StkAccountModel>[];
           }
           return _filterAccounts(s.accounts);
         },
@@ -348,7 +348,7 @@ class CashTxnFormState extends State<CashTxnForm> {
         validator: (_) => _effectiveAccountNo == null ? 'Required' : null,
       );
 
-  List<StakeholderAccount> _filterAccounts(List<StakeholderAccount> all) {
+  List<StkAccountModel> _filterAccounts(List<StkAccountModel> all) {
     final includeRaw = widget.spec.accountInclude.trim();
     final includeAll = includeRaw.isEmpty || includeRaw.toLowerCase() == 'all';
 
@@ -1390,7 +1390,7 @@ class _Check extends StatelessWidget {
 }
 
 class _AccountDetailsCard extends StatelessWidget {
-  final StakeholderAccount account;
+  final StkAccountModel account;
   final String fallbackCurrency;
   final String label;
   final String? effectiveCurrencyOverride;

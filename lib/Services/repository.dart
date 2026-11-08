@@ -19,6 +19,8 @@ import '../Routes/Home/View/HR/View/Attendance/model/attendance_model.dart';
 import '../Routes/Home/View/HR/View/Employees/model/emp_model.dart';
 import '../Routes/Home/View/HR/View/Users/model/user_model.dart';
 import '../Routes/Home/View/HR/View/Users/model/usr_report_model.dart';
+import '../Routes/Home/View/Products/model/product_model.dart';
+import '../Routes/Home/View/Products/model/product_stock_model.dart';
 import '../Routes/Home/View/Report/AccountStatement/model/stmt_model.dart';
 import '../Routes/Home/View/Report/AllBalances/model/all_balances_model.dart';
 import '../Routes/Home/View/Report/ArAndAp/model/ar_ap_model.dart';
@@ -26,6 +28,9 @@ import '../Routes/Home/View/Report/BalanceSheet/model/bs_model.dart';
 import '../Routes/Home/View/Report/GLStatement/model/gl_statement_model.dart';
 import '../Routes/Home/View/Report/CashBalances/model/cash_balance_model.dart';
 import '../Routes/Home/View/Report/IncomeStatement/model/income_stmt_model.dart';
+import '../Routes/Home/View/Report/Inventory/Cardx/model/cardx_model.dart';
+import '../Routes/Home/View/Report/Inventory/OrdersReport/model/order_report_model.dart';
+import '../Routes/Home/View/Report/Inventory/StockAvailability/model/product_report_model.dart';
 import '../Routes/Home/View/Report/TrialBalance/model/trial_balance_model.dart';
 import '../Routes/Home/View/Report/TxnByReference/model/txn_report_model.dart';
 import '../Routes/Home/View/Report/TxnReport/TxnTypes/model/txn_types_model.dart';
@@ -38,7 +43,12 @@ import '../Routes/Home/View/Settings/View/Company/Storage/model/storage_model.da
 import '../Routes/Home/View/Settings/View/General/DefaultPermissions/model/permission_settings_model.dart';
 import '../Routes/Home/View/Settings/View/General/UserProfile/model/user_profile_model.dart';
 import '../Routes/Home/View/Settings/View/General/UserRole/model/role_model.dart';
+import '../Routes/Home/View/Settings/View/ProductCategory/model/pro_cat_model.dart';
 import '../Routes/Home/View/Stakeholder/model/stk_model.dart';
+import '../Routes/Home/View/Stock/GoodsShift/model/shift_model.dart';
+import '../Routes/Home/View/Stock/Orders/model/orders_model.dart';
+import '../Routes/Home/View/Stock/Purchase/model/purchase_invoice_items.dart';
+import '../Routes/Home/View/Stock/Sale/model/sale_invoice_items.dart';
 import '../Routes/Home/View/Transactions/View/CashWD/model/wd_model.dart';
 import '../Routes/Home/View/Transactions/View/Exchange/model/ex_model.dart';
 import '../Routes/Home/View/Transactions/View/FundTransfer/model/ft_model.dart';
@@ -356,7 +366,7 @@ class Repositories {
   // ═════════════════════════════════════════════════════════════════
   // Stakeholders
   // ═════════════════════════════════════════════════════════════════
-  Future<List<IndividualsModel>> getStakeholders({String? search}) async {
+  Future<List<StakeholdersModel>> getStakeholders({String? search}) async {
     final res = await _api.get(
       endpoint: '/stakeholder/personal.php',
       queryParams: {
@@ -366,12 +376,12 @@ class Repositories {
     );
     return _parseList(
       res.data,
-      IndividualsModel.fromMap,
+      StakeholdersModel.fromMap,
       fallback: 'Failed to load stakeholders',
     );
   }
 
-  Future<IndividualsModel> getStakeholderById(int perId) async {
+  Future<StakeholdersModel> getStakeholderById(int perId) async {
     final res = await _api.get(
       endpoint: '/stakeholder/personal.php',
       queryParams: {'perID': perId},
@@ -383,7 +393,7 @@ class Repositories {
       if (list.isEmpty) {
         throw ApiException('Stakeholder not found');
       }
-      return IndividualsModel.fromMap(
+      return StakeholdersModel.fromMap(
         Map<String, dynamic>.from(list.first as Map),
       );
     }
@@ -391,12 +401,12 @@ class Repositories {
     // Some servers return a single object instead of a list.
     final map = _asMap(body);
     if (map != null && map['perId'] != null) {
-      return IndividualsModel.fromMap(map);
+      return StakeholdersModel.fromMap(map);
     }
     _fail(body, fallback: 'Stakeholder not found');
   }
 
-  Future<int> addStakeholder(IndividualsModel model) async {
+  Future<int> addStakeholder(StakeholdersModel model) async {
     final res = await _api.post(
       endpoint: '/stakeholder/personal.php',
       data: model.toMap(),
@@ -413,7 +423,7 @@ class Repositories {
     throw ApiException('Server returned success but no personal id');
   }
 
-  Future<void> updateStakeholder(IndividualsModel model) async {
+  Future<void> updateStakeholder(StakeholdersModel model) async {
     final res = await _api.put(
       endpoint: '/stakeholder/personal.php',
       data: model.toMap(),
@@ -444,7 +454,7 @@ class Repositories {
   // ═════════════════════════════════════════════════════════════════
   // Accounts
   // ═════════════════════════════════════════════════════════════════
-  Future<List<StakeholderAccount>> getAccounts({
+  Future<List<StkAccountModel>> getAccounts({
     int? perId,
     String? search,
     CancelToken? cancelToken,
@@ -459,7 +469,7 @@ class Repositories {
     );
     return _parseList(
       response.data,
-      StakeholderAccount.fromMap,
+      StkAccountModel.fromMap,
       fallback: 'Failed to load accounts',
     );
   }
@@ -2968,6 +2978,743 @@ class Repositories {
     final body = _asMap(response.data);
     if (body == null) throw ApiException('Invalid server response');
     return body;
+  }
+
+  /// Orders ...................................................................
+  Future<List<OrdersModel>> getOrders({
+    int? orderId,
+    CancelToken? cancelToken,
+  }) async {
+    final queryParams = {'ordID': orderId};
+    final response = await _api.get(
+      endpoint: "/inventory/ordersView.php",
+      queryParams: queryParams,
+      cancelToken: cancelToken,
+    );
+
+    // Handle error messages from server
+    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+      throw Exception(response.data['msg']);
+    }
+
+    // If data is null or empty, return empty list
+    if (response.data == null ||
+        (response.data is List && response.data.isEmpty)) {
+      return [];
+    }
+
+    // Parse list of stakeholders safely
+    if (response.data is List) {
+      return (response.data as List)
+          .whereType<Map<String, dynamic>>() // ensure map type
+          .map((json) => OrdersModel.fromMap(json))
+          .toList();
+    }
+
+    return [];
+  }
+
+  Future<Map<String, dynamic>> getOrderById({required dynamic orderId, CancelToken? cancelToken}) async {
+
+    final value = orderId.toString().trim();
+    final queryParams = <String, dynamic>{};
+
+    if (int.tryParse(value) != null) {
+      queryParams['ordID'] = value;
+    } else {
+      queryParams['ordRef'] = value;
+    }
+
+    final response = await _api.get(endpoint: "/inventory/salePurchase.php", queryParams: queryParams, cancelToken: cancelToken);
+    if (response.data is Map<String, dynamic> &&
+        response.data['msg'] != null) {
+      throw Exception(response.data['msg']);
+    }
+
+    if (response.data == null) {
+      throw Exception("Invoice not found");
+    }
+
+    if (response.data is Map<String, dynamic>) {
+      return response.data;
+    }
+
+    if (response.data is List && response.data.isNotEmpty) {
+      return Map<String, dynamic>.from(response.data.first);
+    }
+
+    throw Exception("Invoice not found");
+  }
+
+  Future<Map<String, dynamic>> postOrderStatus(List<Map<String, dynamic>> ordersData) async {
+    final response = await _api.put(
+      endpoint: "/inventory/ordersView.php",
+      data: ordersData,
+    );
+    return response.data;
+  }
+
+  Future<bool> deleteOrder({
+    required int orderId,
+    required String usrName,
+    required String? ref,
+    required String? ordName,
+  }) async {
+    final data = {
+      "ordID": orderId,
+      "usrName": usrName,
+      "ordTrnRef": ref,
+      "ordName": ordName,
+    };
+
+    final response = await _api.delete(
+      endpoint: "/inventory/salePurchase.php",
+      data: data,
+    );
+
+    return response.data['msg'] == 'success';
+  }
+
+
+  /// StockAvailability .................................................................
+  Future<Map<String, dynamic>> addProduct({
+    required ProductsModel newProduct,
+  }) async {
+    final response = await _api.post(
+      endpoint: "/inventory/product.php",
+      data: newProduct.toMap(),
+    );
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> addProductFromExcel({required File excelFile}) async {
+    final fileName = excelFile.path.split(Platform.pathSeparator).last;
+    final formData = FormData.fromMap({
+      'excelFile': await MultipartFile.fromFile(
+        excelFile.path,
+        filename: fileName,
+      ),
+    });
+    final response = await _api.uploadFile(
+      endpoint: "/inventory/addProductExcel.php",
+      data: formData,
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> updateProduct({required ProductsModel newProduct}) async {
+    final response = await _api.put(
+      endpoint: "/inventory/product.php",
+      data: newProduct.toMap(),
+    );
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> deleteProduct({required int proId}) async {
+    final response = await _api.delete(
+      endpoint: "/inventory/product.php",
+      data: {"proID": proId},
+    );
+    return response.data;
+  }
+
+  Future<List<ProductsModel>> getProduct({int? proId, String? input, CancelToken? cancelToken}) async {
+    final queryParams = <String, dynamic>{};
+
+    // Only add non-null parameters
+    if (proId != null) {
+      queryParams['proID'] = proId;
+    }
+    if (input != null && input.isNotEmpty) {
+      queryParams['input'] = input;
+    }
+
+    final response = await _api.get(
+      endpoint: "/inventory/product.php",
+      queryParams: queryParams,
+      cancelToken: cancelToken,
+    );
+
+    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+      throw Exception(response.data['msg']);
+    }
+
+    if (response.data == null) {
+      return [];
+    }
+
+    // Handle single product
+    if (response.data is Map<String, dynamic>) {
+      if (response.data.containsKey('proID') ||
+          response.data.containsKey('proId')) {
+        return [ProductsModel.fromMap(response.data)];
+      }
+    }
+
+    // Handle list of products
+    if (response.data is List) {
+      return (response.data as List)
+          .whereType<Map<String, dynamic>>()
+          .map((json) => ProductsModel.fromMap(json))
+          .toList();
+    }
+
+    return [];
+  }
+
+  Future<ProductsModel> getProductById({required int proId, CancelToken? cancelToken}) async {
+    final queryParams = {'proID': proId};
+    final response = await _api.get(
+      endpoint: "/inventory/product.php",
+      queryParams: queryParams,
+      cancelToken: cancelToken,
+    );
+
+    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+      throw Exception(response.data['msg']);
+    }
+
+    if (response.data == null || response.data is! Map<String, dynamic>) {
+      throw Exception('Product not found');
+    }
+
+    return ProductsModel.fromMap(response.data);
+  }
+
+  Future<List<ProductsStockModel>> getProductStock({
+    int? proId,
+    int? noStock,
+    String? proName,
+    CancelToken? cancelToken,
+  }) async {
+    final queryParams = {
+      'proID': proId,
+      'av': noStock ?? 0,
+      "proName": proName,
+    };
+    // Fetch data from API
+    final response = await _api.get(
+      endpoint: "/inventory/availableProducts.php",
+      queryParams: queryParams,
+      cancelToken: cancelToken,
+    );
+
+    // Handle error messages from server
+    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+      throw Exception(response.data['msg']);
+    }
+
+    // If data is null or empty, return empty list
+    if (response.data == null ||
+        (response.data is List && response.data.isEmpty)) {
+      return [];
+    }
+
+    // Parse list of stakeholders safely
+    if (response.data is List) {
+      return (response.data as List)
+          .whereType<Map<String, dynamic>>()
+          .map((json) => ProductsStockModel.fromMap(json))
+          .toList();
+    }
+    return [];
+  }
+
+  /// Product Category .........................................................
+  Future<Map<String, dynamic>> addProCategory({
+    required ProCategoryModel newCategory,
+  }) async {
+    final response = await _api.post(
+      endpoint: "/setting/productCategory.php",
+      data: newCategory.toMap(),
+    );
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> updateProCategory({
+    required ProCategoryModel newCategory,
+  }) async {
+    final response = await _api.put(
+      endpoint: "/setting/productCategory.php",
+      data: newCategory.toMap(),
+    );
+    return response.data;
+  }
+
+  Future<List<ProCategoryModel>> getProCategory({
+    int? catId,
+    CancelToken? cancelToken,
+  }) async {
+    final queryParams = {'pcID': catId};
+    // Fetch data from API
+    final response = await _api.get(
+      endpoint: "/setting/productCategory.php",
+      queryParams: queryParams,
+      cancelToken: cancelToken,
+    );
+
+    // Handle error messages from server
+    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+      throw Exception(response.data['msg']);
+    }
+
+    // If data is null or empty, return empty list
+    if (response.data == null ||
+        (response.data is List && response.data.isEmpty)) {
+      return [];
+    }
+
+    // Parse list of stakeholders safely
+    if (response.data is List) {
+      return (response.data as List)
+          .whereType<Map<String, dynamic>>() // ensure map type
+          .map((json) => ProCategoryModel.fromMap(json))
+          .toList();
+    }
+
+    return [];
+  }
+
+  Future<Map<String, dynamic>> uploadProductImage({
+    required int proID,
+    required List<File> images,
+  }) async {
+    FormData formData = FormData();
+
+    // Add product ID
+    formData.fields.add(MapEntry('proID', proID.toString()));
+
+    // Add each image with key 'images[]'
+    for (int i = 0; i < images.length; i++) {
+      File file = images[i];
+
+      String extension = file.path.split('.').last.toLowerCase();
+
+      MediaType contentType;
+      switch (extension) {
+        case 'png':
+          contentType = MediaType('image', 'png');
+          break;
+        case 'webp':
+          contentType = MediaType('image', 'webp');
+          break;
+        case 'gif':
+          contentType = MediaType('image', 'gif');
+          break;
+        default:
+          contentType = MediaType('image', 'jpeg');
+      }
+
+      formData.files.add(
+        MapEntry(
+          'images[]',
+          await MultipartFile.fromFile(
+            file.path,
+            filename: file.path.split('/').last,
+            contentType: contentType,
+          ),
+        ),
+      );
+    }
+
+    final response = await _api.uploadFile(
+      endpoint: "/inventory/productImage.php",
+      data: formData,
+    );
+
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> fetchOrderById({
+    required dynamic orderId,
+  }) async {
+    final response = await _api.get(
+      endpoint: "/inventory/salePurchase.php",
+      queryParams: {'ordID': orderId.toString()},
+    );
+    return response.data is Map<String, dynamic> ? response.data : {};
+  }
+
+  Future<Map<String, dynamic>> addPurchaseInvoice({
+    required String usrName,
+    required int perID,
+    String? xRef,
+    required String orderName, //Purchase or Sale
+    String? remark,
+    required List<PurchaseInvoiceRecord> records,
+    required List<PurchasePaymentRecord> payment,
+  }) async {
+    final data = {
+      "usrName": usrName,
+      "ordName": orderName,
+      "ordPersonal": perID,
+      "ordxRef": xRef ?? "",
+      "ordRemarks": remark,
+      "payments": payment.map((e)=> e.toJson()).toList(),
+      "records": records.map((r) => r.toJson()).toList(),
+    };
+
+    final response = await _api.post(
+      endpoint: "/inventory/salePurchase.php",
+      data: data,
+    );
+    // Return the full response data
+    return response.data is Map<String, dynamic>
+        ? response.data
+        : {'msg': 'Invalid response format'};
+  }
+
+  Future<Map<String, dynamic>> updatePurchaseInvoice({
+    required String usrName,
+    required int perID,
+    String? ref,
+    int? orderId,
+    required String orderName, //Purchase or Sale
+    String? remark,
+    required List<PurchaseInvoiceRecord> records,
+    required List<PurchasePaymentRecord> payment,
+  }) async {
+    final data = {
+      "usrName": usrName,
+      "ordName": orderName,
+      "ordPersonal": perID,
+      "ordTrnRef": ref ?? "",
+      "ordxRef": ref ?? "",
+      "ordID": orderId,
+      "ordRemarks": remark,
+      "payments": payment.map((e)=> e.toJson()).toList(),
+      "records": records.map((r) => r.toJson()).toList(),
+    };
+
+    final response = await _api.put(
+      endpoint: "/inventory/salePurchase.php",
+      data: data,
+    );
+    // Return the full response data
+    return response.data is Map<String, dynamic>
+        ? response.data
+        : {'msg': 'Invalid response format'};
+  }
+
+
+  Future<Map<String, dynamic>> addSaleInvoice({
+    required String usrName,
+    required int perID,
+    String? xRef,
+    required String orderName,
+    String? remark,
+    required List<SalePaymentRecord> payment,
+    required List<SaleInvoiceRecord> records,
+  }) async {
+    final data = {
+      "usrName": usrName,
+      "ordName": orderName,
+      "ordPersonal": perID,
+      "ordxRef": xRef,
+      "ordRemarks": remark,
+      "payments": payment.map((e)=> e.toJson()).toList(),
+      "records": records.map((r) => r.toJson()).toList(),
+    };
+    final response = await _api.post(
+      endpoint: "/inventory/salePurchase.php",
+      data: data,
+    );
+
+    return response.data is Map<String, dynamic>
+        ? response.data
+        : {'msg': 'Invalid response format'};
+  }
+
+  Future<Map<String, dynamic>> updateSaleInvoice({
+    required String usrName,
+    required int perID,
+    String? ref,
+    int? orderId,
+    required String orderName,
+    String? remark,
+    required List<SalePaymentRecord> payment,
+    required List<SaleInvoiceRecord> records,
+  }) async {
+    final data = {
+      "usrName": usrName,
+      "ordName": orderName,
+      "ordPersonal": perID,
+      "ordTrnRef": ref,
+      "ordxRef":ref,
+      "ordID": orderId,
+      "ordRemarks": remark,
+      "payments": payment.map((e)=> e.toJson()).toList(),
+      "records": records.map((r) => r.toJson()).toList(),
+    };
+    final response = await _api.put(
+      endpoint: "/inventory/salePurchase.php",
+      data: data,
+    );
+    return response.data is Map<String, dynamic>
+        ? response.data
+        : {'msg': 'Invalid response format'};
+  }
+
+  ///Shift Goods ...............................................................
+  Future<List<GoodShiftModel>> getShifts({int? orderId, CancelToken? cancelToken}) async {
+    final queryParams = {'ordID': orderId};
+    final response = await _api.get(
+      endpoint: "/inventory/goodsShifting.php",
+      queryParams: queryParams,
+      cancelToken: cancelToken,
+    );
+
+    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+      throw Exception(response.data['msg']);
+    }
+
+    if (response.data == null) {
+      return [];
+    }
+
+    if (response.data is Map<String, dynamic>) {
+      final data = response.data as Map<String, dynamic>;
+      final shift = GoodShiftModel.fromMap(data);
+      if (data.containsKey('records') && data['records'] is List) {
+        shift.records = (data['records'] as List)
+            .whereType<Map<String, dynamic>>()
+            .map((record) => ShiftRecord.fromMap(record))
+            .toList();
+      }
+      return [shift];
+    }
+
+    if (response.data is List) {
+      return (response.data as List)
+          .whereType<Map<String, dynamic>>()
+          .map((json) => GoodShiftModel.fromMap(json))
+          .toList();
+    }
+
+    return [];
+  }
+
+  Future<Map<String, dynamic>> addShift({
+    required String usrName,
+    required String account,
+    required String amount,
+    required List<ShiftRecord> records,
+  }) async {
+    final data = {
+      "usrName": usrName,
+      "account": account,
+      "amount": amount,
+      "records": records.map((r) => r.toMap()).toList(),
+    };
+
+    final response = await _api.post(
+      endpoint: "/inventory/goodsShifting.php",
+      data: data,
+    );
+
+    return response.data is Map<String, dynamic>
+        ? response.data
+        : {'msg': 'Invalid response format'};
+  }
+
+  Future<Map<String, dynamic>> updateShift({
+    required int ordID,
+    required String usrName,
+    required String account,
+    required String amount,
+    required List<ShiftRecord> records,
+  }) async {
+    final data = {
+      "ordID": ordID,
+      "usrName": usrName,
+      "account": account,
+      "amount": amount,
+      "records": records.map((r) => r.toMap()).toList(),
+    };
+
+    final response = await _api.put(
+      endpoint: "/inventory/goodsShifting.php",
+      data: data,
+    );
+
+    return response.data is Map<String, dynamic>
+        ? response.data
+        : {'msg': 'Invalid response format'};
+  }
+
+  Future<Map<String, dynamic>> deleteShift({
+    required int orderId,
+    required String usrName,
+  }) async {
+    final response = await _api.delete(
+      endpoint: "/inventory/goodsShifting.php",
+      data: {"usrName": usrName, "ordID": orderId.toString()},
+    );
+    return response.data;
+  }
+
+  Future<List<StockRecordModel>> stockRecord({
+    String? fromDate,
+    String? toDate,
+    int? proId,
+    int? storageId,
+    int? partyId,
+    String? inOut,
+  }) async {
+    final response = await _api.post(
+      endpoint: "/reports/runningStock.php",
+      data: {
+        "fromDate": fromDate,
+        "toDate": toDate,
+        "proID": proId,
+        "stgID": storageId,
+        "perID": partyId,
+        "io": inOut,
+      },
+    );
+
+    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+      throw Exception(response.data['msg']);
+    }
+
+    // Parse as list
+    if (response.data is List) {
+      return List<StockRecordModel>.from(
+        response.data.map((x) => StockRecordModel.fromMap(x)),
+      );
+    }
+
+    // If single object, wrap in list
+    if (response.data is Map<String, dynamic>) {
+      return [StockRecordModel.fromMap(response.data)];
+    }
+
+    return [];
+  }
+
+  Future<List<OrderReportModel>> ordersReport({
+    String? fromDate,
+    String? toDate,
+    int? ordID,
+    int? customerId,
+    int? branchId,
+    String? orderName,
+  }) async {
+    final response = await _api.post(
+      endpoint: "/reports/allOrders.php",
+      data: {
+        "fromDate": fromDate,
+        "toDate": toDate,
+        "orderName": orderName,
+        "ordID": ordID,
+        "customer": customerId,
+        "branch": branchId,
+      },
+    );
+
+    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+      throw Exception(response.data['msg']);
+    }
+
+    // Parse as list
+    if (response.data is List) {
+      return List<OrderReportModel>.from(
+        response.data.map((x) => OrderReportModel.fromMap(x)),
+      );
+    }
+
+    // If single object, wrap in list
+    if (response.data is Map<String, dynamic>) {
+      return [OrderReportModel.fromMap(response.data)];
+    }
+
+    return [];
+  }
+
+  Future<List<ProductReportModel>> stockAvailabilityReport({
+    int? productId,
+    int? storageId,
+    int? categoryId,
+    int? isNoStock,
+    int? lowStock,
+    String? salesFilter
+  }) async {
+    final response = await _api.post(
+      endpoint: "/reports/stockAvailability.php",
+      data: {
+        "product": productId,
+        "storage": storageId,
+        "category" : categoryId,
+        "availability": isNoStock,
+        "lsq": lowStock,
+        "salesFilter": salesFilter,
+      },
+    );
+
+    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
+      throw Exception(response.data['msg']);
+    }
+
+    // Parse as list
+    if (response.data is List) {
+      return List<ProductReportModel>.from(
+        response.data.map((x) => ProductReportModel.fromMap(x)),
+      );
+    }
+
+    // If single object, wrap in list
+    if (response.data is Map<String, dynamic>) {
+      return [ProductReportModel.fromMap(response.data)];
+    }
+
+    return [];
+  }
+
+  /// Verifies the current admin's password for a specific stakeholder.
+  ///
+  /// The server returns HTTP 200 for logical failures (wrong password,
+  /// wrong role) with `ok: false` in the body. We normalize `ok` to a
+  /// real boolean so the bloc can branch on it reliably.
+  Future<Map<String, dynamic>> unlockStakeholder({
+    required int perID,
+    required String username,
+    required String password,
+  }) async {
+    final res = await _api.post(
+      endpoint: '/stakeholder/lock.php',
+      data: {
+        'perID':    perID,
+        'username': username,
+        'password': password,
+      },
+    );
+
+    final body = res.data is Map
+        ? Map<String, dynamic>.from(res.data)
+        : <String, dynamic>{};
+
+    final raw = body['ok'];
+    body['ok'] = raw == true ||
+        raw == 1 ||
+        raw == 'true' ||
+        raw == '1';
+
+    return body;
+  }
+
+  /// Sets `perLock` on a stakeholder.
+  ///
+  /// Sends the whole model via `toMap()` so every field is preserved
+  /// (the PHP endpoint does a partial update — only fields present in
+  /// the request get written, so this is safe). The bloc flips only
+  /// `perLock` before calling this, so the PUT effectively updates
+  /// just the lock flag on the server.
+  Future<Map<String, dynamic>> setStakeholderLock(StakeholdersModel model) async {
+    final res = await _api.put(
+      endpoint: '/stakeholder/personal.php',
+      data: model.toMap(),
+    );
+    return res.data is Map ? Map<String, dynamic>.from(res.data) : {};
   }
 
 }

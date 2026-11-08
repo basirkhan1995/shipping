@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/Company/company_tab.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/General/general.dart';
+import 'package:shipping/Routes/Home/View/Settings/View/ProductCategory/pro_cat_view.dart';
 import '../../../../Features/Other/responsive_widget.dart';
 import '../../../../Features/Widgets/tab_bar.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'View/About/about.dart';
 import 'View/Backup/backup.dart';
+import 'Visibility/bloc/settings_visible_bloc.dart';
 import 'bloc/settings_tab_bloc.dart';
 
 class SettingsView extends StatelessWidget {
@@ -66,7 +68,7 @@ class _DesktopView extends StatelessWidget {
     // final authState = context.select((AuthBloc b) => b.state);
     // final isAdmin = authState is AuthenticatedState &&
     //     authState.loginData.usrRole?.toUpperCase() == 'ADMIN';
-
+    final visibility = context.watch<SettingsVisibleBloc>().state;
     final tabs = <ZTabItem<SettingsTabName>>[
       ZTabItem(
         value: SettingsTabName.general,
@@ -77,6 +79,13 @@ class _DesktopView extends StatelessWidget {
         value: SettingsTabName.company,
         label: AppLocalizations.of(context)!.company,
         screen: const CompanyTabsView(),
+      ),
+
+      if(visibility.orders)
+      ZTabItem(
+        value: SettingsTabName.productCategory,
+        label: AppLocalizations.of(context)!.productCategory,
+        screen: const ProCatView(),
       ),
 
       ZTabItem(

@@ -1374,7 +1374,7 @@ class _DesktopState extends State<_Desktop> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "Enter reference to View",
+                        "Enter reference to Purchase",
                         style: textTheme.bodySmall?.copyWith(
                           color: color.outline.withValues(alpha: .4),
                         ),

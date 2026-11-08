@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../Features/Date/zdate_picker.dart';
 import '../../../../Features/Other/form_dialog.dart';
 import '../../../../Features/Other/image_crop.dart';
@@ -8,11 +10,9 @@ import '../../../../Features/Widgets/ztextfield.dart';
 import '../../../../Features/zdropdown.dart';
 import 'bloc/stakeholder_bloc.dart';
 import 'model/stk_model.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class StakeholderFormDialog extends StatefulWidget {
-  final IndividualsModel? existing;
+  final StakeholdersModel? existing;
   const StakeholderFormDialog({super.key, this.existing});
 
   @override
@@ -25,6 +25,7 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
 
   static const _genders = ['Male', 'Female', 'Other'];
 
+  late final TextEditingController _perCode;
   late final TextEditingController _firstName;
   late final TextEditingController _lastName;
   late final TextEditingController _phone;
@@ -36,6 +37,7 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
   late final TextEditingController _addCountry;
   late final TextEditingController _addZip;
 
+  late final FocusNode _perCodeFocus;
   late final FocusNode _firstNameFocus;
   late final FocusNode _lastNameFocus;
   late final FocusNode _phoneFocus;
@@ -50,7 +52,6 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
   Uint8List? _selectedImageBytes;
 
   Future<void> _pickAndCropImage() async {
-    // Capture context-dependent things BEFORE any await.
     final messenger = ScaffoldMessenger.of(context);
     final bloc = context.read<StakeholderBloc>();
     final perId = widget.existing?.perId;
@@ -69,10 +70,7 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
 
       if (perId != null) {
         bloc.add(
-          UploadStkProfileImageEvent(
-            perId: perId,
-            image: cropped,
-          ),
+          UploadStkProfileImageEvent(perId: perId, image: cropped),
         );
       }
     } catch (e) {
@@ -84,6 +82,7 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
       }
     }
   }
+
   static Widget _buildHeroShuttle(
       BuildContext flightContext,
       Animation<double> animation,
@@ -98,6 +97,7 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
       ),
     );
   }
+
   String? _dobIso;
   String? _gender;
   bool _isMailing = false;
@@ -108,6 +108,8 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
   void initState() {
     super.initState();
     final e = widget.existing;
+
+    _perCode = TextEditingController(text: e?.perCode ?? '');
     _firstName = TextEditingController(text: e?.perName ?? '');
     _lastName = TextEditingController(text: e?.perLastName ?? '');
     _phone = TextEditingController(text: e?.perPhone ?? '');
@@ -121,6 +123,7 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
     _gender = e?.perGender;
     _isMailing = (e?.addMailing ?? 0) == 1;
 
+    _perCodeFocus = FocusNode();
     _firstNameFocus = FocusNode();
     _lastNameFocus = FocusNode();
     _phoneFocus = FocusNode();
@@ -142,6 +145,7 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
 
   @override
   void dispose() {
+    _perCode.dispose();
     _firstName.dispose();
     _lastName.dispose();
     _phone.dispose();
@@ -153,6 +157,7 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
     _addCountry.dispose();
     _addZip.dispose();
 
+    _perCodeFocus.dispose();
     _firstNameFocus.dispose();
     _lastNameFocus.dispose();
     _phoneFocus.dispose();
@@ -175,8 +180,10 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
   void _submit() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    final model = IndividualsModel(
+    final model = StakeholdersModel(
       perId: widget.existing?.perId,
+      perCode: _perCode.text.trim().isEmpty ? null : _perCode.text.trim(),
+      perLock: widget.existing?.perLock ?? 0,
       perName: _firstName.text.trim(),
       perLastName: _lastName.text.trim(),
       perGender: _gender,
@@ -249,7 +256,8 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
                                 context: context,
                                 imageName: widget.existing?.imageProfile,
                                 localImageBytes: _selectedImageBytes,
-                                heroTag: 'stakeholder_viewer_${widget.existing?.perId}',
+                                heroTag:
+                                'stakeholder_viewer_${widget.existing?.perId}',
                               ),
                             ),
                           ),
@@ -261,9 +269,14 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
                             decoration: BoxDecoration(
                               color: color.primary,
                               shape: BoxShape.circle,
-                              border: Border.all(color: color.surface, width: 2),
+                              border:
+                              Border.all(color: color.surface, width: 2),
                             ),
-                            child: const Icon(Icons.edit, size: 16, color: Colors.white),
+                            child: const Icon(
+                              Icons.edit,
+                              size: 16,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ],
@@ -272,11 +285,44 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
                 ),
                 const SizedBox(height: 20),
               ],
+
               _section('Personal'),
               const SizedBox(height: 8),
 
+              // ── Code + First + Last name (one row) ───────────────
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  SizedBox(
+                    width: 140,
+                    child: ZTextFieldEntitled(
+                      title: 'Code',
+                      hint: 'MZ-340',
+                      controller: _perCode,
+                      focusNode: _perCodeFocus,
+                      autoFocus: false,
+                      textInputAction: TextInputAction.next,
+                      onFieldSubmitted: (_) =>
+                          _firstNameFocus.requestFocus(),
+                      inputFormat: [
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'[A-Za-z0-9._-]'),
+                        ),
+                        LengthLimitingTextInputFormatter(30),
+                      ],
+                      // Optional: enforce MZ-340 style. Remove if you
+                      // want to allow arbitrary codes.
+                      validator: (v) {
+                        final s = (v ?? '').trim();
+                        if (s.isEmpty) return null; // backend defaults to perID
+                        if (!RegExp(r'^[A-Za-z0-9._-]{1,30}$').hasMatch(s)) {
+                          return 'A–Z, 0–9, . _ - only (max 30)';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: ZTextFieldEntitled(
                       title: 'First name',
@@ -284,14 +330,12 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
                       isRequired: true,
                       controller: _firstName,
                       focusNode: _firstNameFocus,
-                      autoFocus: true,                  // ← only this one
+                      autoFocus: true,
                       textInputAction: TextInputAction.next,
                       onFieldSubmitted: (_) =>
                           _lastNameFocus.requestFocus(),
                       validator: (v) =>
-                      (v == null || v.trim().isEmpty)
-                          ? 'Required'
-                          : null,
+                      (v == null || v.trim().isEmpty) ? 'Required' : null,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -301,7 +345,7 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
                       hint: 'Doe',
                       controller: _lastName,
                       focusNode: _lastNameFocus,
-                      autoFocus: false,                 // ← all others
+                      autoFocus: false,
                       textInputAction: TextInputAction.next,
                       onFieldSubmitted: (_) => _phoneFocus.requestFocus(),
                     ),
@@ -433,8 +477,7 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
                       focusNode: _addCountryFocus,
                       autoFocus: false,
                       textInputAction: TextInputAction.next,
-                      onFieldSubmitted: (_) =>
-                          _addZipFocus.requestFocus(),
+                      onFieldSubmitted: (_) => _addZipFocus.requestFocus(),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -452,17 +495,6 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
                 ],
               ),
               const SizedBox(height: 12),
-
-              // CheckboxListTile(
-              //   dense: true,
-              //   shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(3)),
-              //   value: _isMailing,
-              //   onChanged: (v) => setState(() => _isMailing = v ?? false),
-              //   title: const Text('Use as mailing address'),
-              //   contentPadding: EdgeInsets.zero,
-              //   controlAffinity: ListTileControlAffinity.leading,
-              // ),
-
             ],
           ),
         ),

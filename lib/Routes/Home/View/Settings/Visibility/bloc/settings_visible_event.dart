@@ -18,6 +18,8 @@ class LoadSettingsEvent extends SettingsVisibleEvent{
 }
 
 class UpdateSettingsEvent extends SettingsVisibleEvent {
+  final bool? moneyTransfer;
+  final bool? shipping;
   final bool? stock;
   final bool? attendance;
   final bool? exchangeRate;
@@ -38,6 +40,8 @@ class UpdateSettingsEvent extends SettingsVisibleEvent {
   final bool? isWholeSale;
 
   const UpdateSettingsEvent({
+    this.moneyTransfer,
+    this.shipping,
     this.stock,
     this.attendance,
     this.exchangeRate,
@@ -60,6 +64,8 @@ class UpdateSettingsEvent extends SettingsVisibleEvent {
 
   @override
   List<Object?> get props => [
+    moneyTransfer,
+    shipping,
     stock,
     attendance,
     exchangeRate,

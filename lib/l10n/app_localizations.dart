@@ -3309,6 +3309,876 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Uploading...'**
   String get uploading;
+
+  /// No description provided for @transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Money Transfer'**
+  String get transfer;
+
+  /// No description provided for @completed.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get completed;
+
+  /// No description provided for @confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirm;
+
+  /// No description provided for @orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders'**
+  String get orders;
+
+  /// No description provided for @orderSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage purchase & sale'**
+  String get orderSubtitle;
+
+  /// No description provided for @party.
+  ///
+  /// In en, this message translates to:
+  /// **'Party'**
+  String get party;
+
+  /// No description provided for @invoiceType.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice'**
+  String get invoiceType;
+
+  /// No description provided for @totalInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Invoice'**
+  String get totalInvoice;
+
+  /// No description provided for @deselectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect All'**
+  String get deselectAll;
+
+  /// No description provided for @newSale.
+  ///
+  /// In en, this message translates to:
+  /// **'New Sale'**
+  String get newSale;
+
+  /// No description provided for @newPurchase.
+  ///
+  /// In en, this message translates to:
+  /// **'New Purchase'**
+  String get newPurchase;
+
+  /// No description provided for @goodShift.
+  ///
+  /// In en, this message translates to:
+  /// **'Goods Shift'**
+  String get goodShift;
+
+  /// No description provided for @productName.
+  ///
+  /// In en, this message translates to:
+  /// **'Product name'**
+  String get productName;
+
+  /// No description provided for @batchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch'**
+  String get batchTitle;
+
+  /// No description provided for @unitPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit Price'**
+  String get unitPrice;
+
+  /// No description provided for @searchProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Products'**
+  String get searchProducts;
+
+  /// No description provided for @pricing.
+  ///
+  /// In en, this message translates to:
+  /// **'Prices'**
+  String get pricing;
+
+  /// No description provided for @avgPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Average'**
+  String get avgPrice;
+
+  /// No description provided for @recentPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get recentPrice;
+
+  /// No description provided for @sellPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Sell Price'**
+  String get sellPrice;
+
+  /// No description provided for @landedCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Landed Cost'**
+  String get landedCost;
+
+  /// No description provided for @productDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Product Details'**
+  String get productDetails;
+
+  /// No description provided for @available.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get available;
+
+  /// No description provided for @productCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Product Code'**
+  String get productCode;
+
+  /// No description provided for @madeIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Made in'**
+  String get madeIn;
+
+  /// No description provided for @totalItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Items'**
+  String get totalItems;
+
+  /// No description provided for @productImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Product Images'**
+  String get productImages;
+
+  /// No description provided for @nameAndDescriptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Name & Descriptions'**
+  String get nameAndDescriptions;
+
+  /// No description provided for @newProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'New Product'**
+  String get newProduct;
+
+  /// No description provided for @productAlreadyExist.
+  ///
+  /// In en, this message translates to:
+  /// **'Product already exists.'**
+  String get productAlreadyExist;
+
+  /// No description provided for @stockPaper.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock Paper'**
+  String get stockPaper;
+
+  /// No description provided for @saleEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale Entry'**
+  String get saleEntry;
+
+  /// No description provided for @customers.
+  ///
+  /// In en, this message translates to:
+  /// **'Customers'**
+  String get customers;
+
+  /// No description provided for @paymentSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Summary'**
+  String get paymentSummary;
+
+  /// No description provided for @newBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'New Balance'**
+  String get newBalance;
+
+  /// No description provided for @cash.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash'**
+  String get cash;
+
+  /// No description provided for @cashPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash Payment'**
+  String get cashPayment;
+
+  /// No description provided for @cashAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash Amount'**
+  String get cashAmount;
+
+  /// No description provided for @fullCashPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Cash Payment'**
+  String get fullCashPayment;
+
+  /// No description provided for @payment.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get payment;
+
+  /// No description provided for @selectAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Account'**
+  String get selectAccount;
+
+  /// No description provided for @discount.
+  ///
+  /// In en, this message translates to:
+  /// **'Discount'**
+  String get discount;
+
+  /// No description provided for @addItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Item'**
+  String get addItem;
+
+  /// No description provided for @selectCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a customer'**
+  String get selectCustomer;
+
+  /// No description provided for @invalidCashAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid cash payment amount'**
+  String get invalidCashAmount;
+
+  /// No description provided for @selectCreditAccountMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a credit account'**
+  String get selectCreditAccountMsg;
+
+  /// No description provided for @addItemMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Please add at least one item'**
+  String get addItemMsg;
+
+  /// No description provided for @addProductMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a product for all items'**
+  String get addProductMsg;
+
+  /// No description provided for @addValidPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid sale price'**
+  String get addValidPrice;
+
+  /// No description provided for @addValidQty.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid quantity'**
+  String get addValidQty;
+
+  /// No description provided for @notEnoughMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough stock:'**
+  String get notEnoughMsg;
+
+  /// No description provided for @overLimitMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction amount exceeds the allowed limit'**
+  String get overLimitMessage;
+
+  /// No description provided for @accountBlockedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The account is blocked'**
+  String get accountBlockedMessage;
+
+  /// No description provided for @invoiceSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice Summary'**
+  String get invoiceSummary;
+
+  /// No description provided for @subtotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtotal'**
+  String get subtotal;
+
+  /// No description provided for @itemDiscounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Item Discounts'**
+  String get itemDiscounts;
+
+  /// No description provided for @afterItemDiscount.
+  ///
+  /// In en, this message translates to:
+  /// **'After Item Discount'**
+  String get afterItemDiscount;
+
+  /// No description provided for @generalDiscount.
+  ///
+  /// In en, this message translates to:
+  /// **'General Discount'**
+  String get generalDiscount;
+
+  /// No description provided for @extraCharges.
+  ///
+  /// In en, this message translates to:
+  /// **'Extra Charges'**
+  String get extraCharges;
+
+  /// No description provided for @accountInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Information'**
+  String get accountInformation;
+
+  /// No description provided for @amountAddedToAr.
+  ///
+  /// In en, this message translates to:
+  /// **'Receivable amount'**
+  String get amountAddedToAr;
+
+  /// No description provided for @localAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Local Amount'**
+  String get localAmount;
+
+  /// No description provided for @addAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Again'**
+  String get addAgain;
+
+  /// No description provided for @duplicateEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate Entry'**
+  String get duplicateEntry;
+
+  /// No description provided for @combinedPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Combined Payment'**
+  String get combinedPayment;
+
+  /// No description provided for @orderSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Summary'**
+  String get orderSummary;
+
+  /// No description provided for @applyDiscount.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply Discount'**
+  String get applyDiscount;
+
+  /// No description provided for @mixTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AR & Cash'**
+  String get mixTitle;
+
+  /// No description provided for @totalQty.
+  ///
+  /// In en, this message translates to:
+  /// **'Total QTY'**
+  String get totalQty;
+
+  /// No description provided for @grade.
+  ///
+  /// In en, this message translates to:
+  /// **'Grade'**
+  String get grade;
+
+  /// No description provided for @model.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get model;
+
+  /// No description provided for @basicInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic Information'**
+  String get basicInformation;
+
+  /// No description provided for @addNewProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Add New Producd'**
+  String get addNewProduct;
+
+  /// No description provided for @supplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier'**
+  String get supplier;
+
+  /// No description provided for @purchaseEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Entry'**
+  String get purchaseEntry;
+
+  /// No description provided for @invoiceNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice No'**
+  String get invoiceNumber;
+
+  /// No description provided for @payableAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Payable Amount'**
+  String get payableAmount;
+
+  /// No description provided for @accountPayable.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Payable'**
+  String get accountPayable;
+
+  /// No description provided for @excelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'EXCEL'**
+  String get excelTitle;
+
+  /// No description provided for @manageProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage your products'**
+  String get manageProducts;
+
+  /// No description provided for @importComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Import has been successfully completed.'**
+  String get importComplete;
+
+  /// No description provided for @inserted.
+  ///
+  /// In en, this message translates to:
+  /// **'Inserted'**
+  String get inserted;
+
+  /// No description provided for @skipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped'**
+  String get skipped;
+
+  /// No description provided for @errored.
+  ///
+  /// In en, this message translates to:
+  /// **'Errored'**
+  String get errored;
+
+  /// No description provided for @productCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Product Categories'**
+  String get productCategory;
+
+  /// No description provided for @invoiceBatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice Batch'**
+  String get invoiceBatch;
+
+  /// No description provided for @invoiceBatchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Active batch in invoices'**
+  String get invoiceBatchHint;
+
+  /// No description provided for @invoiceSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice Settings'**
+  String get invoiceSettings;
+
+  /// No description provided for @invoiceProfitHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Show or hide profit & loss inside the sale invoice.'**
+  String get invoiceProfitHint;
+
+  /// No description provided for @inventoryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Product purchase, sale & goods shifting between wharehouses.'**
+  String get inventoryHint;
+
+  /// No description provided for @stockReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock'**
+  String get stockReport;
+
+  /// No description provided for @stockInOut.
+  ///
+  /// In en, this message translates to:
+  /// **'IN | OUT'**
+  String get stockInOut;
+
+  /// No description provided for @stockActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock Actions'**
+  String get stockActions;
+
+  /// No description provided for @fromStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'From Storage'**
+  String get fromStorage;
+
+  /// No description provided for @toStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'To Storage'**
+  String get toStorage;
+
+  /// No description provided for @totalIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Total IN'**
+  String get totalIn;
+
+  /// No description provided for @totalOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Total OUT'**
+  String get totalOut;
+
+  /// No description provided for @stockBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get stockBalance;
+
+  /// No description provided for @inAndOut.
+  ///
+  /// In en, this message translates to:
+  /// **'IN | OUT'**
+  String get inAndOut;
+
+  /// No description provided for @movement.
+  ///
+  /// In en, this message translates to:
+  /// **'Movement'**
+  String get movement;
+
+  /// No description provided for @stockRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock Record'**
+  String get stockRecord;
+
+  /// No description provided for @noProductSelectedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No product'**
+  String get noProductSelectedTitle;
+
+  /// No description provided for @noProductSelectedMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'No product is selected to report'**
+  String get noProductSelectedMsg;
+
+  /// No description provided for @invoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice'**
+  String get invoice;
+
+  /// No description provided for @orderId.
+  ///
+  /// In en, this message translates to:
+  /// **'Order ID'**
+  String get orderId;
+
+  /// No description provided for @clear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clear;
+
+  /// No description provided for @allProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'All Products'**
+  String get allProducts;
+
+  /// No description provided for @mostSold.
+  ///
+  /// In en, this message translates to:
+  /// **'Most Sold'**
+  String get mostSold;
+
+  /// No description provided for @lessSold.
+  ///
+  /// In en, this message translates to:
+  /// **'Least Sold'**
+  String get lessSold;
+
+  /// No description provided for @notSold.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Sold'**
+  String get notSold;
+
+  /// No description provided for @outOfStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of stock'**
+  String get outOfStock;
+
+  /// No description provided for @lowStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Low stock'**
+  String get lowStock;
+
+  /// No description provided for @marketValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Markel Value'**
+  String get marketValue;
+
+  /// No description provided for @shippingAndTransfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipping & Money Transfer'**
+  String get shippingAndTransfer;
+
+  /// No description provided for @shippingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage shipments, track deliveries, and monitor shipping operations.'**
+  String get shippingHint;
+
+  /// No description provided for @moneyTransferHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Send, receive, and manage money transfers securely.'**
+  String get moneyTransferHint;
+
+  /// No description provided for @noPermissionMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You don\'t have permission to access this feature.'**
+  String get noPermissionMessage;
+
+  /// No description provided for @lock.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock'**
+  String get lock;
+
+  /// No description provided for @unlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get unlock;
+
+  /// No description provided for @lockVerifyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification'**
+  String get lockVerifyTitle;
+
+  /// No description provided for @lockVerifyLockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock'**
+  String get lockVerifyLockTitle;
+
+  /// No description provided for @lockVerifyUnlockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get lockVerifyUnlockTitle;
+
+  /// No description provided for @lockVerifyLockExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Locking will hide this stakeholder\'s financial data from all users until an admin unlocks it.'**
+  String get lockVerifyLockExplanation;
+
+  /// No description provided for @lockVerifyUnlockExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your admin password to unlock this stakeholder.'**
+  String get lockVerifyUnlockExplanation;
+
+  /// No description provided for @lockVerifyVerifyExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'This stakeholder is locked. Enter your admin password to view it.'**
+  String get lockVerifyVerifyExplanation;
+
+  /// No description provided for @lockVerifyLockAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock'**
+  String get lockVerifyLockAction;
+
+  /// No description provided for @lockVerifyUnlockAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get lockVerifyUnlockAction;
+
+  /// No description provided for @lockVerifyContinueAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get lockVerifyContinueAction;
+
+  /// No description provided for @lockVerifyCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get lockVerifyCancel;
+
+  /// No description provided for @lockVerifyPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin password'**
+  String get lockVerifyPasswordLabel;
+
+  /// No description provided for @lockVerifyPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password'**
+  String get lockVerifyPasswordHint;
+
+  /// No description provided for @lockVerifySignedInAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in as'**
+  String get lockVerifySignedInAs;
+
+  /// No description provided for @lockVerifyVerifiedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get lockVerifyVerifiedTitle;
+
+  /// No description provided for @lockVerifyVerifiedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Access granted'**
+  String get lockVerifyVerifiedSubtitle;
+
+  /// No description provided for @lockVerifyRelockingIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-locking in'**
+  String get lockVerifyRelockingIn;
+
+  /// No description provided for @lockVerifyRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get lockVerifyRequired;
+
+  /// No description provided for @lockVerifyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification failed'**
+  String get lockVerifyFailed;
+
+  /// No description provided for @lockVerifyWrongPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong password'**
+  String get lockVerifyWrongPassword;
+
+  /// No description provided for @lockedBalancesNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Balances are hidden. Ask an admin to unlock this profile.'**
+  String get lockedBalancesNotice;
+
+  /// No description provided for @lockVerifyDeniedWrongPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid username or password.'**
+  String get lockVerifyDeniedWrongPassword;
+
+  /// No description provided for @lockVerifyDeniedWrongRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Your role is not allowed to modify stakeholder locks.'**
+  String get lockVerifyDeniedWrongRole;
+
+  /// No description provided for @lockVerifyDeniedServerError.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification failed. Please try again.'**
+  String get lockVerifyDeniedServerError;
+
+  /// No description provided for @lockVerifyDeniedNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network error. Please check your connection.'**
+  String get lockVerifyDeniedNetwork;
+
+  /// No description provided for @lockVerifyDeniedMissingUser.
+  ///
+  /// In en, this message translates to:
+  /// **'You must be signed in to perform this action.'**
+  String get lockVerifyDeniedMissingUser;
+
+  /// No description provided for @lockVerifyDeniedPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your password.'**
+  String get lockVerifyDeniedPasswordRequired;
 }
 
 class _AppLocalizationsDelegate

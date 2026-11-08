@@ -178,6 +178,29 @@ class Utils{
     }
   }
 
+  static Future<List<Uint8List>?> pickMultipleImages({int maxCount = 5}) async {
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.image,
+      );
+
+      if (result.isEmpty) {
+        return null;
+      }
+
+      final images = <Uint8List>[];
+      for (final file in result) {            // ← iterate the list directly
+        if (images.length >= maxCount) break; // ← honour maxCount
+        final bytes = await file.readAsBytes();
+        images.add(bytes);
+      }
+      return images;
+    } catch (e) {
+      debugPrint('Error picking images: $e');
+      return null;
+    }
+  }
+
 
 }
 

@@ -1,18 +1,20 @@
 import 'dart:convert';
 
-List<IndividualsModel> individualsModelFromMap(String str) =>
-    List<IndividualsModel>.from(
-      json.decode(str).map((x) => IndividualsModel.fromMap(x)),
+List<StakeholdersModel> individualsModelFromMap(String str) =>
+    List<StakeholdersModel>.from(
+      json.decode(str).map((x) => StakeholdersModel.fromMap(x)),
     );
 
-String individualsModelToMap(List<IndividualsModel> data) =>
+String individualsModelToMap(List<StakeholdersModel> data) =>
     json.encode(List<dynamic>.from(data.map((x) => x.toMap())));
 
 // =====================================================================
-// IndividualsModel
+// StakeholdersModel
 // =====================================================================
-class IndividualsModel {
+class StakeholdersModel {
   final int? perId;
+  final String? perCode;
+  final int perLock;                    // non-nullable — 0 or 1
   final String? perName;
   final String? perLastName;
   final String? perGender;
@@ -33,13 +35,15 @@ class IndividualsModel {
   final int? addMailing;
 
   // Accounts (multi-currency)
-  final List<StakeholderAccount> accounts;
+  final List<StkAccountModel> accounts;
 
   // Recent transactions (up to 10, newest first, across all accounts)
   final List<RecentTransaction> recentTransactions;
 
-  IndividualsModel({
+  StakeholdersModel({
     this.perId,
+    this.perCode,
+    this.perLock = 0,                   // default 0
     this.perName,
     this.perLastName,
     this.perGender,
@@ -60,8 +64,10 @@ class IndividualsModel {
     this.recentTransactions = const [],
   });
 
-  IndividualsModel copyWith({
+  StakeholdersModel copyWith({
     int? perId,
+    String? perCode,
+    int? perLock,
     String? perName,
     String? perLastName,
     String? perGender,
@@ -78,11 +84,13 @@ class IndividualsModel {
     String? addCountry,
     String? addZipCode,
     int? addMailing,
-    List<StakeholderAccount>? accounts,
+    List<StkAccountModel>? accounts,
     List<RecentTransaction>? recentTransactions,
   }) =>
-      IndividualsModel(
+      StakeholdersModel(
         perId: perId ?? this.perId,
+        perCode: perCode ?? this.perCode,
+        perLock: perLock ?? this.perLock,
         perName: perName ?? this.perName,
         perLastName: perLastName ?? this.perLastName,
         perGender: perGender ?? this.perGender,
@@ -103,32 +111,34 @@ class IndividualsModel {
         recentTransactions: recentTransactions ?? this.recentTransactions,
       );
 
-  factory IndividualsModel.fromMap(Map<String, dynamic> json) =>
-      IndividualsModel(
+  factory StakeholdersModel.fromMap(Map<String, dynamic> json) =>
+      StakeholdersModel(
         perId: _asInt(json["perID"]),
-        perName: json["perName"] as String?,
-        perLastName: json["perLastName"] as String?,
-        perGender: json["perGender"] as String?,
+        perLock: _asInt(json['perLock']) ?? 0,
+        perCode: _asString(json['perCode']),
+        perName: _asString(json["perName"]),
+        perLastName: _asString(json["perLastName"]),
+        perGender: _asString(json["perGender"]),
         perDoB: json["perDoB"] == null
             ? null
             : DateTime.tryParse(json["perDoB"].toString()),
-        perEnidNo: json["perENIDNo"] as String?,
+        perEnidNo: _asString(json["perENIDNo"]),
         perAddress: _asInt(json["perAddress"]),
-        perPhone: json["perPhone"] as String?,
-        perEmail: json["perEmail"] as String?,
-        imageProfile: json["perPhoto"] as String?,
+        perPhone: _asString(json["perPhone"]),
+        perEmail: _asString(json["perEmail"]),
+        imageProfile: _asString(json["perPhoto"]),
         addId: _asInt(json["addID"]),
-        addName: json["addName"] as String?,
-        addCity: json["addCity"] as String?,
-        addProvince: json["addProvince"] as String?,
-        addCountry: json["addCountry"] as String?,
-        addZipCode: json["addZipCode"] as String?,
+        addName: _asString(json["addName"]),
+        addCity: _asString(json["addCity"]),
+        addProvince: _asString(json["addProvince"]),
+        addCountry: _asString(json["addCountry"]),
+        addZipCode: _asString(json["addZipCode"]),
         addMailing: _asInt(json["addMailing"]),
         accounts: json["accounts"] == null
             ? const []
-            : List<StakeholderAccount>.from(
+            : List<StkAccountModel>.from(
           (json["accounts"] as List)
-              .map((x) => StakeholderAccount.fromMap(x)),
+              .map((x) => StkAccountModel.fromMap(x)),
         ),
         recentTransactions: json["recentTransactions"] == null
             ? const []
@@ -140,6 +150,8 @@ class IndividualsModel {
 
   Map<String, dynamic> toMap() => {
     "per_ID": perId,
+    "perCode": perCode,
+    "perLock": perLock,             // always present
     "first_name": perName,
     "last_name": perLastName,
     "per_DoB": perDoB == null
@@ -158,18 +170,19 @@ class IndividualsModel {
     "zip_code": addZipCode,
     "email": perEmail,
     "is_mailing": addMailing,
-    // accounts and recentTransactions are read-only from the server.
   };
 
   /// Full display name convenience getter.
   String get fullName =>
       [perName, perLastName].where((e) => e != null && e.isNotEmpty).join(' ');
 
+  /// Whether this stakeholder is currently locked.
+  bool get isLocked => perLock == 1;
+
   /// Whether this stakeholder has at least one active account.
   bool get hasActiveAccount => accounts.any((a) => a.accStatus == 1);
 
   /// Total balance across all accounts, per currency.
-  /// Returns e.g. { 'USD': 1200.0, 'AFN': 54000.0 }
   Map<String, double> get balancesByCurrency {
     final map = <String, double>{};
     for (final acc in accounts) {
@@ -183,7 +196,7 @@ class IndividualsModel {
 // =====================================================================
 // StakeholderAccount
 // =====================================================================
-class StakeholderAccount {
+class StkAccountModel {
   final int? accNumber;
   final String? accName;
   final String? accCurrency;
@@ -195,7 +208,7 @@ class StakeholderAccount {
 
   final double accBalance;
 
-  StakeholderAccount({
+  StkAccountModel({
     this.accNumber,
     this.accName,
     this.accCurrency,
@@ -205,7 +218,7 @@ class StakeholderAccount {
     this.accBalance = 0,
   });
 
-  StakeholderAccount copyWith({
+  StkAccountModel copyWith({
     int? accNumber,
     String? accName,
     String? accCurrency,
@@ -214,7 +227,7 @@ class StakeholderAccount {
     dynamic accLimit,
     double? accBalance,
   }) =>
-      StakeholderAccount(
+      StkAccountModel(
         accNumber: accNumber ?? this.accNumber,
         accName: accName ?? this.accName,
         accCurrency: accCurrency ?? this.accCurrency,
@@ -224,11 +237,11 @@ class StakeholderAccount {
         accBalance: accBalance ?? this.accBalance,
       );
 
-  factory StakeholderAccount.fromMap(Map<String, dynamic> json) =>
-      StakeholderAccount(
+  factory StkAccountModel.fromMap(Map<String, dynamic> json) =>
+      StkAccountModel(
         accNumber: _asInt(json["accNumber"]),
-        accName: json["accName"] as String?,
-        accCurrency: json["accCurrency"] as String?,
+        accName: _asString(json["accName"]),
+        accCurrency: _asString(json["accCurrency"]),
         accStatus: _asInt(json["accStatus"]),
         accLimit: json["accLimit"],
         accCategory: _asInt(json["accCategory"]),
@@ -245,11 +258,9 @@ class StakeholderAccount {
     "accBalance": accBalance,
   };
 
-  /// True when the credit limit is the unlimited sentinel.
   bool get isUnlimited =>
       accLimit is String && (accLimit as String).toLowerCase() == 'unlimited';
 
-  /// Numeric limit, or null when unlimited.
   double? get limitValue {
     if (isUnlimited) return null;
     if (accLimit is num) return (accLimit as num).toDouble();
@@ -257,7 +268,6 @@ class StakeholderAccount {
     return null;
   }
 
-  /// Formatted balance, e.g. "1,200.00 USD".
   String get formattedBalance {
     final value = accBalance.toStringAsFixed(2);
     final parts = value.split('.');
@@ -270,7 +280,7 @@ class StakeholderAccount {
 }
 
 // =====================================================================
-// RecentTransaction — last N transactions across all stakeholder accounts
+// RecentTransaction
 // =====================================================================
 class RecentTransaction {
   final String? reference;
@@ -332,19 +342,19 @@ class RecentTransaction {
 
   factory RecentTransaction.fromMap(Map<String, dynamic> json) =>
       RecentTransaction(
-        reference: json["reference"] as String?,
-        type: json["type"] as String?,
-        statusText: json["statusText"] as String?,
+        reference: _asString(json["reference"]),
+        type: _asString(json["type"]),
+        statusText: _asString(json["statusText"]),
         status: _asInt(json["status"]),
         entryDate: json["entryDate"] == null
             ? null
             : DateTime.tryParse(json["entryDate"].toString()),
         account: _asInt(json["account"]),
-        accountName: json["accountName"] as String?,
-        currency: json["currency"] as String?,
+        accountName: _asString(json["accountName"]),
+        currency: _asString(json["currency"]),
         amount: _asDouble(json["amount"]) ?? 0,
-        drCr: json["drCr"] as String?,
-        narration: json["narration"] as String?,
+        drCr: _asString(json["drCr"]),
+        narration: _asString(json["narration"]),
         runningBalance: _asDouble(json["runningBalance"]) ?? 0,
       );
 
@@ -370,16 +380,10 @@ class RecentTransaction {
     "runningBalance": runningBalance,
   };
 
-  /// True when the transaction is authorized.
   bool get isAuthorized => status == 1;
-
-  /// True when it's still pending (maker has created but not authorized).
   bool get isPending => status == 0;
-
-  /// Signed amount for balance math: + for credit to the account, - for debit.
   double get signedAmount => drCr == 'Dr' ? -amount : amount;
 
-  /// Formatted amount with sign and currency, e.g. "+500.00 USD".
   String get formattedAmount {
     final sign = drCr == 'Dr' ? '-' : '+';
     final value = amount.toStringAsFixed(2);
@@ -391,7 +395,6 @@ class RecentTransaction {
     return '$sign$intPart.${parts[1]} ${currency ?? ''}'.trim();
   }
 
-  /// Formatted running balance with currency, e.g. "1,200.00 USD".
   String get formattedRunningBalance {
     final parts = runningBalance.toStringAsFixed(2).split('.');
     final intPart = parts[0].replaceAllMapped(
@@ -401,7 +404,6 @@ class RecentTransaction {
     return '$intPart.${parts[1]} ${currency ?? ''}'.trim();
   }
 
-  /// Account label, e.g. "Zabi USD · 500000".
   String get accountLabel {
     if (account == null) return '—';
     return accountName != null && accountName!.isNotEmpty
@@ -409,7 +411,6 @@ class RecentTransaction {
         : '$account';
   }
 
-  /// Formatted date, e.g. "2026-10-20 14:32".
   String get formattedDate {
     if (entryDate == null) return '—';
     final d = entryDate!;
@@ -422,7 +423,7 @@ class RecentTransaction {
 }
 
 // =====================================================================
-// Helpers — safely parse int / double from PHP's loosely-typed JSON
+// Helpers — safely parse typed values from PHP's loosely-typed JSON
 // =====================================================================
 int? _asInt(dynamic v) {
   if (v == null) return null;
@@ -440,10 +441,16 @@ double? _asDouble(dynamic v) {
   return null;
 }
 
+String? _asString(dynamic v) {
+  if (v == null) return null;
+  if (v is String) return v;
+  return v.toString();
+}
+
 // =====================================================================
 // Extension — permission helper
 // =====================================================================
-extension LoginPermissionExt on IndividualsModel {
+extension LoginPermissionExt on StakeholdersModel {
   bool? hasPermission(int uprRole) {
     return null;
   }

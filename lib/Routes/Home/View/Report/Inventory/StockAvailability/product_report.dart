@@ -1,0 +1,1799 @@
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shipping/Routes/Home/View/Report/Inventory/StockAvailability/print_stock.dart';
+import 'package:shipping/Routes/Home/View/Report/Inventory/StockAvailability/stock_excel.dart';
+import '../../../../../../../Features/PrintSettings/print_preview.dart';
+import '../../../../../../../Features/PrintSettings/report_model.dart';
+import '../../../../../../Features/Date/shamsi_converter.dart';
+import '../../../../../../Features/Other/generic_textfield.dart';
+import '../../../../../../Features/Other/responsive_widget.dart';
+import '../../../../../../Features/Widgets/cover.dart';
+import '../../../../../../Features/Widgets/extensions.dart';
+import '../../../../../../Features/Widgets/noData_widget.dart';
+import '../../../../../../Features/Widgets/toast.dart';
+import '../../../../../../Features/Widgets/zbutton.dart';
+import '../../../../../../Features/Widgets/zdragable_sheet.dart';
+import '../../../../../../l10n/Bloc/localizations_bloc.dart';
+import '../../../../../../l10n/app_localizations.dart';
+import '../../../../../Auth/bloc/auth_bloc.dart';
+import '../../../Products/add_edit_product.dart';
+import '../../../Products/bloc/products_bloc.dart';
+import '../../../Products/model/product_model.dart';
+import '../../../Settings/View/Company/CompanyProfile/bloc/company_profile_bloc.dart';
+import '../../../Settings/View/ProductCategory/features/pro_cat_drop.dart';
+import '../../../Settings/Visibility/bloc/settings_visible_bloc.dart';
+import '../../../Stock/Purchase/features/purchase_product_field.dart';
+import '../../TxnReport/features/status_drop.dart';
+import 'bloc/product_report_bloc.dart';
+import 'features/sales_filter.dart';
+import 'features/storage_drop.dart';
+import 'model/product_report_model.dart';
+
+
+class ProductReportView extends StatelessWidget {
+  const ProductReportView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ResponsiveLayout(
+        mobile: _Mobile(), tablet: _Tablet(), desktop: _Desktop());
+  }
+}
+
+class _Mobile extends StatefulWidget {
+  const _Mobile();
+
+  @override
+  State<_Mobile> createState() => _MobileState();
+}
+class _MobileState extends State<_Mobile> {
+  int? storageId;
+  String? baseCcy;
+  String? myLocale;
+  int? productId;
+  int? isNoStock;
+
+  final productController = TextEditingController();
+  final filterProductController = TextEditingController();
+
+  String? _getBaseCurrency() {
+    try {
+      final companyState = context.read<CompanyProfileBloc>().state;
+      if (companyState is CompanyProfileLoadedState) {
+        return companyState.company.comLocalCcy;
+      }
+      return "";
+    } catch (e) {
+      return "";
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    baseCcy = _getBaseCurrency();
+    myLocale = context.read<LocalizationBloc>().state.languageCode;
+    context.read<ProductReportBloc>().add(ResetProductReportEvent());
+  }
+
+  @override
+  void dispose() {
+    productController.dispose();
+    filterProductController.dispose();
+    super.dispose();
+  }
+
+  bool get hasAnyFilter {
+    return isNoStock != null || storageId != null || productId != null;
+  }
+
+  void _clearFilters() {
+    setState(() {
+      isNoStock = null;
+      productId = null;
+      storageId = null;
+      productController.clear();
+      filterProductController.clear();
+    });
+    context.read<ProductReportBloc>().add(ResetProductReportEvent());
+  }
+
+  bool _isOutOfStock(String? quantity) {
+    if (quantity == null || quantity.isEmpty) return true;
+    try {
+      return double.parse(quantity) <= 0;
+    } catch (e) {
+      return true;
+    }
+  }
+
+  void _showFilterBottomSheet() {
+    final tr = AppLocalizations.of(context)!;
+    final color = Theme.of(context).colorScheme;
+    ZDraggableSheet.show(
+      context: context,
+      title: tr.filters,
+      initialChildSize: 0.7,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      bodyBuilder: (context, scrollController) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return ListView(
+              controller: scrollController,
+              children: [
+                const SizedBox(height: 8),
+
+                /// 🔹 Product Selection
+                GenericTextField<ProductsModel, ProductsBloc, ProductsState>(
+                  title: tr.products,
+                  controller: filterProductController,
+                  hintText: tr.products,
+                  bloc: context.read<ProductsBloc>(),
+                  fetchAllFunction: (bloc) =>
+                      bloc.add(LoadProductsEvent()),
+                  searchFunction: (bloc, query) =>
+                      bloc.add(LoadProductsEvent()),
+                  showAllOption: true,
+                  allOption: ProductsModel(
+                    proId: null,
+                    proName: tr.all,
+                    proCode: '',
+                  ),
+                  itemBuilder: (context, product) {
+                    if (product.proId == null) {
+                      return Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          tr.all,
+                          style: TextStyle(
+                            color: color.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      );
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(product.proName ?? ''),
+                    );
+                  },
+                  itemToString: (product) =>
+                  product.proName ??
+                      (product.proId == null ? tr.all : ''),
+                  stateToLoading: (state) =>
+                  state is ProductsLoadingState,
+                  stateToItems: (state) {
+                    if (state is ProductsLoadedState) {
+                      return state.products;
+                    }
+                    return [];
+                  },
+                  onSelected: (product) {
+                    setSheetState(() {
+                      productId = product.proId;
+                    });
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                /// 🔹 Storage Dropdown
+                StorageDropDown(
+                  height: 45,
+                  title: tr.storage,
+                  selectedId: storageId,
+                  onChanged: (e) {
+                    setSheetState(() {
+                      storageId = e?.stgId;
+                    });
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                /// 🔹 Status Dropdown
+                StatusDropdown(
+                  height: 45,
+                  items: const [
+                    StatusItem(null, "All"),
+                    StatusItem(1, "Available"),
+                    StatusItem(2, "Out of Stock"),
+                  ],
+                  value: isNoStock,
+                  onChanged: (e) {
+                    setSheetState(() {
+                      isNoStock = e;
+                    });
+                  },
+                ),
+
+                const SizedBox(height: 24),
+
+                /// 🔹 Buttons
+                Row(
+                  children: [
+                    if (hasAnyFilter)
+                      Expanded(
+                        child: ZOutlineButton(
+                          onPressed: () {
+                            setSheetState(() {
+                              isNoStock = null;
+                              productId = null;
+                              storageId = null;
+                              filterProductController.clear();
+                            });
+
+                            setState(() {
+                              productController.clear();
+                            });
+                          },
+                          label: Text(tr.clear),
+                        ),
+                      ),
+
+                    if (hasAnyFilter)
+                      const SizedBox(width: 8),
+
+                    Expanded(
+                      child: ZOutlineButton(
+                        isActive: true,
+                        onPressed: () {
+                          Navigator.pop(context);
+
+                          setState(() {
+                            if (filterProductController
+                                .text
+                                .isNotEmpty) {
+                              productController.text =
+                                  filterProductController.text;
+                            }
+                          });
+
+                          context
+                              .read<ProductReportBloc>()
+                              .add(
+                            LoadProductsReportEvent(
+                              isNoStock: isNoStock,
+                              storageId: storageId,
+                              productId: productId,
+                            ),
+                          );
+                        },
+                        label: Text(tr.apply),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context)!;
+    final color = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      backgroundColor: color.surface,
+      appBar: AppBar(
+        title: Text("${tr.products} ${tr.report}"),
+        actions: [
+          if (hasAnyFilter)
+            IconButton(
+              icon: const Icon(Icons.filter_alt_off),
+              onPressed: _clearFilters,
+            ),
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: _showFilterBottomSheet,
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Selected Filters Chips
+          if (hasAnyFilter)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    if (productController.text.isNotEmpty)
+                      _buildFilterChip(
+                        label: productController.text,
+                        color: color.primary,
+                        onRemove: () {
+                          setState(() {
+                            productId = null;
+                            productController.clear();
+                          });
+                          if (!hasAnyFilter) {
+                            context.read<ProductReportBloc>().add(ResetProductReportEvent());
+                          }
+                        },
+                      ),
+                    if (storageId != null)
+                      _buildFilterChip(
+                        label: "${tr.storage}: $storageId",
+                        color: color.secondary,
+                        onRemove: () {
+                          setState(() {
+                            storageId = null;
+                          });
+                          if (!hasAnyFilter) {
+                            context.read<ProductReportBloc>().add(ResetProductReportEvent());
+                          }
+                        },
+                      ),
+                    if (isNoStock != null)
+                      _buildFilterChip(
+                        label: isNoStock == 1 ? tr.available : tr.outOfStock,
+                        color: isNoStock == 1 ? Colors.green : color.error,
+                        onRemove: () {
+                          setState(() {
+                            isNoStock = null;
+                          });
+                          if (!hasAnyFilter) {
+                            context.read<ProductReportBloc>().add(ResetProductReportEvent());
+                          }
+                        },
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          Expanded(
+            child: BlocBuilder<ProductReportBloc, ProductReportState>(
+              builder: (context, state) {
+                if (state is ProductReportErrorState) {
+                  return NoDataWidget(
+                    title: tr.accessDenied,
+                    message: state.message,
+                    enableAction: false,
+                  );
+                }
+                if (state is ProductReportInitial) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.inventory_2_outlined,
+                          size: 64,
+                          color: color.outline,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          "Inventory Overview",
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Stock Availability Summary",
+                          style: TextStyle(color: color.outline),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: _showFilterBottomSheet,
+                          icon: const Icon(Icons.filter_list),
+                          label: Text(tr.apply),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                if (state is ProductReportLoadingState) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (state is ProductReportLoadedState) {
+                  if (state.stock.isEmpty) {
+                    return NoDataWidget(
+                      title: tr.noData,
+                      message: tr.noDataFound,
+                      enableAction: false,
+                    );
+                  }
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: state.stock.length,
+                    itemBuilder: (context, index) {
+                      final stk = state.stock[index];
+                      final isOutOfStock = _isOutOfStock(stk.available);
+
+                      return ZCover(
+                        radius: 5,
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Header with ID and Name
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: color.primary.withValues(alpha: .1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      "#${stk.no}",
+                                      style: TextStyle(
+                                        color: color.primary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  if (isOutOfStock)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: color.error.withValues(alpha: .1),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        tr.outOfStock,
+                                        style: TextStyle(
+                                          color: color.error,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+
+                              // Product Name
+                              Text(
+                                stk.proName ?? "",
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+
+                              // Storage
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.inventory,
+                                    size: 14,
+                                    color: color.outline,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    stk.stgName ?? "",
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: color.outline,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Divider(height: 16),
+
+                              // Details Row
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  // Unit Price
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          tr.unitPrice,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: color.outline,
+                                          ),
+                                        ),
+                                        Text(
+                                          "${stk.averagePrice.toAmount()} $baseCcy",
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  // Quantity
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          tr.unit,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: color.outline,
+                                          ),
+                                        ),
+                                        Text(
+                                          stk.available?.isEmpty == true ? "0" : stk.available!,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            color: isOutOfStock ? color.error : Colors.green,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  // Total
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          tr.total,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: color.outline,
+                                          ),
+                                        ),
+                                        Text(
+                                          "${stk.totalValue.toAmount(decimal: 2)} $baseCcy",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            color: color.primary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }
+                return const SizedBox();
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required Color color,
+    required VoidCallback onRemove,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: .3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: color,
+            ),
+          ),
+          const SizedBox(width: 4),
+          InkWell(
+            onTap: onRemove,
+            child: Icon(
+              Icons.close,
+              size: 14,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Tablet extends StatefulWidget {
+  const _Tablet();
+
+  @override
+  State<_Tablet> createState() => _TabletState();
+}
+class _TabletState extends State<_Tablet> {
+  int? storageId;
+  String? baseCcy;
+  String? myLocale;
+  int? productId;
+  int? isNoStock;
+  bool _showFilters = true;
+
+  final productController = TextEditingController();
+
+  String? _getBaseCurrency() {
+    try {
+      final companyState = context.read<CompanyProfileBloc>().state;
+      if (companyState is CompanyProfileLoadedState) {
+        return companyState.company.comLocalCcy;
+      }
+      return "";
+    } catch (e) {
+      return "";
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    baseCcy = _getBaseCurrency();
+    myLocale = context.read<LocalizationBloc>().state.languageCode;
+    context.read<ProductReportBloc>().add(ResetProductReportEvent());
+  }
+
+  @override
+  void dispose() {
+    productController.dispose();
+    super.dispose();
+  }
+
+  bool get hasAnyFilter {
+    return isNoStock != null || storageId != null || productId != null;
+  }
+
+  void _clearFilters() {
+    setState(() {
+      isNoStock = null;
+      productId = null;
+      storageId = null;
+      productController.clear();
+    });
+    context.read<ProductReportBloc>().add(ResetProductReportEvent());
+  }
+
+  bool _isOutOfStock(String? quantity) {
+    if (quantity == null || quantity.isEmpty) return true;
+    try {
+      return double.parse(quantity) <= 0;
+    } catch (e) {
+      return true;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context)!;
+    final color = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      backgroundColor: color.surface,
+      appBar: AppBar(
+        title: Text("${tr.products} ${tr.report}"),
+        titleSpacing: 0,
+        actions: [
+          IconButton(
+            icon: Icon(_showFilters ? Icons.filter_alt_off : Icons.filter_alt),
+            onPressed: () {
+              setState(() {
+                _showFilters = !_showFilters;
+              });
+            },
+          ),
+          if (hasAnyFilter)
+            IconButton(
+              icon: const Icon(Icons.clear_all),
+              onPressed: _clearFilters,
+            ),
+          IconButton(
+            icon: const Icon(Icons.check),
+            onPressed: () {
+              context.read<ProductReportBloc>().add(LoadProductsReportEvent(
+                isNoStock: isNoStock,
+                storageId: storageId,
+                productId: productId,
+              ));
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Collapsible Filters
+          if (_showFilters)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: color.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: .05),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  // Product
+                  SizedBox(
+                    width: 300,
+                    child: GenericTextField<ProductsModel, ProductsBloc, ProductsState>(
+                      title: tr.products,
+                      controller: productController,
+                      hintText: tr.products,
+                      bloc: context.read<ProductsBloc>(),
+                      fetchAllFunction: (bloc) => bloc.add(LoadProductsEvent()),
+                      searchFunction: (bloc, query) => bloc.add(LoadProductsEvent()),
+                      showAllOption: true,
+                      allOption: ProductsModel(
+                        proId: null,
+                        proName: tr.all,
+                        proCode: '',
+                      ),
+                      itemBuilder: (context, product) {
+                        if (product.proId == null) {
+                          return Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              tr.all,
+                              style: TextStyle(
+                                color: color.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          );
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(product.proName ?? ''),
+                        );
+                      },
+                      itemToString: (product) => product.proName ?? (product.proId == null ? tr.all : ''),
+                      stateToLoading: (state) => state is ProductsLoadingState,
+                      stateToItems: (state) {
+                        if (state is ProductsLoadedState) return state.products;
+                        return [];
+                      },
+                      onSelected: (product) {
+                        setState(() {
+                          productId = product.proId;
+                        });
+                      },
+                    ),
+                  ),
+                  // Storage
+                  SizedBox(
+                    width: 200,
+                    child: StorageDropDown(
+                      height: 45,
+                      title: tr.storage,
+                      selectedId: storageId,
+                      onChanged: (e) {
+                        setState(() {
+                          storageId = e?.stgId;
+                        });
+                      },
+                    ),
+                  ),
+                  // Status
+                  SizedBox(
+                    width: 200,
+                    child: StatusDropdown(
+                      height: 45,
+                      items: const [
+                        StatusItem(null, "All"),
+                        StatusItem(1, "Available"),
+                        StatusItem(2, "Out of Stock"),
+                      ],
+                      value: isNoStock,
+                      onChanged: (e) {
+                        setState(() {
+                          isNoStock = e;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: BlocBuilder<ProductReportBloc, ProductReportState>(
+              builder: (context, state) {
+                if (state is ProductReportErrorState) {
+                  return NoDataWidget(
+                    title: tr.accessDenied,
+                    message: state.message,
+                    enableAction: false,
+                  );
+                }
+                if (state is ProductReportInitial) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.inventory_2_outlined,
+                          size: 80,
+                          color: color.outline,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          "Inventory Overview",
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Stock Availability Summary",
+                          style: TextStyle(color: color.outline),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                if (state is ProductReportLoadingState) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (state is ProductReportLoadedState) {
+                  if (state.stock.isEmpty) {
+                    return NoDataWidget(
+                      title: tr.noData,
+                      message: tr.noDataFound,
+                      enableAction: false,
+                    );
+                  }
+
+                  return GridView.builder(
+                    padding: const EdgeInsets.all(12),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 1.6,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemCount: state.stock.length,
+                    itemBuilder: (context, index) {
+                      final stk = state.stock[index];
+                      final isOutOfStock = _isOutOfStock(stk.available);
+
+                      return Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // ID and Status
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    "#${stk.no}",
+                                    style: TextStyle(
+                                      color: color.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  if (isOutOfStock)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: color.error.withValues(alpha: .1),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        tr.outOfStock,
+                                        style: TextStyle(
+                                          color: color.error,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+
+                              // Product Name
+                              Text(
+                                stk.proName ?? "",
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+
+                              // Storage
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.inventory,
+                                    size: 12,
+                                    color: color.outline,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      stk.stgName ?? "",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: color.outline,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Divider(height: 16),
+
+                              // Details
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  // Price
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Price",
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: color.outline,
+                                        ),
+                                      ),
+                                      Text(
+                                        stk.averagePrice.toAmount(),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  // Qty
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        tr.qty,
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: color.outline,
+                                        ),
+                                      ),
+                                      Text(
+                                        stk.available?.isEmpty == true ? "0" : stk.available!,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                          color: isOutOfStock ? color.error : Colors.green,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  // Total
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        tr.totalTitle,
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: color.outline,
+                                        ),
+                                      ),
+                                      Text(
+                                        stk.totalValue.toAmount(),
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                          color: color.primary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }
+                return const SizedBox();
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Desktop extends StatefulWidget {
+  const _Desktop();
+
+  @override
+  State<_Desktop> createState() => _DesktopState();
+}
+class _DesktopState extends State<_Desktop> {
+  int? storageId;
+  String? baseCcy;
+  String? myLocale;
+  int? productId;
+  int? isNoStock;
+  int? _selectedCategory;
+  int _selectedView = 0;
+  final FocusNode _searchFocusNode = FocusNode();
+  String? _getBaseCurrency() {
+    try {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is AuthenticatedState) {
+        return authState.loginData.company?.comLocalCcy;
+      }
+      return "";
+    } catch (e) {
+      return "";
+    }
+  }
+  String? _selectedSalesFilter;
+  @override
+  void initState() {
+    super.initState();
+    baseCcy = _getBaseCurrency();
+    _selectedSalesFilter = null;
+    myLocale = context.read<LocalizationBloc>().state.languageCode;
+    context.read<ProductReportBloc>().add(ResetProductReportEvent());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) {
+          _searchFocusNode.requestFocus();
+        }
+      });
+    });
+  }
+  @override
+  void dispose() {
+
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+  bool get hasAnyFilter {
+    return isNoStock != null ||
+        storageId != null ||
+        productId != null ||
+        _selectedCategory != null;
+  }
+
+  final productController = TextEditingController();
+
+  void _clearFilters() {
+    setState(() {
+      isNoStock = null;
+      productId = null;
+      storageId = null;
+      _selectedCategory = null;
+      productController.clear();
+    });
+    context.read<ProductReportBloc>().add(ResetProductReportEvent());
+  }
+
+  // Helper method for toggle segments
+  Widget _buildToggleSegment(
+      BuildContext context, {
+        required String label,
+        required IconData icon,
+        required bool isSelected,
+        required VoidCallback onTap,
+        bool isWarning = false,
+      }) {
+    final color = Theme.of(context).colorScheme;
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(3),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(3),
+        onTap: onTap,
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(3),
+            color: isSelected
+                ? (isWarning ? Colors.orange.withValues(alpha: .2) : color.primary.withValues(alpha: .1))
+                : Colors.transparent,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected
+                    ? (isWarning ? Colors.orange : color.primary)
+                    : color.onSurface.withValues(alpha: .5),
+              ),
+              SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isSelected
+                      ? (isWarning ? Colors.orange : color.primary)
+                      : color.onSurface.withValues(alpha: .5),
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context)!;
+    final visibility = context.read<SettingsVisibleBloc>().state;
+    TextStyle? titleStyle = Theme.of(context).textTheme.titleSmall?.copyWith(
+        color: Theme.of(context).colorScheme.surface
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        titleSpacing: 0,
+        title: Text(tr.stockReport),
+        actionsPadding: EdgeInsets.symmetric(horizontal: 10),
+        actions: [
+          if(hasAnyFilter)...[
+            ZOutlineButton(
+                icon: Icons.filter_alt_off_outlined,
+                backgroundHover: Theme.of(context).colorScheme.error,
+                onPressed: _clearFilters,
+                label: Text(tr.clearFilters)),
+            SizedBox(width: 8),
+          ],
+          ZOutlineButton(
+            icon: Icons.file_copy_rounded,
+            backgroundHover: Colors.green,
+            onPressed: () {
+              final state = context.read<ProductReportBloc>().state;
+              if (state is ProductReportLoadedState) {
+                ProductReportExcelService.exportToExcel(
+                  productList: state.stock,
+                  baseCurrency: baseCcy ?? '',
+                  fileName: 'Stock_Report_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.xlsx',
+                  context: context,
+                );
+              } else {
+                ToastManager.show(
+                  context: context,
+                  title: "اطلاعات وجود ندارد",
+                  message: "لطفا اول گزارشات کالا ها را تهیه کنید.",
+                  type: ToastType.warning,
+                );
+              }
+            },
+            label: Text("EXCEL"),
+          ),
+          SizedBox(width: 8),
+          ZOutlineButton(
+              icon: Icons.picture_as_pdf,
+              backgroundHover: Theme.of(context).colorScheme.error,
+              onPressed: _printProductReport,
+              label: Text("PDF")),
+          SizedBox(width: 8),
+          ZOutlineButton(
+              icon: Icons.filter_alt,
+              isActive: true,
+              onPressed: (){
+                context.read<ProductReportBloc>().add(LoadProductsReportEvent(
+                    isNoStock: isNoStock,
+                    storageId: storageId,
+                    productId: productId,
+                    categoryId: _selectedCategory
+                ));
+              },
+              label: Text(tr.applyFilter)),
+        ],
+      ),
+
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(15.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              spacing: 8,
+              children: [
+
+                Expanded(
+                  flex: 2,
+                  child: ProductsSearchField(
+                    showBorder: true,
+                    controller: productController,
+                    bloc: context.read<ProductsBloc>(),
+                    hintText: tr.searchProducts,
+                    showClearButton: true,
+                    focusNode: _searchFocusNode,
+                    onSubmitted: (){
+                      context.read<ProductReportBloc>().add(LoadProductsReportEvent(
+                          isNoStock: isNoStock,
+                          storageId: storageId,
+                          productId: productId,
+                          categoryId: _selectedCategory
+                      ));
+                    },
+                    openOverlayOnFocus: true,
+                    showAllOnFocus: true,
+                    onProductSelected: (product) {
+                      setState(() {
+                        productId = product?.proId;
+                      });
+                    },
+                  ),
+                ),
+
+                Container(
+                  height: 40,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(3),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.secondary.withValues(alpha: .3),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // All button
+                      _buildToggleSegment(
+                        context,
+                        label: tr.all,
+                        icon: Icons.inventory_2_outlined,
+                        isSelected: _selectedView == 0,
+                        onTap: () {
+                          setState(() {
+                            _selectedView = 0;
+                            productId = null;
+                            productController.clear();
+                          });
+                          context.read<ProductReportBloc>().add(
+                              LoadProductsReportEvent(
+                                isNoStock: isNoStock,
+                                storageId: storageId,
+                                productId: productId,
+                                categoryId: _selectedCategory,
+                                salesFilter: _selectedSalesFilter,
+                                lowStock: 0,
+                              )
+                          );
+                        },
+                      ),
+
+                      // Divider
+                      Container(
+                        width: 1,
+                        height: 30,
+                        color: Theme.of(context).colorScheme.secondary.withValues(alpha: .2),
+                      ),
+
+                      // Low Stock button
+                      _buildToggleSegment(
+                        context,
+                        label: tr.lowStock,
+                        icon: Icons.warning_amber_rounded,
+                        isSelected: _selectedView == 1,
+                        isWarning: true,
+                        onTap: () {
+                          setState(() {
+                            _selectedView = 1;
+                            productId = null;
+                            productController.clear();
+                          });
+                          context.read<ProductReportBloc>().add(
+                              LoadProductsReportEvent(
+                                isNoStock: isNoStock,
+                                storageId: storageId,
+                                productId: productId,
+                                categoryId: _selectedCategory,
+                                salesFilter: _selectedSalesFilter,
+                                lowStock: 1,
+                              )
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+
+                Expanded(
+                  child: ProductCategoryDropdown(
+                    showAllOption: true,
+                    onCategorySelected: (cat) {
+                      _selectedCategory = cat?.pcId;
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: StorageDropDown(
+                    height: 40,
+                    title: tr.storage,
+                    selectedId: storageId,
+                    onChanged: (e){
+                      setState(() {
+                        storageId = e?.stgId;
+                      });
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: StatusDropdown(
+                    height: 40,
+                    items: [
+                      StatusItem(null, tr.all),
+                      StatusItem(1, tr.available),
+                      StatusItem(2, tr.outOfStock),
+                    ],
+                    value: isNoStock,
+                    onChanged: (e) {
+                      setState(() {
+                        isNoStock = e;
+                      });
+                    },
+                  ),
+                ),
+                // Add this to your desktop build method
+                Expanded(
+                  child: SalesFilterDropdown(
+                    height: 40,
+                    value: _selectedSalesFilter,
+                    onChanged: (e) {
+                      setState(() {
+                        _selectedSalesFilter = e;
+                      });
+                      // Auto-apply filter or wait for user to click apply
+                      context.read<ProductReportBloc>().add(
+                          LoadProductsReportEvent(
+                            isNoStock: isNoStock,
+                            storageId: storageId,
+                            productId: productId,
+                            categoryId: _selectedCategory,
+                            salesFilter: e,
+                          )
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 5),
+          // Table Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8),
+            margin: const EdgeInsets.symmetric(horizontal: 15.0),
+            decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: .8)
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                    width: 50,
+                    child: Text("#", style: titleStyle)),
+                Expanded(
+                    child: Text(tr.productName, style: titleStyle)),
+                SizedBox(
+                    width: 120,
+                    child: Text(tr.storage, style: titleStyle)),
+                SizedBox(
+                    width: 120,
+                    child: Text(tr.avgPrice, style: titleStyle)),
+                SizedBox(
+                    width: 120,
+                    child: Text(tr.recentPrice, style: titleStyle)),
+                SizedBox(
+                    width: 120,
+                    child: Text(tr.sellPrice, style: titleStyle)),
+                SizedBox(
+                    width: 120,
+                    child: Text(tr.qty, style: titleStyle)),
+                if(visibility.isWholeSale)
+                SizedBox(
+                    width: 120,
+                    child: Text(tr.batchTitle, style: titleStyle)),
+                SizedBox(
+                    width: 80,
+                    child: Text(tr.unit, style: titleStyle)),
+                SizedBox(
+                    width: 150,
+                    child: Text(
+                        textAlign: TextAlign.end,
+                        tr.total, style: titleStyle)),
+              ],
+            ),
+          ),
+          SizedBox(height: 5),
+          // Table Body
+          Expanded(
+            child: BlocBuilder<ProductReportBloc, ProductReportState>(
+              builder: (context, state) {
+                if (state is ProductReportErrorState) {
+                  return NoDataWidget(
+                    title: tr.accessDenied,
+                    message: state.message,
+                    enableAction: false,
+                  );
+                }
+                if (state is ProductReportInitial) {
+                  return NoDataWidget(
+                    title: "Inventory Overview",
+                    message: "Stock Availability Summary",
+                    enableAction: false,
+                  );
+                }
+                if (state is ProductReportLoadingState) {
+                  return Center(child: CircularProgressIndicator());
+                }
+                if (state is ProductReportLoadedState) {
+                  // Calculate totals
+                  final totalItems = state.stock.length;
+                  final totalQuantity = state.stock.fold<int>(0, (sum, item) {
+                    final qty = int.tryParse(item.available ?? "0") ?? 0;
+                    return sum + qty;
+                  });
+                  final totalProductValue = state.stock.fold<double>(0, (sum, item) {
+                    final value = double.tryParse(item.totalValue ?? "0") ?? 0;
+                    return sum + value;
+                  });
+
+                  final totalSaleValue = state.stock.fold<double>(0, (sum, item) {
+                    final qtyBoxes = int.tryParse(item.available ?? "0") ?? 0;
+                    final itemsPerBox = item.batch ?? 0;
+                    final salePrice = double.tryParse(item.sellPrice ?? "0") ?? 0;
+                    final totalItems = qtyBoxes * itemsPerBox;
+                    return sum + (totalItems * salePrice);
+                  });
+
+                  if (state.stock.isEmpty) {
+                    return NoDataWidget(
+                      title: tr.noData,
+                      message: tr.noDataFound,
+                      enableAction: false,
+                    );
+                  }
+
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: state.stock.length,
+                          itemBuilder: (context, index) {
+                            final stk = state.stock[index];
+                            final color = Theme.of(context).colorScheme;
+                            final qty = int.tryParse(stk.available ?? "");
+
+                            TextStyle? style = TextStyle(
+                                color: qty == 0 || qty! < 0 ? Colors.red : color.onSurface,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15
+                            );
+                            return InkWell(
+                              onTap: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AddEditProductView(proId: stk.proId),
+                                );
+                              },
+                              child: Container(
+                                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                                margin: EdgeInsets.symmetric(horizontal: 15),
+                                decoration: BoxDecoration(
+                                    color: index.isEven
+                                        ? Theme.of(context).colorScheme.primary.withValues(alpha: .05)
+                                        : Colors.transparent
+                                ),
+                                child: Row(
+                                  children: [
+                                    SizedBox(width: 50, child: Text((index + 1).toString())),
+                                    Expanded(child: Text(stk.proName ?? "", style: style)),
+                                    SizedBox(width: 120, child: Text(stk.stgName ?? "", style: Theme.of(context).textTheme.titleSmall)),
+                                    SizedBox(width: 120, child: Text("${stk.averagePrice.toAmount()} $baseCcy")),
+                                    SizedBox(width: 120, child: Text("${stk.recentPurPrice.toAmount()} $baseCcy")),
+                                    SizedBox(width: 120, child: Text("${stk.sellPrice.toAmount()} $baseCcy")),
+                                    SizedBox(width: 120, child: Text(
+                                        stk.available.toAmount(decimal: 0) == "0"
+                                            ? tr.noStock
+                                            : stk.available.toAmount(decimal: 0),
+                                        style: style
+                                    )),
+                                    if(visibility.isWholeSale)
+                                    SizedBox(width: 120, child: Text(stk.batch.toAmount(decimal: 0), style: Theme.of(context).textTheme.titleMedium)),
+                                    SizedBox(width: 80, child: Text(stk.proUnit ?? "", style: Theme.of(context).textTheme.titleMedium)),
+                                    SizedBox(width: 150, child: Text(
+                                        textAlign: TextAlign.end,
+                                        "${stk.totalValue.toAmount(decimal: 2)} $baseCcy", style: Theme.of(context).textTheme.titleMedium)),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+
+                      // Footer Totals
+                      Container(
+                        margin: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: .05),
+                              blurRadius: 1,
+                              offset: const Offset(0, -1),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // Total Items
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    tr.totalItems,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                  Text(
+                                    totalItems.toString(),
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Vertical Divider
+                            Container(
+                              width: 1,
+                              height: 40,
+                              color: Theme.of(context).dividerColor.withValues(alpha: .3),
+                              margin: const EdgeInsets.symmetric(horizontal: 8),
+                            ),
+
+                            // Total Quantity
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    tr.totalQty,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                  Text(
+                                    totalQuantity.toAmount(decimal: 0),
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Vertical Divider
+                            Container(
+                              width: 1,
+                              height: 40,
+                              color: Theme.of(context).dividerColor.withValues(alpha: .3),
+                              margin: const EdgeInsets.symmetric(horizontal: 8),
+                            ),
+
+                            // Total Market Value
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    tr.marketValue,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                  Text(
+                                    "${totalSaleValue.toAmount(decimal: 2)} $baseCcy",
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Vertical Divider
+                            Container(
+                              width: 1,
+                              height: 40,
+                              color: Theme.of(context).dividerColor.withValues(alpha: .3),
+                              margin: const EdgeInsets.symmetric(horizontal: 8),
+                            ),
+
+                            // Total Product Value
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    tr.total,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                  Text(
+                                    "${totalProductValue.toAmount(decimal: 2)} $baseCcy",
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                }
+                return const SizedBox();
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _printProductReport() async {
+    final state = context.read<ProductReportBloc>().state;
+
+    if (state is ProductReportLoadedState) {
+      // Get company info
+      final companyState = context.read<CompanyProfileBloc>().state;
+      ReportModel company = ReportModel();
+
+      if (companyState is CompanyProfileLoadedState) {
+        company = ReportModel(
+          comName: companyState.company.comName ?? '',
+          comAddress: companyState.company.addName ?? '',
+          compPhone: companyState.company.comPhone ?? '',
+          comEmail: companyState.company.comEmail ?? '',
+          statementDate: DateTime.now().toFullDateTime,
+          comLogo: companyState.company.comLogo != null
+              ? base64Decode(companyState.company.comLogo!)
+              : null,
+        );
+      }
+
+      // CHECK MOUNTED HERE - immediately after async operations
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (_) => PrintPreviewDialog<List<ProductReportModel>>(
+          data: state.stock,
+          company: company,
+          buildPreview: ({
+            required data,
+            required language,
+            required orientation,
+            required pageFormat,
+          }) {
+            return ProductReportPrintSettings().printPreview(
+              products: data,
+              language: language,
+              orientation: orientation,
+              company: company,
+              pageFormat: pageFormat,
+              baseCurrency: baseCcy,
+            );
+          },
+          onPrint: ({
+            required data,
+            required language,
+            required orientation,
+            required pageFormat,
+            required selectedPrinter,
+            required copies,
+            required pages,
+          }) {
+            return ProductReportPrintSettings().printDocument(
+              products: data,
+              language: language,
+              orientation: orientation,
+              company: company,
+              pageFormat: pageFormat,
+              selectedPrinter: selectedPrinter,
+              copies: copies,
+              pages: pages,
+              baseCurrency: baseCcy,
+            );
+          },
+          onSave: ({
+            required data,
+            required language,
+            required orientation,
+            required pageFormat,
+          }) {
+            return ProductReportPrintSettings().createDocument(
+              products: data,
+              language: language,
+              orientation: orientation,
+              company: company,
+              pageFormat: pageFormat,
+              baseCurrency: baseCcy,
+            );
+          },
+        ),
+      );
+    } else {
+      if (!mounted) return;
+      ToastManager.show(
+          context: context,
+          title: "Attention",
+          message: "Please load the data first.",
+          type: ToastType.warning
+      );
+    }
+  }
+}

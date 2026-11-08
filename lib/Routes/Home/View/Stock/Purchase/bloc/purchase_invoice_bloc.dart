@@ -1,0 +1,1189 @@
+import 'dart:async';
+import 'package:bloc/bloc.dart';
+import 'package:equatable/equatable.dart';
+import 'package:shipping/Features/Widgets/extensions.dart';
+import '../../../../../../Services/repository.dart';
+import '../../../Finance/View/ExchangeRate/bloc/exchange_rate_bloc.dart';
+import '../../../Settings/View/Company/Storage/model/storage_model.dart';
+import '../../../Stakeholder/model/stk_model.dart';
+import '../../Parser/parser.dart';
+import '../model/purchase_invoice_items.dart';
+
+part 'purchase_invoice_event.dart';
+part 'purchase_invoice_state.dart';
+
+class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceState> {
+  final Repositories repo;
+  ExchangeRateBloc? _exchangeRateBloc;
+  StreamSubscription? _exchangeRateSubscription;
+
+  @override
+  Future<void> close() {
+    _exchangeRateSubscription?.cancel();
+    return super.close();
+  }
+
+  PurchaseInvoiceBloc(this.repo) : super(PurchaseInvoiceInitial()) {
+    on<InitializePurchaseInvoiceEvent>(_onInitialize);
+    on<SelectSupplierEvent>(_onSelectSupplier);
+    on<SelectSupplierAccountEvent>(_onSelectSupplierAccount);
+    on<ClearSupplierEvent>(_onClearSupplier);
+    on<AddNewPurchaseItemEvent>(_onAddNewItem);
+    on<RemovePurchaseItemEvent>(_onRemoveItem);
+    on<UpdatePurchaseItemEvent>(_onUpdateItem);
+    on<UpdateCashPaymentEvent>(_onUpdateCashPayment);
+    on<ResetPurchaseInvoiceEvent>(_onReset);
+    on<SavePurchaseInvoiceEvent>(_onSaveInvoice);
+    on<UpdatePurchaseInvoiceEvent>(_onUpdateInvoice);
+    on<LoadPurchaseStoragesEvent>(_onLoadStorages);
+    on<ClearSupplierAccountEvent>(_onClearSupplierAccount);
+    on<AddPaymentEvent>(_onAddPayment);
+    on<RemovePaymentEvent>(_onRemovePayment);
+    on<UpdatePaymentEvent>(_onUpdatePayment);
+    on<UpdateAllLandedPricesEvent>(_onUpdateAllLandedPrices);
+    on<UpdateExchangeRateForInvoiceEvent>(_onUpdateExchangeRate);
+    on<UpdateExchangeRateManuallyEvent>(_onUpdateExchangeRateManually);
+    on<UpdateCashCurrencyEvent>(_onUpdateCashCurrency);
+    on<LoadPurchaseInvoiceForEditEvent>(_onLoadPurchaseInvoiceForEdit);
+    on<UpdateItemLocalAmountEvent>(_onUpdateItemLocalAmount);
+  }
+
+  void _onUpdateItemLocalAmount(UpdateItemLocalAmountEvent event, Emitter<PurchaseInvoiceState> emit) {
+    if (state is PurchaseInvoiceLoaded) {
+      final current = state as PurchaseInvoiceLoaded;
+
+      // Only process if we have a valid exchange rate
+      if (current.safeExchangeRate <= 0) return;
+
+      final updatedItems = current.items.map((item) {
+        if (item.rowId == event.rowId) {
+          // Calculate new purchase price from local amount
+          final newPurPrice = event.localAmount / current.safeExchangeRate;
+
+          return item.copyWith(
+            purPrice: newPurPrice,
+            localAmount: event.localAmount,
+            exchangeRate: current.safeExchangeRate,
+          );
+        }
+        return item;
+      }).toList();
+
+      emit(current.copyWith(items: updatedItems));
+
+      // Recalculate landed prices after purchase price changes
+      add(UpdateAllLandedPricesEvent());
+    }
+  }
+  Future<void> _onLoadPurchaseInvoiceForEdit(LoadPurchaseInvoiceForEditEvent event, Emitter<PurchaseInvoiceState> emit) async {
+    emit(PurchaseInvoiceLoading());
+    try {
+      final response = await repo.fetchOrderById(orderId: event.orderId);
+
+      if (response.isEmpty) {
+        emit(PurchaseInvoiceError('Order not found'));
+        return;
+      }
+
+      final parsed = OrderParser.parseOrderResponse(response);
+      final records = parsed['records'] as List<Map<String, dynamic>>;
+      final payments = parsed['payments'] as List<Map<String, dynamic>>;
+      final orderId = parsed['orderId'] as int? ?? event.orderId;
+      final reference = parsed['reference'] as String? ?? '';
+
+      final List<PurchaseInvoiceItem> items = [];
+      for (var i = 0; i < records.length; i++) {
+        final record = records[i];
+        final stkId = record['stkID'];
+        final sellPrice = record['sellPrice'] as double? ?? 0.0;
+        items.add(PurchaseInvoiceItem(
+          itemId: '${record['stkID']}_${DateTime.now().millisecondsSinceEpoch}_$i',
+          productId: record['productId'].toString(),
+          qty: (record['quantity'] as double).toInt(),
+          stkBatch: (record['batch'] as double).toInt(),
+          productName: record['productName'] as String,
+          unit: record['unit'] as String,
+          purPrice: record['purchasePrice'],
+          landedPrice: record['landedPrice'],
+          sellPriceAmount: record['sellPrice'] ?? 0,
+          sellPrice: sellPrice,
+          storageId: record['storageId'],
+          stkId: stkId,
+          storageName: record['storageName'] as String,
+          sellPriceAmountOriginal: sellPrice,
+        ));
+      }
+
+      // Get exchange rate from stakeholder account (supplier)
+      final exchangeRate = OrderParser.getExchangeRate(payments);
+
+      // Get cash payment for PURCHASE (Cr side)
+      final cashPayment = OrderParser.getPurchaseCashPayment(payments);
+      final cashCurrency = OrderParser.getPurchaseCashCurrency(payments);
+
+      // Get supplier account (Cr side - we owe supplier)
+      final supplierAccountData = OrderParser.getSupplierAccount(payments);
+
+      StkAccountModel? supplierAccount;
+      String toCurrency = event.baseCurrency;
+
+      if (supplierAccountData != null) {
+        supplierAccount = StkAccountModel(
+          accNumber: supplierAccountData['account'],
+          accName: '',
+          accCurrency: supplierAccountData['currency'],
+          accBalance: 0.0,
+        );
+        toCurrency = supplierAccountData['currency'];
+      }
+
+      // Extract expenses ONLY (not supplier account, not cash)
+      final expensesData = OrderParser.getExpenses(payments);
+
+      List<PurchasePaymentRecord> expenses = [];
+
+      for (var expense in expensesData) {
+        expenses.add(
+          PurchasePaymentRecord(
+            accountNumber: expense['account'] as int,
+            amount: expense['amount'] as double,
+            currency: (expense['currency'] ?? event.baseCurrency).toString(),
+            exRate: exchangeRate,
+            narration: _extractExpenseNarration(expense['narration']?.toString() ?? ''),
+            isExpense: true,
+          ),
+        );
+      }
+
+      // Fetch full supplier details by ID
+      StakeholdersModel? supplier;
+      final partyId = parsed['partyId'] as int?;
+
+      if (partyId != null) {
+        try {
+          final fullSupplier = await repo.getStakeholderById(partyId);
+          supplier = fullSupplier;
+        } catch (e) {
+          supplier = StakeholdersModel(
+            perId: partyId,
+            perName: parsed['partyName'] as String?,
+          );
+        }
+      } else {
+        supplier = StakeholdersModel(
+          perId: parsed['partyId'] as int?,
+          perName: parsed['partyName'] as String?,
+        );
+      }
+
+      // Calculate totals
+      final itemsTotal = items.fold(0.0, (sum, item) => sum + (item.totalPurchase));
+      final expensesTotal = OrderParser.getExpensesTotal(payments);
+      final totalInvoice = itemsTotal + expensesTotal;
+
+      // Convert cash payment to base currency (DIVIDE, not multiply)
+      double cashPaymentInBase = cashPayment;
+      if (cashCurrency.isNotEmpty &&
+          cashCurrency != event.baseCurrency &&
+          exchangeRate > 0) {
+        cashPaymentInBase = cashPayment / exchangeRate;
+      }
+
+      // Determine payment mode
+      PaymentMode paymentMode;
+      final hasCreditPayment = supplierAccountData != null &&
+          (supplierAccountData['amount'] as double) > 0;
+
+      if (cashPaymentInBase <= 0 && !hasCreditPayment) {
+        paymentMode = PaymentMode.credit;
+      } else if (cashPaymentInBase >= totalInvoice) {
+        paymentMode = PaymentMode.cash;
+      } else if (cashPaymentInBase > 0 && hasCreditPayment) {
+        paymentMode = PaymentMode.mixed;
+      } else if (cashPaymentInBase > 0) {
+        paymentMode = PaymentMode.cash;
+      } else {
+        paymentMode = PaymentMode.credit;
+      }
+
+      emit(PurchaseInvoiceLoaded(
+          items: items,
+          payments: expenses,
+          supplier: supplier,
+          supplierAccount: supplierAccount,
+          cashPayment: cashPaymentInBase,
+          paymentMode: paymentMode,
+          exchangeRate: exchangeRate,
+          fromCurrency: event.baseCurrency,
+          toCurrency: toCurrency,
+          cashCurrency: cashCurrency != event.baseCurrency ? cashCurrency : null,
+          cashExchangeRate: exchangeRate,
+          xRef: parsed['reference'],
+          reference: reference,
+          remark: parsed['remarks'],
+          ordName: parsed['orderType'],
+          orderId: orderId
+      ));
+
+    } catch (e) {
+      emit(PurchaseInvoiceError('Failed to load invoice: $e'));
+    }
+  }
+  String _extractExpenseNarration(String narration) {
+    final rateMatch = RegExp(r'\s*@Rate:\s*[\d.]+').firstMatch(narration);
+    if (rateMatch != null) {
+      return narration.substring(0, rateMatch.start).trim();
+    }
+    return narration.trim();
+  }
+  void _onUpdateCashCurrency(UpdateCashCurrencyEvent event, Emitter<PurchaseInvoiceState> emit) {
+    if (state is PurchaseInvoiceLoaded) {
+      final current = state as PurchaseInvoiceLoaded;
+      emit(current.copyWith(
+        cashCurrency: event.currency,
+        cashExchangeRate: event.exchangeRate,
+      ));
+    }
+  }
+  void _onUpdateExchangeRateManually(UpdateExchangeRateManuallyEvent event, Emitter<PurchaseInvoiceState> emit) {
+    if (state is PurchaseInvoiceLoaded) {
+      final current = state as PurchaseInvoiceLoaded;
+
+      emit(current.copyWith(
+        exchangeRate: event.rate,
+        fromCurrency: event.fromCurrency,
+        toCurrency: event.toCurrency,
+      ));
+    }
+  }
+  void setExchangeRateBloc(ExchangeRateBloc exchangeRateBloc) {
+    _exchangeRateSubscription?.cancel();
+    _exchangeRateBloc = exchangeRateBloc;
+    _exchangeRateSubscription = _exchangeRateBloc!.stream.listen((exchangeState) {
+      if (exchangeState is ExchangeRateLoadedState && state is PurchaseInvoiceLoaded) {
+        // Don't auto-update, let user control
+      }
+    });
+  }
+
+  void _onUpdateItem(UpdatePurchaseItemEvent event, Emitter<PurchaseInvoiceState> emit) {
+    if (state is PurchaseInvoiceLoaded) {
+      final current = state as PurchaseInvoiceLoaded;
+      final updatedItems = current.items.map((item) {
+        if (item.rowId == event.rowId) {
+          return PurchaseInvoiceItem(
+            itemId: item.rowId,
+            stkBatch: event.batch?.toInt() ?? item.stkBatch,
+            sellPriceAmount: event.sellPriceAmount ?? item.sellPriceAmount,
+            productId: event.productId ?? item.productId,
+            productName: event.productName ?? item.productName,
+            qty: event.qty ?? item.qty,
+            unit: event.unit ?? item.unit,
+            purPrice: event.purPrice ?? item.purPrice,
+            storageName: event.storageName ?? item.storageName,
+            storageId: event.storageId ?? item.storageId,
+            exchangeRate: current.exchangeRate ?? 1.0,
+            sellPrice: item.sellPrice,
+            sellPriceAmountOriginal: item.sellPriceAmountOriginal,
+          );
+        }
+        return item;
+      }).toList();
+
+      emit(current.copyWith(items: updatedItems));
+      add(UpdateAllLandedPricesEvent());
+    }
+  }
+
+  Future<void> _onUpdateExchangeRate(UpdateExchangeRateForInvoiceEvent event, Emitter<PurchaseInvoiceState> emit,) async {
+    if (state is PurchaseInvoiceLoaded) {
+      final current = state as PurchaseInvoiceLoaded;
+
+      try {
+        final rate = await repo.getSingleRate(
+          fromCcy: event.fromCurrency,
+          toCcy: event.toCurrency,
+        );
+
+        final parsedRate = double.tryParse(rate ?? "1.0") ?? 1.0;
+
+        emit(current.copyWith(
+          exchangeRate: parsedRate,
+          fromCurrency: event.fromCurrency,
+          toCurrency: event.toCurrency,
+        ));
+      } catch (e) {
+        emit(PurchaseInvoiceError('Failed to fetch exchange rate: $e'));
+        emit(current);
+      }
+    }
+  }
+
+  void _onInitialize(InitializePurchaseInvoiceEvent event, Emitter<PurchaseInvoiceState> emit) {
+    emit(PurchaseInvoiceLoaded(
+      items: [
+        PurchaseInvoiceItem(
+        productId: '',
+        itemId: '${DateTime.now().millisecondsSinceEpoch}', // Unique ID
+        productName: '',
+        unit: '',
+        stkId: null,
+        qty: 1,
+        stkBatch: 1,
+        sellPriceAmount: 0,
+        purPrice: 0,
+        landedPrice: 0,
+        storageName: '',
+        storageId: 0,
+        exchangeRate: 1.0,
+        localAmount: 0,
+        sellPrice: 0,
+        sellPriceAmountOriginal: 0,
+      )],
+      payments: [],
+      paymentMode: PaymentMode.cash,
+      cashPayment: 0.0,
+      exchangeRate: 1.0,
+      fromCurrency: '',
+      toCurrency: '',
+      supplier: null,
+      supplierAccount: null,
+      storages: [],
+    ));
+  }
+
+  void _onReset(ResetPurchaseInvoiceEvent event, Emitter<PurchaseInvoiceState> emit) {
+    emit(PurchaseInvoiceLoaded(
+      items: [PurchaseInvoiceItem(
+        productId: '',
+        itemId: '',
+        productName: '',
+        qty: 1,
+        stkBatch: 1,
+        purPrice: 0,
+        landedPrice: 0,
+        storageName: '',
+        sellPriceAmount: 0,
+        storageId: 0,
+        exchangeRate: 1.0,
+        localAmount: 0,
+      )],
+      payments: [],
+      paymentMode: PaymentMode.cash,
+      cashPayment: 0.0,
+      exchangeRate: 1.0,
+      fromCurrency: '',
+      toCurrency: '',
+      supplier: null,
+      supplierAccount: null,
+      storages: [],
+    ));
+  }
+
+  void _onClearSupplierAccount(ClearSupplierAccountEvent event, Emitter<PurchaseInvoiceState> emit) {
+    if (state is PurchaseInvoiceLoaded) {
+      final current = state as PurchaseInvoiceLoaded;
+      emit(current.copyWith(
+        supplierAccount: null,
+        cashPayment: current.subtotal,
+        paymentMode: PaymentMode.cash,
+      ));
+    }
+  }
+
+  void _onSelectSupplierAccount(SelectSupplierAccountEvent event, Emitter<PurchaseInvoiceState> emit) {
+    if (state is PurchaseInvoiceLoaded) {
+      final current = state as PurchaseInvoiceLoaded;
+
+      // Determine payment mode based on cash payment
+      PaymentMode newPaymentMode;
+      if (current.cashPayment <= 0) {
+        newPaymentMode = PaymentMode.credit;
+      } else if (current.cashPayment >= current.subtotal) {
+        newPaymentMode = PaymentMode.cash;
+      } else {
+        newPaymentMode = PaymentMode.mixed;
+      }
+
+      emit(current.copyWith(
+        supplierAccount: event.supplier,
+        paymentMode: newPaymentMode,
+      ));
+    }
+  }
+
+  void _onSelectSupplier(SelectSupplierEvent event, Emitter<PurchaseInvoiceState> emit) {
+    if (state is PurchaseInvoiceLoaded) {
+      final current = state as PurchaseInvoiceLoaded;
+      emit(current.copyWith(supplier: event.supplier));
+    }
+  }
+
+  void _onClearSupplier(ClearSupplierEvent event, Emitter<PurchaseInvoiceState> emit) {
+    if (state is PurchaseInvoiceLoaded) {
+      final current = state as PurchaseInvoiceLoaded;
+      emit(current.copyWith(
+        supplier: null,
+        supplierAccount: null,
+        cashPayment: current.subtotal,
+        paymentMode: PaymentMode.cash,
+      ));
+    }
+  }
+
+  void _onAddNewItem(AddNewPurchaseItemEvent event, Emitter<PurchaseInvoiceState> emit) {
+    if (state is! PurchaseInvoiceLoaded) return;
+    final current = state as PurchaseInvoiceLoaded;
+
+    final newItem = PurchaseInvoiceItem(
+      productId: '',
+      productName: '',
+      qty: 1,
+      sellPriceAmount: 0,
+      purPrice: 0,
+      stkBatch: 1,
+      storageName: '',
+      storageId: 0,
+    );
+
+    final updatedItems = List<PurchaseInvoiceItem>.from(current.items)..add(newItem);
+    emit(current.copyWith(items: updatedItems));
+  }
+
+  void _onRemoveItem(RemovePurchaseItemEvent event, Emitter<PurchaseInvoiceState> emit) {
+    if (state is PurchaseInvoiceLoaded) {
+      final current = state as PurchaseInvoiceLoaded;
+      final updatedItems = current.items.where((item) => item.rowId != event.rowId).toList();
+
+      if (updatedItems.isEmpty) {
+        updatedItems.add(PurchaseInvoiceItem(
+          productId: '',
+          productName: '',
+          stkBatch: 1,
+          sellPriceAmount: 0,
+          qty: 1,
+          purPrice: 0,
+          storageName: '',
+          storageId: 0,
+        ));
+      }
+
+      emit(current.copyWith(items: updatedItems));
+      add(UpdateAllLandedPricesEvent());
+    }
+  }
+
+  void _onUpdateCashPayment(UpdateCashPaymentEvent event, Emitter<PurchaseInvoiceState> emit) {
+    if (state is PurchaseInvoiceLoaded) {
+      final current = state as PurchaseInvoiceLoaded;
+
+      double newCashPayment = event.cashPayment;
+      PaymentMode newMode;
+
+      if (newCashPayment <= 0) {
+        newMode = PaymentMode.credit;
+        newCashPayment = 0;
+      } else if (newCashPayment >= current.subtotal) {
+        newMode = PaymentMode.cash;
+        newCashPayment = current.subtotal;
+      } else {
+        newMode = PaymentMode.mixed;
+      }
+
+      emit(current.copyWith(
+        cashPayment: newCashPayment,
+        paymentMode: newMode,
+      ));
+    }
+  }
+
+  // ==================== PAYMENT HANDLERS (Unified) ====================
+
+  void _onAddPayment(AddPaymentEvent event, Emitter<PurchaseInvoiceState> emit) {
+    if (state is PurchaseInvoiceLoaded) {
+      final current = state as PurchaseInvoiceLoaded;
+
+      final newPayment = PurchasePaymentRecord(
+        accountNumber: 0,
+        amount: 0.0,
+        currency: current.supplierAccount?.accCurrency ?? current.fromCurrency ?? '',
+        exRate: current.exchangeRate ?? 1.0,
+        narration: '',
+        isExpense: event.isExpense,
+      );
+
+      final updatedPayments = List<PurchasePaymentRecord>.from(current.payments)..add(newPayment);
+      emit(current.copyWith(payments: updatedPayments));
+
+      if (event.isExpense) {
+        add(UpdateAllLandedPricesEvent());
+      }
+    }
+  }
+  void _onRemovePayment(RemovePaymentEvent event, Emitter<PurchaseInvoiceState> emit) {
+    if (state is PurchaseInvoiceLoaded) {
+      final current = state as PurchaseInvoiceLoaded;
+      final updatedPayments = List<PurchasePaymentRecord>.from(current.payments)
+        ..removeAt(event.index);
+
+      emit(current.copyWith(payments: updatedPayments));
+
+      // Check if removed payment was an expense
+      if (event.wasExpense) {
+        add(UpdateAllLandedPricesEvent());
+      }
+    }
+  }
+  void _onUpdatePayment(UpdatePaymentEvent event, Emitter<PurchaseInvoiceState> emit) {
+    if (state is PurchaseInvoiceLoaded) {
+      final current = state as PurchaseInvoiceLoaded;
+      final updatedPayments = List<PurchasePaymentRecord>.from(current.payments);
+
+      if (event.index < updatedPayments.length) {
+        final existing = updatedPayments[event.index];
+        updatedPayments[event.index] = existing.copyWith(
+          accountNumber: event.accountNumber ?? existing.accountNumber,
+          amount: event.amount ?? existing.amount,
+          currency: event.currency ?? existing.currency,
+          exRate: event.exRate ?? existing.exRate,
+          narration: event.narration,
+          isExpense: event.isExpense ?? existing.isExpense,
+        );
+
+        emit(current.copyWith(payments: updatedPayments));
+
+        if (event.isExpense == true || existing.isExpense) {
+          add(UpdateAllLandedPricesEvent());
+        }
+      }
+    }
+  }
+
+  Future<void> _onSaveInvoice(SavePurchaseInvoiceEvent event, Emitter<PurchaseInvoiceState> emit) async {
+    if (state is! PurchaseInvoiceLoaded) {
+      event.completer.complete('');
+      return;
+    }
+
+    final current = state as PurchaseInvoiceLoaded;
+
+    // Save current state for error recovery
+    final savedState = current.copyWith();
+
+    // Validations (keep existing validations)
+    if (current.supplier == null) {
+      emit(PurchaseInvoiceError('Please select a supplier'));
+      emit(savedState);
+      event.completer.complete('');
+      return;
+    }
+
+    if (current.items.isEmpty) {
+      emit(PurchaseInvoiceError('Please add at least one item'));
+      emit(savedState);
+      event.completer.complete('');
+      return;
+    }
+
+    for (var i = 0; i < current.items.length; i++) {
+      final item = current.items[i];
+      if (item.productId.isEmpty) {
+        emit(PurchaseInvoiceError('Please select a product for item ${i + 1}'));
+        emit(savedState);
+        event.completer.complete('');
+        return;
+      }
+      if (item.storageId == 0) {
+        emit(PurchaseInvoiceError('Please select a storage for item ${i + 1}'));
+        emit(savedState);
+        event.completer.complete('');
+        return;
+      }
+      if (item.purPrice == null || item.purPrice! <= 0) {
+        emit(PurchaseInvoiceError('Please enter a valid price for item ${i + 1}'));
+        emit(savedState);
+        event.completer.complete('');
+        return;
+      }
+      if (item.qty <= 0) {
+        emit(PurchaseInvoiceError('Please enter a valid quantity for item ${i + 1}'));
+        emit(savedState);
+        event.completer.complete('');
+        return;
+      }
+    }
+
+    if (current.paymentMode == PaymentMode.credit || current.paymentMode == PaymentMode.mixed) {
+      if (current.supplierAccount == null) {
+        emit(PurchaseInvoiceError('Please select a supplier account for credit payment'));
+        emit(savedState);
+        event.completer.complete('');
+        return;
+      }
+    }
+
+    if(current.paymentMode == PaymentMode.cash){
+      if(current.cashPayment != current.subtotal){
+        emit(PurchaseInvoiceError('Cash payment not equal to total invoice amount'));
+        emit(savedState);
+        event.completer.complete('');
+        return;
+      }
+    }
+
+    if (current.paymentMode == PaymentMode.mixed) {
+      if (current.cashPayment <= 0) {
+        emit(PurchaseInvoiceError('For mixed payment, cash payment must be greater than 0'));
+        emit(savedState);
+        event.completer.complete('');
+        return;
+      }
+      if (current.cashPayment >= current.subtotal) {
+        emit(PurchaseInvoiceError('For mixed payment, cash payment must be less than total amount'));
+        emit(savedState);
+        event.completer.complete('');
+        return;
+      }
+    }
+
+    // Emit saving state
+    emit(PurchaseInvoiceSaving(
+      items: current.items,
+      payments: current.payments,
+      supplier: current.supplier,
+      supplierAccount: current.supplierAccount,
+      cashPayment: current.cashPayment,
+      paymentMode: current.paymentMode,
+      storages: current.storages,
+    ));
+
+
+    try {
+
+      // Build records for API
+      final records = current.items.map((item) {
+        // Use stored percentage if available, otherwise calculate from amount
+        double? percentageToSave = item.sellPrice;
+
+        // If no percentage stored but we have an amount, calculate it
+        if (percentageToSave == null && item.sellPriceAmount > 0 && item.purPrice != null && item.purPrice! > 0) {
+          percentageToSave = (item.sellPriceAmount / item.purPrice!) * 100;
+          percentageToSave = percentageToSave.clamp(1.0, 100.0);
+        }
+        return PurchaseInvoiceRecord(
+          proID: int.tryParse(item.productId) ?? 0,
+          stgID: item.storageId,
+          quantity: item.qty.toDouble(),
+          stkQtyInBatch: item.stkBatch,
+          stkSalePrice: percentageToSave,
+          pPrice: item.purPrice,
+        );
+      }).toList();
+
+      // Build unified payments list for API
+      final List<PurchasePaymentRecord> apiPayments = [];
+
+      // Determine the base currency for calculations
+      final baseCurrency = current.fromCurrency ?? '';
+      final exchangeRate = current.exchangeRate ?? 1.0;
+
+      // Get supplier account currency if available
+      final supplierCurrency = current.supplierAccount?.accCurrency ?? baseCurrency;
+      final needsConversion = supplierCurrency != baseCurrency;
+
+      // ============ 1. HANDLE EXPENSES (DEBIT expense account) ============
+      // Expenses are recorded as debit to expense account (cash is credited separately)
+      for (final expense in current.expenses) {
+        if (expense.amount > 0 && expense.accountNumber != 0) {
+          // DEBIT the expense account (records the expense)
+          apiPayments.add(PurchasePaymentRecord(
+            accountNumber: expense.accountNumber,
+            amount: expense.amount,
+            currency: baseCurrency,
+            exRate: 1.0,
+            narration: expense.narration!.isNotEmpty ? expense.narration : 'Expense: ${expense.accountNumber}',
+            isExpense: true,
+          ));
+        }
+      }
+
+      // ============ 2. HANDLE SUPPLIER PAYMENT (Credit/Debit to supplier account) ============
+      final supplierPaymentAmount = current.subtotal;
+
+      // Add supplier payment if applicable (credit or mixed payment)
+      if (current.paymentMode != PaymentMode.cash && current.supplierAccount != null) {
+        double amountToPay = supplierPaymentAmount;
+
+        // If mixed payment, subtract cash payment from supplier amount
+        if (current.paymentMode == PaymentMode.mixed) {
+          amountToPay = supplierPaymentAmount - current.cashPayment;
+        }
+
+        if (amountToPay > 0) {
+          // Convert to supplier's currency if needed
+          double convertedAmount = amountToPay;
+          String paymentCurrency = baseCurrency;
+          double paymentExRate = 1.0;
+
+          if (needsConversion && supplierCurrency.isNotEmpty) {
+            convertedAmount = amountToPay * exchangeRate;
+            paymentCurrency = supplierCurrency;
+            paymentExRate = exchangeRate;
+          }
+
+          // DEBIT supplier account (records liability/payment)
+          apiPayments.add(PurchasePaymentRecord(
+            accountNumber: current.supplierAccount!.accNumber!,
+            amount: convertedAmount,
+            currency: paymentCurrency,
+            exRate: paymentExRate,
+            narration: '',
+            isExpense: false,
+          ));
+        }
+      }
+
+      // ============ 3. HANDLE CASH PAYMENT FOR INVOICE ============
+      // This is the cash portion that goes to supplier
+      if (current.cashPayment > 0) {
+        double cashAmount = current.cashPayment;
+
+        // If cash payment is full payment, it's the entire invoice
+        if (current.paymentMode == PaymentMode.cash) {
+          cashAmount = supplierPaymentAmount;
+        }
+
+        if (cashAmount > 0) {
+          // Determine cash currency - use selected cash currency or base currency
+          String cashCurrency = (current.cashCurrency != null && current.cashCurrency!.isNotEmpty)
+              ? current.cashCurrency!
+              : baseCurrency;
+
+          if (cashCurrency.isEmpty) {
+            cashCurrency = baseCurrency;
+          }
+
+          // Determine exchange rate for cash payment
+          double cashExRate;
+          if (cashCurrency != baseCurrency && current.cashExchangeRate > 0) {
+            // User selected a different currency for cash payment
+            cashExRate = current.cashExchangeRate;
+          } else {
+            cashExRate = 1.0;
+          }
+
+          // Convert base amount to cash currency
+          final amountInCashCurrency = cashAmount * cashExRate;
+
+          // CREDIT cash account (positive amount = credit in their API)
+          apiPayments.add(PurchasePaymentRecord(
+            accountNumber: 10101010, // Cash account
+            amount: amountInCashCurrency,
+            currency: cashCurrency,
+            exRate: cashExRate,
+            narration: 'Cash payment to supplier',
+            isExpense: false,
+          ));
+        }
+      }
+
+      final xRef = event.xRef ?? '';
+      final response = await repo.addPurchaseInvoice(
+        usrName: event.usrName,
+        perID: event.ordPersonal,
+        xRef: xRef,
+        orderName: "Purchase",
+        remark: event.remark,
+        records: records,
+        payment: apiPayments,
+      );
+
+      final message = response['msg']?.toString() ?? 'No response message';
+
+      if (message.toLowerCase().contains('success') || message.toLowerCase().contains('authorized')) {
+        String invoiceNumber = response['invoiceNo']?.toString() ??
+            response['ordID']?.toString() ??
+            'Generated';
+
+        final invoiceData = current.copyWith();
+
+        emit(PurchaseInvoiceSaved(
+          true,
+          invoiceNumber: invoiceNumber,
+          invoiceData: invoiceData,
+        ));
+
+        event.completer.complete(invoiceNumber);
+
+        Future.microtask(() {
+          if (!emit.isDone) {
+            add(ResetPurchaseInvoiceEvent());
+          }
+        });
+      } else {
+        String errorMessage;
+        final msgLower = message.toLowerCase();
+
+        if (msgLower.contains('over limit')) {
+          errorMessage = 'Account credit limit exceeded';
+        } else if (msgLower.contains('block')) {
+          errorMessage = 'Account is blocked';
+        } else if (msgLower.contains('not found')) {
+          errorMessage = 'Invalid product or storage ID';
+        } else if (msgLower.contains('unavailable')) {
+          errorMessage = message;
+        } else if (msgLower.contains('large')) {
+          errorMessage = 'Payment amount exceeds total bill amount';
+        } else if (msgLower.contains('failed')) {
+          errorMessage = 'Invoice creation failed. Please try again.';
+        } else {
+          errorMessage = message;
+        }
+
+        emit(PurchaseInvoiceError(errorMessage));
+        emit(savedState);
+        event.completer.complete('');
+      }
+    } catch (e) {
+      String errorMessage = e.toString();
+      if (errorMessage.contains('DioException')) {
+        errorMessage = 'Network error: Please check your connection';
+      }
+
+      emit(PurchaseInvoiceError(errorMessage));
+      emit(savedState);
+      event.completer.complete('');
+    }
+  }
+  Future<void> _onUpdateInvoice(UpdatePurchaseInvoiceEvent event, Emitter<PurchaseInvoiceState> emit) async {
+    if (state is! PurchaseInvoiceLoaded) {
+      event.completer.complete('');
+      return;
+    }
+
+    final current = state as PurchaseInvoiceLoaded;
+
+    // Use orderId from event if provided, otherwise from state
+    final orderIdToUse = event.orderId ?? current.orderId;
+
+    if (orderIdToUse == null || orderIdToUse <= 0) {
+      emit(PurchaseInvoiceError('Invalid order ID for update'));
+      event.completer.complete('');
+      return;
+    }
+
+    // Save current state for error recovery
+    final savedState = current.copyWith();
+
+    // Validations
+    if (current.supplier == null) {
+      emit(PurchaseInvoiceError('Please select a supplier'));
+      emit(savedState);
+      event.completer.complete('');
+      return;
+    }
+
+    if (current.items.isEmpty) {
+      emit(PurchaseInvoiceError('Please add at least one item'));
+      emit(savedState);
+      event.completer.complete('');
+      return;
+    }
+
+    for (var i = 0; i < current.items.length; i++) {
+      final item = current.items[i];
+      if (item.productId.isEmpty) {
+        emit(PurchaseInvoiceError('Please select a product for item ${i + 1}'));
+        emit(savedState);
+        event.completer.complete('');
+        return;
+      }
+      if (item.storageId == 0) {
+        emit(PurchaseInvoiceError('Please select a storage for item ${i + 1}'));
+        emit(savedState);
+        event.completer.complete('');
+        return;
+      }
+      if (item.purPrice == null || item.purPrice! <= 0) {
+        emit(PurchaseInvoiceError('Please enter a valid price for item ${i + 1}'));
+        emit(savedState);
+        event.completer.complete('');
+        return;
+      }
+      if (item.qty <= 0) {
+        emit(PurchaseInvoiceError('Please enter a valid quantity for item ${i + 1}'));
+        emit(savedState);
+        event.completer.complete('');
+        return;
+      }
+    }
+
+    if (current.paymentMode == PaymentMode.credit || current.paymentMode == PaymentMode.mixed) {
+      if (current.supplierAccount == null) {
+        emit(PurchaseInvoiceError('Please select a supplier account for credit payment'));
+        emit(savedState);
+        event.completer.complete('');
+        return;
+      }
+    }
+
+    if (current.paymentMode == PaymentMode.cash) {
+      if (current.cashPayment != current.grandTotalLocal || current.cashPayment != current.totalInvoice) {
+        emit(PurchaseInvoiceError('Cash payment not equal to total invoice amount'));
+        emit(savedState);
+        event.completer.complete('');
+        return;
+      }
+    }
+
+    if (current.paymentMode == PaymentMode.mixed) {
+      if (current.cashPayment <= 0) {
+        emit(PurchaseInvoiceError('For mixed payment, cash payment must be greater than 0'));
+        emit(savedState);
+        event.completer.complete('');
+        return;
+      }
+      if (current.cashPayment >= current.subtotal) {
+        emit(PurchaseInvoiceError('For mixed payment, cash payment must be less than total amount'));
+        emit(savedState);
+        event.completer.complete('');
+        return;
+      }
+    }
+
+    // Emit saving state
+    emit(PurchaseInvoiceSaving(
+      items: current.items,
+      payments: current.payments,
+      supplier: current.supplier,
+      supplierAccount: current.supplierAccount,
+      cashPayment: current.cashPayment,
+      paymentMode: current.paymentMode,
+      storages: current.storages,
+    ));
+
+    try {
+      // Build records for API
+      final records = current.items.map((item) {
+
+        // Use stored percentage if available, otherwise calculate from amount
+        double? percentageToSave = item.sellPrice;
+
+        // If no percentage stored but we have an amount, calculate it
+        if (percentageToSave == null && item.sellPriceAmount > 0 && item.purPrice != null && item.purPrice! > 0) {
+          percentageToSave = (item.sellPriceAmount / item.purPrice!) * 100;
+          percentageToSave = percentageToSave.clamp(1.0, 100.0);
+        }
+        return PurchaseInvoiceRecord(
+          proID: int.tryParse(item.productId) ?? 0,
+          stkId: item.stkId,
+          stgID: item.storageId,
+          quantity: item.qty.toDouble(),
+          stkQtyInBatch: item.stkBatch,
+          stkSalePrice: percentageToSave,
+          pPrice: item.purPrice,
+        );
+      }).toList();
+
+      // Build unified payments list for API
+      final List<PurchasePaymentRecord> apiPayments = [];
+
+      // Determine the base currency for calculations
+      final baseCurrency = current.fromCurrency ?? '';
+      final exchangeRate = current.exchangeRate ?? 1.0;
+
+      // Get supplier account currency if available
+      final supplierCurrency = current.supplierAccount?.accCurrency ?? baseCurrency;
+      final needsConversion = supplierCurrency != baseCurrency;
+
+      // ============ 1. HANDLE EXPENSES (DEBIT expense account) ============
+      for (final expense in current.expenses) {
+        if (expense.amount > 0 && expense.accountNumber != 0) {
+          apiPayments.add(PurchasePaymentRecord(
+            accountNumber: expense.accountNumber,
+            amount: expense.amount,
+            currency: baseCurrency,
+            exRate: 1.0,
+            narration: expense.narration!.isNotEmpty ? expense.narration : 'Expense: ${expense.accountNumber}',
+            isExpense: true,
+          ));
+        }
+      }
+
+      // ============ 2. HANDLE SUPPLIER PAYMENT ============
+      final supplierPaymentAmount = current.subtotal;
+
+      if (current.paymentMode != PaymentMode.cash && current.supplierAccount != null) {
+        double amountToPay = supplierPaymentAmount;
+
+        if (current.paymentMode == PaymentMode.mixed) {
+          amountToPay = supplierPaymentAmount - current.cashPayment;
+        }
+
+        if (amountToPay > 0) {
+          double convertedAmount = amountToPay;
+          String paymentCurrency = baseCurrency;
+          double paymentExRate = 1.0;
+
+          if (needsConversion && supplierCurrency.isNotEmpty) {
+            convertedAmount = amountToPay * exchangeRate;
+            paymentCurrency = supplierCurrency;
+            paymentExRate = exchangeRate;
+          }
+
+          apiPayments.add(PurchasePaymentRecord(
+            accountNumber: current.supplierAccount!.accNumber!,
+            amount: convertedAmount,
+            currency: paymentCurrency,
+            exRate: paymentExRate,
+            narration: '',
+            isExpense: false,
+          ));
+        }
+      }
+
+      // ============ 3. HANDLE CASH PAYMENT ============
+      if (current.cashPayment > 0) {
+        double cashAmount = current.cashPayment;
+
+        if (current.paymentMode == PaymentMode.cash) {
+          cashAmount = supplierPaymentAmount;
+        }
+
+        if (cashAmount > 0) {
+          final cashCurrency = (current.cashCurrency != null && current.cashCurrency!.isNotEmpty)
+              ? current.cashCurrency!
+              : baseCurrency;
+
+          double cashExRate;
+          if (cashCurrency != baseCurrency && current.cashExchangeRate > 0) {
+            cashExRate = current.cashExchangeRate;
+          } else {
+            cashExRate = 1.0;
+          }
+
+          final amountInCashCurrency = cashAmount * cashExRate;
+
+          apiPayments.add(PurchasePaymentRecord(
+            accountNumber: 10101010, // Cash account
+            amount: amountInCashCurrency,
+            currency: cashCurrency,
+            exRate: cashExRate,
+            narration: 'Cash payment to supplier',
+            isExpense: false,
+          ));
+        }
+      }
+
+      final xRef = event.xRef ?? current.reference ?? '';
+
+      // Use the orderId we determined at the start
+      final response = await repo.updatePurchaseInvoice(
+        usrName: event.usrName,
+        perID: event.ordPersonal,
+        ref: xRef,
+        orderId: orderIdToUse,
+        orderName: "Purchase",
+        remark: event.remark,
+        records: records,
+        payment: apiPayments,
+      );
+
+      final message = response['msg']?.toString() ?? 'No response message';
+
+      if (message.toLowerCase().contains('success') || message.toLowerCase().contains('authorized')) {
+        String invoiceNumber = response['invoiceNo']?.toString() ??
+            response['ordID']?.toString() ??
+            orderIdToUse.toString();
+
+        final invoiceData = current.copyWith();
+
+        emit(PurchaseInvoiceSaved(
+          true,
+          invoiceNumber: invoiceNumber,
+          invoiceData: invoiceData,
+        ));
+
+        event.completer.complete(invoiceNumber);
+
+        Future.microtask(() {
+          if (!emit.isDone) {
+            add(ResetPurchaseInvoiceEvent());
+          }
+        });
+      } else {
+        String errorMessage;
+        final msgLower = message.toLowerCase();
+
+        if (msgLower.contains('over limit')) {
+          errorMessage = 'Account credit limit exceeded';
+        } else if (msgLower.contains('block')) {
+          errorMessage = 'Account is blocked';
+        } else if (msgLower.contains('not found')) {
+          errorMessage = 'Invalid product or storage ID';
+        } else if (msgLower.contains('unavailable')) {
+          errorMessage = message;
+        } else if (msgLower.contains('large')) {
+          errorMessage = 'Payment amount exceeds total bill amount';
+        } else if (msgLower.contains('failed')) {
+          errorMessage = 'Invoice update failed. Please try again.';
+        } else {
+          errorMessage = message;
+        }
+
+        emit(PurchaseInvoiceError(errorMessage));
+        emit(savedState);
+        event.completer.complete('');
+      }
+    } catch (e) {
+      String errorMessage = e.toString();
+      if (errorMessage.contains('DioException')) {
+        errorMessage = 'Network error: Please check your connection';
+      }
+
+      emit(PurchaseInvoiceError(errorMessage));
+      emit(savedState);
+      event.completer.complete('');
+    }
+  }
+
+  void _onUpdateAllLandedPrices(UpdateAllLandedPricesEvent event, Emitter<PurchaseInvoiceState> emit) {
+    if (state is PurchaseInvoiceLoaded) {
+      final current = state as PurchaseInvoiceLoaded;
+
+      // Step 1: Calculate total expenses from all expense payments
+      final totalExpenses = current.expenses.fold(0.0, (sum, expense) => sum + expense.amount);
+
+      // Step 2: Calculate total pieces (qty × batch for each item)
+      final totalPieces = current.items.fold(0.0, (sum, item) => sum + (item.qty * item.stkBatch));
+
+      // Step 3: Calculate landed price for each item
+      if (totalPieces > 0 && totalExpenses > 0) {
+        final expensePerPiece = totalExpenses / totalPieces;
+
+        final updatedItems = current.items.map((item) {
+          final landedPrice = (item.purPrice ?? 0.0) + expensePerPiece;
+          return item.copyWith(landedPrice: landedPrice);
+        }).toList();
+
+        emit(current.copyWith(items: updatedItems));
+      } else {
+        // No expenses, landed price = purchase price
+        final updatedItems = current.items.map((item) {
+          return item.copyWith(landedPrice: item.purPrice);
+        }).toList();
+        emit(current.copyWith(items: updatedItems));
+      }
+    }
+  }
+  Future<void> _onLoadStorages(LoadPurchaseStoragesEvent event, Emitter<PurchaseInvoiceState> emit) async {
+    try {
+      if (state is PurchaseInvoiceLoaded) {
+        final current = state as PurchaseInvoiceLoaded;
+        emit(current.copyWith(storages: []));
+      }
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+}

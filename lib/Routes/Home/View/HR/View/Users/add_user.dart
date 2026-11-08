@@ -64,7 +64,7 @@ class _MobileState extends State<_Mobile> {
   bool fevValue = true;
   int? usrOwnerId;
   BranchModel? selectedBranch;
-  IndividualsModel? selectedIndividual;
+  StakeholdersModel? selectedIndividual;
 
   final Map<int, bool> _permissions = {};
   final Map<int, bool> _roleCeiling = {};
@@ -271,7 +271,7 @@ class _MobileState extends State<_Mobile> {
                             const SizedBox(height: 12),
 
                             if (widget.indId == null && !_isEdit) ...[
-                              GenericTextField<IndividualsModel,
+                              GenericTextField<StakeholdersModel,
                                   StakeholderBloc, StakeholderState>(
                                 showAllOnFocus: true,
                                 controller: usrOwner,
@@ -594,7 +594,7 @@ class _DesktopState extends State<_Desktop> {
   bool fevValue = true;
   int? usrOwnerId;
   BranchModel? selectedBranch;
-  IndividualsModel? selectedIndividual;
+  StakeholdersModel? selectedIndividual;
 
   final Map<int, bool> _permissions = {};
   final Map<int, bool> _roleCeiling = {};
@@ -778,7 +778,7 @@ class _DesktopState extends State<_Desktop> {
                       children: [
                         Expanded(
                           flex: 4,
-                          child: GenericTextField<IndividualsModel,
+                          child: GenericTextField<StakeholdersModel,
                               StakeholderBloc, StakeholderState>(
                             showAllOnFocus: true,
                             controller: usrOwner,
