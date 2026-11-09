@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../Features/Date/zdate_picker.dart';
 import '../../../../Features/Other/form_dialog.dart';
 import '../../../../Features/Other/image_crop.dart';
@@ -208,12 +209,13 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme;
+    final tr = AppLocalizations.of(context)!;
     return ZFormDialog(
-      title: _isEdit ? 'Edit stakeholder' : 'New stakeholder',
+      title: _isEdit ? tr.editStakeholder.toUpperCase() : tr.addStakeholder,
       icon: _isEdit ? Icons.edit_outlined : Icons.person_add_alt_1_outlined,
       width: 750,
       isButtonEnabled: true,
-      actionLabel: Text(_isEdit ? 'Save' : 'Create'),
+      actionLabel: Text(_isEdit ? tr.save : tr.create),
       onAction: _submit,
       child: Form(
         key: _formKey,
@@ -225,6 +227,7 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
             children: [
               if (_isEdit) ...[
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Stack(
                       alignment: Alignment.bottomRight,
@@ -286,19 +289,20 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
                 const SizedBox(height: 20),
               ],
 
-              _section('Personal'),
+              _section(tr.personal),
               const SizedBox(height: 8),
 
               // ── Code + First + Last name (one row) ───────────────
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   SizedBox(
                     width: 140,
                     child: ZTextFieldEntitled(
-                      title: 'Code',
+                      title: tr.perCode,
                       hint: 'MZ-340',
                       controller: _perCode,
+                      isRequired: true,
                       focusNode: _perCodeFocus,
                       autoFocus: false,
                       textInputAction: TextInputAction.next,
@@ -310,8 +314,6 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
                         ),
                         LengthLimitingTextInputFormatter(30),
                       ],
-                      // Optional: enforce MZ-340 style. Remove if you
-                      // want to allow arbitrary codes.
                       validator: (v) {
                         final s = (v ?? '').trim();
                         if (s.isEmpty) return null; // backend defaults to perID
@@ -325,7 +327,7 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ZTextFieldEntitled(
-                      title: 'First name',
+                      title: tr.firstName,
                       hint: 'John',
                       isRequired: true,
                       controller: _firstName,
@@ -341,7 +343,7 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ZTextFieldEntitled(
-                      title: 'Last name',
+                      title: tr.lastName,
                       hint: 'Doe',
                       controller: _lastName,
                       focusNode: _lastNameFocus,
@@ -358,8 +360,8 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
                 children: [
                   Expanded(
                     child: ZTextFieldEntitled(
-                      title: 'Phone',
-                      hint: '+93…',
+                      title: tr.phone,
+                      hint: '+930000000000',
                       controller: _phone,
                       focusNode: _phoneFocus,
                       autoFocus: false,
@@ -371,7 +373,7 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ZTextFieldEntitled(
-                      title: 'Email',
+                      title: tr.email,
                       hint: 'you@example.com',
                       controller: _email,
                       focusNode: _emailFocus,
@@ -389,7 +391,7 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
                 children: [
                   Expanded(
                     child: ZTextFieldEntitled(
-                      title: 'National ID',
+                      title: tr.nationalId,
                       hint: 'Tazkira',
                       controller: _enidNo,
                       focusNode: _enidNoFocus,
@@ -402,10 +404,10 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ZDropdown<String>(
-                      title: 'Gender',
+                      title: tr.gender,
                       items: _genders,
                       itemLabel: (g) => g,
-                      initialValue: 'Select gender',
+                      initialValue: tr.gender,
                       selectedItem: _gender,
                       onItemSelected: (v) => setState(() => _gender = v),
                       height: 40,
@@ -414,7 +416,7 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: GenericDatePicker(
-                      label: 'Date of birth',
+                      label: tr.dob,
                       initialGregorianDate: _dobIso,
                       onDateChanged: (iso) =>
                           setState(() => _dobIso = iso),
@@ -424,11 +426,11 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
               ),
               const SizedBox(height: 12),
 
-              _section('Address'),
+              _section(tr.address),
               const SizedBox(height: 8),
 
               ZTextFieldEntitled(
-                title: 'Address label',
+                title: tr.address,
                 hint: 'Home / Office',
                 controller: _addName,
                 focusNode: _addNameFocus,
@@ -443,7 +445,7 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
                   Expanded(
                     flex: 2,
                     child: ZTextFieldEntitled(
-                      title: 'City',
+                      title: tr.city,
                       hint: 'Mazar-e Sharif',
                       controller: _addCity,
                       focusNode: _addCityFocus,
@@ -457,7 +459,7 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
                   Expanded(
                     flex: 2,
                     child: ZTextFieldEntitled(
-                      title: 'Province',
+                      title: tr.province,
                       hint: 'Balkh',
                       controller: _addProvince,
                       focusNode: _addProvinceFocus,
@@ -471,7 +473,7 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
                   Expanded(
                     flex: 2,
                     child: ZTextFieldEntitled(
-                      title: 'Country',
+                      title: tr.country,
                       hint: 'Afghanistan',
                       controller: _addCountry,
                       focusNode: _addCountryFocus,
@@ -483,7 +485,7 @@ class _StakeholderFormDialogState extends State<StakeholderFormDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ZTextFieldEntitled(
-                      title: 'Zip code',
+                      title: tr.zipCode,
                       hint: '1701',
                       controller: _addZip,
                       focusNode: _addZipFocus,

@@ -9,7 +9,7 @@ import '../../../../Features/Widgets/toast.dart';
 import '../../../../Features/Widgets/zbutton.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../Settings/Visibility/bloc/settings_visible_bloc.dart';
-import '../Stock/Orders/Ui/status_method.dart';
+import '../Stock/Orders/features/status_method.dart';
 import 'SingleProduct/single_product_bloc.dart';
 import 'add_edit_product.dart';
 import 'bloc/products_bloc.dart';
@@ -370,12 +370,13 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(tr.products.toUpperCase(), style: textTheme.headlineSmall?.copyWith(letterSpacing: 1)),
+            Text(tr.products.toUpperCase(), style: textTheme.headlineSmall?.copyWith(letterSpacing: 0.6)),
             Text(
               tr.manageProducts,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w600,
-                  letterSpacing: 1.3
+                  fontSize: 10,
+                  letterSpacing: 0.6
               ),
             ),
             const SizedBox(height: 16),
@@ -398,10 +399,9 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
                 const SizedBox(width: 2),
                 Expanded(
                   child: ZOutlineButton(
-                    isActive: true,
                     icon: _isUploadingExcel
                         ? Icons.hourglass_top
-                        : Icons.upload_file,
+                        : Icons.file_upload_outlined,
                     onPressed:
                     _isUploadingExcel ? null : _pickAndUploadExcel,
                     label: Text(tr.excelTitle),
@@ -411,7 +411,7 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
                 Expanded(
                   child: ZOutlineButton(
                     isActive: true,
-                    icon: Icons.add_shopping_cart_rounded,
+                    icon: Icons.add,
                     onPressed: () {
                       context.read<SingleProductBloc>().add(ClearSingleProductEvent());
                       showDialog(
@@ -459,17 +459,16 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
                 const SizedBox(width: 5),
                 ZOutlineButton(
                   width: 100,
-                  isActive: true,
                   icon: _isUploadingExcel
                       ? Icons.hourglass_top
-                      : Icons.upload_file,
+                      : Icons.file_upload_outlined,
                   onPressed: _isUploadingExcel ? null : _pickAndUploadExcel,
                   label: Text(tr.excelTitle.toUpperCase()),
                 ),
                 const SizedBox(width: 5),
                 ZOutlineButton(
                   isActive: true,
-                  icon: Icons.add_shopping_cart_rounded,
+                  icon: Icons.add,
                   onPressed: () {
                     context.read<SingleProductBloc>().add(ClearSingleProductEvent());
                     showDialog(
@@ -494,7 +493,7 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
     } else {
       // Desktop header
       return Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: color.surface,
           border: Border(
@@ -515,11 +514,11 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
                 children: [
                   Text(tr.products,   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w600,
-                      letterSpacing: 1.3
+                      letterSpacing: 0.6
                   ),),
                   Text(
                     tr.manageProducts,
-                    style: textTheme.bodyMedium?.copyWith(color: color.outline),
+                    style: textTheme.bodyMedium?.copyWith(color: color.outline,letterSpacing: 0.6,fontSize: 11),
                   ),
                 ],
               ),
@@ -541,10 +540,9 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
             ),
             ZOutlineButton(
               height: 44,
-              isActive: true,
               icon: _isUploadingExcel
                   ? Icons.hourglass_top
-                  : Icons.file_open_rounded,
+                  : Icons.file_upload_outlined,
               backgroundHover: Colors.green,
               onPressed: _isUploadingExcel ? null : _pickAndUploadExcel,
               label: Text(tr.excelTitle.toUpperCase()),
@@ -552,7 +550,7 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
             ZOutlineButton(
               height: 44,
               isActive: true,
-              icon: Icons.add_shopping_cart_rounded,
+              icon: Icons.add,
               onPressed: () {
                 context.read<SingleProductBloc>().add(ClearSingleProductEvent());
                 showDialog(

@@ -1,9 +1,10 @@
 import 'dart:convert';
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shipping/Features/Widgets/toast.dart';
+import 'package:shipping/Routes/Home/View/Stakeholder/View/Security/verify_lock.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/View/StkAccount/bloc/stk_accounts_bloc.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/View/StkAccount/bloc/stk_accounts_state.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/model/stk_model.dart';
@@ -16,7 +17,7 @@ import '../../../../../Features/Other/generic_textfield.dart';
 import '../../../../../Features/Other/responsive_widget.dart';
 import '../../../../../Features/Widgets/cover.dart';
 import '../../../../../Features/Widgets/extensions.dart';
-import '../../../../../Features/Widgets/noData_widget.dart';
+import '../../../../../Features/Widgets/no_data_widget.dart';
 import '../../../../../Features/Widgets/utils.dart';
 import '../../../../../Features/Widgets/zbutton.dart';
 import '../../../../../l10n/Bloc/localizations_bloc.dart';
@@ -81,14 +82,12 @@ class _MobileState extends State<_Mobile> {
       accNumber = preset;
       accountController.text = preset.toString();
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
-        context.read<AccStatementBloc>().add(
-          LoadAccountStatementEvent(
-            accountNumber: preset,
-            fromDate: fromDate,
-            toDate: toDate,
-          ),
+        await _loadStatement(
+          accountNumber: preset,
+          fromDate: fromDate,
+          toDate: toDate,
         );
       });
     }
@@ -96,28 +95,82 @@ class _MobileState extends State<_Mobile> {
     super.initState();
   }
 
-  void _generateAndShowPDF(BuildContext context) {
-    if (formKey.currentState!.validate() && accNumber != null) {
-      setState(() {
-        records = [];
-        accountStatementModel = null;
-      });
+  /// Loads the statement. If the owner is locked, prompts for admin
+  /// verification and retries with `unlock: true`.
+  Future<void> _loadStatement({
+    required int accountNumber,
+    required String fromDate,
+    required String toDate,
+  }) async {
+    // 1) Capture everything we need from `context` BEFORE the first await.
+    final bloc = context.read<AccStatementBloc>();
 
-      context.read<AccStatementBloc>().add(
-        LoadAccountStatementEvent(
-          accountNumber: accNumber!,
-          fromDate: fromDate,
-          toDate: toDate,
-        ),
+    // 2) Subscribe BEFORE dispatching, so we can't miss a synchronous emit.
+    final firstResultFuture = bloc.stream.firstWhere(
+          (s) => s is AccStatementLoadedState || s is AccStatementErrorState,
+    );
+
+    bloc.add(LoadAccountStatementEvent(
+      accountNumber: accountNumber,
+      fromDate: fromDate,
+      toDate: toDate,
+    ));
+
+    // 3) Await the result.
+    final result = await firstResultFuture;
+
+    // 4) `context` may now be gone — bail out before touching it.
+    if (!mounted) return;
+
+    if (result is AccStatementLoadedState) return;
+
+    // 5) Locked branch — still safe to use `context` here because we
+    //    re-checked `mounted` immediately before it. The dialog `await`
+    //    is the last async gap; nothing touches `context` after it.
+    if (result is AccStatementErrorState && result.perID != null) {
+      final ok = await LockVerifyDialog.show(
+        context,
+        perID: result.perID!,
+        stakeholderName: '',
+        mode: LockVerifyMode.verifyOnly,
       );
-    } else {
+
+      // 6) After the dialog's await, re-check `mounted` BEFORE using
+      //    `bloc` (the bloc itself is fine to keep using — it's not a
+      //    BuildContext — but the widget may be unmounted and you may
+      //    not want to dispatch into a dead screen).
+      if (!ok || !mounted) return;
+
+      bloc.add(LoadAccountStatementEvent(
+        accountNumber: accountNumber,
+        fromDate: fromDate,
+        toDate: toDate,
+        unlock: true,
+      ));
+    }
+  }
+
+  Future<void> _generateAndShowPDF(BuildContext context) async {
+    if (!formKey.currentState!.validate() || accNumber == null) {
       ToastManager.show(
         context: context,
         title: "Warning",
         message: "Statement message",
         type: ToastType.warning,
       );
+      return;
     }
+
+    setState(() {
+      records = [];
+      accountStatementModel = null;
+    });
+
+    await _loadStatement(
+      accountNumber: accNumber!,
+      fromDate: fromDate,
+      toDate: toDate,
+    );
   }
 
   @override
@@ -221,10 +274,19 @@ class _MobileState extends State<_Mobile> {
                     ),
                   );
                 } else {
-                  ToastManager.show(context: context, message: "No Transactions found", type: ToastType.error);
+                  ToastManager.show(
+                    context: context,
+                    message: "No Transactions found",
+                    type: ToastType.error,
+                  );
                 }
-              } else if (state is AccStatementErrorState) {
-                ToastManager.show(context: context, message: state.message, type: ToastType.error);
+              } else if (state is AccStatementErrorState &&
+                  state.perID == null) {
+                ToastManager.show(
+                  context: context,
+                  message: state.message,
+                  type: ToastType.error,
+                );
               }
             },
             builder: (context, state) {
@@ -234,8 +296,8 @@ class _MobileState extends State<_Mobile> {
                   padding: const EdgeInsets.all(12.0),
                   child: Column(
                     children: [
-                      // Account Selection
-                      GenericTextField<StkAccountModel, StkAccountsBloc, StkAccountsState>(
+                      GenericTextField<StkAccountModel, StkAccountsBloc,
+                          StkAccountsState>(
                         showAllOnFocus: true,
                         controller: accountController,
                         title: tr.accounts,
@@ -259,15 +321,9 @@ class _MobileState extends State<_Mobile> {
                             horizontal: 5,
                             vertical: 5,
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "${account.accNumber} | ${account.accName}",
-                                style:
-                                Theme.of(context).textTheme.bodyLarge,
-                              ),
-                            ],
+                          child: Text(
+                            "${account.accNumber} | ${account.accName}",
+                            style: Theme.of(context).textTheme.bodyLarge,
                           ),
                         ),
                         itemToString: (acc) =>
@@ -283,7 +339,6 @@ class _MobileState extends State<_Mobile> {
                           if (state is! StkAccountsLoadedState) {
                             return const <StkAccountModel>[];
                           }
-                          // ✅ Show only stakeholder accounts (accCategory == 8)
                           return state.accounts
                               .where((a) => a.accCategory == 8)
                               .toList();
@@ -299,7 +354,6 @@ class _MobileState extends State<_Mobile> {
 
                       const SizedBox(height: 12),
 
-                      // Date Range
                       Column(
                         children: [
                           ZDatePicker(
@@ -326,7 +380,6 @@ class _MobileState extends State<_Mobile> {
 
                       const SizedBox(height: 16),
 
-                      // Generate PDF Button
                       SizedBox(
                         width: double.infinity,
                         height: 40,
@@ -345,8 +398,7 @@ class _MobileState extends State<_Mobile> {
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
+                                strokeWidth: 2),
                           )
                               : const Text("PDF"),
                         ),
@@ -356,7 +408,6 @@ class _MobileState extends State<_Mobile> {
                           records.isNotEmpty) ...[
                         const SizedBox(height: 16),
 
-                        // Quick Summary Card
                         ZCover(
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
@@ -425,7 +476,6 @@ class _MobileState extends State<_Mobile> {
 
                         const SizedBox(height: 8),
 
-                        // Share buttons
                         Row(
                           children: [
                             Expanded(
@@ -435,8 +485,7 @@ class _MobileState extends State<_Mobile> {
                                   helper.shareViaWhatsApp(
                                     accountNumber: accNumber.toString(),
                                     signatory:
-                                    accountStatementModel?.signatory ??
-                                        "",
+                                    accountStatementModel?.signatory ?? "",
                                     accountName:
                                     accountStatementModel?.accName ?? "",
                                     currentBalance: accountStatementModel
@@ -468,7 +517,6 @@ class _MobileState extends State<_Mobile> {
 
                         const SizedBox(height: 8),
 
-                        // Transaction count and info
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
@@ -483,8 +531,7 @@ class _MobileState extends State<_Mobile> {
                             children: [
                               Text(
                                 "Total Transactions",
-                                style:
-                                Theme.of(context).textTheme.titleSmall,
+                                style: Theme.of(context).textTheme.titleSmall,
                               ),
                               Text(
                                 "${records.length}",
@@ -497,11 +544,9 @@ class _MobileState extends State<_Mobile> {
                           ),
                         ),
 
-                        // Add some bottom padding for better scrolling experience
                         const SizedBox(height: 20),
                       ],
 
-                      // Hint text — only show when no data
                       if (accountStatementModel == null)
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 32.0),
@@ -574,7 +619,6 @@ class _DesktopState extends State<_Desktop> {
     setState(() {
       _copiedStates[reference] = true;
     });
-
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() {
@@ -601,19 +645,90 @@ class _DesktopState extends State<_Desktop> {
       accNumber = preset;
       accountController.text = preset.toString();
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
-        context.read<AccStatementBloc>().add(
-          LoadAccountStatementEvent(
-            accountNumber: preset,
-            fromDate: fromDate,
-            toDate: toDate,
-          ),
+        await _loadStatement(
+          accountNumber: preset,
+          fromDate: fromDate,
+          toDate: toDate,
         );
       });
     }
 
     super.initState();
+  }
+
+  /// Loads the statement. If the owner is locked, prompts for admin
+  /// verification and retries with `unlock: true`.
+  Future<void> _loadStatement({
+    required int accountNumber,
+    required String fromDate,
+    required String toDate,
+  }) async {
+    // 1) Capture everything we need from `context` BEFORE the first await.
+    final bloc = context.read<AccStatementBloc>();
+
+    // 2) Subscribe BEFORE dispatching, so we can't miss a synchronous emit.
+    final firstResultFuture = bloc.stream.firstWhere(
+          (s) => s is AccStatementLoadedState || s is AccStatementErrorState,
+    );
+
+    bloc.add(LoadAccountStatementEvent(
+      accountNumber: accountNumber,
+      fromDate: fromDate,
+      toDate: toDate,
+    ));
+
+    // 3) Await the result.
+    final result = await firstResultFuture;
+
+    // 4) `context` may now be gone — bail out before touching it.
+    if (!mounted) return;
+
+    if (result is AccStatementLoadedState) return;
+
+    // 5) Locked branch — still safe to use `context` here because we
+    //    re-checked `mounted` immediately before it. The dialog `await`
+    //    is the last async gap; nothing touches `context` after it.
+    if (result is AccStatementErrorState && result.perID != null) {
+      final ok = await LockVerifyDialog.show(
+        context,
+        perID: result.perID!,
+        stakeholderName: '',
+        mode: LockVerifyMode.verifyOnly,
+      );
+
+      // 6) After the dialog's await, re-check `mounted` BEFORE using
+      //    `bloc` (the bloc itself is fine to keep using — it's not a
+      //    BuildContext — but the widget may be unmounted and you may
+      //    not want to dispatch into a dead screen).
+      if (!ok || !mounted) return;
+
+      bloc.add(LoadAccountStatementEvent(
+        accountNumber: accountNumber,
+        fromDate: fromDate,
+        toDate: toDate,
+        unlock: true,
+      ));
+    }
+  }
+
+  Future<void> onSubmit() async {
+    if (accNumber == null) {
+      ToastManager.show(
+        context: context,
+        title: "NO Account Selected",
+        message: "Please select an account.",
+        type: ToastType.info,
+      );
+      return;
+    }
+
+    await _loadStatement(
+      accountNumber: accNumber!,
+      fromDate: fromDate.toApiStartDate(),
+      toDate: toDate.toApiEndDate(),
+    );
   }
 
   @override
@@ -639,9 +754,9 @@ class _DesktopState extends State<_Desktop> {
             company.compPhone = auth.company?.comPhone ?? "";
             company.comEmail = auth.company?.comEmail ?? "";
             company.comWhatsApp = auth.company?.comWhatsapp ?? "";
-            company.comWebsite = auth.company?.comWebsite ??"";
-            company.comFacebook = auth.company?.comFb ??"";
-            company.comInstagram = auth.company?.comInsta ??"";
+            company.comWebsite = auth.company?.comWebsite ?? "";
+            company.comFacebook = auth.company?.comFb ?? "";
+            company.comInstagram = auth.company?.comInsta ?? "";
             company.startDate = fromDate;
             company.endDate = toDate;
             company.statementDate = DateTime.now().toFullDateTime;
@@ -662,110 +777,106 @@ class _DesktopState extends State<_Desktop> {
               padding: const EdgeInsets.all(8.0),
               child: Column(
                 children: [
-
-
-                  // ── Filter row ─────────────────────────────
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 0.0),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          spacing: 8,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            SizedBox(
-                              width: 350,
-                              child:  // Account Selection
-                              GenericTextField<StkAccountModel, StkAccountsBloc, StkAccountsState>(
-                                showAllOnFocus: true,
-                                controller: accountController,
-                                title: tr.accounts,
-                                hintText: tr.accNameOrNumber,
-                                isRequired: true,
-                                bloc: context.read<StkAccountsBloc>(),
-                                fetchAllFunction: (bloc) => bloc.add(
-                                  const LoadStkAccountsEvent(),
-                                ),
-                                searchFunction: (bloc, query) => bloc.add(
-                                  LoadStkAccountsEvent(query: query),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return tr.required(tr.accounts);
-                                  }
-                                  return null;
-                                },
-                                itemBuilder: (context, account) => Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 5,
-                                    vertical: 5,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: Row(
+                            spacing: 8,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              SizedBox(
+                                width: 350,
+                                child: GenericTextField<StkAccountModel, StkAccountsBloc, StkAccountsState>(
+                                  showAllOnFocus: true,
+                                  controller: accountController,
+                                  title: tr.accounts,
+                                  hintText: tr.accNameOrNumber,
+                                  isRequired: true,
+                                  bloc: context.read<StkAccountsBloc>(),
+                                  fetchAllFunction: (bloc) => bloc.add(
+                                    const LoadStkAccountsEvent(),
                                   ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        "${account.accNumber} | ${account.accName}",
-                                        style:
-                                        Theme.of(context).textTheme.bodyLarge,
-                                      ),
-                                    ],
+                                  searchFunction: (bloc, query) => bloc.add(
+                                    LoadStkAccountsEvent(query: query),
                                   ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return tr.required(tr.accounts);
+                                    }
+                                    return null;
+                                  },
+                                  itemBuilder: (context, account) => Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 5,
+                                      vertical: 5,
+                                    ),
+                                    child: Text(
+                                      "${account.accNumber} | ${account.accName}",
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyLarge,
+                                    ),
+                                  ),
+                                  itemToString: (acc) =>
+                                  "${acc.accNumber} | ${acc.accName}",
+                                  onFieldSubmitted: (e)=> onSubmit(),
+                                  stateToLoading: (state) =>
+                                  state is StkAccountsLoadingState,
+                                  loadingBuilder: (context) => const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 3),
+                                  ),
+                                  stateToItems: (state) {
+                                    if (state is! StkAccountsLoadedState) {
+                                      return const <StkAccountModel>[];
+                                    }
+                                    return state.accounts
+                                        .where((a) => a.accCategory == 8)
+                                        .toList();
+                                  },
+                                  onSelected: (value) {
+                                    setState(() {
+                                      accNumber = value.accNumber;
+                                    });
+                                  },
+                                  noResultsText: tr.noDataFound,
+                                  showClearButton: true,
                                 ),
-                                itemToString: (acc) =>
-                                "${acc.accNumber} | ${acc.accName}",
-                                stateToLoading: (state) =>
-                                state is StkAccountsLoadingState,
-                                loadingBuilder: (context) => const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 3),
+                              ),
+                              SizedBox(
+                                width: 275,
+                                child: ZRangeDatePicker(
+                                  label: tr.selectDate,
+                                  initialStartDate:
+                                  DateTime.tryParse(fromDate),
+                                  initialEndDate: DateTime.tryParse(toDate),
+                                  startValue: fromDate,
+                                  endValue: toDate,
+                                  onStartDateChanged: (startDate) {
+                                    setState(() {
+                                      fromDate = startDate;
+                                    });
+                                  },
+                                  onEndDateChanged: (endDate) {
+                                    setState(() {
+                                      toDate = endDate;
+                                    });
+                                    onSubmit();
+                                  },
+                                  minYear: 2000,
+                                  maxYear: 2100,
                                 ),
-                                stateToItems: (state) {
-                                  if (state is! StkAccountsLoadedState) {
-                                    return const <StkAccountModel>[];
-                                  }
-                                  // ✅ Show only stakeholder accounts (accCategory == 8)
-                                  return state.accounts
-                                      .where((a) => a.accCategory == 8)
-                                      .toList();
-                                },
-                                onSelected: (value) {
-                                  setState(() {
-                                    accNumber = value.accNumber;
-                                  });
-                                },
-                                noResultsText: tr.noDataFound,
-                                showClearButton: true,
                               ),
-                            ),
-                            SizedBox(
-                              width: 275,
-                              child: ZRangeDatePicker(
-                                label: tr.selectDate,
-                                initialStartDate: DateTime.tryParse(fromDate),
-                                initialEndDate: DateTime.tryParse(toDate),
-                                startValue: fromDate,
-                                endValue: toDate,
-                                onStartDateChanged: (startDate) {
-                                  setState(() {
-                                    fromDate = startDate;
-                                  });
-                                },
-                                onEndDateChanged: (endDate) {
-                                  setState(() {
-                                    toDate = endDate;
-                                  });
-                                  onSubmit();
-                                },
-                                minYear: 2000,
-                                maxYear: 2100,
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                        // ── Toolbar ────────────────────────────────
                         Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8.0,
@@ -781,11 +892,14 @@ class _DesktopState extends State<_Desktop> {
                                     backgroundHover: Colors.green,
                                     onPressed: () {
                                       if (accountStatementModel != null &&
-                                          accountStatementModel!.records != null &&
+                                          accountStatementModel!.records !=
+                                              null &&
                                           accountStatementModel!
                                               .records!.isNotEmpty) {
-                                        AccountStatementExcelService.exportToExcel(
-                                          accountStatement: accountStatementModel!,
+                                        AccountStatementExcelService
+                                            .exportToExcel(
+                                          accountStatement:
+                                          accountStatementModel!,
                                           fromDate: fromDate,
                                           toDate: toDate,
                                           fileName:
@@ -802,7 +916,7 @@ class _DesktopState extends State<_Desktop> {
                                         );
                                       }
                                     },
-                                    label: const Text("EXCEL"),
+                                    label: Text(tr.excelTitle),
                                   ),
                                   const SizedBox(width: 8),
                                   ZOutlineButton(
@@ -814,19 +928,23 @@ class _DesktopState extends State<_Desktop> {
                                   ZOutlineButton(
                                     icon: Icons.message,
                                     onPressed: () {
-                                      final helper = WhatsAppShareHelper(context);
+                                      final helper =
+                                      WhatsAppShareHelper(context);
                                       helper.shareViaWhatsApp(
                                         accountNumber: accNumber.toString(),
                                         signatory:
-                                        accountStatementModel?.signatory ?? "",
+                                        accountStatementModel?.signatory ??
+                                            "",
                                         accountName:
-                                        accountStatementModel?.accName ?? "",
+                                        accountStatementModel?.accName ??
+                                            "",
                                         currentBalance: accountStatementModel
                                             ?.curBalance.toDoubleAmount(),
                                         availableBalance: accountStatementModel
                                             ?.avilBalance.toDoubleAmount(),
                                         currencySymbol:
-                                        accountStatementModel?.actCurrency ??
+                                        accountStatementModel
+                                            ?.actCurrency ??
                                             "",
                                       );
                                     },
@@ -841,7 +959,7 @@ class _DesktopState extends State<_Desktop> {
                                         onSubmit();
                                       }
                                     },
-                                    label: Text(tr.submit),
+                                    label: Text(tr.apply),
                                   ),
                                 ],
                               ),
@@ -854,7 +972,6 @@ class _DesktopState extends State<_Desktop> {
 
                   const SizedBox(height: 10),
 
-                  // ── Column headers ─────────────────────────
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 15.0),
                     child: Row(
@@ -882,9 +999,7 @@ class _DesktopState extends State<_Desktop> {
                         SizedBox(
                           width: amountWidth,
                           child: Text(
-                            textAlign: myLocale == "en"
-                                ? TextAlign.right
-                                : TextAlign.left,
+                            textAlign: TextAlign.end,
                             tr.debit,
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
@@ -892,9 +1007,7 @@ class _DesktopState extends State<_Desktop> {
                         SizedBox(
                           width: amountWidth,
                           child: Text(
-                            textAlign: myLocale == "en"
-                                ? TextAlign.right
-                                : TextAlign.left,
+                            textAlign: TextAlign.end,
                             tr.credit,
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
@@ -902,9 +1015,7 @@ class _DesktopState extends State<_Desktop> {
                         SizedBox(
                           width: balanceWidth,
                           child: Text(
-                            textAlign: myLocale == "en"
-                                ? TextAlign.right
-                                : TextAlign.left,
+                            textAlign: TextAlign.end,
                             tr.balance,
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
@@ -918,10 +1029,8 @@ class _DesktopState extends State<_Desktop> {
                   Divider(
                     endIndent: 10,
                     indent: 10,
-                    color: Theme.of(context).colorScheme.primary,
                   ),
 
-                  // ── Rows ───────────────────────────────────
                   Expanded(
                     child: BlocBuilder<AccStatementBloc, AccStatementState>(
                       builder: (context, state) {
@@ -930,7 +1039,9 @@ class _DesktopState extends State<_Desktop> {
                               child: CircularProgressIndicator());
                         }
                         if (state is AccStatementErrorState) {
-                          return Center(child: Text(state.message));
+                          return Center(
+                            child: Text(state.message),
+                          );
                         }
                         if (state is AccStatementLoadedState) {
                           final records =
@@ -955,21 +1066,27 @@ class _DesktopState extends State<_Desktop> {
                               stmt.trdNarration == "Opening Balance" ||
                                   stmt.trdNarration ==
                                       "Closing Balance"
-                                  ? Theme.of(context).colorScheme.primary
+                                  ? Theme.of(context)
+                                  .colorScheme
+                                  .primary
                                   : Theme.of(context)
                                   .colorScheme
                                   .secondary;
 
                               return Container(
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+
+                                ),
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 15,
+                                  horizontal: 10,
                                   vertical: 8,
                                 ),
                                 decoration: BoxDecoration(
                                   color: index.isOdd
                                       ? Theme.of(context)
                                       .colorScheme
-                                      .primary
+                                      .outline
                                       .withValues(alpha: 0.05)
                                       : Colors.transparent,
                                 ),
@@ -1009,7 +1126,8 @@ class _DesktopState extends State<_Desktop> {
                                                       context)
                                                       .colorScheme
                                                       .primary
-                                                      .withValues(alpha: .05),
+                                                      .withValues(
+                                                      alpha: .05),
                                                   child: AnimatedContainer(
                                                     duration:
                                                     const Duration(
@@ -1025,10 +1143,12 @@ class _DesktopState extends State<_Desktop> {
                                                           .transparent,
                                                       border: Border.all(
                                                         color: isCopied
-                                                            ? Theme.of(context)
+                                                            ? Theme.of(
+                                                            context)
                                                             .colorScheme
                                                             .primary
-                                                            : Theme.of(context)
+                                                            : Theme.of(
+                                                            context)
                                                             .colorScheme
                                                             .outline
                                                             .withValues(
@@ -1041,7 +1161,8 @@ class _DesktopState extends State<_Desktop> {
                                                           .circular(4),
                                                     ),
                                                     child: Center(
-                                                      child: AnimatedSwitcher(
+                                                      child:
+                                                      AnimatedSwitcher(
                                                         duration:
                                                         const Duration(
                                                             milliseconds:
@@ -1077,7 +1198,8 @@ class _DesktopState extends State<_Desktop> {
                                           ],
                                           Expanded(
                                             child: Text(
-                                                stmt.trnReference.toString()),
+                                                stmt.trnReference
+                                                    .toString()),
                                           ),
                                         ],
                                       ),
@@ -1169,25 +1291,6 @@ class _DesktopState extends State<_Desktop> {
     );
   }
 
-  void onSubmit() {
-    if (accNumber == null) {
-      ToastManager.show(
-        context: context,
-        title: "NO Account Selected",
-        message: "Please select an account.",
-        type: ToastType.info,
-      );
-    } else {
-      context.read<AccStatementBloc>().add(
-        LoadAccountStatementEvent(
-          accountNumber: accNumber!,
-          fromDate: fromDate.toApiStartDate(),
-          toDate: toDate.toApiEndDate(),
-        ),
-      );
-    }
-  }
-
   void _onPrint() {
     if (formKey.currentState!.validate()) {
       final visibilityState = context.read<SettingsVisibleBloc>().state;
@@ -1249,7 +1352,11 @@ class _DesktopState extends State<_Desktop> {
         ),
       );
     } else {
-      ToastManager.show(context: context, message: "Account Statement Message", type: ToastType.warning);
+      ToastManager.show(
+        context: context,
+        message: "Account Statement Message",
+        type: ToastType.warning,
+      );
     }
   }
 }

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
@@ -51,24 +50,17 @@ class LockVerifyDialog extends StatefulWidget {
   State<LockVerifyDialog> createState() => _LockVerifyDialogState();
 }
 
-enum _Phase { form, busy, verified }
-
 class _LockVerifyDialogState extends State<LockVerifyDialog> {
   final _formKey = GlobalKey<FormState>();
   final _passCtrl = TextEditingController();
   final _passFocus = FocusNode();
 
   bool _obscure = true;
-  _Phase _phase = _Phase.form;
+  bool _busy = false;
   String? _error;
-
-  Timer? _ticker;
-  Duration _remaining = Duration.zero;
-  static const Duration _closeAfter = Duration(seconds: 3);
 
   @override
   void dispose() {
-    _ticker?.cancel();
     _passCtrl.dispose();
     _passFocus.dispose();
     super.dispose();
@@ -111,12 +103,14 @@ class _LockVerifyDialogState extends State<LockVerifyDialog> {
   }
 
   Future<void> _submit() async {
-    if (_phase == _Phase.busy) return;
+    if (_busy) return;
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final username = _currentUsername;
     if (username == null) {
-      setState(() => _error = AppLocalizations.of(context)!.lockVerifyFailed);
+      setState(() {
+        _error = AppLocalizations.of(context)!.lockVerifyFailed;
+      });
       return;
     }
 
@@ -124,7 +118,7 @@ class _LockVerifyDialogState extends State<LockVerifyDialog> {
     final listBloc = context.read<StakeholderBloc>();
 
     setState(() {
-      _phase = _Phase.busy;
+      _busy = true;
       _error = null;
     });
 
@@ -139,7 +133,7 @@ class _LockVerifyDialogState extends State<LockVerifyDialog> {
     if (!ok) {
       final s = security.state;
       setState(() {
-        _phase = _Phase.form;
+        _busy = false;
         _error = s is StkSecurityDenied
             ? s.message
             : AppLocalizations.of(context)!.lockVerifyFailed;
@@ -149,7 +143,7 @@ class _LockVerifyDialogState extends State<LockVerifyDialog> {
 
     switch (widget.mode) {
       case LockVerifyMode.verifyOnly:
-        _markVerified();
+        if (mounted) Navigator.pop(context, true);
         break;
 
       case LockVerifyMode.lock:
@@ -169,39 +163,17 @@ class _LockVerifyDialogState extends State<LockVerifyDialog> {
 
         if (result is SetStakeholderLockFailureState) {
           setState(() {
-            _phase = _Phase.form;
+            _busy = false;
             _error = result.message;
           });
           return;
         }
 
         if (result is SetStakeholderLockSuccessState) {
-          _markVerified();
+          if (mounted) Navigator.pop(context, true);
         }
         break;
     }
-  }
-
-  void _markVerified() {
-    setState(() {
-      _phase = _Phase.verified;
-      _remaining = _closeAfter;
-    });
-
-    _ticker?.cancel();
-    _ticker = Timer.periodic(const Duration(milliseconds: 100), (t) {
-      if (!mounted) {
-        t.cancel();
-        return;
-      }
-      setState(() {
-        _remaining -= const Duration(milliseconds: 100);
-        if (_remaining <= Duration.zero) {
-          t.cancel();
-          if (mounted) Navigator.pop(context, true);
-        }
-      });
-    });
   }
 
   @override
@@ -218,12 +190,14 @@ class _LockVerifyDialogState extends State<LockVerifyDialog> {
         constraints: const BoxConstraints(maxWidth: 440),
         child: DecoratedBox(
           decoration: BoxDecoration(
+            border: Border.all(color: Theme.of(context).colorScheme.primary,width: 1),
             color: scheme.surface,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: .8),
-                blurRadius: 10,
+                color:
+                Theme.of(context).colorScheme.primary.withValues(alpha: .7),
+                blurRadius: 5,
                 spreadRadius: 2,
               ),
             ],
@@ -255,44 +229,28 @@ class _LockVerifyDialogState extends State<LockVerifyDialog> {
                 ),
 
                 // ── Content ──
-                AnimatedSize(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeOutCubic,
-                  child: _phase == _Phase.verified
-                      ? _VerifiedBody(
-                    key: const ValueKey('verified'),
-                    remaining: _remaining,
-                    total: _closeAfter,
-                    accent: accent,
-                    title: tr.lockVerifyVerifiedTitle,
-                    subtitle: tr.lockVerifyVerifiedSubtitle,
-                    relockLabel: tr.lockVerifyRelockingIn,
-                  )
-                      : _FormBody(
-                    key: const ValueKey('form'),
-                    formKey: _formKey,
-                    passCtrl: _passCtrl,
-                    passFocus: _passFocus,
-                    obscure: _obscure,
-                    onToggleObscure: () =>
-                        setState(() => _obscure = !_obscure),
-                    busy: _phase == _Phase.busy,
-                    error: _error,
-                    icon: _icon,
-                    accent: accent,
-                    title: _title(tr),
-                    stakeholderName: widget.stakeholderName,
-                    explanation: _explanation(tr),
-                    username: _currentUsername ?? '—',
-                    signedInAsLabel: tr.lockVerifySignedInAs,
-                    passwordLabel: tr.lockVerifyPasswordLabel,
-                    passwordHint: tr.lockVerifyPasswordHint,
-                    requiredMsg: tr.lockVerifyRequired,
-                    onSubmit: _submit,
-                    onCancel: () => Navigator.pop(context, false),
-                    actionLabel: _actionLabel(tr),
-                    cancelLabel: tr.lockVerifyCancel,
-                  ),
+                _FormBody(
+                  formKey: _formKey,
+                  passCtrl: _passCtrl,
+                  passFocus: _passFocus,
+                  obscure: _obscure,
+                  onToggleObscure: () => setState(() => _obscure = !_obscure),
+                  busy: _busy,
+                  error: _error,
+                  icon: _icon,
+                  accent: accent,
+                  title: _title(tr),
+                  stakeholderName: widget.stakeholderName,
+                  explanation: _explanation(tr),
+                  username: _currentUsername ?? '—',
+                  signedInAsLabel: tr.lockVerifySignedInAs,
+                  passwordLabel: tr.lockVerifyPasswordLabel,
+                  passwordHint: tr.lockVerifyPasswordHint,
+                  requiredMsg: tr.lockVerifyRequired,
+                  onSubmit: _submit,
+                  onCancel: () => Navigator.pop(context, false),
+                  actionLabel: _actionLabel(tr),
+                  cancelLabel: tr.lockVerifyCancel,
                 ),
               ],
             ),
@@ -304,7 +262,7 @@ class _LockVerifyDialogState extends State<LockVerifyDialog> {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Form body — redesigned
+// Form body
 // ═══════════════════════════════════════════════════════════════════
 class _FormBody extends StatelessWidget {
   final GlobalKey<FormState> formKey;
@@ -330,7 +288,6 @@ class _FormBody extends StatelessWidget {
   final String cancelLabel;
 
   const _FormBody({
-    super.key,
     required this.formKey,
     required this.passCtrl,
     required this.passFocus,
@@ -526,8 +483,7 @@ class _FormBody extends StatelessWidget {
                 TextButton(
                   onPressed: busy ? null : onCancel,
                   style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -542,20 +498,19 @@ class _FormBody extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 SizedBox(
-                  height: 38,
+                  height: 35,
                   child: ZOutlineButton(
                     isActive: true,
                     onPressed: busy ? null : onSubmit,
-                    label: busy
-                        ? SizedBox(
+                    icon: Icons.verified_outlined,
+                    label: busy ? SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         color: scheme.onPrimary,
                       ),
-                    )
-                        : Text(
+                    ) : Text(
                       actionLabel,
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
@@ -573,7 +528,7 @@ class _FormBody extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Password field — custom, elevated, professional
+// Password field
 // ═══════════════════════════════════════════════════════════════════
 class _PasswordField extends StatefulWidget {
   final TextEditingController controller;
@@ -633,7 +588,6 @@ class _PasswordFieldState extends State<_PasswordField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Label above the field, muted
         Padding(
           padding: const EdgeInsets.only(left: 2, bottom: 8),
           child: Text(
@@ -732,122 +686,6 @@ class _PasswordFieldState extends State<_PasswordField> {
           ),
         ),
       ],
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// Verified body — with progress arc
-// ═══════════════════════════════════════════════════════════════════
-class _VerifiedBody extends StatelessWidget {
-  final Duration remaining;
-  final Duration total;
-  final Color accent;
-  final String title;
-  final String subtitle;
-  final String relockLabel;
-
-  const _VerifiedBody({
-    super.key,
-    required this.remaining,
-    required this.total,
-    required this.accent,
-    required this.title,
-    required this.subtitle,
-    required this.relockLabel,
-  });
-
-  double get _progress {
-    if (total.inMilliseconds <= 0) return 0;
-    final ratio = 1 - (remaining.inMilliseconds / total.inMilliseconds);
-    return ratio.clamp(0.0, 1.0);
-  }
-
-  String get _mmss {
-    final s = remaining.inSeconds.clamp(0, 999);
-    final m = (s ~/ 60).toString().padLeft(2, '0');
-    final sec = (s % 60).toString().padLeft(2, '0');
-    return '$m:$sec';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 32, 24, 28),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 84,
-            height: 84,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: 84,
-                  height: 84,
-                  child: CircularProgressIndicator(
-                    value: _progress,
-                    strokeWidth: 4,
-                    backgroundColor: accent.withValues(alpha: .12),
-                    valueColor: AlwaysStoppedAnimation(accent),
-                  ),
-                ),
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: accent.withValues(alpha: .14),
-                  ),
-                  child: Icon(Icons.check_rounded,
-                      size: 32, color: accent),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            title,
-            style: textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: accent,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: textTheme.bodyMedium?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '$relockLabel  ',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-              Text(
-                _mmss,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: scheme.onSurface,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }

@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart' as pw;
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shipping/Features/Widgets/section.dart';
 import '../../../../../../../../Features/PrintSettings/bloc/PageSize/paper_size_cubit.dart';
 import '../../../../Features/Other/form_dialog.dart';
 import '../../../../Features/Other/responsive_widget.dart';
 import '../../../../Features/Widgets/extensions.dart';
+import '../../../../Features/Widgets/shimmer.dart';
 import '../../../../Features/Widgets/zbutton.dart';
 import '../../../../Features/Widgets/ztextfield.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -75,11 +77,9 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
   int? catId;
   ProCategoryModel? _selectedCategory;
 
-  // Store the loaded product from API
   ProductsModel? _loadedProduct;
   bool _isLoadingProduct = false;
   bool _productStatus = true;
-  // Add these flags
   String? _errorMessage;
   bool _isSubmitting = false;
 
@@ -88,16 +88,14 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
     super.initState();
 
     if (widget.proId != null) {
-      // Editing existing product - fetch data by ID
       _isLoadingProduct = true;
       context
           .read<SingleProductBloc>()
           .add(LoadSingleProductEvent(widget.proId!));
     } else {
-      // New product - just generate code and clear any old state
       context.read<SingleProductBloc>().add(ClearSingleProductEvent());
       productCode.text = generateProductCode();
-      _clearAllControllers(); // Clear any existing data
+      _clearAllControllers();
     }
   }
 
@@ -172,7 +170,6 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
     }
   }
 
-  // Update controllers from loaded product
   void _updateControllersFromLoadedProduct(ProductsModel product) {
     if (mounted) {
       productName.text = product.proName?.trim() ?? "";
@@ -220,7 +217,8 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     final rand = Random.secure();
     final now = DateTime.now();
-    final batch = List.generate(3, (_) => chars[rand.nextInt(chars.length)]).join();
+    final batch =
+    List.generate(3, (_) => chars[rand.nextInt(chars.length)]).join();
     final date = '${now.year % 100}${now.month.toString().padLeft(2, '0')}';
     return '$prefix-$date-$batch';
   }
@@ -238,9 +236,11 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // Close dialog
+              Navigator.pop(context);
               _isSubmitting = true;
-              context.read<ProductsBloc>().add(DeleteProductEvent(widget.proId!));
+              context
+                  .read<ProductsBloc>()
+                  .add(DeleteProductEvent(widget.proId!));
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: Text(tr.delete),
@@ -251,48 +251,33 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
   }
 
   Widget _buildSection({
-    required String title,
+    String? title,
     required List<Widget> children,
   }) {
     return Padding(
-      padding: const EdgeInsets.all(12.0),
+      padding: const EdgeInsets.all(0.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 4,
-                height: 20,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
+          if(title !=null && title.isNotEmpty)...[
+            SectionTitle(title: title),
+            const SizedBox(height: 8),
+          ],
           ...children,
         ],
       ),
     );
   }
 
-  Widget _buildBatchesSection(
-      List<Batch> batches, AppLocalizations tr, ColorScheme color, TextTheme textTheme) {
+  Widget _buildBatchesSection(List<Batch> batches, AppLocalizations tr,
+      ColorScheme color, TextTheme textTheme) {
     final visibility = context.read<SettingsVisibleBloc>().state;
-    final totalBox = batches.fold(
-        0, (sum, batch) => sum + (int.tryParse(batch.availableQuantity ?? "0") ?? 0));
+    final totalBox = batches.fold<int>(
+        0, (sum, batch) =>
+        sum + (int.tryParse(batch.availableQuantity ?? "0") ?? 0));
 
-    final totalItems = batches.fold(0, (sum, batch) {
+    final totalItems = batches.fold<int>(0, (sum, batch) {
       final quantity = int.tryParse(batch.availableQuantity ?? "0") ?? 0;
       final batchNumber = batch.batch ?? 0;
       return sum + (quantity * batchNumber);
@@ -307,7 +292,6 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
       ),
       child: Column(
         children: [
-          // Table Header
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
@@ -367,8 +351,6 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
               ],
             ),
           ),
-
-          // List
           Expanded(
             child: ListView.separated(
               shrinkWrap: true,
@@ -380,11 +362,13 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
               ),
               itemBuilder: (context, index) {
                 final batch = batches[index];
-                final quantity = int.tryParse(batch.availableQuantity ?? "0") ?? 0;
+                final quantity =
+                    int.tryParse(batch.availableQuantity ?? "0") ?? 0;
                 final batchNumber = batch.batch ?? 0;
 
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                       color: index.isOdd
                           ? color.outline.withValues(alpha: .06)
@@ -395,8 +379,8 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
                         flex: 3,
                         child: Text(
                           batch.storageName?.toString() ?? "N/A",
-                          style: textTheme.bodyMedium
-                              ?.copyWith(fontSize: 15, fontWeight: FontWeight.w500),
+                          style: textTheme.bodyMedium?.copyWith(
+                              fontSize: 15, fontWeight: FontWeight.w500),
                         ),
                       ),
                       Expanded(
@@ -415,8 +399,8 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
                           child: Text(
                             textAlign: TextAlign.end,
                             "$batchNumber",
-                            style: textTheme.bodyMedium
-                                ?.copyWith(fontSize: 15, fontWeight: FontWeight.w500),
+                            style: textTheme.bodyMedium?.copyWith(
+                                fontSize: 15, fontWeight: FontWeight.w500),
                           ),
                         ),
                       if (visibility.isWholeSale)
@@ -424,8 +408,8 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
                           child: Text(
                             (quantity * batchNumber).toString(),
                             textAlign: TextAlign.end,
-                            style: textTheme.bodyMedium
-                                ?.copyWith(fontSize: 15, fontWeight: FontWeight.w600),
+                            style: textTheme.bodyMedium?.copyWith(
+                                fontSize: 15, fontWeight: FontWeight.w600),
                           ),
                         ),
                     ],
@@ -434,8 +418,6 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
               },
             ),
           ),
-
-          // Footer
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -455,12 +437,13 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
                     children: [
                       Text(
                         tr.available.toUpperCase(),
-                        style: textTheme.titleMedium?.copyWith(color: color.outline),
+                        style: textTheme.titleMedium
+                            ?.copyWith(color: color.outline),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         totalBox.toString(),
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 20,
                           color: Colors.green,
@@ -475,7 +458,8 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
                   children: [
                     Text(
                       tr.totalItems.toUpperCase(),
-                      style: textTheme.titleMedium?.copyWith(color: color.outline),
+                      style: textTheme.titleMedium
+                          ?.copyWith(color: color.outline),
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -497,7 +481,6 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
   }
 
   void _onProductLabelPrint() {
-    // Get currency code from your authenticated state
     final authState = context.read<AuthBloc>().state;
     final currencyCode = authState is AuthenticatedState
         ? authState.loginData.company?.comLocalCcy ?? ""
@@ -531,16 +514,13 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
           [],
     );
 
-    // Set default paper size to label format
     context
         .read<PaperSizeCubit>()
         .setPaperSize(pw.PdfPageFormat(100 * 2.83465, 50 * 2.83465));
 
     showDialog(
       context: context,
-      builder: (context) => ProductLabelPreviewDialog(
-        product: productData,
-      ),
+      builder: (context) => ProductLabelPreviewDialog(product: productData),
     );
   }
 
@@ -601,13 +581,76 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
           ? SizedBox(
         height: 16,
         width: 16,
-        child: CircularProgressIndicator(
-          color: color.primary,
-        ),
+        child: CircularProgressIndicator(color: color.primary),
       )
           : Text(isEdit ? tr.update : tr.create);
     }
   }
+
+  // ══════════════════════════════════════════════════════════════════
+  // Reusable sub-builders (private to this State)
+  // ══════════════════════════════════════════════════════════════════
+
+  /// A rounded card wrapping a single form field.
+  Widget _card(ColorScheme color, Widget child) => Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: color.surface,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: .05),
+          blurRadius: 10,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: child,
+  );
+
+  /// Scrollable wrapper for a desktop tab page so tall content scrolls
+  /// **within** the TabBarView's bounded height, not the whole dialog.
+  Widget _tabPage({required Widget child}) => SingleChildScrollView(
+    padding: const EdgeInsets.all(8),
+    child: child,
+  );
+
+  /// Error banner used across all three layouts.
+  Widget _errorBanner() {
+    if (_errorMessage == null) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.red.shade200),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              _errorMessage!,
+              style: TextStyle(color: Colors.red.shade700, fontSize: 14),
+            ),
+          ),
+          InkWell(
+            onTap: () => setState(() => _errorMessage = null),
+            child: Icon(Icons.close, size: 18, color: Colors.red.shade700),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // BUILD — mobile / tablet / desktop share the same ZFormDialog, but
+  // each branch arranges content differently. Crucially, NONE of them
+  // wrap content in `Expanded` / `height: double.infinity` / an inner
+  // `SingleChildScrollView` — ZFormDialog owns the scroll and the cap.
+  // ══════════════════════════════════════════════════════════════════
 
   @override
   Widget build(BuildContext context) {
@@ -615,7 +658,6 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
     final color = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isEdit = widget.proId != null;
-    final screenHeight = MediaQuery.sizeOf(context).height;
 
     if (widget.isMobile) {
       return ZFormDialog(
@@ -624,8 +666,6 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
         actionLabel: _buildActionButton(
             tr, color, isEdit, context.watch<ProductsBloc>().state),
         width: 650,
-        // ← FIX: bounded height so Flexible / Expanded children render.
-        height: screenHeight * .9,
         backgroundColor: Colors.transparent,
         child: MultiBlocListener(
           listeners: [
@@ -656,272 +696,164 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
               },
             ),
           ],
-          child: Container(
-            width: double.infinity,
-            height: double.infinity,
-            margin: EdgeInsets.zero,
-            color: color.surface,
-            child: Column(
-              children: [
-                // Header
-                Container(
-                  padding: const EdgeInsets.fromLTRB(16, 48, 16, 16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        color.primary,
-                        color.primary.withValues(alpha: .8),
-                      ],
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(24),
-                      bottomRight: Radius.circular(24),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              isEdit ? tr.update : tr.newKeyword,
-                              style: textTheme.headlineSmall?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              isEdit ? tr.edit : tr.newKeyword,
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: Colors.white.withValues(alpha: .8),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: .2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(Icons.close, color: Colors.white),
-                        ),
-                      ),
+          // No Expanded, no height:infinity, no nested scroll.
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ── Header (gradient) ─────────────────────────────
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      color.primary,
+                      color.primary.withValues(alpha: .8),
                     ],
                   ),
-                ),
-                // Form Body
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: BlocBuilder<SingleProductBloc, SingleProductState>(
-                      builder: (context, state) {
-                        if (state is SingleProductLoadingState &&
-                            _isLoadingProduct) {
-                          return const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(32),
-                              child: CircularProgressIndicator(),
-                            ),
-                          );
-                        }
-                        return Form(
-                          key: formKey,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Error Message
-                              if (_errorMessage != null)
-                                Container(
-                                  margin: const EdgeInsets.only(bottom: 16),
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.red.shade50,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border:
-                                    Border.all(color: Colors.red.shade200),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.error_outline,
-                                          color: Colors.red.shade700, size: 20),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(
-                                          _errorMessage!,
-                                          style: TextStyle(
-                                              color: Colors.red.shade700,
-                                              fontSize: 14),
-                                        ),
-                                      ),
-                                      InkWell(
-                                        onTap: () => setState(
-                                                () => _errorMessage = null),
-                                        child: Icon(Icons.close,
-                                            size: 18, color: Colors.red.shade700),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              // Product Code
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: color.surface,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: .05),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: ZTextFieldEntitled(
-                                  title: tr.productCode,
-                                  controller: productCode,
-                                  maxLength: 13,
-                                  isRequired: true,
-                                  validator: (value) {
-                                    if (value != null && value.isEmpty) {
-                                      return tr.required(tr.productCode);
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              // Product Name
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: color.surface,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: .05),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: ZTextFieldEntitled(
-                                  title: tr.productName,
-                                  controller: productName,
-                                  isRequired: true,
-                                  inputFormat: [
-                                    FilteringTextInputFormatter.deny(
-                                        RegExp(r'^\s')),
-                                  ],
-                                  validator: (value) {
-                                    if (value == null ||
-                                        value.trim().isEmpty) {
-                                      return tr.required(tr.productName);
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              // Category Dropdown
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: color.surface,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: .05),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: ProductCategoryDropdown(
-                                  selectedCategoryId: catId,
-                                  onCategorySelected: (cat) {
-                                    _selectedCategory = cat;
-                                  },
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              // Made In
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: color.surface,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: .05),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: ZTextFieldEntitled(
-                                  title: tr.madeIn,
-                                  controller: madeIn,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              // Details
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: color.surface,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: .05),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: ZTextFieldEntitled(
-                                  title: tr.details,
-                                  controller: details,
-                                  keyboardType: TextInputType.multiline,
-                                  maxLength: 100,
-                                ),
-                              ),
-                              // Show batches if available
-                              if (state is SingleProductLoadedState &&
-                                  state.product.batches != null &&
-                                  state.product.batches!.isNotEmpty)
-                                _buildBatchesSection(state.product.batches!, tr,
-                                    color, textTheme),
-                              // Delete button for edit mode
-                              if (isEdit) ...[
-                                _buildOtherButton(tr, color),
-                              ],
-
-                              const SizedBox(height: 24),
-                              // Action Button
-                              _buildActionButton(tr, color, isEdit,
-                                  context.watch<ProductsBloc>().state),
-                              const SizedBox(height: 16),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(24),
+                    bottomRight: Radius.circular(24),
                   ),
                 ),
-              ],
-            ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isEdit ? tr.update : tr.newKeyword,
+                            style: textTheme.headlineSmall?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            isEdit ? tr.edit : tr.newKeyword,
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: Colors.white.withValues(alpha: .8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: .2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close, color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Body (shrinks to content) ─────────────────────
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: BlocBuilder<SingleProductBloc, SingleProductState>(
+                  builder: (context, state) {
+                    if (state is SingleProductLoadingState &&
+                        _isLoadingProduct) {
+                      return const Padding(
+                        padding: EdgeInsets.all(32),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                    return Form(
+                      key: formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _errorBanner(),
+                          _card(
+                            color,
+                            ZTextFieldEntitled(
+                              title: tr.productCode,
+                              controller: productCode,
+                              maxLength: 13,
+                              isRequired: true,
+                              validator: (v) => (v == null || v.isEmpty)
+                                  ? tr.required(tr.productCode)
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _card(
+                            color,
+                            ZTextFieldEntitled(
+                              title: tr.productName,
+                              controller: productName,
+                              isRequired: true,
+                              inputFormat: [
+                                FilteringTextInputFormatter.deny(
+                                    RegExp(r'^\s')),
+                              ],
+                              validator: (v) =>
+                              (v == null || v.trim().isEmpty)
+                                  ? tr.required(tr.productName)
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _card(
+                            color,
+                            ProductCategoryDropdown(
+                              selectedCategoryId: catId,
+                              onCategorySelected: (cat) {
+                                _selectedCategory = cat;
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _card(
+                            color,
+                            ZTextFieldEntitled(
+                              title: tr.madeIn,
+                              controller: madeIn,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _card(
+                            color,
+                            ZTextFieldEntitled(
+                              title: tr.details,
+                              controller: details,
+                              keyboardType: TextInputType.multiline,
+                              maxLength: 100,
+                            ),
+                          ),
+                          if (state is SingleProductLoadedState &&
+                              state.product.batches != null &&
+                              state.product.batches!.isNotEmpty)
+                            _buildBatchesSection(state.product.batches!, tr,
+                                color, textTheme),
+                          if (isEdit) ...[
+                            const SizedBox(height: 16),
+                            _buildOtherButton(tr, color),
+                          ],
+                          const SizedBox(height: 24),
+                          _buildActionButton(tr, color, isEdit,
+                              context.watch<ProductsBloc>().state),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
       );
     } else if (widget.isTablet) {
-      // Tablet dialog
       return MultiBlocListener(
         listeners: [
           BlocListener<SingleProductBloc, SingleProductState>(
@@ -957,105 +889,64 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
           actionLabel: _buildActionButton(
               tr, color, isEdit, context.watch<ProductsBloc>().state),
           width: 650,
-          // ← FIX: bounded height so Flexible / Expanded children render.
-          height: screenHeight * .85,
           child: BlocBuilder<SingleProductBloc, SingleProductState>(
             builder: (context, state) {
               if (state is SingleProductLoadingState && _isLoadingProduct) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: CircularProgressIndicator(),
-                  ),
+                return const Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Center(child: CircularProgressIndicator()),
                 );
               }
-
+              // No inner SingleChildScrollView — ZFormDialog owns scroll.
               return Form(
                 key: formKey,
                 child: Padding(
                   padding: const EdgeInsets.all(12),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      spacing: 12,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (_errorMessage != null)
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.red.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.red.shade200),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.error_outline,
-                                    color: Colors.red.shade700, size: 20),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    _errorMessage!,
-                                    style: TextStyle(
-                                        color: Colors.red.shade700,
-                                        fontSize: 14),
-                                  ),
-                                ),
-                                InkWell(
-                                  onTap: () =>
-                                      setState(() => _errorMessage = null),
-                                  child: Icon(Icons.close,
-                                      size: 18, color: Colors.red.shade700),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ZTextFieldEntitled(
-                          title: tr.productCode,
-                          controller: productCode,
-                          maxLength: 13,
-                          isRequired: true,
-                          validator: (value) {
-                            if (value != null && value.isEmpty) {
-                              return tr.required(tr.productCode);
-                            }
-                            return null;
-                          },
-                        ),
-                        ZTextFieldEntitled(
-                          title: tr.productName,
-                          controller: productName,
-                          isRequired: true,
-                          validator: (value) {
-                            if (value != null && value.isEmpty) {
-                              return tr.required(tr.productName);
-                            }
-                            return null;
-                          },
-                        ),
-                        ProductCategoryDropdown(
-                          selectedCategoryId: catId,
-                          onCategorySelected: (cat) {
-                            _selectedCategory = cat;
-                          },
-                        ),
-                        ZTextFieldEntitled(
-                          title: tr.madeIn,
-                          controller: madeIn,
-                        ),
-                        ZTextFieldEntitled(
-                          title: tr.details,
-                          controller: details,
-                          keyboardType: TextInputType.multiline,
-                          maxLength: 100,
-                        ),
-                        if (state is SingleProductLoadedState &&
-                            state.product.batches != null &&
-                            state.product.batches!.isNotEmpty)
-                          _buildBatchesSection(
-                              state.product.batches!, tr, color, textTheme),
-                        if (isEdit) _buildOtherButton(tr, color),
-                      ],
-                    ),
+                  child: Column(
+                    spacing: 12,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _errorBanner(),
+                      ZTextFieldEntitled(
+                        title: tr.productCode,
+                        controller: productCode,
+                        maxLength: 13,
+                        isRequired: true,
+                        validator: (v) => (v == null || v.isEmpty)
+                            ? tr.required(tr.productCode)
+                            : null,
+                      ),
+                      ZTextFieldEntitled(
+                        title: tr.productName,
+                        controller: productName,
+                        isRequired: true,
+                        validator: (v) => (v == null || v.isEmpty)
+                            ? tr.required(tr.productName)
+                            : null,
+                      ),
+                      ProductCategoryDropdown(
+                        selectedCategoryId: catId,
+                        onCategorySelected: (cat) {
+                          _selectedCategory = cat;
+                        },
+                      ),
+                      ZTextFieldEntitled(
+                        title: tr.madeIn,
+                        controller: madeIn,
+                      ),
+                      ZTextFieldEntitled(
+                        title: tr.details,
+                        controller: details,
+                        keyboardType: TextInputType.multiline,
+                        maxLength: 100,
+                      ),
+                      if (state is SingleProductLoadedState &&
+                          state.product.batches != null &&
+                          state.product.batches!.isNotEmpty)
+                        _buildBatchesSection(
+                            state.product.batches!, tr, color, textTheme),
+                      if (isEdit) _buildOtherButton(tr, color),
+                    ],
                   ),
                 ),
               );
@@ -1064,7 +955,9 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
         ),
       );
     } else {
-      // Desktop dialog with tabs
+      // Desktop — tabs. TabBarView gets its own bounded height (480)
+      // so the dialog can shrink-wrap below 85% viewport when tabs
+      // are short, and only the tab body scrolls when they're tall.
       return MultiBlocListener(
         listeners: [
           BlocListener<SingleProductBloc, SingleProductState>(
@@ -1097,13 +990,10 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
         child: BlocBuilder<SingleProductBloc, SingleProductState>(
           builder: (context, state) {
             final dialogWidth = MediaQuery.of(context).size.width * .45;
-            // Keep dialog comfortably inside the screen on tall UIs.
-            final dialogHeight = screenHeight * .85;
 
             if (state is SingleProductLoadingState && _isLoadingProduct) {
               return ZFormDialog(
                 width: dialogWidth,
-                height: dialogHeight,
                 icon: Icons.production_quantity_limits_rounded,
                 onAction: () {},
                 title: isEdit ? tr.update.toUpperCase() : tr.newKeyword,
@@ -1112,19 +1002,12 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
                   width: 16,
                   child: CircularProgressIndicator(),
                 ),
-                child: const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
+                child: UniversalShimmer.dataList(itemCount: 8),
               );
             }
 
             return ZFormDialog(
               width: dialogWidth,
-              // ← FIX: bounded height so Flexible / TabBarView render.
-              height: dialogHeight,
               icon: Icons.production_quantity_limits_rounded,
               onAction: _isSubmitting ? null : onSubmit,
               title: isEdit
@@ -1138,67 +1021,30 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (_errorMessage != null)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 5),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.red.shade200),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.error_outline,
-                                color: Colors.red.shade700, size: 20),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                _errorMessage!,
-                                style: TextStyle(
-                                    color: Colors.red.shade700, fontSize: 14),
-                              ),
-                            ),
-                            InkWell(
-                              onTap: () =>
-                                  setState(() => _errorMessage = null),
-                              child: Icon(Icons.close,
-                                  size: 18, color: Colors.red.shade700),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                    // Tabs
+                    _errorBanner(),
                     DefaultTabController(
                       length: 3,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.start,
                         children: [
-                          // Tab Bar
+                          // ── Tab bar ───────────────────────────
                           Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 0),
-                            padding: EdgeInsets.zero,
-                            width: 350,
-                            decoration: BoxDecoration(
-                              color: color.surface,
-                            ),
+                            width: 300,
+                            height: 35,
+                            margin: EdgeInsets.symmetric(horizontal: 8),
+                            decoration: BoxDecoration(color: color.surfaceContainer),
                             child: TabBar(
                               indicatorPadding: EdgeInsets.zero,
                               labelPadding: EdgeInsets.zero,
-                              indicatorAnimation: TabIndicatorAnimation.elastic,
-                              automaticIndicatorColorAdjustment: true,
+                              indicatorAnimation:
+                              TabIndicatorAnimation.elastic,
                               indicatorWeight: 2,
                               indicator: BoxDecoration(
-                                color: color.primary.withValues(alpha: .1),
-                                borderRadius: BorderRadius.circular(2),
+                                color: color.primary.withValues(alpha: .07),
+                                borderRadius: BorderRadius.circular(0),
                                 border: Border(
-                                  bottom: BorderSide(
-                                    color: color.primary,
-                                    width: 2,
-                                  ),
+                                  bottom: BorderSide(color: color.primary, width: 2.5),
                                 ),
                               ),
                               tabs: [
@@ -1211,54 +1057,48 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
                               indicatorColor: color.primary,
                               indicatorSize: TabBarIndicatorSize.tab,
                               dividerColor: Colors.transparent,
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
                             ),
                           ),
 
-                          // Tab Bar View
+                          // ── Tab body ──────────────────────────
+                          // 480 is a bounded cap (TabBarView requires
+                          // one). Each page's _tabPage() adds the
+                          // internal scroll so tall pages scroll
+                          // inside 480 rather than inflating the dialog.
                           SizedBox(
-                            // Keep in sync with the dialog height. 0.6 gives
-                            // room for the header, tabs, and action row.
-                            height: screenHeight * .6,
+                            height: 500,
                             child: TabBarView(
                               children: [
-                                // Tab 1: Product Info (Details only)
-                                SingleChildScrollView(
-                                  padding: const EdgeInsets.all(8.0),
+                                // ── Tab 1: Details ─────────────
+                                _tabPage(
                                   child: Column(
                                     crossAxisAlignment:
                                     CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
                                       _buildSection(
-                                        title: tr.nameAndDescriptions,
                                         children: [
                                           ZTextFieldEntitled(
                                             title: tr.productCode,
                                             controller: productCode,
                                             maxLength: 13,
                                             isRequired: true,
-                                            validator: (value) {
-                                              if (value != null &&
-                                                  value.isEmpty) {
-                                                return tr.required(
-                                                    tr.productCode);
-                                              }
-                                              return null;
-                                            },
+                                            validator: (v) =>
+                                            (v == null || v.isEmpty)
+                                                ? tr.required(
+                                                tr.productCode)
+                                                : null,
                                           ),
                                           const SizedBox(height: 12),
                                           ZTextFieldEntitled(
                                             title: tr.productName,
                                             controller: productName,
                                             isRequired: true,
-                                            validator: (value) {
-                                              if (value != null &&
-                                                  value.isEmpty) {
-                                                return tr.required(
-                                                    tr.productName);
-                                              }
-                                              return null;
-                                            },
+                                            validator: (v) =>
+                                            (v == null || v.isEmpty)
+                                                ? tr.required(
+                                                tr.productName)
+                                                : null,
                                           ),
                                           const SizedBox(height: 12),
                                           ZTextFieldEntitled(
@@ -1270,33 +1110,29 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 5),
+                                      const SizedBox(height: 15),
                                       _buildSection(
-                                        title: tr.details,
                                         children: [
                                           Row(
                                             children: [
                                               Expanded(
                                                 child: GradeDropdown(
                                                   selectedGrade: productGrade,
-                                                  onGradeSelected: (grade) {
-                                                    setState(() {
-                                                      productGrade = grade;
-                                                    });
-                                                  },
+                                                  onGradeSelected: (grade) =>
+                                                      setState(() =>
+                                                      productGrade = grade),
                                                 ),
                                               ),
                                               const SizedBox(width: 8),
                                               Expanded(
                                                 child: ZTextFieldEntitled(
                                                   title: tr.unit,
-                                                  hint: "واحد محصول",
-                                                  suggestions: [
+                                                  suggestions: const [
                                                     "جوره",
                                                     "کارتن",
                                                     "بسته",
                                                     "دانه",
-                                                    "سیت"
+                                                    "سیت",
                                                   ],
                                                   showClearButton: true,
                                                   controller: productUnit,
@@ -1318,9 +1154,8 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
                                             children: [
                                               Expanded(
                                                 child: ZTextFieldEntitled(
-                                                  title: "productBrands",
-                                                  hint: "برند محصول",
-                                                  suggestions: [],
+                                                  title: tr.branch,
+                                                  suggestions: const [],
                                                   showClearButton: true,
                                                   controller: productBrand,
                                                 ),
@@ -1328,9 +1163,8 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
                                               const SizedBox(width: 8),
                                               Expanded(
                                                 child: ZTextFieldEntitled(
-                                                  title: "productModel",
-                                                  hint: "مدل محصول",
-                                                  suggestions: [""],
+                                                  title: tr.model,
+                                                  suggestions: const [""],
                                                   showClearButton: true,
                                                   controller: productModel,
                                                 ),
@@ -1339,8 +1173,7 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
                                               Expanded(
                                                 child: ZTextFieldEntitled(
                                                   title: tr.madeIn,
-                                                  hint: "ساخت محصول",
-                                                  suggestions: ["چین"],
+                                                  suggestions: const ["چین"],
                                                   showClearButton: true,
                                                   controller: madeIn,
                                                 ),
@@ -1352,13 +1185,12 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
                                             children: [
                                               Expanded(
                                                 child: ZTextFieldEntitled(
-                                                  title: "productColor",
-                                                  hint: "رنگ محصول",
-                                                  suggestions: [
+                                                  title: tr.proColor,
+                                                  suggestions: const [
                                                     "جگری",
                                                     "آبی",
                                                     "سیاه",
-                                                    "سفید"
+                                                    "سفید",
                                                   ],
                                                   showClearButton: true,
                                                   controller: productColor,
@@ -1367,8 +1199,7 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
                                               const SizedBox(width: 8),
                                               Expanded(
                                                 child: ZTextFieldEntitled(
-                                                  title: "minimumStock",
-                                                  hint: "تعداد هشدار موجودی",
+                                                  title: tr.minimumStock,
                                                   controller: minimumStock,
                                                 ),
                                               ),
@@ -1376,8 +1207,8 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
                                               Expanded(
                                                 child: ZTextFieldEntitled(
                                                   title: tr.sellPrice,
-                                                  hint: "قیمت پیش فرض",
-                                                  controller: salePricePercentage,
+                                                  controller:
+                                                  salePricePercentage,
                                                   keyboardType:
                                                   const TextInputType
                                                       .numberWithOptions(
@@ -1392,20 +1223,19 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
                                                         value.isEmpty) {
                                                       return null;
                                                     }
-                                                    final cleanValue = value
+                                                    final clean = value
                                                         .replaceAll('%', '')
                                                         .replaceAll(' ', '')
                                                         .trim();
-                                                    if (cleanValue.isEmpty) {
+                                                    if (clean.isEmpty) {
                                                       return null;
                                                     }
-                                                    final number =
-                                                    double.tryParse(
-                                                        cleanValue);
-                                                    if (number == null) {
+                                                    final n =
+                                                    double.tryParse(clean);
+                                                    if (n == null) {
                                                       return 'Please enter a valid number';
                                                     }
-                                                    if (number < 0) {
+                                                    if (n < 0) {
                                                       return 'Cannot be negative';
                                                     }
                                                     return null;
@@ -1420,12 +1250,12 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
                                   ),
                                 ),
 
-                                // Tab 2: Images
-                                SingleChildScrollView(
-                                  padding: const EdgeInsets.all(8.0),
+                                // ── Tab 2: Images ──────────────
+                                _tabPage(
                                   child: Column(
                                     crossAxisAlignment:
                                     CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
                                       _buildSection(
                                         title: tr.productImages,
@@ -1460,11 +1290,9 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
                                           children: [
                                             Row(
                                               children: [
-                                                Icon(
-                                                  Icons.info_outline,
-                                                  size: 20,
-                                                  color: color.primary,
-                                                ),
+                                                Icon(Icons.info_outline,
+                                                    size: 20,
+                                                    color: color.primary),
                                                 const SizedBox(width: 8),
                                                 Text(
                                                   "Image Guidelines",
@@ -1478,7 +1306,10 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
                                             ),
                                             const SizedBox(height: 8),
                                             Text(
-                                              "• Maximum 5 images allowed\n• Supported formats: JPG, PNG, WEBP\n• Recommended size: 800x800 pixels\n• Click on image to remove",
+                                              "• Maximum 5 images allowed\n"
+                                                  "• Supported formats: JPG, PNG, WEBP\n"
+                                                  "• Recommended size: 800x800 pixels\n"
+                                                  "• Click on image to remove",
                                               style: textTheme.bodySmall
                                                   ?.copyWith(
                                                 color: color.outline,
@@ -1492,39 +1323,25 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
                                   ),
                                 ),
 
-                                // Tab 3: Inventory / Batches
-                                SingleChildScrollView(
-                                  padding: const EdgeInsets.all(8.0),
+                                // ── Tab 3: Stock / Batches ─────
+                                _tabPage(
                                   child: Column(
                                     crossAxisAlignment:
                                     CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      // Status toggle
                                       Container(
-                                        padding: const EdgeInsets.all(8),
+                                        padding: const EdgeInsets.all(0),
                                         decoration: BoxDecoration(
                                           color: color.surface,
                                           borderRadius:
                                           BorderRadius.circular(5),
-                                          border: Border.all(
-                                            color: color.outline
-                                                .withValues(alpha: .1),
-                                          ),
                                         ),
                                         child: Row(
                                           children: [
-                                            Text(
-                                              tr.status,
-                                              style: textTheme.titleMedium,
-                                            ),
-                                            const Spacer(),
                                             Switch.adaptive(
                                               value: _productStatus,
-                                              onChanged: (e) {
-                                                setState(() {
-                                                  _productStatus = e;
-                                                });
-                                              },
+                                              onChanged: (e) => setState(() => _productStatus = e),
                                             ),
                                             const SizedBox(width: 12),
                                             Text(
@@ -1541,21 +1358,17 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
                                           ],
                                         ),
                                       ),
-
                                       const SizedBox(height: 16),
-
-                                      // Batches section
                                       if (state
                                       is SingleProductLoadedState &&
                                           state.product.batches != null &&
                                           state.product.batches!.isNotEmpty)
-                                        ...[
-                                          _buildBatchesSection(
-                                              state.product.batches!,
-                                              tr,
-                                              color,
-                                              textTheme),
-                                        ] else ...[
+                                        _buildBatchesSection(
+                                            state.product.batches!,
+                                            tr,
+                                            color,
+                                            textTheme)
+                                      else
                                         Container(
                                           padding: const EdgeInsets.all(32),
                                           decoration: BoxDecoration(
@@ -1563,42 +1376,30 @@ class _BaseProductAddEditState extends State<_BaseProductAddEdit> {
                                             borderRadius:
                                             BorderRadius.circular(12),
                                             border: Border.all(
-                                              color: color.outline
-                                                  .withValues(alpha: .1),
+                                              color: color.outline.withValues(alpha: .1),
                                             ),
                                           ),
                                           child: Center(
                                             child: Column(
                                               children: [
-                                                Icon(
-                                                  Icons.inbox_outlined,
-                                                  size: 64,
-                                                  color: color.outline
-                                                      .withValues(alpha: .5),
-                                                ),
+                                                Icon(Icons.inbox_outlined,
+                                                    size: 64,
+                                                    color: color.outline
+                                                        .withValues(
+                                                        alpha: .5)),
                                                 const SizedBox(height: 16),
                                                 Text(
-                                                  "noBatchesAvailable",
-                                                  style: textTheme.titleMedium
+                                                  tr.noBatch,
+                                                  style: textTheme
+                                                      .titleMedium
                                                       ?.copyWith(
                                                     color: color.outline,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 8),
-                                                Text(
-                                                  "stockWillAppearHere",
-                                                  style: textTheme.bodySmall
-                                                      ?.copyWith(
-                                                    color: color.outline
-                                                        .withValues(alpha: .7),
                                                   ),
                                                 ),
                                               ],
                                             ),
                                           ),
                                         ),
-                                      ],
-
                                       if (isEdit) ...[
                                         const SizedBox(height: 16),
                                         _buildOtherButton(tr, color),

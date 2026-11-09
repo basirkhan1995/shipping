@@ -17,3 +17,11 @@ class ApiException implements Exception {
   @override
   String toString() => message;
 }
+
+class LockedAccountException implements Exception {
+  final int perID;
+  final String message;
+  const LockedAccountException({required this.perID, required this.message});
+  @override
+  String toString() => message;
+}

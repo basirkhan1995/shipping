@@ -183,7 +183,7 @@ class EntityWidget extends StatelessWidget {
             flightShuttleBuilder: _buildHeroShuttle,
             child: ImageHelper.stakeholderProfile(
               imageName: stakeholder.imageProfile,
-              size: 40,
+              size: 45,
               shapeStyle: ShapeStyle.circle,
               placeholderColor: scheme.primaryContainer,
               placeholderIcon: Icons.person,
@@ -202,7 +202,7 @@ class EntityWidget extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: scheme.error,
                   shape: BoxShape.circle,
-                  border: Border.all(color: scheme.surface, width: 2),
+                  border: Border.all(color: scheme.surface, width: 0.5),
                 ),
                 child: Icon(
                   Icons.lock,
@@ -260,14 +260,15 @@ class EntityWidget extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 1),
             child: Row(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (masked) ...[
-                  Icon(Icons.lock, size: 10, color: scheme.onSurfaceVariant),
+                  Icon(Icons.lock, size: 12, color: scheme.onSurfaceVariant),
                   const SizedBox(width: 3),
                   Text(
                     '••••••',
                     style: textTheme.bodySmall?.copyWith(
-                      fontSize: 12,
+                      fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: scheme.onSurfaceVariant,
                       letterSpacing: 1.5,
@@ -286,7 +287,7 @@ class EntityWidget extends StatelessWidget {
                 Text(
                   e.key,
                   style: textTheme.labelSmall?.copyWith(
-                    fontSize: 9,
+                    fontSize: 10,
                     fontWeight: FontWeight.w600,
                     color: scheme.onSurfaceVariant,
                     letterSpacing: 0.5,

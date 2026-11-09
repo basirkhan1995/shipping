@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/toast.dart';
@@ -32,9 +31,9 @@ import '../../View/Security/bloc/stk_security_bloc.dart';
 class StakeholderByIdView extends StatelessWidget {
   final StakeholdersModel ind;
 
-  /// Optional hint — if `true`, the caller already verified at the
-  /// moment of navigation. The actual lock state is re-evaluated live
-  /// against `StkSecurityBloc`, so this is only a starting point.
+  /// Optional hint — kept for callers. Not used for gating now that
+  /// auto-relock is removed; the lock decision is purely
+  /// `StkSecurityBloc.isUnlockedFor(perID)`.
   final bool verified;
 
   const StakeholderByIdView({
@@ -89,13 +88,6 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
 
   bool _listNeedsRefresh = false;
 
-  /// Re-checks the security bloc every 15s. Needed because the bloc's
-  /// own TTL timer can be paused while the app is in the background,
-  /// and we want to re-lock the moment we notice the expiry.
-  Timer? _recheckTimer;
-
-  static const Duration _recheckEvery = Duration(seconds: 15);
-
   static Widget _buildHeroShuttle(
       BuildContext flightContext,
       Animation<double> animation,
@@ -113,12 +105,13 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
 
   int? get _stkId => widget.ind.perId;
 
-  // ── Balances visibility (live) ────────────────────────────────
+  // ── Balances visibility (live, no timer) ──────────────────────
+  // Reads the current StkSecurityBloc state. Once the bloc's own
+  // TTL expires the state becomes StkSecurityInitial and this
+  // returns false — but the screen only re-renders on the next
+  // natural rebuild (no polling, no listeners).
   bool get _canSeeBalances {
-    // Not locked → always visible.
     if (!widget.ind.isLocked) return true;
-    // Locked → visible only while the security bloc says this perID
-    // is currently verified and not expired.
     final id = _stkId;
     if (id == null) return false;
     return context.read<StkSecurityBloc>().isUnlockedFor(id);
@@ -139,7 +132,6 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
     return ccy == null || ccy.isEmpty ? formatted : '$formatted $ccy';
   }
 
-  // ── Exchange dialog ───────────────────────────────────────────
   Future<void> _openExchangeDialog() async {
     final usrName = _loginName();
     if (usrName == null) return;
@@ -182,31 +174,6 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
         );
       }
     });
-
-    // Periodic security recheck — catches "verified expired while the
-    // app was backgrounded" that the bloc's own Timer might miss.
-    _recheckTimer = Timer.periodic(_recheckEvery, (_) => _recheckSecurity());
-  }
-
-  @override
-  void dispose() {
-    _recheckTimer?.cancel();
-    super.dispose();
-  }
-
-  void _recheckSecurity() {
-    if (!mounted) return;
-    final id = _stkId;
-    if (id == null) return;
-
-    final sec = context.read<StkSecurityBloc>();
-    final s = sec.state;
-
-    // The bloc thinks we're verified, but the TTL has expired (e.g.
-    // device slept through the timer). Ask the bloc to relock.
-    if (s is StkSecurityVerified && !sec.isUnlockedFor(id)) {
-      sec.add(RelockEvent(id));
-    }
   }
 
   String _composeName(StakeholdersModel m) {
@@ -438,202 +405,190 @@ class _StakeholderByIdDesktopState extends State<_StakeholderByIdDesktop> {
         if (didPop) return;
         Navigator.of(context).pop(_listNeedsRefresh);
       },
-      child: BlocListener<StkSecurityBloc, StkSecurityState>(
-        // Whenever the security state leaves "verified" (expiry,
-        // manual relock, error) — rebuild so balances re-mask.
-        listenWhen: (prev, curr) =>
-        curr is StkSecurityInitial || curr is StkSecurityDenied,
-        listener: (context, _) {
-          if (mounted) setState(() {});
-        },
-        child: Scaffold(
-          appBar: AppBar(
-            titleSpacing: 0,
-            elevation: 0,
-            title: Text(tr.profileOverview),
-            actions: [
-              _AppBarAction(
-                icon: Icons.arrow_downward_rounded,
-                tooltip: tr.cashDeposit,
-                label: tr.cashDeposit,
-                onPressed: () => _openCashDialog('CHDP'),
+      child: Scaffold(
+        appBar: AppBar(
+          titleSpacing: 0,
+          elevation: 0,
+          title: Text(tr.profileOverview),
+          actions: [
+            _AppBarAction(
+              icon: Icons.arrow_downward_rounded,
+              tooltip: tr.cashDeposit,
+              label: tr.cashDeposit,
+              onPressed: () => _openCashDialog('CHDP'),
+            ),
+            _AppBarAction(
+              icon: Icons.arrow_upward_rounded,
+              tooltip: tr.cashWithdraw,
+              label: tr.cashWithdraw,
+              onPressed: () => _openCashDialog('CHWL'),
+            ),
+            _AppBarAction(
+              icon: Icons.swap_horiz_rounded,
+              tooltip: tr.fundTransfer,
+              label: tr.fundTransfer,
+              onPressed: _openFundTransferDialog,
+            ),
+            _AppBarAction(
+              icon: Icons.swap_horiz_rounded,
+              tooltip: tr.exchange,
+              label: tr.exchange,
+              onPressed: _openExchangeDialog,
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+              child: ZOutlineButton(
+                onPressed: _onAddAccount,
+                height: 36,
+                icon: Icons.add,
+                isActive: true,
+                label: Text(tr.addAccount.toUpperCase()),
               ),
-              _AppBarAction(
-                icon: Icons.arrow_upward_rounded,
-                tooltip: tr.cashWithdraw,
-                label: tr.cashWithdraw,
-                onPressed: () => _openCashDialog('CHWL'),
-              ),
-              _AppBarAction(
-                icon: Icons.swap_horiz_rounded,
-                tooltip: tr.fundTransfer,
-                label: tr.fundTransfer,
-                onPressed: _openFundTransferDialog,
-              ),
-              _AppBarAction(
-                icon: Icons.swap_horiz_rounded,
-                tooltip: tr.exchange,
-                label: tr.exchange,
-                onPressed: _openExchangeDialog,
-              ),
-              Padding(
-                padding:
-                const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
-                child: ZOutlineButton(
-                  onPressed: _onAddAccount,
-                  height: 36,
-                  icon: Icons.add,
-                  isActive: true,
-                  label: Text(tr.addAccount.toUpperCase()),
-                ),
-              ),
-              const SizedBox(width: 8),
-            ],
-          ),
-          body: BlocListener<StakeholderBloc, StakeholderState>(
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
+        body: BlocListener<StakeholderBloc, StakeholderState>(
+          listenWhen: (p, c) =>
+          c is UpdateStakeholderSuccessState ||
+              c is UpdateStakeholderFailureState,
+          listener: (context, state) {
+            if (state is UpdateStakeholderSuccessState) {
+              _listNeedsRefresh = true;
+              _reloadProfile();
+            } else if (state is UpdateStakeholderFailureState) {
+              ToastManager.show(
+                context: context,
+                title: tr.failed,
+                message: 'Update failed: ${state.message}',
+                type: ToastType.error,
+              );
+            }
+          },
+          child: BlocListener<StkAccountsBloc, StkAccountsState>(
             listenWhen: (p, c) =>
-            c is UpdateStakeholderSuccessState ||
-                c is UpdateStakeholderFailureState,
+            (c is StkAccountsLoadedState && c.successMessage != null) ||
+                (c is StkAccountsFailureState && c.errorMessage != null),
             listener: (context, state) {
-              if (state is UpdateStakeholderSuccessState) {
+              if (state is StkAccountsLoadedState &&
+                  state.successMessage != null) {
                 _listNeedsRefresh = true;
                 _reloadProfile();
-              } else if (state is UpdateStakeholderFailureState) {
+                ToastManager.show(
+                  context: context,
+                  title: tr.successTitle,
+                  message: '${state.successMessage}',
+                  type: ToastType.success,
+                );
+              } else if (state is StkAccountsFailureState) {
                 ToastManager.show(
                   context: context,
                   title: tr.failed,
-                  message: 'Update failed: ${state.message}',
+                  message: '${state.errorMessage}',
                   type: ToastType.error,
                 );
               }
+              context.read<StkAccountsBloc>().add(
+                const ClearStkAccountMessagesEvent(),
+              );
             },
-            child: BlocListener<StkAccountsBloc, StkAccountsState>(
-              listenWhen: (p, c) =>
-              (c is StkAccountsLoadedState &&
-                  c.successMessage != null) ||
-                  (c is StkAccountsFailureState && c.errorMessage != null),
-              listener: (context, state) {
-                if (state is StkAccountsLoadedState &&
-                    state.successMessage != null) {
-                  _listNeedsRefresh = true;
-                  _reloadProfile();
-                  ToastManager.show(
-                    context: context,
-                    title: tr.successTitle,
-                    message: '${state.successMessage}',
-                    type: ToastType.success,
-                  );
-                } else if (state is StkAccountsFailureState) {
-                  ToastManager.show(
-                    context: context,
-                    title: tr.failed,
-                    message: '${state.errorMessage}',
-                    type: ToastType.error,
-                  );
+            child: BlocBuilder<StakeholderByIdBloc, StakeholderByIdState>(
+              builder: (context, state) {
+                if (state is StakeholderByIdLoadedState) {
+                  individual = state.stk;
+                  fullName = _composeName(state.stk);
                 }
-                context.read<StkAccountsBloc>().add(
-                  const ClearStkAccountMessagesEvent(),
-                );
-              },
-              child: BlocBuilder<StakeholderByIdBloc, StakeholderByIdState>(
-                builder: (context, state) {
-                  if (state is StakeholderByIdLoadedState) {
-                    individual = state.stk;
-                    fullName = _composeName(state.stk);
-                  }
 
-                  final data = individual ?? widget.ind;
-                  final accounts = data.accounts;
-                  final recent = data.recentTransactions;
+                final data = individual ?? widget.ind;
+                final accounts = data.accounts;
+                final recent = data.recentTransactions;
 
-                  return Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: SingleChildScrollView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
-                            child: _buildProfileContent(context, color, data),
-                          ),
+                return Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+                          child: _buildProfileContent(context, color, data),
                         ),
-                        Container(
-                          width: 1,
-                          color: color.outlineVariant.withValues(alpha: 0.5),
-                        ),
-                        Expanded(
-                          flex: 8,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                if (!_canSeeBalances)
-                                  Container(
-                                    margin: const EdgeInsets.fromLTRB(
-                                        0, 8, 0, 4),
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
+                      ),
+                      Container(
+                        width: 1,
+                        color: color.outlineVariant.withValues(alpha: 0.5),
+                      ),
+                      Expanded(
+                        flex: 8,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (!_canSeeBalances)
+                                Container(
+                                  margin:
+                                  const EdgeInsets.fromLTRB(0, 8, 0, 4),
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: color.error.withValues(alpha: .08),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
                                       color:
-                                      color.error.withValues(alpha: .08),
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(
-                                        color: color.error
-                                            .withValues(alpha: .3),
-                                      ),
+                                      color.error.withValues(alpha: .3),
                                     ),
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.lock,
-                                            size: 16, color: color.error),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            tr.lockedBalancesNotice,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: color.error,
-                                            ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.lock,
+                                          size: 16, color: color.error),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          tr.lockedBalancesNotice,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: color.error,
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                  ),
-                                SizedBox(
-                                  height: 250,
-                                  child: _AccountsSection(
-                                    accounts: accounts,
-                                    ownerName: fullName ?? '—',
-                                    isLoading:
-                                    state is StakeholderByIdLoadingState,
-                                    masked: !_canSeeBalances,
-                                    fmtMoney: _fmtMoney,
-                                    onEdit: _onEditAccount,
-                                    onDelete: _onDeleteAccount,
-                                    onStatement: _onStatement,
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                if (recent.isNotEmpty) ...[
-                                  const SizedBox(height: 12),
-                                  Expanded(
-                                    child: _RecentTransactionsPanel(
-                                      transactions: recent,
-                                      masked: !_canSeeBalances,
-                                      fmtMoney: _fmtMoney,
-                                    ),
+                              SizedBox(
+                                height: 250,
+                                child: _AccountsSection(
+                                  accounts: accounts,
+                                  ownerName: fullName ?? '—',
+                                  isLoading:
+                                  state is StakeholderByIdLoadingState,
+                                  masked: !_canSeeBalances,
+                                  fmtMoney: _fmtMoney,
+                                  onEdit: _onEditAccount,
+                                  onDelete: _onDeleteAccount,
+                                  onStatement: _onStatement,
+                                ),
+                              ),
+                              if (recent.isNotEmpty) ...[
+                                const SizedBox(height: 12),
+                                Expanded(
+                                  child: _RecentTransactionsPanel(
+                                    transactions: recent,
+                                    masked: !_canSeeBalances,
+                                    fmtMoney: _fmtMoney,
                                   ),
-                                ],
+                                ),
                               ],
-                            ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -1258,9 +1213,6 @@ class _RecentTxnRow extends StatelessWidget {
   IconData get _arrowIcon =>
       _isDebitIn ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded;
 
-  /// Uses the shared masker for the amount (with sign) and the running
-  /// balance. When [masked], the shared masker returns `••••••` — the
-  /// same one used on the cards, so the two views stay in sync.
   String get _signedAmount {
     final body = fmtMoney(tx.amount, ccy: tx.currency);
     if (masked) return body;

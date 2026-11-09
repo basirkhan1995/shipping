@@ -59,6 +59,7 @@ import 'Routes/Home/View/Report/GLStatement/bloc/gl_statement_bloc.dart';
 import 'Routes/Home/View/Report/Inventory/OrdersReport/bloc/order_report_bloc.dart';
 import 'Routes/Home/View/Report/TxnReport/TxnTypes/bloc/txn_types_bloc.dart';
 import 'Routes/Home/View/Report/TxnReport/bloc/txn_report_bloc.dart';
+import 'Routes/Home/View/Settings/View/General/UserProfile/bloc/user_profile_bloc.dart';
 import 'Routes/Home/View/Settings/bloc/settings_tab_bloc.dart';
 import 'Routes/Home/View/Stakeholder/View/StakeholderById/bloc/stakeholder_by_id_bloc.dart';
 import 'Routes/Home/bloc/menu_bloc.dart';
@@ -117,7 +118,7 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (_) => StkAccountsBloc(Repositories(ApiServices()))),
           BlocProvider(create: (_) => EmployeeBloc(Repositories(ApiServices()))..add(LoadEmployeeEvent())),
           BlocProvider(create: (_) => AttendanceBloc(Repositories(ApiServices()))..add(LoadAttendanceEvent())),
-          // BlocProvider(create: (_) => UserProfileBloc(Repositories(ApiServices()))),
+           BlocProvider(create: (_) => UserProfileBloc(Repositories(ApiServices()))),
           ///Currencies
           BlocProvider(create: (_) => CurrenciesBloc(Repositories(ApiServices()))..add(LoadCurrenciesEvent())),
           BlocProvider(create: (_) => TransactionsBloc(Repositories(ApiServices()))..add(LoadTransactionsEvent())),

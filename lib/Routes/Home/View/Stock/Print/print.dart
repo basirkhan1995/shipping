@@ -6,7 +6,6 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:flutter/services.dart';
 import 'package:shipping/Features/Widgets/extensions.dart';
-
 import '../../../../../Features/Date/shamsi_converter.dart';
 import '../../../../../Features/PrintSettings/num_to_word.dart';
 import '../../../../../Features/PrintSettings/print_services.dart';
@@ -17,16 +16,16 @@ import '../../Stakeholder/model/stk_model.dart';
 /// ============================================================
 ///  ARTEL GREEN BRAND PALETTE
 /// ============================================================
-class _ArtelColors {
-  static const pw.PdfColor primary      = pw.PdfColor.fromInt(0xFF2E7D32);
-  static const pw.PdfColor primaryDark  = pw.PdfColor.fromInt(0xFF1B5E20);
-  static const pw.PdfColor primaryLight = pw.PdfColor.fromInt(0xFFE8F5E9);
-  static const pw.PdfColor stripeLight  = pw.PdfColor.fromInt(0xFFF1F8E9);
-  static const pw.PdfColor border       = pw.PdfColor.fromInt(0xFFA5D6A7);
-  static const pw.PdfColor divider      = pw.PdfColor.fromInt(0xFFC8E6C9);
-  static const pw.PdfColor accentText   = pw.PdfColor.fromInt(0xFF388E3C);
-  static const pw.PdfColor negative     = pw.PdfColor.fromInt(0xFFC62828);
-  static const pw.PdfColor warning      = pw.PdfColor.fromInt(0xFFEF6C00);
+class _InvoiceColors {
+  static const pw.PdfColor primary      = pw.PdfColor.fromInt(0xFF005994); // lightScheme.primary
+  static const pw.PdfColor primaryDark  = pw.PdfColor.fromInt(0xFF001E3A); // lightScheme.onPrimaryContainer
+  static const pw.PdfColor primaryLight = pw.PdfColor.fromInt(0xFFE3F2FF); // lightScheme.primaryContainer
+  static const pw.PdfColor stripeLight  = pw.PdfColor.fromInt(0xFFF7F8FC); // lightScheme.surfaceContainerLow
+  static const pw.PdfColor border       = pw.PdfColor.fromInt(0xFFC3C7D0); // lightScheme.outlineVariant
+  static const pw.PdfColor divider      = pw.PdfColor.fromInt(0xFFC3C7D0); // lightScheme.outlineVariant
+  static const pw.PdfColor accentText   = pw.PdfColor.fromInt(0xFF003258); // darker accent, derived from primary
+  static const pw.PdfColor negative     = pw.PdfColor.fromInt(0xFFC62828); // lightScheme.error
+  static const pw.PdfColor warning      = pw.PdfColor.fromInt(0xFFEF6C00); // keep amber
 }
 
 abstract class InvoiceItem {
@@ -187,7 +186,7 @@ class InvoicePrintService extends PrintServices {
                   text: tr(text: "termsAndConditionTitle", tr: language),
                   fontSize: 9,
                   fontWeight: pw.FontWeight.bold,
-                  color: _ArtelColors.primaryDark,
+                  color: _InvoiceColors.primaryDark,
                 ),
                 pw.SizedBox(height: 3),
                 zText(
@@ -202,7 +201,7 @@ class InvoicePrintService extends PrintServices {
           pw.SizedBox(width: 6),
           pw.Container(
             width: 2,
-            color: _ArtelColors.primary,
+            color: _InvoiceColors.primary,
           ),
         ],
       ),
@@ -347,10 +346,10 @@ class InvoicePrintService extends PrintServices {
                     padding: const pw.EdgeInsets.symmetric(
                         vertical: 4, horizontal: 3),
                     decoration: pw.BoxDecoration(
-                      color: _ArtelColors.primaryLight,
+                      color: _InvoiceColors.primaryLight,
                       border: pw.Border(
                         bottom: pw.BorderSide(
-                            color: _ArtelColors.primary, width: 1.2),
+                            color: _InvoiceColors.primary, width: 1.2),
                       ),
                     ),
                     child: pw.Column(
@@ -364,14 +363,14 @@ class InvoicePrintService extends PrintServices {
                           fontSize: 13,
                           fontWeight: pw.FontWeight.bold,
                           textAlign: pw.TextAlign.center,
-                          color: _ArtelColors.primaryDark,
+                          color: _InvoiceColors.primaryDark,
                         ),
                         if ((company.compPhone ?? '').isNotEmpty)
                           zText(
                             text: company.compPhone ?? '',
                             fontSize: 8,
                             textAlign: pw.TextAlign.center,
-                            color: _ArtelColors.accentText,
+                            color: _InvoiceColors.accentText,
                           ),
                         if ((company.comAddress ?? '').isNotEmpty)
                           pw.Row(
@@ -381,7 +380,7 @@ class InvoicePrintService extends PrintServices {
                                 text: company.comAddress ?? '',
                                 fontSize: 7,
                                 textAlign: pw.TextAlign.center,
-                                color: _ArtelColors.accentText,
+                                color: _InvoiceColors.accentText,
                               ),
                               if ((company.partyCity ?? '').isNotEmpty) ...[
                                 pw.SizedBox(width: 1),
@@ -389,7 +388,7 @@ class InvoicePrintService extends PrintServices {
                                   text: company.partyCity ?? '',
                                   fontSize: 7,
                                   textAlign: pw.TextAlign.center,
-                                  color: _ArtelColors.accentText,
+                                  color: _InvoiceColors.accentText,
                                 ),
                               ]
                             ],
@@ -426,12 +425,12 @@ class InvoicePrintService extends PrintServices {
                     padding: const pw.EdgeInsets.symmetric(
                         vertical: 2, horizontal: 1),
                     decoration: pw.BoxDecoration(
-                      color: _ArtelColors.primaryLight,
+                      color: _InvoiceColors.primaryLight,
                       border: pw.Border(
                         top: pw.BorderSide(
-                            color: _ArtelColors.primary, width: 0.8),
+                            color: _InvoiceColors.primary, width: 0.8),
                         bottom: pw.BorderSide(
-                            color: _ArtelColors.primary, width: 0.8),
+                            color: _InvoiceColors.primary, width: 0.8),
                       ),
                     ),
                     child: pw.Row(
@@ -443,7 +442,7 @@ class InvoicePrintService extends PrintServices {
                             fontSize: 6,
                             fontWeight: pw.FontWeight.bold,
                             textAlign: pw.TextAlign.center,
-                            color: _ArtelColors.primaryDark,
+                            color: _InvoiceColors.primaryDark,
                           ),
                         ),
                         pw.SizedBox(width: 2),
@@ -454,7 +453,7 @@ class InvoicePrintService extends PrintServices {
                             fontSize: 7,
                             fontWeight: pw.FontWeight.bold,
                             textAlign: pw.TextAlign.start,
-                            color: _ArtelColors.primaryDark,
+                            color: _InvoiceColors.primaryDark,
                           ),
                         ),
                         pw.Expanded(
@@ -464,7 +463,7 @@ class InvoicePrintService extends PrintServices {
                             fontSize: 7,
                             fontWeight: pw.FontWeight.bold,
                             textAlign: pw.TextAlign.center,
-                            color: _ArtelColors.primaryDark,
+                            color: _InvoiceColors.primaryDark,
                           ),
                         ),
                         pw.Expanded(
@@ -474,7 +473,7 @@ class InvoicePrintService extends PrintServices {
                             fontSize: 7,
                             fontWeight: pw.FontWeight.bold,
                             textAlign: pw.TextAlign.end,
-                            color: _ArtelColors.primaryDark,
+                            color: _InvoiceColors.primaryDark,
                           ),
                         ),
                         pw.Expanded(
@@ -484,7 +483,7 @@ class InvoicePrintService extends PrintServices {
                             fontSize: 7,
                             fontWeight: pw.FontWeight.bold,
                             textAlign: pw.TextAlign.end,
-                            color: _ArtelColors.primaryDark,
+                            color: _InvoiceColors.primaryDark,
                           ),
                         ),
                       ],
@@ -504,7 +503,7 @@ class InvoicePrintService extends PrintServices {
                           vertical: 2, horizontal: 1),
                       decoration: index.isOdd
                           ? pw.BoxDecoration(
-                          color: _ArtelColors.stripeLight)
+                          color: _InvoiceColors.stripeLight)
                           : null,
                       child: pw.Row(
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -515,7 +514,7 @@ class InvoicePrintService extends PrintServices {
                               text: "${index + 1}",
                               fontSize: 6,
                               textAlign: pw.TextAlign.center,
-                              color: _ArtelColors.accentText,
+                              color: _InvoiceColors.accentText,
                             ),
                           ),
                           pw.SizedBox(width: 2),
@@ -550,7 +549,7 @@ class InvoicePrintService extends PrintServices {
                               fontSize: 7,
                               textAlign: pw.TextAlign.end,
                               fontWeight: pw.FontWeight.bold,
-                              color: _ArtelColors.primaryDark,
+                              color: _InvoiceColors.primaryDark,
                             ),
                           ),
                         ],
@@ -562,7 +561,7 @@ class InvoicePrintService extends PrintServices {
                     padding: const pw.EdgeInsets.all(4),
                     decoration: pw.BoxDecoration(
                       border: pw.Border.all(
-                          color: _ArtelColors.border, width: 0.6),
+                          color: _InvoiceColors.border, width: 0.6),
                       borderRadius: pw.BorderRadius.circular(2),
                     ),
                     child: pw.Column(
@@ -588,7 +587,7 @@ class InvoicePrintService extends PrintServices {
                             value:
                             "- ${needsConversion ? (itemDiscount * safeExchangeRate).toAmount(decimal: 2) : itemDiscount.toAmount(decimal: 2)} $displayCurrency",
                             language: language,
-                            color: _ArtelColors.negative,
+                            color: _InvoiceColors.negative,
                           ),
                         if (generalDisc > 0)
                           _rollSummaryRow(
@@ -596,7 +595,7 @@ class InvoicePrintService extends PrintServices {
                             value:
                             "- ${needsConversion ? (generalDisc * safeExchangeRate).toAmount(decimal: 2) : generalDisc.toAmount(decimal: 2)} $displayCurrency",
                             language: language,
-                            color: _ArtelColors.negative,
+                            color: _InvoiceColors.negative,
                           ),
                         if (charges > 0)
                           _rollSummaryRow(
@@ -604,7 +603,7 @@ class InvoicePrintService extends PrintServices {
                             value:
                             "+ ${needsConversion ? localCharges.toAmount(decimal: 2) : charges.toAmount(decimal: 2)} $displayCurrency",
                             language: language,
-                            color: _ArtelColors.warning,
+                            color: _InvoiceColors.warning,
                           ),
                         horizontalDivider(),
                         _rollSummaryRow(
@@ -614,7 +613,7 @@ class InvoicePrintService extends PrintServices {
                           language: language,
                           isBold: true,
                           fontSize: 10,
-                          color: _ArtelColors.primaryDark,
+                          color: _InvoiceColors.primaryDark,
                         ),
                         if (creditAmount > 0)
                           _rollSummaryRow(
@@ -642,7 +641,7 @@ class InvoicePrintService extends PrintServices {
                             "${(isSale ? accountBalance - localCreditAmount : accountBalance + localCreditAmount).toAmount(decimal: 2)} $accCcy",
                             language: language,
                             isBold: true,
-                            color: _ArtelColors.primaryDark,
+                            color: _InvoiceColors.primaryDark,
                           ),
                         ],
                       ],
@@ -662,7 +661,7 @@ class InvoicePrintService extends PrintServices {
                       text: tr(text: 'note', tr: language),
                       fontSize: 8,
                       fontWeight: pw.FontWeight.bold,
-                      color: _ArtelColors.primaryDark,
+                      color: _InvoiceColors.primaryDark,
                     ),
                     pw.SizedBox(height: 2),
                     zText(text: remark ?? '', fontSize: 7),
@@ -673,7 +672,7 @@ class InvoicePrintService extends PrintServices {
                       text: tr(text: 'thankYou', tr: language),
                       fontSize: 11,
                       fontWeight: pw.FontWeight.bold,
-                      color: _ArtelColors.primary,
+                      color: _InvoiceColors.primary,
                     ),
                   ),
                 ],
@@ -1086,7 +1085,7 @@ class InvoicePrintService extends PrintServices {
                 zText(
                     text: tr(text: "note", tr: language),
                     fontSize: 8,
-                    color: _ArtelColors.accentText),
+                    color: _InvoiceColors.accentText),
                 pw.SizedBox(width: 5),
                 zText(text: remark, fontSize: 8),
               ],
@@ -1367,15 +1366,15 @@ class InvoicePrintService extends PrintServices {
 
     return pw.Table(
       border: pw.TableBorder(
-        bottom: pw.BorderSide(color: _ArtelColors.primary, width: 1.2),
+        bottom: pw.BorderSide(color: _InvoiceColors.primary, width: 1.2),
         horizontalInside:
-        pw.BorderSide(color: _ArtelColors.divider, width: 0.5),
+        pw.BorderSide(color: _InvoiceColors.divider, width: 0.5),
       ),
       columnWidths: columnWidths,
       children: [
         pw.TableRow(
           verticalAlignment: pw.TableCellVerticalAlignment.middle,
-          decoration: pw.BoxDecoration(color: _ArtelColors.primaryLight),
+          decoration: pw.BoxDecoration(color: _InvoiceColors.primaryLight),
           children: headers.map((h) {
             return pw.Container(
               alignment: h.align,
@@ -1384,7 +1383,7 @@ class InvoicePrintService extends PrintServices {
                 text: h.text,
                 fontSize: headerFontSize,
                 fontWeight: pw.FontWeight.bold,
-                color: _ArtelColors.primaryDark,
+                color: _InvoiceColors.primaryDark,
               ),
             );
           }).toList(),
@@ -1521,9 +1520,9 @@ class InvoicePrintService extends PrintServices {
     return [
       pw.Table(
         border: pw.TableBorder(
-          bottom: pw.BorderSide(color: _ArtelColors.primary, width: 1.2),
+          bottom: pw.BorderSide(color: _InvoiceColors.primary, width: 1.2),
           horizontalInside:
-          pw.BorderSide(color: _ArtelColors.divider, width: 0.5),
+          pw.BorderSide(color: _InvoiceColors.divider, width: 0.5),
         ),
         columnWidths: columnWidths,
         children: [
@@ -1532,7 +1531,7 @@ class InvoicePrintService extends PrintServices {
               decoration: pw.BoxDecoration(
                 border: pw.Border(
                   bottom: pw.BorderSide(
-                    color: _ArtelColors.divider,
+                    color: _InvoiceColors.divider,
                     width: 1,
                   ),
                 ),
@@ -1624,14 +1623,14 @@ class InvoicePrintService extends PrintServices {
                           text: invoiceTitle,
                           fontSize: 10,
                           fontWeight: pw.FontWeight.bold,
-                          color: _ArtelColors.primaryDark,
+                          color: _InvoiceColors.primaryDark,
                         ),
                         pw.SizedBox(width: 2),
                         zText(
                             text: tr(text: 'invoiceNumber', tr: language),
                             fontSize: 10,
                             fontWeight: pw.FontWeight.bold,
-                            color: _ArtelColors.primaryDark),
+                            color: _InvoiceColors.primaryDark),
                       ],
 
                       if(language == "fa" || language == "ar")...[
@@ -1639,13 +1638,13 @@ class InvoicePrintService extends PrintServices {
                             text: tr(text: 'invoiceNumber', tr: language),
                             fontSize: 10,
                             fontWeight: pw.FontWeight.bold,
-                            color: _ArtelColors.primaryDark),
+                            color: _InvoiceColors.primaryDark),
                         pw.SizedBox(width: 3),
                         zText(
                           text: invoiceTitle,
                           fontSize: 10,
                           fontWeight: pw.FontWeight.bold,
-                          color: _ArtelColors.primaryDark,
+                          color: _InvoiceColors.primaryDark,
                         ),
                       ],
 
@@ -1664,7 +1663,7 @@ class InvoicePrintService extends PrintServices {
                   zText(
                       text: tr(text: "invoiceDate", tr: language),
                       fontSize: 10,
-                      color: _ArtelColors.primaryDark,
+                      color: _InvoiceColors.primaryDark,
                       fontWeight: pw.FontWeight.bold),
                   verticalDivider(
                       height: 10, width: 1),
@@ -1676,7 +1675,7 @@ class InvoicePrintService extends PrintServices {
                             DateTime.now().shamsiDateFormatted,
                         fontSize: 10,
                         fontWeight: pw.FontWeight.bold,
-                        color: _ArtelColors.primaryDark,
+                        color: _InvoiceColors.primaryDark,
                       ),
                       verticalDivider(
                           height: 10, width: 1),
@@ -1685,7 +1684,7 @@ class InvoicePrintService extends PrintServices {
                             DateTime.now().toFormattedDate(),
                         fontSize: 9,
                         fontWeight: pw.FontWeight.bold,
-                        color: _ArtelColors.accentText,
+                        color: _InvoiceColors.accentText,
                       ),
                     ],
                   ),
@@ -1712,7 +1711,7 @@ class InvoicePrintService extends PrintServices {
                       text: tr(text: 'addressAndPhone', tr: language),
                       fontSize: 10,
                       fontWeight: pw.FontWeight.bold,
-                      color: _ArtelColors.primaryDark,
+                      color: _InvoiceColors.primaryDark,
                     ),
                     ..._buildAddressPhoneItems(com),
                   ],
@@ -1750,7 +1749,7 @@ class InvoicePrintService extends PrintServices {
               text: "$title :",
               fontSize: 10,
               fontWeight: pw.FontWeight.bold,
-              color: _ArtelColors.primaryDark),
+              color: _InvoiceColors.primaryDark),
           pw.SizedBox(width: 4),
           zText(
             text: customerSupplierName,
@@ -1795,7 +1794,7 @@ class InvoicePrintService extends PrintServices {
       child: zText(
         text: (index + 1).toString(),
         fontSize: 10,
-        color: _ArtelColors.accentText,
+        color: _InvoiceColors.accentText,
       ),
     ));
 
@@ -1845,7 +1844,7 @@ class InvoicePrintService extends PrintServices {
           text: totalQty,
           fontSize: 10,
           fontWeight: pw.FontWeight.bold,
-          color: _ArtelColors.primaryDark,
+          color: _InvoiceColors.primaryDark,
         ),
       ));
     }
@@ -1863,7 +1862,7 @@ class InvoicePrintService extends PrintServices {
           text: totalLocalAmount,
           fontSize: 10,
           fontWeight: pw.FontWeight.bold,
-          color: _ArtelColors.primaryDark,
+          color: _InvoiceColors.primaryDark,
         ),
       ));
     } else {
@@ -1882,7 +1881,7 @@ class InvoicePrintService extends PrintServices {
           text: item.total.toAmount(),
           fontSize: 10,
           fontWeight: pw.FontWeight.bold,
-          color: _ArtelColors.primaryDark,
+          color: _InvoiceColors.primaryDark,
         ),
       ));
     }
@@ -1948,13 +1947,13 @@ class InvoicePrintService extends PrintServices {
       widgets.add(moneyCell(
         totalLocalAmount,
         bold: true,
-        color: _ArtelColors.primaryDark,
+        color: _InvoiceColors.primaryDark,
       ));
     } else {
       widgets.add(moneyCell(
         item.total.toAmount(),
         bold: true,
-        color: _ArtelColors.primaryDark,
+        color: _InvoiceColors.primaryDark,
       ));
     }
 
@@ -1970,7 +1969,7 @@ class InvoicePrintService extends PrintServices {
       widgets.add(numericCell(
         totalQty,
         bold: true,
-        color: _ArtelColors.primaryDark,
+        color: _InvoiceColors.primaryDark,
       ));
     }
 
@@ -1998,7 +1997,7 @@ class InvoicePrintService extends PrintServices {
     // ── 7: number ──
     widgets.add(numericCell(
       (index + 1).toString(),
-      color: _ArtelColors.accentText,
+      color: _InvoiceColors.accentText,
     ));
 
     return widgets;
@@ -2112,7 +2111,7 @@ class InvoicePrintService extends PrintServices {
                 needsConversion ? -totalLocalDiscount : -totalDiscount,
                 currency:
                 needsConversion ? safeLocalCurrency : safeBaseCurrency,
-                color: _ArtelColors.negative,
+                color: _InvoiceColors.negative,
                 fontSize: 11),
           if (effectiveExtraCharges > 0)
             _buildCompactRow(
@@ -2123,7 +2122,7 @@ class InvoicePrintService extends PrintServices {
                     : effectiveExtraCharges,
                 currency:
                 needsConversion ? safeLocalCurrency : safeBaseCurrency,
-                color: _ArtelColors.warning,
+                color: _InvoiceColors.warning,
                 fontSize: 11),
 
           _buildGrandTotalCompact(
@@ -2131,7 +2130,7 @@ class InvoicePrintService extends PrintServices {
             value: needsConversion ? grandTotalLocal : finalGrandTotal,
             currency: needsConversion ? safeLocalCurrency : safeBaseCurrency,
             language: language,
-            color: _ArtelColors.primaryDark,
+            color: _InvoiceColors.primaryDark,
           ),
           pw.SizedBox(height: 3),
           if (cashPayment > 0) ...[
@@ -2168,7 +2167,7 @@ class InvoicePrintService extends PrintServices {
                     zText(
                       text: tr(text: 'exchangeRate', tr: language),
                       fontSize: 10,
-                      color: _ArtelColors.accentText,
+                      color: _InvoiceColors.accentText,
                       textAlign: pw.TextAlign.start,
                     ),
                     pw.Spacer(),
@@ -2176,7 +2175,7 @@ class InvoicePrintService extends PrintServices {
                       text:
                       "1 ${_getLocalizedCurrency(safeBaseCurrency, language)} = ${safeExchangeRate.toStringAsFixed(4)} ${_getLocalizedCurrency(safeLocalCurrency, language)}",
                       fontSize: 10,
-                      color: _ArtelColors.accentText,
+                      color: _InvoiceColors.accentText,
                       textAlign: pw.TextAlign.end,
                     ),
                   ],
@@ -2198,7 +2197,7 @@ class InvoicePrintService extends PrintServices {
               zText(
                   text: tr(text: "amountInWords", tr: language),
                   fontSize: 8,
-                  color: _ArtelColors.accentText,
+                  color: _InvoiceColors.accentText,
                   textAlign: pw.TextAlign.start),
               verticalDivider(
                   height: 10, width: 1),
@@ -2221,7 +2220,7 @@ class InvoicePrintService extends PrintServices {
     required String currency,
     required String language,
     int decimalRange = 2,
-    pw.PdfColor color = _ArtelColors.primaryDark,
+    pw.PdfColor color = _InvoiceColors.primaryDark,
   }) {
     final displayValue = value.toAmount(decimal: decimalRange);
     final localizedCurrency = _getLocalizedCurrency(currency, language);
@@ -2231,9 +2230,9 @@ class InvoicePrintService extends PrintServices {
       margin: const pw.EdgeInsets.only(top: 3),
       padding: const pw.EdgeInsets.symmetric(vertical: 3, horizontal: 6),
       decoration: pw.BoxDecoration(
-        color: _ArtelColors.primaryLight,
+        color: _InvoiceColors.primaryLight,
         borderRadius: pw.BorderRadius.circular(2),
-        border: pw.Border.all(color: _ArtelColors.border, width: 0.6),
+        border: pw.Border.all(color: _InvoiceColors.border, width: 0.6),
       ),
       child: pw.Row(
         children: [
@@ -2242,7 +2241,7 @@ class InvoicePrintService extends PrintServices {
               text: label,
               fontSize: 12,
               fontWeight: pw.FontWeight.bold,
-              color: _ArtelColors.primaryDark,
+              color: _InvoiceColors.primaryDark,
               textAlign: pw.TextAlign.start,
             ),
           ),
@@ -2273,10 +2272,10 @@ class InvoicePrintService extends PrintServices {
 
     final bgColor = isNegative
         ? pw.PdfColor.fromInt(0xFFFFEBEE)
-        : _ArtelColors.primaryLight;
+        : _InvoiceColors.primaryLight;
 
     final textColor =
-    isNegative ? _ArtelColors.negative : _ArtelColors.primaryDark;
+    isNegative ? _InvoiceColors.negative : _InvoiceColors.primaryDark;
 
     return pw.Container(
       margin: const pw.EdgeInsets.only(top: 3),
@@ -2284,7 +2283,7 @@ class InvoicePrintService extends PrintServices {
       decoration: pw.BoxDecoration(
         color: bgColor,
         borderRadius: pw.BorderRadius.circular(2),
-        border: pw.Border.all(color: _ArtelColors.border, width: 0.6),
+        border: pw.Border.all(color: _InvoiceColors.border, width: 0.6),
       ),
       child: pw.Row(
         children: [
@@ -2293,7 +2292,7 @@ class InvoicePrintService extends PrintServices {
               text: label,
               fontSize: 12,
               fontWeight: pw.FontWeight.bold,
-              color: _ArtelColors.primaryDark,
+              color: _InvoiceColors.primaryDark,
               textAlign: pw.TextAlign.start,
             ),
           ),
@@ -2334,7 +2333,7 @@ class InvoicePrintService extends PrintServices {
               fontSize: fontSize,
               fontWeight:
               isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
-              color: _ArtelColors.primaryDark,
+              color: _InvoiceColors.primaryDark,
               textAlign: pw.TextAlign.start,
             ),
           ),

@@ -51,7 +51,8 @@ class _PasswordChangeDialogState extends State<PasswordChangeDialog> {
     final tr = AppLocalizations.of(context)!;
 
     return ZFormDialog(
-      title: 'Change password',
+      padding: EdgeInsets.all(15),
+      title: tr.changePassowrd,
       icon: Icons.lock_outline_rounded,
       width: 480,
       isButtonEnabled: true,
@@ -64,7 +65,7 @@ class _PasswordChangeDialogState extends State<PasswordChangeDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ZTextFieldEntitled(
-              title: 'Current password',
+              title: tr.oldPassword,
               isRequired: true,
               controller: _old,
               securePassword: _obscure,
@@ -79,7 +80,7 @@ class _PasswordChangeDialogState extends State<PasswordChangeDialog> {
             ),
             const SizedBox(height: 12),
             ZTextFieldEntitled(
-              title: 'New password',
+              title: tr.newPassword,
               isRequired: true,
               controller: _new,
               securePassword: _obscure,
@@ -91,13 +92,13 @@ class _PasswordChangeDialogState extends State<PasswordChangeDialog> {
             ),
             const SizedBox(height: 12),
             ZTextFieldEntitled(
-              title: 'Confirm new password',
+              title: tr.confirmPassword,
               isRequired: true,
               controller: _confirm,
               securePassword: _obscure,
               validator: (v) {
                 if (v == null || v.isEmpty) return 'Required';
-                if (v != _new.text) return 'Passwords do not match';
+                if (v != _new.text) return tr.passwordNotMatch;
                 return null;
               },
             ),

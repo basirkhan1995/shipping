@@ -106,7 +106,7 @@
   "networkError": "د شبکې خطا. مهرباني وکړئ بیا هڅه وکړئ.",
   "incorrectCredential": "یوزر یا رمز عبور نادرست است",
   "delete": "پاک کول",
-  "submit": "ثبت کول",
+  "submit": "ثبت",
   "crop": "قطع کول",
   "rate": "نرخ",
   "currencyTitle": "اسعار",
@@ -692,5 +692,12 @@
   "lockVerifyDeniedServerError": "تایید ناکام شو. مهرباني وکړئ بیا هڅه وکړئ.",
   "lockVerifyDeniedNetwork": "د شبکې تېروتنه. مهرباني وکړئ خپل انټرنیټ وګورئ.",
   "lockVerifyDeniedMissingUser": "د دې کار لپاره باید لاسلیک شوی یاست.",
-  "lockVerifyDeniedPasswordRequired": "مهرباني وکړئ پټنوم ولیکئ."
+  "lockVerifyDeniedPasswordRequired": "مهرباني وکړئ پټنوم ولیکئ.",
+  "perCode": "کد",
+  "editStakeholder": "ویرایش سهمدار",
+  "personal": "معلومات شخصی",
+  "proColor": "رنگ کالا",
+  "minimumStock": "حداقل تعداد",
+  "moreDetails": "جزئیات بیشتر",
+  "noBatch": "ناموجود"
 }

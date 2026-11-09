@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shipping/Features/Widgets/zbutton.dart';
 import '../../l10n/app_localizations.dart';
-import '../Widgets/zbutton.dart';
 
 class ZFormDialog extends StatefulWidget {
   final VoidCallback? onAction;
@@ -19,10 +19,13 @@ class ZFormDialog extends StatefulWidget {
   final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
   final Widget? expandedHeader;
-
-  /// When non-null and non-empty, a red inline banner is shown
-  /// between the form content and the action buttons.
   final String? errorMessage;
+
+  /// When true:
+  ///   * the Save button shows a spinner instead of its label
+  ///   * Save / Cancel / close-X are disabled
+  ///   * the F4 shortcut is ignored
+  final bool isLoading;
 
   const ZFormDialog({
     super.key,
@@ -34,6 +37,7 @@ class ZFormDialog extends StatefulWidget {
     this.isButtonEnabled = true,
     this.expandedAction,
     this.isActionTrue = true,
+    this.errorMessage,
     this.width,
     this.height,
     this.icon,
@@ -41,7 +45,7 @@ class ZFormDialog extends StatefulWidget {
     this.margin,
     this.expandedHeader,
     this.padding,
-    this.errorMessage,
+    this.isLoading = false,
   });
 
   @override
@@ -49,7 +53,6 @@ class ZFormDialog extends StatefulWidget {
 }
 
 class _ZFormDialogState extends State<ZFormDialog> {
-  // ── Inline error banner ─────────────────────────────────────────
   Widget _buildErrorBanner(BuildContext context, String message) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
@@ -66,18 +69,13 @@ class _ZFormDialogState extends State<ZFormDialog> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 18,
-            color: scheme.onErrorContainer,
-          ),
+          Icon(Icons.error_outline, size: 18, color: scheme.onErrorContainer),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               message,
               style: TextStyle(
                 fontSize: 12.5,
-                letterSpacing: 1.3,
                 fontWeight: FontWeight.w500,
                 color: scheme.onErrorContainer,
               ),
@@ -90,42 +88,80 @@ class _ZFormDialogState extends State<ZFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final busy = widget.isLoading;
+    final canPress = widget.isButtonEnabled && !busy;
+
     return StatefulBuilder(
       builder: (context, setState) {
         return Padding(
-          padding: widget.padding ?? const EdgeInsets.all(15.0),
+          padding: widget.padding ?? const EdgeInsets.all(5.0),
           child: AlertDialog(
             alignment: widget.alignment ?? AlignmentGeometry.center,
             contentPadding: EdgeInsets.zero,
             insetPadding: EdgeInsets.zero,
             titlePadding: EdgeInsets.zero,
             actionsPadding: EdgeInsets.zero,
-            content: Material(
-              color: widget.backgroundColor ?? Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(4),
-              clipBehavior: Clip.antiAlias,
-              child: SizedBox(
-                width: widget.width ?? MediaQuery.sizeOf(context).width * .4,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    buildHeader(),
-                    Flexible(
-                      child: Container(
-                        padding: widget.padding ??
-                            const EdgeInsets.symmetric(
-                                horizontal: 5, vertical: 5),
-                        child: widget.child,
+            content: Shortcuts(
+              shortcuts: {
+                LogicalKeySet(LogicalKeyboardKey.f4):
+                const ActivateIntent(),
+              },
+              child: Actions(
+                actions: {
+                  ActivateIntent: CallbackAction<ActivateIntent>(
+                    onInvoke: (intent) {
+                      if (canPress && widget.onAction != null) {
+                        widget.onAction!();
+                      }
+                      return null;
+                    },
+                  ),
+                },
+                child: Focus(
+                  autofocus: false,
+                  child: Container(
+                    margin: EdgeInsets.zero,
+                    padding: const EdgeInsets.all(5),
+                    width:
+                    widget.width ?? MediaQuery.sizeOf(context).width * .4,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 1,
                       ),
+                      color: widget.backgroundColor ??
+                          Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(6),
+                      boxShadow: [
+                        BoxShadow(
+                          blurRadius: 5,
+                          color: Theme.of(context).colorScheme.primary,
+                          spreadRadius: 0,
+                        ),
+                      ],
                     ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        buildHeader(context, canPress),
+                        Flexible(
+                          child: Container(
+                            padding: widget.padding ??
+                                const EdgeInsets.symmetric(
+                                    horizontal: 5, vertical: 5),
+                            child: widget.child,
+                          ),
+                        ),
 
-                    // ── Inline error banner ───────────────────────
-                    if (widget.errorMessage != null &&
-                        widget.errorMessage!.isNotEmpty)
-                      _buildErrorBanner(context, widget.errorMessage!),
+                        // Inline error banner
+                        if (widget.errorMessage != null &&
+                            widget.errorMessage!.isNotEmpty)
+                          _buildErrorBanner(context, widget.errorMessage!),
 
-                    if (widget.isActionTrue) buildAction(context),
-                  ],
+                        if (widget.isActionTrue) buildAction(context, canPress),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -135,10 +171,13 @@ class _ZFormDialogState extends State<ZFormDialog> {
     );
   }
 
-  Widget buildAction(BuildContext context) {
+  Widget buildAction(BuildContext context, bool canPress) {
     final tr = AppLocalizations.of(context)!;
+    final busy = widget.isLoading;
+
     return Padding(
-      padding: widget.padding ?? const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+      padding: widget.padding ??
+          const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -148,53 +187,38 @@ class _ZFormDialogState extends State<ZFormDialog> {
               ZOutlineButton(
                 label: Text(tr.cancel),
                 backgroundHover: Theme.of(context).colorScheme.error,
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: busy ? null : () => Navigator.of(context).pop(),
                 height: 35,
                 width: 100,
               ),
-              Shortcuts(
-                shortcuts: {
-                  LogicalKeySet(LogicalKeyboardKey.enter):
-                  const ActivateIntent(),
-                },
-                child: Actions(
-                  actions: {
-                    ActivateIntent: CallbackAction<ActivateIntent>(
-                      onInvoke: (intent) {
-                        if (widget.isButtonEnabled &&
-                            widget.onAction != null) {
-                          widget.onAction!();
-                        }
-                        return null;
-                      },
-                    ),
-                  },
-                  child: Focus(
-                    child: ZOutlineButton(
-                      isActive: true,
-                      backgroundColor:
-                      Theme.of(context).colorScheme.primary,
-                      height: 35,
-                      width: 100,
-                      label: widget.actionLabel ?? Text("Submit"),
-                      onPressed: widget.onAction,
-                    ),
+              ZOutlineButton(
+                disable: !canPress,
+                isActive: true,
+                height: 35,
+                width: 100,
+                label: busy
+                    ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
                   ),
-                ),
+                )
+                    : (widget.actionLabel ?? Text(tr.save)),
+                onPressed: canPress ? widget.onAction : null,
               ),
             ],
           ),
           Row(
-            children: [
-              widget.expandedAction ?? Text(""),
-            ],
+            children: [widget.expandedAction ?? const Text("")],
           ),
         ],
       ),
     );
   }
 
-  Widget buildHeader() {
+  Widget buildHeader(BuildContext context, bool canPress) {
     return Container(
       margin: EdgeInsets.zero,
       padding: EdgeInsets.zero,
@@ -202,8 +226,7 @@ class _ZFormDialogState extends State<ZFormDialog> {
       child: Column(
         children: [
           Padding(
-            padding:
-            const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -220,10 +243,10 @@ class _ZFormDialogState extends State<ZFormDialog> {
                         Theme.of(context).colorScheme.secondary,
                         size: 24,
                       )
-                          : SizedBox(),
+                          : const SizedBox(),
                       widget.icon != null
                           ? const SizedBox(width: 8)
-                          : SizedBox(),
+                          : const SizedBox(),
                       Text(
                         widget.title,
                         style: TextStyle(
@@ -236,11 +259,11 @@ class _ZFormDialogState extends State<ZFormDialog> {
                   ),
                 ),
                 InkWell(
-                  onTap: () => Navigator.of(context).pop(),
+                  onTap: canPress ? () => Navigator.of(context).pop() : null,
                   child: Padding(
                     padding: const EdgeInsets.all(5.0),
                     child: widget.expandedHeader ??
-                        Icon(Icons.close, size: 23),
+                        const Icon(Icons.close, size: 23),
                   ),
                 ),
               ],

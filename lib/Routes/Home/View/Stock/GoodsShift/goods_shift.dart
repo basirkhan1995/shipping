@@ -7,7 +7,7 @@ import '../../../../../Features/Date/shamsi_converter.dart';
 import '../../../../../Features/Other/responsive_widget.dart';
 import '../../../../../Features/Widgets/cover.dart';
 import '../../../../../Features/Widgets/extensions.dart';
-import '../../../../../Features/Widgets/noData_widget.dart';
+import '../../../../../Features/Widgets/no_data_widget.dart';
 import '../../../../../Features/Widgets/utils.dart';
 import '../../../../../Features/Widgets/zbutton.dart';
 import '../../../../../l10n/app_localizations.dart';

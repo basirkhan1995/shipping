@@ -1,5 +1,6 @@
-
 class AccountStatementModel {
+  final int? perId;
+  final int perLock;
   final int? accNumber;
   final String? accName;
   final String? signatory;
@@ -16,6 +17,8 @@ class AccountStatementModel {
   final List<StmtRecord>? records;
 
   AccountStatementModel({
+    this.perId,
+    this.perLock = 0,
     this.accNumber,
     this.accName,
     this.trnStatus,
@@ -32,7 +35,11 @@ class AccountStatementModel {
     this.records,
   });
 
+  bool get isLocked => perLock == 1;
+
   AccountStatementModel copyWith({
+    int? perId,
+    int? perLock,
     int? accNumber,
     String? accName,
     String? signatory,
@@ -48,6 +55,8 @@ class AccountStatementModel {
     List<StmtRecord>? records,
   }) =>
       AccountStatementModel(
+        perId: perId ?? this.perId,
+        perLock: perLock ?? this.perLock,
         accNumber: accNumber ?? this.accNumber,
         accName: accName ?? this.accName,
         signatory: signatory ?? this.signatory,
@@ -63,43 +72,46 @@ class AccountStatementModel {
         records: records ?? this.records,
       );
 
-  // Updated factory method to handle Map<dynamic, dynamic>
   factory AccountStatementModel.fromMap(dynamic json) {
-    // Convert Map<dynamic, dynamic> to Map<String, dynamic>
     final Map<String, dynamic> data = _convertMap(json);
 
     return AccountStatementModel(
-      accNumber: data["accNumber"] as int?,
-      accName: data["accName"] as String?,
-      signatory: data["signatory"] as String?,
-      perPhone: data["perPhone"] as String?,
-      perEmail: data["perEmail"] as String?,
-      address: data["address"] as String?,
-      actCurrency: data["actCurrency"] as String?,
-      ccySymbol: data["ccySymbol"] as String?,
-      actCreditLimit: data["actCreditLimit"] as String?,
-      curBalance: data["curBalance"] as String?,
-      avilBalance: data["avilBalance"] as String?,
-      actStatus: data["actStatus"] as int?,
-      records: data["records"] == null ? [] : List<StmtRecord>.from((data["records"] as List).map((x) => StmtRecord.fromMap(x))),
+      perId: _asInt(data["perID"]),
+      perLock: _asInt(data["perLock"]) ?? 0,
+      accNumber: _asInt(data["accNumber"]),
+      accName: _asString(data["accName"]),
+      signatory: _asString(data["signatory"]),
+      perPhone: _asString(data["perPhone"]),
+      perEmail: _asString(data["perEmail"]),
+      address: _asString(data["address"]),
+      actCurrency: _asString(data["actCurrency"]),
+      ccySymbol: _asString(data["ccySymbol"]),
+      actCreditLimit: _asString(data["actCreditLimit"]),
+      curBalance: _asString(data["curBalance"]),
+      avilBalance: _asString(data["avilBalance"]),
+      actStatus: _asInt(data["actStatus"]),
+      trnStatus: _asString(data["trnStatus"]),
+      records: data["records"] == null
+          ? const []
+          : List<StmtRecord>.from(
+        (data["records"] as List).map((x) => StmtRecord.fromMap(x)),
+      ),
     );
   }
 
-  // Static method to handle API response (List with one item)
   static AccountStatementModel fromApiResponse(dynamic response) {
     if (response is List) {
-      if (response.isEmpty) {
-        throw "No account statement data found";
-      }
+      if (response.isEmpty) throw "No account statement data found";
       return AccountStatementModel.fromMap(response.first);
     } else if (response is Map) {
       return AccountStatementModel.fromMap(response);
-    } else {
-      throw "Invalid response format";
     }
+    throw "Invalid response format";
   }
 
   Map<String, dynamic> toMap() => {
+    "perID": perId,
+    "perLock": perLock,
     "accNumber": accNumber,
     "accName": accName,
     "signatory": signatory,
@@ -112,18 +124,20 @@ class AccountStatementModel {
     "curBalance": curBalance,
     "avilBalance": avilBalance,
     "actStatus": actStatus,
-    "records": records == null ? [] : List<dynamic>.from(records!.map((x) => x.toMap())),
+    "trnStatus": trnStatus,
+    "records": records == null
+        ? []
+        : List<dynamic>.from(records!.map((x) => x.toMap())),
   };
 
-  // Helper method to convert Map<dynamic, dynamic> to Map<String, dynamic>
   static Map<String, dynamic> _convertMap(dynamic json) {
-    if (json is Map<String, dynamic>) {
-      return json;
-    } else if (json is Map<dynamic, dynamic>) {
-      return json.map<String, dynamic>((key, value) => MapEntry(key.toString(), value));
-    } else {
-      throw FormatException("Expected a Map but got ${json.runtimeType}");
+    if (json is Map<String, dynamic>) return json;
+    if (json is Map) {
+      return json.map<String, dynamic>(
+            (key, value) => MapEntry(key.toString(), value),
+      );
     }
+    throw FormatException("Expected a Map but got ${json.runtimeType}");
   }
 }
 
@@ -157,7 +171,8 @@ class StmtRecord {
     String? credit,
     String? total,
     String? status,
-    }) => StmtRecord(
+  }) =>
+      StmtRecord(
         sortOrder: sortOrder ?? this.sortOrder,
         trnEntryDate: trnEntryDate ?? this.trnEntryDate,
         trnReference: trnReference ?? this.trnReference,
@@ -168,22 +183,20 @@ class StmtRecord {
         status: status ?? this.status,
       );
 
-  // Updated factory method to handle Map<dynamic, dynamic>
   factory StmtRecord.fromMap(dynamic json) {
     final Map<String, dynamic> data = AccountStatementModel._convertMap(json);
 
     return StmtRecord(
-      sortOrder: data["sort_order"] as int?,
-      trnEntryDate: data["trnEntryDate"] as String?,
-      trnReference: data["trnReference"] as String?,
-      trdNarration: data["trdNarration"] as String?,
-      debit: data["debit"] as String?,
-      credit: data["credit"] as String?,
-      total: data["total"] as String?,
-      status: data["status"] as String?,
+      sortOrder: _asInt(data["sort_order"]),
+      trnEntryDate: _asString(data["trnEntryDate"]),
+      trnReference: _asString(data["trnReference"]),
+      trdNarration: _asString(data["trdNarration"]),
+      debit: _asString(data["debit"]),
+      credit: _asString(data["credit"]),
+      total: _asString(data["total"]),
+      status: _asString(data["status"]),
     );
   }
-
 
   Map<String, dynamic> toMap() => {
     "sort_order": sortOrder,
@@ -195,4 +208,18 @@ class StmtRecord {
     "total": total,
     "status": status,
   };
+}
+
+int? _asInt(dynamic v) {
+  if (v == null) return null;
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  if (v is String) return int.tryParse(v.trim());
+  return null;
+}
+
+String? _asString(dynamic v) {
+  if (v == null) return null;
+  if (v is String) return v;
+  return v.toString();
 }

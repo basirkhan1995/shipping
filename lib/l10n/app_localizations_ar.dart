@@ -317,7 +317,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get delete => 'پاک کول';
 
   @override
-  String get submit => 'ثبت کول';
+  String get submit => 'ثبت';
 
   @override
   String get crop => 'قطع کول';
@@ -2088,4 +2088,25 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get lockVerifyDeniedPasswordRequired => 'مهرباني وکړئ پټنوم ولیکئ.';
+
+  @override
+  String get perCode => 'کد';
+
+  @override
+  String get editStakeholder => 'ویرایش سهمدار';
+
+  @override
+  String get personal => 'معلومات شخصی';
+
+  @override
+  String get proColor => 'رنگ کالا';
+
+  @override
+  String get minimumStock => 'حداقل تعداد';
+
+  @override
+  String get moreDetails => 'جزئیات بیشتر';
+
+  @override
+  String get noBatch => 'ناموجود';
 }

@@ -569,12 +569,12 @@
   "recentPrice": "Recent",
   "sellPrice": "Sell Price",
   "landedCost": "Landed Cost",
-  "productDetails": "Product Details",
+  "productDetails": "Details",
   "available": "Available",
   "productCode": "Product Code",
   "madeIn": "Made in",
   "totalItems": "Total Items",
-  "productImages": "Product Images",
+  "productImages": "Images",
   "nameAndDescriptions": "Name & Descriptions",
   "newProduct": "New Product",
   "productAlreadyExist": "Product already exists.",
@@ -692,5 +692,12 @@
   "lockVerifyDeniedServerError": "Verification failed. Please try again.",
   "lockVerifyDeniedNetwork": "Network error. Please check your connection.",
   "lockVerifyDeniedMissingUser": "You must be signed in to perform this action.",
-  "lockVerifyDeniedPasswordRequired": "Please enter your password."
+  "lockVerifyDeniedPasswordRequired": "Please enter your password.",
+  "perCode": "Code",
+  "editStakeholder": "Edit Stakeholder",
+  "personal": "Personal",
+  "proColor": "Product Color",
+  "minimumStock": "Minimum Stock",
+  "moreDetails": "More Details",
+  "noBatch": "No Batch Available"
 }

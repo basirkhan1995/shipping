@@ -106,7 +106,7 @@
   "networkError": "خطای شبکه. لطفاً دوباره تلاش کنید.",
   "incorrectCredential": "یوزر یا رمز عبور نادرست است",
   "delete": "حذف کردن",
-  "submit": "ثبت کردن",
+  "submit": "ثبت",
   "crop": "قطع کردن",
   "rate": "نرخ",
   "currencyTitle": "اسعار",
@@ -601,7 +601,7 @@
   "notEnoughMsg": "موجودی کافی نیست:",
   "overLimitMessage": "مبلغ تراکنش از حد مجاز بیشتر است",
   "accountBlockedMessage": "حساب مسدود است",
-  "invoiceSummary": "خلاصه فاکتور",
+  "invoiceSummary": "جزئیات بل",
   "subtotal": "جمع جزء",
   "itemDiscounts": "تخفیف اقلام",
   "afterItemDiscount": "بعد از تخفیف اقلام",
@@ -692,5 +692,12 @@
   "lockVerifyDeniedServerError": "تایید ناموفق بود. لطفاً دوباره تلاش کنید.",
   "lockVerifyDeniedNetwork": "خطای شبکه. لطفاً اتصال اینترنت خود را بررسی کنید.",
   "lockVerifyDeniedMissingUser": "برای انجام این عملیات باید وارد حساب شده باشید.",
-  "lockVerifyDeniedPasswordRequired": "لطفاً رمز عبور را وارد کنید."
+  "lockVerifyDeniedPasswordRequired": "لطفاً رمز عبور را وارد کنید.",
+  "perCode": "کد",
+  "editStakeholder": "ویرایش سهمدار",
+  "personal": "معلومات شخصی",
+  "proColor": "رنگ کالا",
+  "minimumStock": "حداقل تعداد",
+  "moreDetails": "جزئیات بیشتر",
+  "noBatch": "ناموجود"
 }

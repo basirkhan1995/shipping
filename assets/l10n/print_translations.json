@@ -1616,5 +1616,25 @@
     "en": "Cash Voucher",
     "fa": "سند نقدی",
     "ps": "نغدي سند"
+  },
+  "termsAndConditionTitle": {
+    "en": "Terms & Conditions",
+    "ar": "شرایط و مقررات",
+    "fa": "شرایط و مقررات"
+  },
+  "termsAndCondition1": {
+    "en": "All electronic devices come with a warranty and guarantee in accordance with the company's policy.",
+    "ar": "همه وسایل الکترونیکی دارای ورنتی و گرنتی مطابق لایحه کمپنی میباشد.",
+    "fa": "همه وسایل الکترونیکی دارای ورنتی و گرنتی مطابق لایحه کمپنی میباشد."
+  },
+  "termsAndCondition2": {
+    "en": "This document is not valid without a stamp and signature.",
+    "ar": "سند هذا بدون مهر و امضاء اعتبار ندارد.",
+    "fa": "سند هذا بدون مهر و امضاء اعتبار ندارد."
+  },
+  "termsAndCondition3": {
+    "en": "Sold items cannot be returned.",
+    "ar": "جنس فروخته شده واپس گرفته نمیشود.",
+    "fa": "جنس فروخته شده واپس گرفته نمیشود."
   }
 }

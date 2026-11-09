@@ -32,8 +32,6 @@ class UserProfileView extends StatelessWidget {
       );
     }
 
-    // ✅ Provide the bloc at the top so every descendant can find it,
-    //    and dispatch the initial load immediately.
     return BlocProvider(
       create: (_) => UserProfileBloc(context.read<Repositories>())
         ..add(LoadUserProfile(resolvedName)),
@@ -143,7 +141,6 @@ class _ProfileBody extends StatelessWidget {
     return BlocListener<UserProfileBloc, UserProfileState>(
       listenWhen: (p, c) => c.message != null,
       listener: (context, state) {
-        // 1) Show the toast (existing behaviour)
         ToastManager.show(
           context: context,
           title: state.isError ? 'Error' : 'Success',
@@ -151,13 +148,10 @@ class _ProfileBody extends StatelessWidget {
           type: state.isError ? ToastType.error : ToastType.success,
         );
 
-        // 2) If the write succeeded, refresh the auth loginData
-        //    so header / sidebar / permissions re-read the latest profile.
         if (!state.isError && _needsAuthRefresh(state)) {
           context.read<AuthBloc>().add(RefreshProfileEvent(usrName));
         }
 
-        // 3) Clear the one-shot message
         context.read<UserProfileBloc>().add(const ClearProfileMessage());
       },
       child: BlocBuilder<UserProfileBloc, UserProfileState>(
@@ -186,11 +180,10 @@ class _ProfileBody extends StatelessWidget {
     );
   }
 
-  /// Which success states should trigger a full auth refresh?
   bool _needsAuthRefresh(UserProfileState s) =>
-      s is UserProfileSaved ||       // details update
-          s is ProfilePasswordChanged || // password change
-          s is ProfilePhotoUploaded;     // photo upload
+      s is UserProfileSaved ||
+          s is ProfilePasswordChanged ||
+          s is ProfilePhotoUploaded;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -208,7 +201,6 @@ class _ProfileContent extends StatelessWidget {
   });
 
   bool get _isWide => layout == _ProfileLayout.wide;
-
   bool get _passwordBusy => state is ProfilePasswordChanging;
   bool get _photoBusy => state is ProfilePhotoUploading;
   bool get _saving => state is UserProfileSaving;
@@ -368,38 +360,33 @@ class _ProfileCard extends StatelessWidget {
               fg: color.primary,
               bg: color.primary.withValues(alpha: .08),
             ),
-
           const SizedBox(height: 14),
           _sectionDivider(color, tr.profile.toUpperCase()),
           const SizedBox(height: 10),
-
-              _info(
-                context,
-                icon: Icons.badge_outlined,
-                title: tr.gender,
-                value: profile.personal.perGender ?? '',
-              ),
-              if (profile.personal.perDoB != null)
-                _info(
-                  context,
-                  icon: Icons.cake_outlined,
-                  title: tr.dob,
-                  value: _formatDate(profile.personal.perDoB!),
-                ),
-              if ((profile.personal.perENIDNo ?? '').isNotEmpty)
-                _info(
-                  context,
-                  icon: Icons.credit_card_outlined,
-                  title: tr.nationalId,
-                  value: profile.personal.perENIDNo!,
-                ),
-
-
+          _info(
+            context,
+            icon: Icons.badge_outlined,
+            title: tr.gender,
+            value: profile.personal.perGender ?? '',
+          ),
+          if (profile.personal.perDoB != null)
+            _info(
+              context,
+              icon: Icons.cake_outlined,
+              title: tr.dob,
+              value: _formatDate(profile.personal.perDoB!),
+            ),
+          if ((profile.personal.perENIDNo ?? '').isNotEmpty)
+            _info(
+              context,
+              icon: Icons.credit_card_outlined,
+              title: tr.nationalId,
+              value: profile.personal.perENIDNo!,
+            ),
           _sectionDivider(color, tr.address.toUpperCase()),
           const SizedBox(height: 10),
-
           if (profile.address != null) ...[
-            if ((profile.address!.addName ?? '').isNotEmpty)...[
+            if ((profile.address!.addName ?? '').isNotEmpty) ...[
               _info(
                 context,
                 icon: Icons.location_on_outlined,
@@ -408,7 +395,6 @@ class _ProfileCard extends StatelessWidget {
               ),
               const SizedBox(height: 10),
             ],
-
             Row(
               spacing: 5,
               children: [
@@ -566,7 +552,7 @@ class _ProfileCard extends StatelessWidget {
 
   Widget _info(
       BuildContext context, {
-         IconData? icon,
+        IconData? icon,
         required String title,
         required String value,
       }) {
@@ -578,7 +564,7 @@ class _ProfileCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if(icon!=null)...[
+          if (icon != null) ...[
             Container(
               padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
@@ -589,7 +575,6 @@ class _ProfileCard extends StatelessWidget {
             ),
             const SizedBox(width: 10),
           ],
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -636,61 +621,53 @@ class _ProfileAvatar extends StatelessWidget {
     final color = Theme.of(context).colorScheme;
     final fileName = _extractFileName(photoUrl);
 
-    final inner = SizedBox(
-      width: 120,
-      height: 120,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          ImageHelper.stakeholderProfile(
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 24,
+                spreadRadius: 2,
+                color: color.primary.withValues(alpha: .12),
+              ),
+            ],
+          ),
+          child: ImageHelper.stakeholderProfile(
             imageName: fileName,
             size: 120,
             shapeStyle: ShapeStyle.circle,
+            fit: BoxFit.cover,
             placeholderColor: color.primary.withValues(alpha: .15),
             placeholderIcon: Icons.person_rounded,
-            fit: BoxFit.cover,
+            border: Border.all(
+              color: color.primary.withValues(alpha: .25),
+              width: 3,
+            ),
           ),
-          if (_uploading) ...[
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.black.withValues(alpha: 0.35),
-              ),
-            ),
-            SizedBox(
-              width: 44,
-              height: 44,
-              child: CircularProgressIndicator(
-                value: progress == 0 ? null : progress,
-                strokeWidth: 3,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color.primary.withValues(alpha: .1),
-        border: Border.all(
-          color: color.primary.withValues(alpha: .25),
-          width: 2,
         ),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 24,
-            spreadRadius: 2,
-            color: color.primary.withValues(alpha: .12),
+        if (_uploading) ...[
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.black.withValues(alpha: 0.35),
+            ),
+          ),
+          SizedBox(
+            width: 44,
+            height: 44,
+            child: CircularProgressIndicator(
+              value: progress == 0 ? null : progress,
+              strokeWidth: 3,
+              color: Colors.white,
+            ),
           ),
         ],
-      ),
-      child: ClipOval(child: inner),
+      ],
     );
   }
 
@@ -728,8 +705,7 @@ class _ActionPanel extends StatelessWidget {
         _ActionCard(
           icon: Icons.perm_identity_rounded,
           title: tr.editProfile.toUpperCase(),
-          subtitle:
-          tr.editProfileHint,
+          subtitle: tr.editProfileHint,
           busy: saving,
           onAction: () => _openEditDialog(context),
         ),
@@ -745,7 +721,8 @@ class _ActionPanel extends StatelessWidget {
         _ActionCard(
           icon: Icons.photo_camera_outlined,
           title: tr.profilePhoto.toUpperCase(),
-          subtitle: progress != null ? '${tr.uploading} ${(progress! * 100).toStringAsFixed(0)}%'
+          subtitle: progress != null
+              ? '${tr.uploading} ${(progress! * 100).toStringAsFixed(0)}%'
               : tr.profilePhotoHint,
           busy: photoBusy,
           onAction: () => _pickAndUpload(context),
@@ -754,15 +731,18 @@ class _ActionPanel extends StatelessWidget {
     );
   }
 
+  /// Opens the edit dialog.
+  ///
+  /// The dialog dispatches `UpdateUserProfile` to the bloc itself and
+  /// closes when it receives `UserProfileSaved`. The parent therefore
+  /// only needs to `await` the dialog — it does NOT dispatch a second
+  /// update, and it does NOT expect a return value.
   Future<void> _openEditDialog(BuildContext context) async {
-    final bloc = context.read<UserProfileBloc>();
-    final updated = await showDialog<UpdateUserProfileRequest>(
+    await showDialog<void>(
       context: context,
       builder: (_) => UserProfileFormDialog(profile: profile),
     );
-    if (updated != null) {
-      bloc.add(UpdateUserProfile(updated));
-    }
+    // No return value to read, no second bloc.add — the dialog did it.
   }
 
   Future<void> _openPasswordDialog(BuildContext context) async {
@@ -878,12 +858,13 @@ class _ActionCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            busy ? const SizedBox(
+            busy
+                ? const SizedBox(
               width: 14,
               height: 14,
               child: CircularProgressIndicator(strokeWidth: 2),
-            ) : Icon(Icons.arrow_forward_ios_rounded,size: 18),
-
+            )
+                : Icon(Icons.arrow_forward_ios_rounded, size: 18),
           ],
         ),
       ),

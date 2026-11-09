@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../View/Security/verify_lock.dart';
-import '../model/stk_model.dart';
+import 'verify_lock.dart';
+import '../../model/stk_model.dart';
 
 /// Runs the admin verification flow for a locked stakeholder.
 /// Returns `true` when it's safe to proceed (either the stakeholder is

@@ -5,7 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../../../Features/Other/responsive_widget.dart';
 import '../../../../../../Features/Widgets/cover.dart';
 import '../../../../../../Features/Widgets/extensions.dart';
-import '../../../../../../Features/Widgets/noData_widget.dart';
+import '../../../../../../Features/Widgets/no_data_widget.dart';
 import '../../../../../../Features/Widgets/toast.dart';
 import '../../../../../../Features/Widgets/zbutton.dart';
 import '../../../../../../Features/Widgets/ztextfield.dart';

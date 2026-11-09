@@ -4,7 +4,7 @@ import 'package:shipping/Features/Widgets/toast.dart';
 import '../../../../../../Features/Other/global_shortcut.dart';
 import '../../../../../../Features/Other/responsive_widget.dart';
 import '../../../../../../Features/Widgets/alert_dialog.dart';
-import '../../../../../../Features/Widgets/noData_widget.dart';
+import '../../../../../../Features/Widgets/no_data_widget.dart';
 import '../../../../../../Features/Widgets/search_field.dart';
 import '../../../../../../Features/Widgets/shimmer.dart';
 import '../../../../../../Features/Widgets/utils.dart';

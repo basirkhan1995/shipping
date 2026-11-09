@@ -1714,7 +1714,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get landedCost => 'Landed Cost';
 
   @override
-  String get productDetails => 'Product Details';
+  String get productDetails => 'Details';
 
   @override
   String get available => 'Available';
@@ -1729,7 +1729,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get totalItems => 'Total Items';
 
   @override
-  String get productImages => 'Product Images';
+  String get productImages => 'Images';
 
   @override
   String get nameAndDescriptions => 'Name & Descriptions';
@@ -2097,4 +2097,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get lockVerifyDeniedPasswordRequired => 'Please enter your password.';
+
+  @override
+  String get perCode => 'Code';
+
+  @override
+  String get editStakeholder => 'Edit Stakeholder';
+
+  @override
+  String get personal => 'Personal';
+
+  @override
+  String get proColor => 'Product Color';
+
+  @override
+  String get minimumStock => 'Minimum Stock';
+
+  @override
+  String get moreDetails => 'More Details';
+
+  @override
+  String get noBatch => 'No Batch Available';
 }

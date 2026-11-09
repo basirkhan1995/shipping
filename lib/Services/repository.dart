@@ -1869,23 +1869,35 @@ class Repositories {
     required int account,
     required String fromDate,
     required String toDate,
+    bool unlock = false,
   }) async {
     final response = await _api.post(
       endpoint: "/reports/accountStatement.php",
-      data: {"account": account, "fromDate": fromDate, "toDate": toDate},
+      data: {
+        "account": account,
+        "fromDate": fromDate,
+        "toDate": toDate,
+        if (unlock) "unlock": true,
+      },
     );
 
-    // Handle message response
+    // The server returns HTTP 200 for "locked" too. Body:
+    //   { "msg": "locked", "error": "stakeholder_locked", "perID": 1, ... }
     if (response.data is Map && response.data['msg'] != null) {
-      throw response.data['msg'];
+      final msg = response.data['msg'].toString();
+      if (msg == 'locked') {
+        throw LockedAccountException(
+          perID: response.data['perID'] as int? ?? 0,
+          message: response.data['message']?.toString() ?? 'locked',
+        );
+      }
+      throw msg;
     }
 
-    // Handle empty response
     if (response.data == null || response.data.isEmpty) {
       throw "No data received";
     }
 
-    // Convert response to string and back to ensure proper typing
     final jsonString = json.encode(response.data);
     final decodedData = json.decode(jsonString) as dynamic;
 

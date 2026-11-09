@@ -87,7 +87,7 @@ class ImageHelper {
       );
     } else if (imageName == null || imageName.isEmpty) {
       mainImage = Container(
-        color: placeholderColor,
+        color: Colors.blueGrey,
         child: Icon(
           placeholderIcon,
           size: size * 0.5,

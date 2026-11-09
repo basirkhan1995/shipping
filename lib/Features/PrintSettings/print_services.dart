@@ -183,10 +183,7 @@ abstract class PrintServices {
     final websiteIcon = pw.MemoryImage(
       (await rootBundle.load('assets/images/internet.png')).buffer.asUint8List(),
     );
-    final instagramIcon = pw.MemoryImage(
-      (await rootBundle.load('assets/images/instagram.png'))
-          .buffer
-          .asUint8List(),
+    final instagramIcon = pw.MemoryImage((await rootBundle.load('assets/images/instagram.png')).buffer.asUint8List(),
     );
     final facebookIcon = pw.MemoryImage(
       (await rootBundle.load('assets/images/facebook.png')).buffer.asUint8List(),
@@ -305,24 +302,22 @@ abstract class PrintServices {
                             color: PdfColors.grey700,
                           ),
                         ],
-                        if (report.comAddress != null &&
-                            report.comAddress!.isNotEmpty) ...[
+                        if (report.comAddress != null && report.comAddress!.isNotEmpty) ...[
                           pw.SizedBox(height: 3),
                           pw.Row(
                             crossAxisAlignment: pw.CrossAxisAlignment.start,
                             children: [
                               pw.Container(
-                                width: 17,
-                                height: 17,
+                                width: 10,
+                                height: 10,
                                 alignment: pw.Alignment.center,
                                 decoration: pw.BoxDecoration(
                                   color: iconBg,
                                   borderRadius: pw.BorderRadius.circular(2),
                                 ),
-                                child: pw.Image(addressIcon,
-                                    width: 12, height: 12),
+                                child: pw.Image(addressIcon, width: 12, height: 12),
                               ),
-                              pw.SizedBox(width: 4),
+                              pw.SizedBox(width: 6),
                               zText(
                                 text: report.comAddress!,
                                 fontSize: 9.5,

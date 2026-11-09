@@ -40,7 +40,6 @@ class SystemView extends StatelessWidget {
                   // Force segmented Android style
                   ThemeSelectorWidget(
                     width: 330,
-                    title: tr.theme,
                     style: ThemeSelectorStyle.toggle,
                     usePlatformDefault: false,
                   ),

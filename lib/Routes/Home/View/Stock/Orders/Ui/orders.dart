@@ -3,12 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/search_field.dart';
 import 'package:shipping/Routes/Home/View/Stock/GoodsShift/add_shift.dart';
-import 'package:shipping/Routes/Home/View/Stock/Orders/Ui/status_method.dart';
+import 'package:shipping/Routes/Home/View/Stock/Orders/features/status_method.dart';
 import '../../../../../../Features/Date/shamsi_converter.dart';
 import '../../../../../../Features/Other/global_shortcut.dart';
 import '../../../../../../Features/Other/responsive_widget.dart';
 import '../../../../../../Features/Widgets/extensions.dart';
-import '../../../../../../Features/Widgets/noData_widget.dart';
+import '../../../../../../Features/Widgets/no_data_widget.dart';
 import '../../../../../../Features/Widgets/shimmer.dart';
 import '../../../../../../Features/Widgets/toast.dart';
 import '../../../../../../Features/Widgets/utils.dart';
@@ -55,7 +55,7 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
   bool isRefreshing = false;
 
   // ── Ribbon spec ───────────────────────────────────────────────
-  static const _ribbonButtons = <_OrderRibbonSpec>[
+  static const _stockRibbonButtons = <_OrderRibbonSpec>[
     _OrderRibbonSpec(
       code: 'SALE',
       icon: Icons.shopping_cart_checkout_rounded,
@@ -93,10 +93,8 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
 
   late final Map<ShortcutActivator, VoidCallback> _shortcuts = {
     const SingleActivator(LogicalKeyboardKey.f1): () => _onRibbonTapped('SALE'),
-    const SingleActivator(LogicalKeyboardKey.f2): () =>
-        _onRibbonTapped('PURCHASE'),
-    const SingleActivator(LogicalKeyboardKey.f3): () =>
-        _onRibbonTapped('SHIFT'),
+    const SingleActivator(LogicalKeyboardKey.f2): () => _onRibbonTapped('PURCHASE'),
+    const SingleActivator(LogicalKeyboardKey.f3): () => _onRibbonTapped('SHIFT'),
     const SingleActivator(LogicalKeyboardKey.f4): () => _onRibbonTapped('INOUT'),
     const SingleActivator(LogicalKeyboardKey.f5): () => _onRibbonTapped('STOCK'),
   };
@@ -315,7 +313,7 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
     final textTheme = Theme.of(context).textTheme;
     final tr = AppLocalizations.of(context)!;
 
-    final primary = _ribbonButtons
+    final primary = _stockRibbonButtons
         .where((b) => b.permission == null || _hasPermission(b.permission!))
         .toList();
     final reports = _ribbonReportButtons
@@ -965,8 +963,8 @@ class _RibbonButton extends StatefulWidget {
   final String? shortcut;
   final VoidCallback onPressed;
 
-  static const double width = 120;
-  static const double height = 100;
+  static const double width = 125;
+  static const double height = 95;
 
   const _RibbonButton({
     required this.icon,
@@ -988,7 +986,7 @@ class _RibbonButtonState extends State<_RibbonButton> {
     final textTheme = Theme.of(context).textTheme;
 
     final borderColor = _hover
-        ? color.primary.withValues(alpha: .45)
+        ? color.primary.withValues(alpha: .6)
         : color.outlineVariant.withValues(alpha: .45);
 
     return Tooltip(
@@ -1007,10 +1005,9 @@ class _RibbonButtonState extends State<_RibbonButton> {
             duration: const Duration(milliseconds: 120),
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             decoration: BoxDecoration(
-              color: _hover
-                  ? color.primary.withValues(alpha: .06)
+              color: _hover ? color.primary.withValues(alpha: .06)
                   : color.primary.withValues(alpha: .04),
-              borderRadius: BorderRadius.circular(5),
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(color: borderColor, width: 1),
             ),
             child: Column(
@@ -1023,7 +1020,7 @@ class _RibbonButtonState extends State<_RibbonButton> {
                 ),
                 const SizedBox(height: 3),
                 SizedBox(
-                  height: 32,
+                  height: 28,
                   child: Center(
                     child: Text(
                       widget.label.toUpperCase(),
@@ -1032,7 +1029,7 @@ class _RibbonButtonState extends State<_RibbonButton> {
                       overflow: TextOverflow.ellipsis,
                       style: textTheme.labelSmall?.copyWith(
                         fontSize: 12,
-                        letterSpacing: 1,
+                        letterSpacing: 0.3,
                         fontWeight: FontWeight.w600,
                         color: color.onSurface,
                         height: 1.15,
@@ -1094,7 +1091,7 @@ class _RibbonSection extends StatelessWidget {
             style: textTheme.labelSmall?.copyWith(
               color: color.onSurfaceVariant.withValues(alpha: .8),
               fontWeight: FontWeight.w600,
-              fontSize: 10,
+              fontSize: 11,
               letterSpacing: 0.5,
             ),
           ),

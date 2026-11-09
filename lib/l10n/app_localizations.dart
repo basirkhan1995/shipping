@@ -3439,7 +3439,7 @@ abstract class AppLocalizations {
   /// No description provided for @productDetails.
   ///
   /// In en, this message translates to:
-  /// **'Product Details'**
+  /// **'Details'**
   String get productDetails;
 
   /// No description provided for @available.
@@ -3469,7 +3469,7 @@ abstract class AppLocalizations {
   /// No description provided for @productImages.
   ///
   /// In en, this message translates to:
-  /// **'Product Images'**
+  /// **'Images'**
   String get productImages;
 
   /// No description provided for @nameAndDescriptions.
@@ -4179,6 +4179,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please enter your password.'**
   String get lockVerifyDeniedPasswordRequired;
+
+  /// No description provided for @perCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get perCode;
+
+  /// No description provided for @editStakeholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Stakeholder'**
+  String get editStakeholder;
+
+  /// No description provided for @personal.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal'**
+  String get personal;
+
+  /// No description provided for @proColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Product Color'**
+  String get proColor;
+
+  /// No description provided for @minimumStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum Stock'**
+  String get minimumStock;
+
+  /// No description provided for @moreDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'More Details'**
+  String get moreDetails;
+
+  /// No description provided for @noBatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No Batch Available'**
+  String get noBatch;
 }
 
 class _AppLocalizationsDelegate

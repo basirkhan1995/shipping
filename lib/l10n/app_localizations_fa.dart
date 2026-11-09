@@ -319,7 +319,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get delete => 'حذف کردن';
 
   @override
-  String get submit => 'ثبت کردن';
+  String get submit => 'ثبت';
 
   @override
   String get crop => 'قطع کردن';
@@ -1804,7 +1804,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get accountBlockedMessage => 'حساب مسدود است';
 
   @override
-  String get invoiceSummary => 'خلاصه فاکتور';
+  String get invoiceSummary => 'جزئیات بل';
 
   @override
   String get subtotal => 'جمع جزء';
@@ -2089,4 +2089,25 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get lockVerifyDeniedPasswordRequired => 'لطفاً رمز عبور را وارد کنید.';
+
+  @override
+  String get perCode => 'کد';
+
+  @override
+  String get editStakeholder => 'ویرایش سهمدار';
+
+  @override
+  String get personal => 'معلومات شخصی';
+
+  @override
+  String get proColor => 'رنگ کالا';
+
+  @override
+  String get minimumStock => 'حداقل تعداد';
+
+  @override
+  String get moreDetails => 'جزئیات بیشتر';
+
+  @override
+  String get noBatch => 'ناموجود';
 }

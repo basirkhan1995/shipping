@@ -5,7 +5,7 @@ import 'package:shipping/Routes/Home/View/Settings/View/General/DefaultPermissio
 import 'package:shipping/Routes/Home/View/Settings/View/General/UserRole/bloc/user_role_bloc.dart';
 import '../../../../../../../Features/Other/responsive_widget.dart';
 import '../../../../../../../Features/Widgets/cover.dart';
-import '../../../../../../../Features/Widgets/noData_widget.dart';
+import '../../../../../../../Features/Widgets/no_data_widget.dart';
 import '../../../../../../../Features/Widgets/zbutton.dart';
 import '../../../../../../../l10n/app_localizations.dart';
 import '../../../../../../Auth/bloc/auth_bloc.dart';

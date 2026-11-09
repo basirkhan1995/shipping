@@ -8,7 +8,7 @@ import '../../../../../../Features/Other/form_dialog.dart';
 import '../../../../../../Features/Other/responsive_widget.dart';
 import '../../../../../../Features/PrintSettings/report_model.dart';
 import '../../../../../../Features/Widgets/extensions.dart';
-import '../../../../../../Features/Widgets/noData_widget.dart';
+import '../../../../../../Features/Widgets/no_data_widget.dart';
 import '../../../../../../Features/Widgets/shimmer.dart';
 import '../../../../../../Features/Widgets/utils.dart';
 import '../../../../../../Features/Widgets/zbutton.dart';

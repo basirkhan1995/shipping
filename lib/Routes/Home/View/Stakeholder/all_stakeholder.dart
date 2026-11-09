@@ -11,7 +11,7 @@ import '../../../../Features/Widgets/search_field.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'bloc/stakeholder_bloc.dart';
 import 'features/entity_card.dart';
-import 'features/security_prompt.dart';        // ← NEW
+import 'View/Security/security_prompt.dart';        // ← NEW
 import 'model/stk_model.dart';
 
 class StakeholderView extends StatelessWidget {
@@ -288,9 +288,19 @@ class _StakeholderTablet extends StatelessWidget {
   }
 }
 
-class _StakeholderDesktop extends StatelessWidget {
+class _StakeholderDesktop extends StatefulWidget {
   const _StakeholderDesktop();
 
+  @override
+  State<_StakeholderDesktop> createState() => _StakeholderDesktopState();
+}
+
+class _StakeholderDesktopState extends State<_StakeholderDesktop> {
+  @override
+  void initState() {
+    context.read<StakeholderBloc>().add(const GetStakeholdersEvent(search: ''));
+    super.initState();
+  }
   @override
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;

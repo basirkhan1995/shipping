@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../../../../Features/Date/zdate_picker.dart';
 import '../../../../../../../Features/Other/form_dialog.dart';
 import '../../../../../../../Features/Widgets/ztextfield.dart';
 import '../../../../../../../Features/zdropdown.dart';
 import '../../../../../../../l10n/app_localizations.dart';
+import 'bloc/user_profile_bloc.dart';
+import 'bloc/user_profile_event.dart';
 import 'model/user_profile_model.dart';
 
 class UserProfileFormDialog extends StatefulWidget {
@@ -29,8 +32,25 @@ class _UserProfileFormDialogState extends State<UserProfileFormDialog> {
   late final TextEditingController _addCountry;
   late final TextEditingController _addZip;
 
+  late final FocusNode _nameFocus;
+  late final FocusNode _lastNameFocus;
+  late final FocusNode _phoneFocus;
+  late final FocusNode _emailFocus;
+  late final FocusNode _enidFocus;
+  late final FocusNode _addNameFocus;
+  late final FocusNode _addCityFocus;
+  late final FocusNode _addProvinceFocus;
+  late final FocusNode _addCountryFocus;
+  late final FocusNode _addZipFocus;
+
   String? _gender;
   String? _dobIso;
+  String? _error;
+
+  /// Guards against a double `Navigator.pop` if the bloc emits
+  /// `UserProfileSaved` more than once while the pop animation is
+  /// still in flight.
+  bool _closed = false;
 
   static const _genders = ['Male', 'Female', 'Other'];
 
@@ -52,6 +72,17 @@ class _UserProfileFormDialogState extends State<UserProfileFormDialog> {
     _addProvince = TextEditingController(text: a?.addProvince ?? '');
     _addCountry = TextEditingController(text: a?.addCountry ?? '');
     _addZip = TextEditingController(text: a?.addZipCode ?? '');
+
+    _nameFocus = FocusNode();
+    _lastNameFocus = FocusNode();
+    _phoneFocus = FocusNode();
+    _emailFocus = FocusNode();
+    _enidFocus = FocusNode();
+    _addNameFocus = FocusNode();
+    _addCityFocus = FocusNode();
+    _addProvinceFocus = FocusNode();
+    _addCountryFocus = FocusNode();
+    _addZipFocus = FocusNode();
   }
 
   @override
@@ -66,18 +97,31 @@ class _UserProfileFormDialogState extends State<UserProfileFormDialog> {
     _addProvince.dispose();
     _addCountry.dispose();
     _addZip.dispose();
+
+    _nameFocus.dispose();
+    _lastNameFocus.dispose();
+    _phoneFocus.dispose();
+    _emailFocus.dispose();
+    _enidFocus.dispose();
+    _addNameFocus.dispose();
+    _addCityFocus.dispose();
+    _addProvinceFocus.dispose();
+    _addCountryFocus.dispose();
+    _addZipFocus.dispose();
+
     super.dispose();
   }
 
   String _toIso(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-'
-      '${d.month.toString().padLeft(2, '0')}-'
-      '${d.day.toString().padLeft(2, '0')}';
+          '${d.month.toString().padLeft(2, '0')}-'
+          '${d.day.toString().padLeft(2, '0')}';
 
   DateTime? _parseIso(String? s) =>
       (s == null || s.isEmpty) ? null : DateTime.tryParse(s);
 
   void _submit() {
+    if (_error != null) setState(() => _error = null);
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final profile = widget.profile;
@@ -95,18 +139,22 @@ class _UserProfileFormDialogState extends State<UserProfileFormDialog> {
       addMailing: profile.address?.addMailing ?? 0,
     );
 
-    Navigator.pop(
-      context,
-      UpdateUserProfileRequest(
-        usrName: profile.user.usrName,
-        perName: _name.text.trim(),
-        perLastName: _lastName.text.trim(),
-        perGender: _gender,
-        perDoB: _parseIso(_dobIso),
-        perENIDNo: _enid.text.trim().isEmpty ? null : _enid.text.trim(),
-        perPhone: _phone.text.trim().isEmpty ? null : _phone.text.trim(),
-        perEmail: _email.text.trim().isEmpty ? null : _email.text.trim(),
-        address: profile.address != null ? address : null,
+    context.read<UserProfileBloc>().add(
+      UpdateUserProfile(
+        UpdateUserProfileRequest(
+          usrName: profile.user.usrName,
+          perName: _name.text.trim(),
+          perLastName: _lastName.text.trim(),
+          perGender: _gender,
+          perDoB: _parseIso(_dobIso),
+          perENIDNo:
+          _enid.text.trim().isEmpty ? null : _enid.text.trim(),
+          perPhone:
+          _phone.text.trim().isEmpty ? null : _phone.text.trim(),
+          perEmail:
+          _email.text.trim().isEmpty ? null : _email.text.trim(),
+          address: profile.address != null ? address : null,
+        ),
       ),
     );
   }
@@ -115,137 +163,213 @@ class _UserProfileFormDialogState extends State<UserProfileFormDialog> {
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
 
-    return ZFormDialog(
-      title: tr.editProfile.toUpperCase(),
-      icon: Icons.edit_outlined,
-      width: 750,
-      isButtonEnabled: true,
-      actionLabel: Text(tr.save),
-      onAction: _submit,
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
+    return BlocConsumer<UserProfileBloc, UserProfileState>(
+      listenWhen: (p, c) =>
+      c is UserProfileSaved || c is UserProfileFailure,
+      listener: (context, state) {
+        if (state is UserProfileSaved) {
+          // Pop with NO value — the parent opens this dialog with
+          // `showDialog<void>`. Popping `true` triggers:
+          //   "A request was made to pop a route with a result of
+          //    type bool, but the route expected a value of type
+          //    UpdateUserProfileRequest."
+          if (mounted && !_closed) {
+            _closed = true;
+            Navigator.of(context).pop();
+          }
+        } else if (state is UserProfileFailure) {
+          if (mounted) setState(() => _error = state.message);
+        }
+      },
+      builder: (context, state) {
+        final busy = state is UserProfileSaving;
+
+        return ZFormDialog(
+          title: tr.editProfile.toUpperCase(),
+          icon: Icons.edit_outlined,
+          width: 750,
+          isButtonEnabled: true,
+          isLoading: busy,
+          errorMessage: _error,
+          actionLabel: Text(tr.save),
+          onAction: _submit,
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(4),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: ZTextFieldEntitled(
-                      title: tr.firstName,
-                      isRequired: true,
-                      controller: _name,
-                      validator: (v) =>
-                          (v == null || v.trim().isEmpty) ? 'Required' : null,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ZTextFieldEntitled(
+                          title: tr.firstName,
+                          isRequired: true,
+                          controller: _name,
+                          focusNode: _nameFocus,
+                          autoFocus: true,
+                          textInputAction: TextInputAction.next,
+                          onFieldSubmitted: (_) =>
+                              _lastNameFocus.requestFocus(),
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? 'Required'
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ZTextFieldEntitled(
+                          title: tr.lastName,
+                          controller: _lastName,
+                          focusNode: _lastNameFocus,
+                          autoFocus: false,
+                          textInputAction: TextInputAction.next,
+                          onFieldSubmitted: (_) =>
+                              _phoneFocus.requestFocus(),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ZTextFieldEntitled(
-                      title: tr.lastName,
-                      controller: _lastName,
-                    ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ZTextFieldEntitled(
+                          title: tr.phone,
+                          controller: _phone,
+                          focusNode: _phoneFocus,
+                          autoFocus: false,
+                          textInputAction: TextInputAction.next,
+                          keyboardType: TextInputType.phone,
+                          onFieldSubmitted: (_) =>
+                              _emailFocus.requestFocus(),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ZTextFieldEntitled(
+                          title: tr.email,
+                          controller: _email,
+                          focusNode: _emailFocus,
+                          autoFocus: false,
+                          textInputAction: TextInputAction.next,
+                          keyboardType: TextInputType.emailAddress,
+                          onFieldSubmitted: (_) =>
+                              _enidFocus.requestFocus(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ZTextFieldEntitled(
+                          title: tr.nationalId,
+                          controller: _enid,
+                          focusNode: _enidFocus,
+                          autoFocus: false,
+                          textInputAction: TextInputAction.next,
+                          onFieldSubmitted: (_) =>
+                              _addNameFocus.requestFocus(),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ZDropdown<String>(
+                          title: tr.gender,
+                          items: _genders,
+                          itemLabel: (g) => g,
+                          initialValue: tr.gender,
+                          selectedItem: _gender,
+                          onItemSelected: (v) =>
+                              setState(() => _gender = v),
+                          height: 40,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: GenericDatePicker(
+                          label: tr.dob,
+                          initialGregorianDate: _dobIso,
+                          onDateChanged: (iso) =>
+                              setState(() => _dobIso = iso),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ZTextFieldEntitled(
+                    title: tr.address,
+                    controller: _addName,
+                    focusNode: _addNameFocus,
+                    autoFocus: false,
+                    textInputAction: TextInputAction.next,
+                    onFieldSubmitted: (_) =>
+                        _addCityFocus.requestFocus(),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: ZTextFieldEntitled(
+                          title: tr.city,
+                          controller: _addCity,
+                          focusNode: _addCityFocus,
+                          autoFocus: false,
+                          textInputAction: TextInputAction.next,
+                          onFieldSubmitted: (_) =>
+                              _addProvinceFocus.requestFocus(),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: ZTextFieldEntitled(
+                          title: tr.province,
+                          controller: _addProvince,
+                          focusNode: _addProvinceFocus,
+                          autoFocus: false,
+                          textInputAction: TextInputAction.next,
+                          onFieldSubmitted: (_) =>
+                              _addCountryFocus.requestFocus(),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: ZTextFieldEntitled(
+                          title: tr.country,
+                          controller: _addCountry,
+                          focusNode: _addCountryFocus,
+                          autoFocus: false,
+                          textInputAction: TextInputAction.next,
+                          onFieldSubmitted: (_) =>
+                              _addZipFocus.requestFocus(),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ZTextFieldEntitled(
+                          title: tr.zipCode,
+                          controller: _addZip,
+                          focusNode: _addZipFocus,
+                          autoFocus: false,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _submit(),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: ZTextFieldEntitled(
-                      title: tr.phone,
-                      controller: _phone,
-                      keyboardType: TextInputType.phone,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ZTextFieldEntitled(
-                      title: tr.email,
-                      controller: _email,
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: ZTextFieldEntitled(
-                      title: tr.nationalId,
-                      controller: _enid,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ZDropdown<String>(
-                      title: AppLocalizations.of(context)!.gender,
-                      items: _genders,
-                      itemLabel: (g) => g,
-                      initialValue: tr.gender,
-                      selectedItem: _gender,
-                      onItemSelected: (v) => setState(() => _gender = v),
-                      height: 40,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ZTextFieldEntitled(
-                      title: tr.dob,
-                      controller: TextEditingController(text: _dobIso ?? ''),
-                      hint: 'YYYY-MM-DD',
-                      onChanged: (v) => _dobIso = v.trim(),
-                      inputFormat: [
-                        FilteringTextInputFormatter.allow(RegExp(r'[0-9-]')),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              ZTextFieldEntitled(title: tr.address, controller: _addName),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: ZTextFieldEntitled(
-                      title: tr.city,
-                      controller: _addCity,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: ZTextFieldEntitled(
-                      title: tr.province,
-                      controller: _addProvince,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: ZTextFieldEntitled(
-                      title: tr.country,
-                      controller: _addCountry,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ZTextFieldEntitled(
-                      title: tr.zipCode,
-                      controller: _addZip,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

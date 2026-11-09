@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
 import '../../l10n/app_localizations.dart';
 
-
 class NoDataWidget extends StatelessWidget {
   final String? title;
   final String? message;
