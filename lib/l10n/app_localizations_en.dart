@@ -2118,4 +2118,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noBatch => 'No Batch Available';
+
+  @override
+  String get dateFilter => 'Date filter';
+
+  @override
+  String get txnStatus => 'Txn Status';
+
+  @override
+  String get txnType => 'Txn Type';
 }

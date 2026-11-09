@@ -759,29 +759,11 @@ class _DesktopViewState extends State<_DesktopView> {
             },
           ),
         ),
-        const SizedBox(width: 6),
-        Expanded(
-          flex: 2,
-          child: ZRangeDatePicker(
-            label: tr.date,
-            startValue: _from,
-            endValue: _to,
-            onStartDateChanged: (v) {
-              setState(() => _from = v);
-              _reload();
-            },
-            onEndDateChanged: (v) {
-              setState(() => _to = v);
-              _reload();
-            },
-            gregorianTextStyle: const TextStyle(fontSize: 12),
-          ),
-        ),
         const SizedBox(width: 8),
         Expanded(
           flex: 2,
           child: ZDropdown<_TypeOption>(
-            title: tr.type,
+            title: tr.txnType,
             items: _typeOptions,
             multiSelect: true,
             selectedItems: _types.toList(),
@@ -803,7 +785,7 @@ class _DesktopViewState extends State<_DesktopView> {
         Expanded(
           flex: 2,
           child: ZDropdown<_StatusOption>(
-            title: tr.status,
+            title: tr.txnStatus,
             items: _statusOptions,
             selectedItem: _status,
             initialValue: _statusLabel(tr, _status),
@@ -813,6 +795,24 @@ class _DesktopViewState extends State<_DesktopView> {
               setState(() => _status = s);
               _reload();
             },
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          flex: 2,
+          child: ZRangeDatePicker(
+            label: tr.dateFilter,
+            startValue: _from,
+            endValue: _to,
+            onStartDateChanged: (v) {
+              setState(() => _from = v);
+              _reload();
+            },
+            onEndDateChanged: (v) {
+              setState(() => _to = v);
+              _reload();
+            },
+            gregorianTextStyle: const TextStyle(fontSize: 12),
           ),
         ),
       ],

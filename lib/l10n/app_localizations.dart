@@ -4221,6 +4221,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No Batch Available'**
   String get noBatch;
+
+  /// No description provided for @dateFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Date filter'**
+  String get dateFilter;
+
+  /// No description provided for @txnStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Txn Status'**
+  String get txnStatus;
+
+  /// No description provided for @txnType.
+  ///
+  /// In en, this message translates to:
+  /// **'Txn Type'**
+  String get txnType;
 }
 
 class _AppLocalizationsDelegate

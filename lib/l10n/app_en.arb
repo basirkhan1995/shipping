@@ -699,5 +699,8 @@
   "proColor": "Product Color",
   "minimumStock": "Minimum Stock",
   "moreDetails": "More Details",
-  "noBatch": "No Batch Available"
+  "noBatch": "No Batch Available",
+  "dateFilter": "Date filter",
+  "txnStatus": "Txn Status",
+  "txnType": "Txn Type"
 }

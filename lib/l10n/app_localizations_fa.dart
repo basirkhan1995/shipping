@@ -661,7 +661,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get authorized => 'تایید شده';
 
   @override
-  String get reversed => 'برگشت شده';
+  String get reversed => 'لغوه شده';
 
   @override
   String get deleted => 'حذف شده';
@@ -2110,4 +2110,13 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get noBatch => 'ناموجود';
+
+  @override
+  String get dateFilter => 'فلتر تاریخ';
+
+  @override
+  String get txnStatus => 'وضعیت تراکنش';
+
+  @override
+  String get txnType => 'نوع تراکنش';
 }

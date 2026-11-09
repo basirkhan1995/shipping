@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/search_field.dart';
+import 'package:shipping/Routes/Home/View/Report/Inventory/Cardx/Ui/cardx.dart';
+import 'package:shipping/Routes/Home/View/Report/Inventory/StockAvailability/product_report.dart';
 import 'package:shipping/Routes/Home/View/Stock/GoodsShift/add_shift.dart';
 import 'package:shipping/Routes/Home/View/Stock/Orders/features/status_method.dart';
 import '../../../../../../Features/Date/shamsi_converter.dart';
@@ -272,20 +274,10 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
         Utils.goto(context, const AddGoodsShiftView());
         break;
       case 'INOUT':
-        ToastManager.show(
-          context: context,
-          title: 'In / Out Report',
-          message: 'Open In/Out report',
-          type: ToastType.info,
-        );
+        Utils.goto(context, const StockRecordReportView());
         break;
       case 'STOCK':
-        ToastManager.show(
-          context: context,
-          title: 'Stock Report',
-          message: 'Open Stock report',
-          type: ToastType.info,
-        );
+        Utils.goto(context, const ProductReportView());
         break;
     }
   }
@@ -368,9 +360,7 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
                       constraints: const BoxConstraints(maxWidth: 300),
                       child: ReusableSearchBar(
                         showClearButton: true,
-
                         controller: searchController,
-
                         onChanged: (_) {
                           if (!mounted) return;
                           setState(() {
@@ -389,13 +379,11 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
                       isActive: true,
                       icon: isRefreshing ? null : Icons.refresh,
                       onPressed: isRefreshing ? null : onRefresh,
-                      label: isRefreshing
-                          ? const SizedBox(
+                      label: isRefreshing ? const SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                          : Text(tr.refresh),
+                      ) : Text(tr.refresh),
                     ),
                   ],
                 )

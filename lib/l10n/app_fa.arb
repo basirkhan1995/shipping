@@ -220,7 +220,7 @@
   "bulkTransaction": "معامله گروهی",
   "pending": "در انتظار",
   "authorized": "تایید شده",
-  "reversed": "برگشت شده",
+  "reversed": "لغوه شده",
   "deleted": "حذف شده",
   "glDebit": "جی ال دبت",
   "glCredit": "جی ال کریدت",
@@ -699,5 +699,8 @@
   "proColor": "رنگ کالا",
   "minimumStock": "حداقل تعداد",
   "moreDetails": "جزئیات بیشتر",
-  "noBatch": "ناموجود"
+  "noBatch": "ناموجود",
+  "dateFilter": "فلتر تاریخ",
+  "txnStatus": "وضعیت تراکنش",
+  "txnType": "نوع تراکنش"
 }
