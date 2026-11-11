@@ -1,5 +1,3 @@
-// Routes/Home/model/Journal/model/TransactionsView/transactions_view.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -732,11 +730,7 @@ class _DesktopViewState extends State<_DesktopView> {
     );
   }
 
-  Widget _buildRibbonGroup(
-      _RibbonGroup group,
-      ColorScheme color,
-      TextTheme textTheme,
-      ) {
+  Widget _buildRibbonGroup(_RibbonGroup group, ColorScheme color, TextTheme textTheme) {
     final tr = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -1254,6 +1248,8 @@ class _TransactionRowWidget extends StatelessWidget {
     return InkWell(
       onTap: onTap != null ? () => onTap!(row) : null,
       hoverColor: color.primary.withValues(alpha: .03),
+      highlightColor: color.primary.withValues(alpha: .03),
+      splashColor: color.primary.withValues(alpha: .03),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(

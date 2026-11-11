@@ -499,13 +499,13 @@ class _DesktopPurchaseOrderViewState extends State<_DesktopPurchaseOrderView> {
           }
         },
         child: Scaffold(
-          backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           appBar: AppBar(
             title: Text(
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 20),
-                widget.orderId == null ? tr.purchaseEntry : "${tr.update.toUpperCase()} ${tr.purchase.toUpperCase()} #$ordNumber"),
+                widget.orderId == null ? tr.purchaseEntry : "${tr.update.toUpperCase()} ${tr.purchase.toUpperCase()} ${ordNumber??""}"),
             elevation: 0,
-            backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
+            backgroundColor: Theme.of(context).colorScheme.surface,
             titleSpacing: 0,
             actionsPadding: const EdgeInsets.symmetric(horizontal: 12),
             actions: [
@@ -516,7 +516,6 @@ class _DesktopPurchaseOrderViewState extends State<_DesktopPurchaseOrderView> {
                   onPressed: _confirmDeleteOrder,
                   label: Text(tr.delete),
                 ),
-
               if(widget.orderId ==null)...[
                 const SizedBox(width: 8),
                 ZOutlineButton(
@@ -525,7 +524,6 @@ class _DesktopPurchaseOrderViewState extends State<_DesktopPurchaseOrderView> {
                   label: Text(tr.newPurchase),
                 ),
               ],
-
               const SizedBox(width: 8),
               ZOutlineButton(
                 icon: Icons.outbond_outlined,
@@ -1067,14 +1065,9 @@ class _DesktopPurchaseOrderViewState extends State<_DesktopPurchaseOrderView> {
           final baseCurrency = current.fromCurrency ?? '';
           final bool needsConversion = current.needsExchangeRate;
 
-          return Container(
+          return ZCover(
             padding: const EdgeInsets.all(16),
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: color.surface,
-              border: Border.all(color: color.outline.withValues(alpha: .2)),
-              borderRadius: BorderRadius.circular(8),
-            ),
+            radius: 15,
             child: IntrinsicHeight(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,

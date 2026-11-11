@@ -11,8 +11,9 @@ import 'dart:typed_data';
 ///   3. `https://...` / `http://...`      ← remote URL (future)
 ///   4. `null` / `''`                     ← no logo
 ///
-/// Every consumer (sidebar widget, PDF header, Excel export, ...) should
-/// go through this class so decoding behaviour never diverges.
+/// Every consumer (sidebar widget, PDF header, Excel export, home screen,
+/// label print, …) should go through this class so decoding behaviour
+/// never diverges.
 class CompanyLogoUtils {
   CompanyLogoUtils._(); // non-instantiable
 
@@ -131,4 +132,65 @@ class CompanyLogoUtils {
     if (pure == null) return null;
     return 'data:$mime;base64,$pure';
   }
+
+  // ════════════════════════════════════════════════════════════
+  //  NEW — unified helpers for callers (home screen, _CompanyLogo,
+  //        any future widget). Existing methods above are unchanged.
+  // ════════════════════════════════════════════════════════════
+
+  /// How a raw `comLogo` string should be rendered.
+  ///
+  /// Returned by [resolve]. Lets a caller branch on the input shape
+  /// without re-implementing `isUrl` + `decodeToBytes` inline.
+  ///
+  ///   • [CompanyLogoKind.network]  → use `Image.network(result.url!)`
+  ///   • [CompanyLogoKind.memory]   → use `Image.memory(result.bytes!)`
+  ///   • [CompanyLogoKind.fallback] → show the placeholder icon
+  static CompanyLogoResult resolve(String? raw) {
+    if (raw == null || raw.isEmpty) {
+      return const CompanyLogoResult._fallback();
+    }
+
+    if (isUrl(raw)) {
+      return CompanyLogoResult._network(raw);
+    }
+
+    final bytes = decodeToBytes(raw);
+    if (bytes == null) {
+      return const CompanyLogoResult._fallback();
+    }
+    return CompanyLogoResult._memory(bytes);
+  }
+}
+
+/// How a raw `comLogo` string should be rendered.
+enum CompanyLogoKind { network, memory, fallback }
+
+/// Resolved logo — the output of [CompanyLogoUtils.resolve].
+///
+/// Constructed only by [CompanyLogoUtils.resolve]; callers should
+/// switch on [kind] and read [url] (network) or [bytes] (memory).
+class CompanyLogoResult {
+  final CompanyLogoKind kind;
+
+  /// Set when [kind] == [CompanyLogoKind.network].
+  final String? url;
+
+  /// Set when [kind] == [CompanyLogoKind.memory].
+  final Uint8List? bytes;
+
+  const CompanyLogoResult._({required this.kind, this.url, this.bytes});
+
+  const CompanyLogoResult._network(String url)
+      : this._(kind: CompanyLogoKind.network, url: url);
+
+  const CompanyLogoResult._memory(Uint8List bytes)
+      : this._(kind: CompanyLogoKind.memory, bytes: bytes);
+
+  const CompanyLogoResult._fallback()
+      : this._(kind: CompanyLogoKind.fallback);
+
+  bool get isFallback => kind == CompanyLogoKind.fallback;
+  bool get isNetwork => kind == CompanyLogoKind.network;
+  bool get isMemory => kind == CompanyLogoKind.memory;
 }

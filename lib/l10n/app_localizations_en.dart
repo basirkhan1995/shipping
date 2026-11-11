@@ -2153,7 +2153,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get resetToDefault => 'Reset';
 
   @override
-  String get logoPrintHint => 'Show logo in invoices print';
+  String get logoPrintHint => 'Show logo in invoice & statement print';
 
   @override
   String get productMovementHint => 'Products In & Out reports';

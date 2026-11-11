@@ -473,12 +473,12 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
 
 
           child: Scaffold(
-            backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
+            backgroundColor: Theme.of(context).colorScheme.surface,
             appBar: AppBar(
               elevation: 0,
-              backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
+              backgroundColor: Theme.of(context).colorScheme.surface,
               titleSpacing: 0,
-              title: Text((widget.orderId != null)? "${tr.update.toUpperCase()} ${tr.sale.toUpperCase()} #$ordNumber" : tr.saleEntry,
+              title: Text((widget.orderId != null)? "${tr.update.toUpperCase()} ${tr.sale.toUpperCase()} ${ordNumber??""}" : tr.saleEntry,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 20)),
               actionsPadding: EdgeInsets.symmetric(horizontal: 10),
               actions: [
@@ -2025,10 +2025,7 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
 
           return ZCover(
             padding: const EdgeInsets.all(15),
-            radius: 10,
-            shadowColor: Theme.of(context).colorScheme.surfaceContainer,
-            borderColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-            color: Theme.of(context).colorScheme.surface,
+            radius: 15,
             child: IntrinsicHeight(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2042,8 +2039,8 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
                           Row(
                             spacing: 8,
                             children: [
-                              Icon(Icons.summarize_outlined),
-                              Text(tr.invoiceSummary.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              Icon(Icons.inventory_rounded),
+                              Text(tr.invoiceSummary.toUpperCase(), style: const TextStyle(letterSpacing: 0.5, fontWeight: FontWeight.bold, fontSize: 16)),
                             ],
                           ),
                           const SizedBox(height: 8),

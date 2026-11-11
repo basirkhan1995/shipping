@@ -1,5 +1,3 @@
-import 'dart:convert';
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Routes/Home/View/HR/hr.dart';
@@ -14,6 +12,7 @@ import '../../../../Features/Other/responsive_widget.dart';
 import '../../Features/Widgets/generic_menu.dart';
 import '../../l10n/app_localizations.dart';
 import '../Auth/bloc/auth_bloc.dart';
+import '../Auth/features/com_logo.dart';
 import 'View/Dashboard/dashboard.dart';
 import 'View/Finance/finance.dart';
 import 'View/Report/report.dart';
@@ -231,7 +230,6 @@ class _CompanyHeader extends StatelessWidget {
     final logo = company?.comLogo;
 
     // Wider avatar: 75px expanded, 34px collapsed.
-    final double logoSize = isExpanded ? 75 : 34;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -243,11 +241,7 @@ class _CompanyHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // ── Logo on top ──
-          _CompanyLogo(
-            logo: logo,
-            scheme: scheme,
-            size: logoSize,
-          ),
+          _HomeLogo(logo: logo, size: 44),
 
           // ── Name below (hidden when collapsed) ──
           if (isExpanded) ...[
@@ -278,62 +272,51 @@ class _CompanyHeader extends StatelessWidget {
   }
 }
 
-/// Company logo widget. Handles three input shapes:
-///
-///   1. `data:image/...;base64,...`  → strip prefix, decode, Image.memory
-///   2. `https://...` or `http://...` → Image.network (cached)
-///   3. Raw base64 (legacy)           → Image.memory (decoded inline)
-///   4. Anything else / empty         → fallback icon
-class _CompanyLogo extends StatelessWidget {
-  /// `comLogo` value from the server. Could be:
-  ///   - a `data:` URL  (current server contract)
-  ///   - an `http(s):` URL (future server contract)
-  ///   - raw base64 (legacy, still supported for safety)
+class _HomeLogo extends StatelessWidget {
   final String? logo;
-  final ColorScheme scheme;
   final double size;
 
-  const _CompanyLogo({
-    required this.logo,
-    required this.scheme,
-    this.size = 36,
-  });
+  const _HomeLogo({required this.logo, this.size = 40});
 
-  static bool _isValidImageBytes(Uint8List bytes) {
-    if (bytes.length < 12) return false;
-    // JPEG
-    if (bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) return true;
-    // PNG
-    if (bytes[0] == 0x89 &&
-        bytes[1] == 0x50 &&
-        bytes[2] == 0x4E &&
-        bytes[3] == 0x47) {
-      return true;
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final result = CompanyLogoUtils.resolve(logo);
+
+    switch (result.kind) {
+    // ── http(s):// URL → let Flutter's image cache handle it ──
+      case CompanyLogoKind.network:
+        return ClipOval(
+          child: Image.network(
+            result.url!,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+            errorBuilder: (_, _, _) => _fallback(scheme),
+          ),
+        );
+
+    // ── data: URL or raw base64 → decoded bytes ──
+      case CompanyLogoKind.memory:
+        return ClipOval(
+          child: Image.memory(
+            result.bytes!,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+            errorBuilder: (_, _, _) => _fallback(scheme),
+          ),
+        );
+
+    // ── empty / malformed / unsupported ──
+      case CompanyLogoKind.fallback:
+        return _fallback(scheme);
     }
-    // GIF
-    if (bytes[0] == 0x47 &&
-        bytes[1] == 0x49 &&
-        bytes[2] == 0x46 &&
-        bytes[3] == 0x38) {
-      return true;
-    }
-    // WebP
-    if (bytes[0] == 0x52 &&
-        bytes[1] == 0x49 &&
-        bytes[2] == 0x46 &&
-        bytes[3] == 0x46 &&
-        bytes[8] == 0x57 &&
-        bytes[9] == 0x45 &&
-        bytes[10] == 0x42 &&
-        bytes[11] == 0x50) {
-      return true;
-    }
-    // BMP
-    if (bytes[0] == 0x42 && bytes[1] == 0x4D) return true;
-    return false;
   }
 
-  Widget _fallback() => Container(
+  Widget _fallback(ColorScheme scheme) => Container(
     width: size,
     height: size,
     decoration: BoxDecoration(
@@ -346,68 +329,4 @@ class _CompanyLogo extends StatelessWidget {
       color: scheme.onPrimaryContainer,
     ),
   );
-
-  Widget _buildImage(Uint8List bytes) {
-    return ClipOval(
-      child: Image.memory(
-        bytes,
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-        gaplessPlayback: true,
-        errorBuilder: (_, _, _) => _fallback(),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final raw = logo;
-
-    // No logo → fallback.
-    if (raw == null || raw.isEmpty) {
-      return _fallback();
-    }
-
-    // Case 1: real HTTP(S) URL → Image.network (cached by image cache).
-    if (raw.startsWith('http://') || raw.startsWith('https://')) {
-      return ClipOval(
-        child: Image.network(
-          raw,
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-          gaplessPlayback: true,
-          errorBuilder: (_, _, _) => _fallback(),
-        ),
-      );
-    }
-
-    // Case 2: data: URL → extract base64 payload, decode to bytes.
-    // (Image.network cannot handle data: URIs on desktop/web reliably.)
-    String base64Payload = raw;
-    if (raw.startsWith('data:')) {
-      final commaIndex = raw.indexOf(',');
-      if (commaIndex == -1 || commaIndex == raw.length - 1) {
-        return _fallback();
-      }
-      base64Payload = raw.substring(commaIndex + 1);
-    }
-
-    // Case 3: raw base64 (legacy) OR extracted payload from data: URL.
-    Uint8List bytes;
-    try {
-      // Strip any whitespace/newlines that can break decoding.
-      base64Payload = base64Payload.trim().replaceAll(RegExp(r'\s+'), '');
-      bytes = base64Decode(base64Payload);
-    } catch (_) {
-      return _fallback();
-    }
-
-    if (!_isValidImageBytes(bytes)) {
-      return _fallback();
-    }
-
-    return _buildImage(bytes);
-  }
 }

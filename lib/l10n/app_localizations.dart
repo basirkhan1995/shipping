@@ -4285,7 +4285,7 @@ abstract class AppLocalizations {
   /// No description provided for @logoPrintHint.
   ///
   /// In en, this message translates to:
-  /// **'Show logo in invoices print'**
+  /// **'Show logo in invoice & statement print'**
   String get logoPrintHint;
 
   /// No description provided for @productMovementHint.

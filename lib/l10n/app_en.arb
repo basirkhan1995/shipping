@@ -710,7 +710,7 @@
   "textTermsAndConditionsHint": "Leave empty to use the default terms",
   "customTermsHint": "Shown instead of the default terms when filled.",
   "resetToDefault": "Reset",
-  "logoPrintHint": "Show logo in invoices print",
+  "logoPrintHint": "Show logo in invoice & statement print",
   "productMovementHint": "Products In & Out reports",
   "stockBalanceHint": "Stock balance to report products in all inventories",
   "saleInvoiceReportHint": "Sale Invoices report",

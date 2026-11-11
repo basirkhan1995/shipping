@@ -47,7 +47,7 @@ class ZCover extends StatelessWidget {
           ),
         ],
         borderRadius: BorderRadius.circular(radius ?? 3),
-        color: color ?? Theme.of(context).colorScheme.surface,
+        color: color ?? Theme.of(context).colorScheme.surfaceContainerLowest.withValues(alpha: .8),
       ),
       child: child,
     );

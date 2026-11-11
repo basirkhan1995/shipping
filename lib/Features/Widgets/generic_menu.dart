@@ -321,21 +321,17 @@ class _GenericMenuWithScreenState<T> extends State<GenericMenuWithScreen<T>> {
             padding: EdgeInsets.zero,
             decoration: BoxDecoration(
               border: Border.all(
-                color:
-                Theme.of(context).colorScheme.primary.withValues(alpha: .1),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: .1),
               ),
               boxShadow: [
                 BoxShadow(
+                  color: Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: .5),
                   blurRadius: 3,
-                  spreadRadius: 2,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .surfaceContainerHighest
-                      .withValues(alpha: .03),
+                  spreadRadius: 1,
                 ),
               ],
               borderRadius: BorderRadius.circular(5),
-              color: Theme.of(context).colorScheme.surfaceContainerLow,
+              color: Theme.of(context).colorScheme.surfaceContainerLowest,
             ),
             child: Column(
               mainAxisSize: _isContentMode ? MainAxisSize.min : MainAxisSize.max,
@@ -555,16 +551,13 @@ class _GenericMenuWithScreenState<T> extends State<GenericMenuWithScreen<T>> {
                 ),
                 boxShadow: [
                   BoxShadow(
+                    color: Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: .5),
                     blurRadius: 3,
-                    spreadRadius: 2,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .surfaceContainerHighest
-                        .withValues(alpha: .03),
+                    spreadRadius: 1,
                   ),
                 ],
                 borderRadius: BorderRadius.circular(5),
-                color: Theme.of(context).colorScheme.surface,
+                color: Theme.of(context).colorScheme.surfaceContainerLowest.withValues(alpha: .8),
               ),
               child: Padding(
                 padding:

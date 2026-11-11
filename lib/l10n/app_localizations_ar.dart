@@ -2145,7 +2145,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get resetToDefault => 'بازنشانی';
 
   @override
-  String get logoPrintHint => 'نمایش لوگو در چاپ بل ها';
+  String get logoPrintHint => 'نمایش لوگو در چاپ بل و صورتحساب';
 
   @override
   String get productMovementHint => 'راپور ورود و خروج کالا ها';

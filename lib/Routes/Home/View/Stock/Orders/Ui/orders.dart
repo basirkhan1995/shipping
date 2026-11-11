@@ -439,8 +439,12 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8),
       margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 5),
       decoration: BoxDecoration(
-        color: color.outline.withValues(alpha: .05),
-        borderRadius: BorderRadius.circular(4),
+        border: Border(
+          bottom: BorderSide(
+            width: 1.5,
+            color: color.primary,
+          )
+        )
       ),
       child: Row(
         children: [
@@ -691,6 +695,7 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
 
                         Expanded(
                           child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                             itemCount: filteredList.length,
                             itemBuilder: (context, index) {
                               final ord = filteredList[index];
@@ -701,6 +706,9 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
                               _selectedOrderIds.contains(ord.ordId);
 
                               return InkWell(
+                                hoverColor: color.primary.withValues(alpha: .06),
+                                highlightColor: color.primary.withValues(alpha: .06),
+                                splashColor: color.primary.withValues(alpha: .06),
                                 onTap: () {
                                   if (_isSelectionMode) {
                                     _toggleSelection(ord.ordId!);
@@ -722,7 +730,7 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
                                 },
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8,),
-                                  margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 0),
+                                  margin: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 0),
                                   decoration: BoxDecoration(
                                     color: isSelected
                                         ? color.primary.withValues(alpha: .15)

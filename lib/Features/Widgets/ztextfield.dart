@@ -45,7 +45,7 @@ class ZTextFieldEntitled extends StatelessWidget {
     this.maxLength,
     this.infoColor,
     this.borderType = ZTextFieldBorderType.rounded,
-    this.autoFocus = true,
+    this.autoFocus = false,
     this.compactMode,
     this.vertical,
     this.isEnabled = true,

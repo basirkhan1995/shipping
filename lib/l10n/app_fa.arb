@@ -710,7 +710,7 @@
   "textTermsAndConditionsHint": "برای استفاده از شرایط پیش‌فرض خالی بگذارید",
   "customTermsHint": "در صورت پر کردن، جای متن پیش‌فرض نمایش داده می‌شود.",
   "resetToDefault": "بازنشانی",
-  "logoPrintHint": "نمایش لوگو در چاپ بل ها",
+  "logoPrintHint": "نمایش لوگو در چاپ بل و صورتحساب",
   "productMovementHint": "راپور ورود و خروج کالا ها",
   "stockBalanceHint": "راپور موجودی کالاها در تمام گدام ها",
   "saleInvoiceReportHint": "راپور سوابق بل های فروش",
