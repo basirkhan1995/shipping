@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/extensions.dart';
+import 'package:shipping/Features/Widgets/shimmer.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/model/stk_model.dart';
 import 'package:shipping/l10n/app_localizations.dart';
@@ -455,113 +456,139 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
     final reverseBusy = _pendingAction == _RowAction.reverse;
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              SizedBox(
-                width: 140,
-                child: CurrencyDropdown(
-                  title: AppLocalizations.of(context)!.currencyTitle,
-                  isMulti: false,
-                  height: 35,
-                  disableAction: anyBusy,
-                  initiallySelectedSingle: CurrenciesModel(
-                    ccyCode: _headerCurrency,
+        // ── Scrollable area: header + banners + rows ──────────────
+        Flexible(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ── Header strip: currency / add-row / totals ───────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      SizedBox(
+                        width: 140,
+                        child: CurrencyDropdown(
+                          title: AppLocalizations.of(context)!.currencyTitle,
+                          isMulti: false,
+                          height: 35,
+                          disableAction: anyBusy,
+                          initiallySelectedSingle: CurrenciesModel(
+                            ccyCode: _headerCurrency,
+                          ),
+                          onSingleChanged: (ccy) {
+                            if (ccy?.ccyCode == null) return;
+                            _changeHeaderCurrency(ccy!.ccyCode!);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ZOutlineButton(
+                        height: 42,
+                        isActive: true,
+                        onPressed: anyBusy
+                            ? null
+                            : () => _dispatch(const BulkTransferAddRow()),
+                        icon: Icons.add,
+                        label: Text(AppLocalizations.of(context)!.addRow),
+                      ),
+                      const Spacer(),
+                      if (!state.isEmpty) ...[
+                        _pill(
+                          '${AppLocalizations.of(context)!.totalDebit} '
+                              '${state.totalDebit.toAmount()}',
+                          Colors.green,
+                        ),
+                        const SizedBox(width: 8),
+                        _pill(
+                          '${AppLocalizations.of(context)!.totalCredit} '
+                              '${state.totalCredit.toAmount()}',
+                          Colors.blue,
+                        ),
+                        const SizedBox(width: 8),
+                        _pill(
+                          '${AppLocalizations.of(context)!.diff} '
+                              '${state.difference.toAmount()}',
+                          state.isBalanced ? Colors.green : Colors.red,
+                        ),
+                      ],
+                    ],
                   ),
-                  onSingleChanged: (ccy) {
-                    if (ccy?.ccyCode == null) return;
-                    _changeHeaderCurrency(ccy!.ccyCode!);
-                  },
                 ),
-              ),
-              const SizedBox(width: 8),
-              ZOutlineButton(
-                height: 42,
-                isActive: true,
-                onPressed: anyBusy
-                    ? null
-                    : () => _dispatch(const BulkTransferAddRow()),
-                icon: Icons.add,
-                label: Text(AppLocalizations.of(context)!.addRow),
-              ),
-              const Spacer(),
-              if (!state.isEmpty) ...[
-                _pill(
-                  '${AppLocalizations.of(context)!.totalDebit} '
-                      '${state.totalDebit.toAmount()}',
-                  Colors.green,
-                ),
-                const SizedBox(width: 8),
-                _pill('${AppLocalizations.of(context)!.totalCredit} ''${state.totalCredit.toAmount()}',
-                  Colors.blue,
-                ),
-                const SizedBox(width: 8),
-                _pill(
-                  '${AppLocalizations.of(context)!.diff} ${state.difference.toAmount()}',
-                  state.isBalanced ? Colors.green : Colors.red,
-                ),
+
+                if (_errorMessage != null && _errorMessage!.isNotEmpty)
+                  _banner(_errorMessage!, Colors.red),
+
+                if (!state.isEmpty && state.hasCurrencyMix)
+                  _banner(
+                    AppLocalizations.of(context)!.rowsSameCcy,
+                    Colors.orange,
+                  ),
+
+                if (!state.isEmpty && !state.isBalanced)
+                  _banner(
+                    AppLocalizations.of(context)!.totalDebitEqualCredit,
+                    Colors.red,
+                  ),
+
+                // ── Rows ────────────────────────────────────────────
+                // No ConstrainedBox needed: the outer Flexible +
+                // SingleChildScrollView already bound the height and
+                // provide the scroll. shrinkWrap lets the inner
+                // Column measure to content, and the scroll view
+                // scrolls when it overflows.
+                if (state.isEmpty)
+                  _emptyState()
+                else
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    itemCount: state.rows.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 6),
+                    itemBuilder: (_, i) {
+                      final row = state.rows[i];
+                      final isLast = i == state.rows.length - 1;
+                      final usedKeys = _usedAccountCcyKeys(row.rowId);
+                      return _BulkRowWidget(
+                        key: ValueKey(
+                          'row-${row.rowId}-'
+                              '${(usedKeys.toList()..sort()).join("|")}',
+                        ),
+                        index: i,
+                        row: row,
+                        controllers: _ctrlFor(row),
+                        headerCurrency: _headerCurrency,
+                        enabled:
+                        !anyBusy &&
+                            (!state.isEditing || (isPending && isMaker)),
+                        isLast: isLast,
+                        onRowComplete: isLast ? _onRowComplete : null,
+                        onChanged: _dispatch,
+                        usedAccountCcyKeys: usedKeys,
+                      );
+                    },
+                  ),
               ],
-            ],
-          ),
-        ),
-
-        if (_errorMessage != null && _errorMessage!.isNotEmpty)
-          _banner(_errorMessage!, Colors.red),
-
-        if (!state.isEmpty && state.hasCurrencyMix)
-          _banner(
-            AppLocalizations.of(context)!.rowsSameCcy,
-            Colors.orange,
-          ),
-
-        if (!state.isEmpty && !state.isBalanced)
-          _banner(AppLocalizations.of(context)!.totalDebitEqualCredit, Colors.red),
-
-        Expanded(
-          child: state.isEmpty
-              ? _emptyState()
-              : ListView.separated(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 8,
             ),
-            itemCount: state.rows.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 6),
-            itemBuilder: (_, i) {
-              final row = state.rows[i];
-              final isLast = i == state.rows.length - 1;
-              final usedKeys = _usedAccountCcyKeys(row.rowId);
-              return _BulkRowWidget(
-                key: ValueKey(
-                  'row-${row.rowId}-'
-                      '${(usedKeys.toList()..sort()).join("|")}',
-                ),
-                index: i,
-                row: row,
-                controllers: _ctrlFor(row),
-                headerCurrency: _headerCurrency,
-                enabled:
-                !anyBusy &&
-                    (!state.isEditing || (isPending && isMaker)),
-                isLast: isLast,
-                onRowComplete: isLast ? _onRowComplete : null,
-                onChanged: _dispatch,
-                usedAccountCcyKeys: usedKeys,
-              );
-            },
           ),
         ),
 
-        // ── Footer ───────────────────────────────────────────────
+        // ── Pinned footer: never scrolls ─────────────────────────
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
           child: Row(
             spacing: 8,
             children: [
-              // Cancel — disabled while anything is in flight.
               ZOutlineButton(
                 onPressed: anyBusy
                     ? null
@@ -570,7 +597,6 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                 label: Text(AppLocalizations.of(context)!.cancel),
               ),
 
-              // ── Maker, Pending → Delete + Update ─────────────
               if (state.isEditing && isPending && isMaker) ...[
                 ZOutlineButton(
                   onPressed: anyBusy ? null : _dispatchDelete,
@@ -586,7 +612,8 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                 ZOutlineButton(
                   icon: updateBusy ? null : Icons.save_alt_rounded,
                   isActive: !updateBusy,
-                  onPressed: updateBusy || !state.canSubmit ? null : _onSubmit,
+                  onPressed:
+                  updateBusy || !state.canSubmit ? null : _onSubmit,
                   label: _busyLabel(
                     context,
                     busy: updateBusy,
@@ -596,7 +623,6 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                 ),
               ],
 
-              // ── Non-maker, Pending → Authorize ───────────────
               if (state.isEditing && isPending && !isMaker && loginName != null)
                 ZOutlineButton(
                   onPressed: anyBusy ? null : _dispatchAuthorize,
@@ -612,7 +638,6 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                   ),
                 ),
 
-              // ── Authorized → Unauthorize + Reverse ───────────
               if (state.isEditing && isAuthorized) ...[
                 ZOutlineButton(
                   onPressed: anyBusy ? null : _dispatchUnauthorize,
@@ -638,12 +663,12 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
                 ),
               ],
 
-              // ── Create mode → Save ───────────────────────────
               if (!state.isEditing)
                 ZOutlineButton(
                   icon: formBusy ? null : Icons.save_alt_rounded,
                   isActive: !formBusy,
-                  onPressed: formBusy || !state.canSubmit ? null : _onSubmit,
+                  onPressed:
+                  formBusy || !state.canSubmit ? null : _onSubmit,
                   label: _busyLabel(
                     context,
                     busy: formBusy,
@@ -660,7 +685,7 @@ class _BulkTransferDialogState extends State<_BulkTransferDialog> {
 
   Widget _emptyState() => Center(
     child: widget.reference != null && widget.reference!.isNotEmpty
-        ? const CircularProgressIndicator()
+        ? UniversalShimmer.dataList(numberOfColumns: 5,showCheckbox: true,itemCount: 8)
         : Text(
       AppLocalizations.of(context)!.atLeastTwoRow,
       textAlign: TextAlign.center,

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -25,6 +24,7 @@ import '../../../../../Features/Widgets/zbutton.dart';
 import '../../../../../Features/Widgets/ztextfield.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../Auth/bloc/auth_bloc.dart';
+import '../../../../Auth/features/com_logo.dart';
 import '../../../../Auth/model/user_model.dart';
 import '../../Finance/View/Currencies/model/ccy_model.dart';
 import '../../Finance/View/ExchangeRate/bloc/exchange_rate_bloc.dart';
@@ -75,7 +75,7 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
   final List<List<FocusNode>> _rowFocusNodes = [];
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   Uint8List _companyLogo = Uint8List(0);
-  final company = ReportModel();
+  final settings = ReportModel();
   String? _userName;
   String? baseCurrency;
   int? signatory;
@@ -213,28 +213,24 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
     final authState = context.read<AuthBloc>().state;
     if (authState is AuthenticatedState) {
       final auth = authState.loginData;
-      baseCurrency = auth.company?.comLocalCcy ?? "";
-      company.comName = auth.company?.comName ?? "";
-      company.comAddress = auth.company?.comAddress ?? "";
-      company.compPhone = auth.company?.comPhone ?? "";
-      company.comEmail = auth.company?.comEmail ?? "";
-      company.slogan = auth.company?.comDetails ?? '';
-      company.usrPrintedBy = auth.usrName??'';
-      company.comWhatsApp = auth.company?.comWhatsapp??"";
-      company.comFacebook = auth.company?.comFb??"";
-      company.comWebsite = auth.company?.comWebsite??"";
-      company.comInstagram = auth.company?.comInsta??"";
-      company.statementDate = DateTime.now().toFullDateTime;
 
+
+
+      baseCurrency = auth.company?.comLocalCcy ?? "";
+      settings.comName = auth.company?.comName ?? "";
+      settings.comAddress = auth.company?.comAddress ?? "";
+      settings.compPhone = auth.company?.comPhone ?? "";
+      settings.comEmail = auth.company?.comEmail ?? "";
+      settings.slogan = auth.company?.comDetails ?? '';
+      settings.usrPrintedBy = auth.usrName??'';
+      settings.comWhatsApp = auth.company?.comWhatsapp??"";
+      settings.comFacebook = auth.company?.comFb??"";
+      settings.comWebsite = auth.company?.comWebsite??"";
+      settings.comInstagram = auth.company?.comInsta??"";
+      settings.statementDate = DateTime.now().toFullDateTime;
       final base64Logo = auth.company?.comLogo;
-      if (base64Logo != null && base64Logo.isNotEmpty) {
-        try {
-          _companyLogo = base64Decode(base64Logo);
-          company.comLogo = _companyLogo;
-        } catch (e) {
-          _companyLogo = Uint8List(0);
-        }
-      }
+      _companyLogo = CompanyLogoUtils.safeBytes(base64Logo) ?? Uint8List(0);
+      settings.comLogo = _companyLogo.isEmpty ? null : _companyLogo;
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -379,6 +375,7 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
       listener: (context, state) {
         if (state is AuthenticatedState) {
           _userName = state.loginData.usrName ?? '';
+
         }
       },
       child: GlobalShortcuts(
@@ -441,10 +438,10 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
                   _personController.text = state.customer!.perName ?? '';
                   signatory = state.customer!.perId;
 
-                  company.partyAddress = state.customer!.addName;
-                  company.partyPhone = state.customer!.perPhone;
-                  company.partyCity = state.customer!.addCity;
-                  company.partyProvince = state.customer!.addProvince;
+                  settings.partyAddress = state.customer!.addName;
+                  settings.partyPhone = state.customer!.perPhone;
+                  settings.partyCity = state.customer!.addCity;
+                  settings.partyProvince = state.customer!.addProvince;
                 }
 
                 // Set account (SHOW ACCOUNT NUMBER ONLY since name is empty)
@@ -649,10 +646,10 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
                                         context.read<StkAccountsBloc>().add(LoadStkAccountsEvent(perId: value.perId));
                                         setState(() {
                                           signatory = value.perId;
-                                          company.partyAddress = value.addName;
-                                          company.partyPhone = value.perPhone;
-                                          company.partyCity = value.addCity;
-                                          company.partyProvince = value.addProvince;
+                                          settings.partyAddress = value.addName;
+                                          settings.partyPhone = value.perPhone;
+                                          settings.partyCity = value.addCity;
+                                          settings.partyProvince = value.addProvince;
                                         });
                                         _shouldAutoFocusProduct = false;
                                         Future.delayed(const Duration(milliseconds: 300), () {
@@ -2467,7 +2464,7 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
       builder: (_) => PrintPreviewDialog<dynamic>(
         data: null,
         showRoll80: true,
-        company: company,
+        company: settings,
         buildPreview: ({required data, required language, required orientation, required pageFormat}) {
           return InvoicePrintService().printInvoicePreview(
             invoiceType: "Sale",
@@ -2483,7 +2480,7 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
             language: language,
             remark: current?.remark,
             orientation: orientation,
-            company: company.copyWith(visible: visibilityState),
+            company: settings.copyWith(visible: visibilityState,customTermsAndConditions: visibilityState.customTermsAndConditions),
             pageFormat: pageFormat,
             currency: baseCurrency,
             isSale: true,
@@ -2511,7 +2508,7 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
             account: current?.customerAccount,
             language: language,
             orientation: orientation,
-            company: company.copyWith(visible: visibilityState),
+            company: settings.copyWith(visible: visibilityState,clearCustomTerms: visibilityState.termsAndConditions),
             selectedPrinter: selectedPrinter,
             pageFormat: pageFormat,
             copies: copies,
@@ -2541,7 +2538,7 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
             remark: current?.remark,
             language: language,
             orientation: orientation,
-            company: company.copyWith(visible: visibilityState),
+            company: settings.copyWith(visible: visibilityState,customTermsAndConditions: visibilityState.customTermsAndConditions),
             pageFormat: pageFormat,
             currency: baseCurrency,
             isSale: true,
@@ -2606,7 +2603,7 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
       context: context,
       builder: (_) => PrintPreviewDialog<dynamic>(
         data: null,
-        company: company,
+        company: settings,
         buildPreview: ({required data, required language, required orientation, required pageFormat}) {
           return StockDocumentPrintService().previewStockDocument(
             documentType: "Sale",
@@ -2618,7 +2615,7 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
             totalQuantity: totalQuantity,
             language: language,
             orientation: orientation,
-            company: company.copyWith(visible: visibilityState),
+            company: settings.copyWith(visible: visibilityState),
             pageFormat: pageFormat,
           );
         },
@@ -2633,7 +2630,7 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
             totalQuantity: totalQuantity,
             language: language,
             orientation: orientation,
-            company: company.copyWith(visible: visibilityState),
+            company: settings.copyWith(visible: visibilityState),
             selectedPrinter: selectedPrinter,
             pageFormat: pageFormat,
             copies: copies,
@@ -2650,7 +2647,7 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
             totalQuantity: totalQuantity,
             language: language,
             orientation: orientation,
-            company: company.copyWith(visible: visibilityState),
+            company: settings.copyWith(visible: visibilityState),
             pageFormat: pageFormat,
           );
         },

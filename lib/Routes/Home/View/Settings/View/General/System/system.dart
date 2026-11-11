@@ -4,9 +4,9 @@ import 'package:shipping/Features/Widgets/cover.dart';
 import 'package:shipping/Features/Widgets/section.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/General/System/features/theme_toggle.dart';
 import 'package:shipping/l10n/app_localizations.dart';
-
 import '../../../../../../../../l10n/locale_selector.dart';
 import '../../../Visibility/bloc/settings_visible_bloc.dart';
+import 'features/customs_term.dart';
 import 'features/date_type.dart';
 import 'features/label_check.dart';
 
@@ -15,15 +15,6 @@ class SystemView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // final Map<String, String> dateFormats = {
-    //   //Date
-    //   'yyyy-MM-dd': '2025-05-28',
-    //   'dd-MM-yyyy': '28-05-2025',
-    //   'MM/dd/yyyy': '05/28/2025',
-    //   'dd MMM yyyy': '28 May, 2025',
-    //   //Date With Time
-    //   'dd-MM-yyyy HH:mm': '28-05-2025 14:30',
-    // };
     final tr = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -37,7 +28,6 @@ class SystemView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 spacing: 8,
                 children: [
-                  // Force segmented Android style
                   ThemeSelectorWidget(
                     width: 330,
                     style: ThemeSelectorStyle.toggle,
@@ -47,90 +37,113 @@ class SystemView extends StatelessWidget {
                   LocaleSelector(width: 330, title: tr.language),
 
                   DateTypeDrop(),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
 
                   SectionTitle(title: tr.invoiceSettings),
 
                   ZCover(
-                      radius: 8,
-                      padding: EdgeInsets.all(10),
-                      child: Column(
-                    children: [
+                    radius: 8,
+                    padding: const EdgeInsets.all(10),
+                    child: Column(
+                      children: [
+                        /// Inventory
+                        LabeledCheckbox(
+                          title: tr.stock,
+                          value: state.orders,
+                          onChanged: (e) {
+                            context
+                                .read<SettingsVisibleBloc>()
+                                .add(UpdateSettingsEvent(orders: e));
+                          },
+                        ),
+                        bulletPoint(tr.inventoryHint),
 
-                      ///Orders..............................................
-                      LabeledCheckbox(
-                        title: tr.inventory,
-                        value: state.orders,
-                        onChanged: (e) {
-                          context.read<SettingsVisibleBloc>().add(
-                            UpdateSettingsEvent(orders: e),
-                          );
-                        },
-                      ),
-                      bulletPoint(tr.inventoryHint),
+                        /// Invoice Batch
+                        LabeledCheckbox(
+                          title: tr.invoiceBatch,
+                          value: state.isWholeSale,
+                          onChanged: (e) {
+                            context
+                                .read<SettingsVisibleBloc>()
+                                .add(UpdateSettingsEvent(isWholeSale: e));
+                          },
+                        ),
+                        bulletPoint(tr.invoiceBatchHint),
 
-                      ///Invoice Batch
-                      LabeledCheckbox(
-                        title: tr.invoiceBatch,
-                        value: state.isWholeSale,
-                        onChanged: (e) {
-                          context.read<SettingsVisibleBloc>().add(
-                            UpdateSettingsEvent(isWholeSale: e),
-                          );
-                        },
-                      ),
-                      bulletPoint(tr.invoiceBatchHint),
-
-                      /// Profit & Loss
-                      LabeledCheckbox(
-                        title: tr.profit,
-                        value: state.benefit,
-                        onChanged: (e) {
-                          context.read<SettingsVisibleBloc>().add(
-                            UpdateSettingsEvent(benefit: e),
-                          );
-                        },
-                      ),
-                      bulletPoint(tr.invoiceProfitHint),
+                        /// Profit & Loss
+                        LabeledCheckbox(
+                          title: tr.profit,
+                          value: state.benefit,
+                          onChanged: (e) {
+                            context
+                                .read<SettingsVisibleBloc>()
+                                .add(UpdateSettingsEvent(benefit: e));
+                          },
+                        ),
+                        bulletPoint(tr.invoiceProfitHint),
 
 
-                    ],
-                  )),
+                        /// Logo in prints
+                        LabeledCheckbox(
+                          title: tr.logoPrint,
+                          value: state.showHideLogo,
+                          onChanged: (e) {
+                            context.read<SettingsVisibleBloc>().add(UpdateSettingsEvent(showHideLogo: e));
+                          },
+                        ),
+                        bulletPoint(tr.logoPrintHint),
+
+                        /// ── Terms and Conditions (toggle) ──
+                        LabeledCheckbox(
+                          title: tr.termsAndConditions,
+                          value: state.termsAndConditions,
+                          onChanged: (e) {
+                            context
+                                .read<SettingsVisibleBloc>()
+                                .add(UpdateSettingsEvent(termsAndConditions: e));
+                          },
+                        ),
+                        bulletPoint(tr.termsAndConditonsHint),
+
+                        /// ── Custom text editor (NEW) ──
+                        CustomTermsEditor(enabled: state.termsAndConditions),
+
+
+                      ],
+                    ),
+                  ),
 
                   SectionTitle(title: tr.shippingAndTransfer),
 
                   ZCover(
-                      radius: 8,
-                      padding: EdgeInsets.all(10),
-                      child: Column(
-                        children: [
+                    radius: 8,
+                    padding: const EdgeInsets.all(10),
+                    child: Column(
+                      children: [
+                        LabeledCheckbox(
+                          title: tr.shipping,
+                          value: state.shipping,
+                          onChanged: (e) {
+                            context
+                                .read<SettingsVisibleBloc>()
+                                .add(UpdateSettingsEvent(shipping: e));
+                          },
+                        ),
+                        bulletPoint(tr.shippingHint),
 
-                          ///Orders..............................................
-                          LabeledCheckbox(
-                            title: tr.shipping,
-                            value: state.shipping,
-                            onChanged: (e) {
-                              context.read<SettingsVisibleBloc>().add(
-                                UpdateSettingsEvent(shipping: e),
-                              );
-                            },
-                          ),
-                          bulletPoint(tr.shippingHint),
-
-                          ///Invoice Batch
-                          LabeledCheckbox(
-                            title: tr.transfer,
-                            value: state.moneyTransfer,
-                            onChanged: (e) {
-                              context.read<SettingsVisibleBloc>().add(
-                                UpdateSettingsEvent(moneyTransfer: e),
-                              );
-                            },
-                          ),
-                          bulletPoint(tr.moneyTransferHint),
-
-                        ],
-                      )),
+                        LabeledCheckbox(
+                          title: tr.transfer,
+                          value: state.moneyTransfer,
+                          onChanged: (e) {
+                            context
+                                .read<SettingsVisibleBloc>()
+                                .add(UpdateSettingsEvent(moneyTransfer: e));
+                          },
+                        ),
+                        bulletPoint(tr.moneyTransferHint),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -142,7 +155,7 @@ class SystemView extends StatelessWidget {
 
   Widget bulletPoint(String text) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18.0),
+      padding: const EdgeInsets.symmetric(horizontal: 40.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         spacing: 5,
@@ -152,10 +165,12 @@ class SystemView extends StatelessWidget {
             height: 8,
             decoration: BoxDecoration(
               color: Colors.grey,
-              borderRadius: BorderRadius.circular(50)
+              borderRadius: BorderRadius.circular(50),
             ),
           ),
-          Expanded(child: Text(text, style: TextStyle(fontSize: 14))),
+          Expanded(
+            child: Text(text, style: const TextStyle(fontSize: 14)),
+          ),
         ],
       ),
     );

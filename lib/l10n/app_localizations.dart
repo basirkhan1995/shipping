@@ -3841,13 +3841,13 @@ abstract class AppLocalizations {
   /// No description provided for @invoiceProfitHint.
   ///
   /// In en, this message translates to:
-  /// **'Show or hide profit & loss inside the sale invoice.'**
+  /// **'Enable profit & loss widget inside the sale invoice'**
   String get invoiceProfitHint;
 
   /// No description provided for @inventoryHint.
   ///
   /// In en, this message translates to:
-  /// **'Product purchase, sale & goods shifting between wharehouses.'**
+  /// **'Enable stock to access purchase, sale invoices & goods shifting'**
   String get inventoryHint;
 
   /// No description provided for @stockReport.
@@ -3895,7 +3895,7 @@ abstract class AppLocalizations {
   /// No description provided for @stockBalance.
   ///
   /// In en, this message translates to:
-  /// **'Balance'**
+  /// **'Stock Balance'**
   String get stockBalance;
 
   /// No description provided for @inAndOut.
@@ -4239,6 +4239,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Txn Type'**
   String get txnType;
+
+  /// No description provided for @productCatHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage product categories'**
+  String get productCatHint;
+
+  /// No description provided for @termsAndConditions.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms & Conditions'**
+  String get termsAndConditions;
+
+  /// No description provided for @termsAndConditonsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable terms and conditions in sale invoices print'**
+  String get termsAndConditonsHint;
+
+  /// No description provided for @logoPrint.
+  ///
+  /// In en, this message translates to:
+  /// **'Logo Print'**
+  String get logoPrint;
+
+  /// No description provided for @textTermsAndConditionsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty to use the default terms'**
+  String get textTermsAndConditionsHint;
+
+  /// No description provided for @customTermsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown instead of the default terms when filled.'**
+  String get customTermsHint;
+
+  /// No description provided for @resetToDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get resetToDefault;
+
+  /// No description provided for @logoPrintHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Show logo in invoices print'**
+  String get logoPrintHint;
+
+  /// No description provided for @productMovementHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Products In & Out reports'**
+  String get productMovementHint;
+
+  /// No description provided for @stockBalanceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock balance to report products in all inventories'**
+  String get stockBalanceHint;
+
+  /// No description provided for @saleInvoiceReportHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale Invoices report'**
+  String get saleInvoiceReportHint;
+
+  /// No description provided for @purchaseInvoiceReportHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase invoices report'**
+  String get purchaseInvoiceReportHint;
 }
 
 class _AppLocalizationsDelegate

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shipping/Features/Widgets/shimmer.dart';
 import '../../../../../../../../Features/Widgets/search_field.dart';
 import '../../../../Features/Other/responsive_widget.dart';
 import '../../../../Features/Widgets/extensions.dart';
@@ -1154,19 +1155,7 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
               builder: (context, state) {
                 if (state is ProductsLoadingState) {
                   return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(color: color.primary),
-                        const SizedBox(height: 16),
-                        Text(
-                          tr.loading,
-                          style: textTheme.bodyMedium?.copyWith(
-                            color: color.outline,
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: UniversalShimmer.dataList(numberOfColumns: 6,itemCount: 10)
                   );
                 }
                 if (state is ProductsErrorState) {

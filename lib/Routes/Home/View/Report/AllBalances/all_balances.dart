@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shipping/Features/Widgets/search_field.dart';
+import 'package:shipping/Features/Widgets/shimmer.dart';
 import '../../../../../../../../Features/PrintSettings/print_preview.dart';
 import '../../../../../../../../Features/PrintSettings/report_model.dart';
 import '../../../../../Features/Date/shamsi_converter.dart';
@@ -223,7 +224,7 @@ class _DesktopState extends State<_Desktop> {
                 if (_f.catId != null) ...[
                   const SizedBox(width: 8),
                   ZOutlineButton(
-                    width: 130,
+                    height: 45,
                     backgroundHover: scheme.error,
                     isActive: true,
                     onPressed: () {
@@ -241,21 +242,21 @@ class _DesktopState extends State<_Desktop> {
                 ],
                 const SizedBox(width: 8),
                 ZOutlineButton(
-                  width: 100,
+                  height: 45,
                   onPressed: _exportToExcel,
-                  icon: Icons.file_copy_rounded,
-                  label: const Text('Excel'),
+                  icon: Icons.file_download_outlined,
+                  label: Text(tr.excelTitle),
                 ),
                 const SizedBox(width: 8),
                 ZOutlineButton(
-                  width: 100,
+                  height: 45,
                   onPressed: _printAllBalances,
                   icon: Icons.print,
                   label: Text(tr.print),
                 ),
                 const SizedBox(width: 8),
                 ZOutlineButton(
-                  width: 120,
+                  height: 45,
                   onPressed: _reload,
                   isActive: true,
                   icon: Icons.refresh,
@@ -455,7 +456,7 @@ class _MobileState extends State<_Mobile> {
 // ═════════════════════════════════════════════════════════════════
 // SHARED BODY
 // ═════════════════════════════════════════════════════════════════
-class _Body extends StatelessWidget {
+class _Body extends StatefulWidget {
   final _FilterState filter;
   final bool showTableLayout;
   final VoidCallback onReload;
@@ -467,28 +468,31 @@ class _Body extends StatelessWidget {
   });
 
   @override
+  State<_Body> createState() => _BodyState();
+}
+
+class _BodyState extends State<_Body> {
+  @override
+  void initState() {
+    context.read<AllBalancesBloc>().add(LoadAllBalancesEvent());
+    super.initState();
+  }
+  @override
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
     final scheme = Theme.of(context).colorScheme;
 
     return BlocBuilder<AllBalancesBloc, AllBalancesState>(
       builder: (context, state) {
-        if (state is AllBalancesInitial) {
-          return NoDataWidget(
-            title: tr.accounts,
-            message: "Purchase all account balances here",
-            enableAction: false,
-          );
-        }
-        if (state is AllBalancesLoadingState) {
-          return const Center(child: CircularProgressIndicator());
+        if (state is AllBalancesLoadingState || state is AllBalancesInitial) {
+          return Center(child: UniversalShimmer.dataList(itemCount: 10,numberOfColumns: 5,showAvatar: true));
         }
         if (state is! AllBalancesLoadedState) {
           return const SizedBox.shrink();
         }
 
         // Client-side name search
-        final query = filter.search.trim().toLowerCase();
+        final query = widget.filter.search.trim().toLowerCase();
         final rows = query.isEmpty
             ? state.balances
             : state.balances
@@ -511,15 +515,14 @@ class _Body extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _TotalsStrip(totals: totals),
               const SizedBox(height: 12),
-              if (showTableLayout) _header(context),
-              if (showTableLayout) const SizedBox(height: 8),
+              if (widget.showTableLayout) _header(context),
+              if (widget.showTableLayout) const SizedBox(height: 8),
               Expanded(
                 child: ListView.separated(
                   itemCount: rows.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 6),
-                  itemBuilder: (_, i) => showTableLayout
+                  itemBuilder: (_, i) => widget.showTableLayout
                       ? _TableRow(item: rows[i], index: i)
                       : _MobileCard(item: rows[i]),
                 ),
@@ -542,8 +545,9 @@ class _Body extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(8),
+       border: Border(
+         bottom: BorderSide(color: scheme.primary,width: 1.5)
+       )
       ),
       child: Row(
         children: [
@@ -561,9 +565,9 @@ class _Body extends StatelessWidget {
       t,
       textAlign: end ? TextAlign.end : TextAlign.start,
       style: const TextStyle(
-        fontSize: 11.5,
+        fontSize: 13.5,
         fontWeight: FontWeight.w700,
-        letterSpacing: 0.4,
+        letterSpacing: 0.6,
       ),
     ),
   );
@@ -796,59 +800,6 @@ class _MobileCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-// ═════════════════════════════════════════════════════════════════
-// TOTALS STRIP
-// ═════════════════════════════════════════════════════════════════
-class _TotalsStrip extends StatelessWidget {
-  final Map<String, double> totals;
-  const _TotalsStrip({required this.totals});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    if (totals.isEmpty) return const SizedBox.shrink();
-
-    final entries = totals.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: entries.map((e) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: scheme.surface,
-            borderRadius: BorderRadius.circular(4),
-            border:
-            Border.all(color: scheme.outline.withValues(alpha: 0.15)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                e.key,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Utils.currencyColors(e.key),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                e.value.toAmount(),
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: e.value >= 0 ? _T.green : _T.red,
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
     );
   }
 }

@@ -345,8 +345,7 @@ class _StakeholderDesktopState extends State<_StakeholderDesktop> {
                       contentPadding:
                       const EdgeInsets.symmetric(horizontal: 4),
                       hintText: tr.searchStakeholders,
-                      onChanged: (q) =>
-                          _StakeholderController.search(context, q),
+                      onChanged: (q) => _StakeholderController.search(context, q),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -373,10 +372,8 @@ class _StakeholderDesktopState extends State<_StakeholderDesktop> {
             Expanded(
               child: _StakeholderList(
                 onTapView: (m) => _StakeholderController.openView(context, m),
-                onTapEdit: (m) =>
-                    _StakeholderController.openEditDialog(context, m),
-                onTapDelete: (m) =>
-                    _StakeholderController.confirmDelete(context, m),
+                onTapEdit: (m) => _StakeholderController.openEditDialog(context, m),
+                onTapDelete: (m) => _StakeholderController.confirmDelete(context, m),
               ),
             ),
           ],
@@ -421,7 +418,6 @@ class _StakeholderList extends StatelessWidget {
             onAdd: () => _StakeholderController.openAddDialog(context),
           );
         }
-
         return RefreshIndicator(
           onRefresh: () async => _StakeholderController.refresh(context),
           child: ListView.separated(
@@ -471,8 +467,7 @@ class _EmptyView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.people_outline,
-              size: 48, color: scheme.onSurface.withValues(alpha: .3)),
+          Icon(Icons.people_outline, size: 48, color: scheme.onSurface.withValues(alpha: .3)),
           const SizedBox(height: 12),
           Text(
             'No stakeholders found',

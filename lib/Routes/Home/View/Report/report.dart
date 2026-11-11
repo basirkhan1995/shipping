@@ -216,28 +216,28 @@ class _ReportBody extends StatelessWidget {
         title: tr.stock.toUpperCase(),
         reports: [
           _ReportData(
-            icon: Icons.shopping_basket_outlined,
-            title: tr.stock.toUpperCase(),
-            description: tr.userLogHint,
+            icon: Icons.swap_horiz_rounded,
+            title: tr.productMovement.toUpperCase(),
+            description: tr.productMovementHint,
             onTap: (ctx) => ZNavigator.goto(context: ctx, const StockRecordReportView()),
           ),
           _ReportData(
-            icon: Icons.shopping_cart_checkout_rounded,
-            title: tr.products.toUpperCase(),
-            description: tr.attendanceHint,
+            icon: Icons.inventory_rounded,
+            title: tr.stockBalance.toUpperCase(),
+            description: tr.stockBalanceHint,
             onTap: (ctx) =>
                 ZNavigator.goto(context: ctx, const ProductReportView()),
           ),
           _ReportData(
-            icon: Icons.shopping_cart_checkout_rounded,
+            icon: Icons.add_shopping_cart_rounded,
             title: tr.saleInvoices.toUpperCase(),
-            description: tr.attendanceHint,
+            description: tr.saleInvoiceReportHint,
             onTap: (ctx) => ZNavigator.goto(context: ctx, const OrderReportView(orderName: "Sale")),
           ),
           _ReportData(
             icon: Icons.shopping_cart_checkout_rounded,
             title: tr.purchaseInvoices.toUpperCase(),
-            description: tr.attendanceHint,
+            description: tr.purchaseInvoiceReportHint,
             onTap: (ctx) => ZNavigator.goto(context: ctx, const OrderReportView(orderName: "Purchase")),
           ),
         ],

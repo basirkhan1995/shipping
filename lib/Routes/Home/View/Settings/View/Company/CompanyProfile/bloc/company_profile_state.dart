@@ -27,7 +27,7 @@ final class CompanyProfileErrorState extends CompanyProfileState{
 }
 
 final class CompanyProfileLoadedState extends CompanyProfileState {
-  final CompanySettingsModel company;
+  final CompanyProfileModel company;
   const CompanyProfileLoadedState(this.company);
   @override
   List<Object> get props => [company];

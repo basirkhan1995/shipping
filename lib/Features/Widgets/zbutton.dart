@@ -55,7 +55,7 @@ class ZOutlineButtonState extends State<ZOutlineButton> {
         ? widget.backgroundHover ?? theme.colorScheme.primary
         : Colors.grey.withValues(alpha: .5));
 
-    final disabledBorder = theme.colorScheme.error;
+    final disabledBorder = theme.colorScheme.outline.withValues(alpha: .3);
 
     final textColor = widget.isActive
         ? widget.foregroundHover ?? theme.colorScheme.onPrimary
@@ -76,6 +76,7 @@ class ZOutlineButtonState extends State<ZOutlineButton> {
           Size(double.infinity, widget.height ?? 40),
         ),
         shape: WidgetStateProperty.all(
+
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(3)),
         ),
         backgroundColor: WidgetStateProperty.all(bgColor),

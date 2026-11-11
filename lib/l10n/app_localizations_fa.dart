@@ -1077,7 +1077,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get stockAvailability => 'موجودی اموال';
 
   @override
-  String get productMovement => 'حرکت محصولات';
+  String get productMovement => 'گردش کالاها';
 
   @override
   String get purchaseInvoices => 'بل‌ های خرید';
@@ -1909,10 +1909,11 @@ class AppLocalizationsFa extends AppLocalizations {
   String get invoiceSettings => 'تنظیمات بل';
 
   @override
-  String get invoiceProfitHint => 'فعال و غیرفعال سازی سود و زیان در بل فروش';
+  String get invoiceProfitHint => 'فعال سازی نمایش سود و زیان در بل فروش';
 
   @override
-  String get inventoryHint => 'خرید و فروش محصولات و انتقال اموال بین گدام ها';
+  String get inventoryHint =>
+      'فعال سازی سهام برای دسترسی به بل های خرید و فروش و انتقال اموال';
 
   @override
   String get stockReport => 'موجودی انبار';
@@ -1936,7 +1937,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get totalOut => 'خروجی ها';
 
   @override
-  String get stockBalance => 'موجودی';
+  String get stockBalance => 'موجودی گدام';
 
   @override
   String get inAndOut => 'ورود | خروج';
@@ -2119,4 +2120,43 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get txnType => 'نوع تراکنش';
+
+  @override
+  String get productCatHint => 'مدیریت نوع کالا ها';
+
+  @override
+  String get termsAndConditions => 'شرایط و قوانین';
+
+  @override
+  String get termsAndConditonsHint =>
+      'فعال سازی شرایط و قوانین در چاپ بل های فروش';
+
+  @override
+  String get logoPrint => 'نمایش لوگو';
+
+  @override
+  String get textTermsAndConditionsHint =>
+      'برای استفاده از شرایط پیش‌فرض خالی بگذارید';
+
+  @override
+  String get customTermsHint =>
+      'در صورت پر کردن، جای متن پیش‌فرض نمایش داده می‌شود.';
+
+  @override
+  String get resetToDefault => 'بازنشانی';
+
+  @override
+  String get logoPrintHint => 'نمایش لوگو در چاپ بل ها';
+
+  @override
+  String get productMovementHint => 'راپور ورود و خروج کالا ها';
+
+  @override
+  String get stockBalanceHint => 'راپور موجودی کالاها در تمام گدام ها';
+
+  @override
+  String get saleInvoiceReportHint => 'راپور سوابق بل های فروش';
+
+  @override
+  String get purchaseInvoiceReportHint => 'راپور سوابق بل های خرید';
 }

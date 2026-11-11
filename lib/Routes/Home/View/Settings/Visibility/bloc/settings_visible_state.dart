@@ -6,20 +6,30 @@ enum DateType {
 }
 
 class SettingsVisibilityState extends Equatable {
+  // ── Existing flags (unchanged) ─────────────────────────────
   final bool shipping;
   final bool moneyTransfer;
   final bool stock;
   final bool attendance;
   final bool exchangeRate;
   final bool currencyRates;
-  final bool dashboardClock;
+
+  /// Show / hide the Terms & Conditions block on the invoice.
+  /// (Unchanged — still the toggle.)
+  final bool termsAndConditions;
+
+  /// Optional user-edited terms text.
+  /// When null/empty, the translated defaults are shown instead.
+  /// Completely independent from [termsAndConditions].
+  final String? customTermsAndConditions;
+
   final bool recentTransactions;
   final DateType dateType;
   final String dateFormat;
   final bool isDateExpiry;
   final bool quickAccess;
   final bool profitAndLoss;
-  final bool todayTotalTransactions;
+  final bool showHideLogo;
   final bool statsCount;
   final bool todayTotalTxnChart;
   final bool transport;
@@ -36,13 +46,14 @@ class SettingsVisibilityState extends Equatable {
     this.exchangeRate = true,
     this.isDateExpiry = false,
     this.currencyRates = false,
-    this.dashboardClock = true,
+    this.termsAndConditions = true,
+    this.customTermsAndConditions,          // null → default
     this.recentTransactions = false,
     this.quickAccess = true,
     this.dateType = DateType.gregorian,
     this.dateFormat = 'yyyy-MM-dd',
     this.profitAndLoss = true,
-    this.todayTotalTransactions = true,
+    this.showHideLogo = true,
     this.statsCount = true,
     this.todayTotalTxnChart = true,
     this.transport = true,
@@ -59,7 +70,12 @@ class SettingsVisibilityState extends Equatable {
       attendance: map['attendance'] ?? false,
       exchangeRate: map['exchangeRate'] ?? true,
       currencyRates: map['currencyRates'] ?? false,
-      dashboardClock: map['dashboardClock'] ?? true,
+      termsAndConditions: map['termsAndConditions'] ?? true,
+      customTermsAndConditions: (map['customTermsAndConditions'] as String?)
+          ?.trim()
+          .isEmpty == true
+          ? null
+          : (map['customTermsAndConditions'] as String?)?.trim(),
       isDateExpiry: map['isDateExpiry'] ?? false,
       quickAccess: map['quickAccess'] ?? true,
       recentTransactions: map['recentTransactions'] ?? false,
@@ -67,11 +83,11 @@ class SettingsVisibilityState extends Equatable {
       dateFormat: map['dateFormat'] ?? 'yyyy-MM-dd',
       profitAndLoss: map['profitAndLoss'] ?? true,
       statsCount: map['statsCount'] ?? true,
-      todayTotalTransactions: map['todayTotalTransactions'] ?? true,
+      showHideLogo: map['showHideLogo'] ?? true,
       todayTotalTxnChart: map['todayTotalTxnChart'] ?? true,
       transport: map['transport'] ?? true,
       orders: map['orders'] ?? true,
-      isWholeSale: map['isWholeSale'] ?? false
+      isWholeSale: map['isWholeSale'] ?? false,
     );
   }
 
@@ -84,7 +100,8 @@ class SettingsVisibilityState extends Equatable {
       'exchangeRate': exchangeRate,
       'benefit': benefit,
       'currencyRates': currencyRates,
-      'dashboardClock': dashboardClock,
+      'termsAndConditions': termsAndConditions,
+      'customTermsAndConditions': customTermsAndConditions,
       'dateType': dateType.name,
       'dateFormat': dateFormat,
       'isDateExpiry': isDateExpiry,
@@ -92,11 +109,11 @@ class SettingsVisibilityState extends Equatable {
       'recentTransactions': recentTransactions,
       'profitAndLoss': profitAndLoss,
       'statsCount': statsCount,
-      'todayTotalTransactions': todayTotalTransactions,
+      'showHideLogo': showHideLogo,
       'todayTotalTxnChart': todayTotalTxnChart,
       'transport': transport,
       'orders': orders,
-      'isWholeSale': isWholeSale
+      'isWholeSale': isWholeSale,
     };
   }
 
@@ -104,6 +121,69 @@ class SettingsVisibilityState extends Equatable {
     return DateType.values.firstWhere(
           (e) => e.name == value,
       orElse: () => DateType.gregorian,
+    );
+  }
+
+  /// Convenience helper — returns the text to show on the invoice.
+  ///
+  /// • If [customTermsAndConditions] is set and non-empty → returns it.
+  /// • Otherwise returns `null`, signalling the caller to fall back to
+  ///   the translated defaults (`termsAndCondition1/2/3`).
+  String? get effectiveTermsText {
+    final t = customTermsAndConditions?.trim();
+    return (t == null || t.isEmpty) ? null : t;
+  }
+
+  /// Explicit-copy helper. Pass [clearCustomTerms] = true to reset
+  /// the custom text back to `null` (revert to defaults).
+  SettingsVisibilityState copyWith({
+    bool? shipping,
+    bool? moneyTransfer,
+    bool? stock,
+    bool? attendance,
+    bool? exchangeRate,
+    bool? currencyRates,
+    bool? termsAndConditions,
+    String? customTermsAndConditions,
+    bool clearCustomTerms = false,
+    bool? recentTransactions,
+    DateType? dateType,
+    String? dateFormat,
+    bool? isDateExpiry,
+    bool? quickAccess,
+    bool? profitAndLoss,
+    bool? showHideLogo,
+    bool? statsCount,
+    bool? todayTotalTxnChart,
+    bool? transport,
+    bool? orders,
+    bool? benefit,
+    bool? isWholeSale,
+  }) {
+    return SettingsVisibilityState(
+      shipping: shipping ?? this.shipping,
+      moneyTransfer: moneyTransfer ?? this.moneyTransfer,
+      stock: stock ?? this.stock,
+      attendance: attendance ?? this.attendance,
+      exchangeRate: exchangeRate ?? this.exchangeRate,
+      currencyRates: currencyRates ?? this.currencyRates,
+      termsAndConditions: termsAndConditions ?? this.termsAndConditions,
+      customTermsAndConditions: clearCustomTerms
+          ? null
+          : (customTermsAndConditions ?? this.customTermsAndConditions),
+      recentTransactions: recentTransactions ?? this.recentTransactions,
+      dateType: dateType ?? this.dateType,
+      dateFormat: dateFormat ?? this.dateFormat,
+      isDateExpiry: isDateExpiry ?? this.isDateExpiry,
+      quickAccess: quickAccess ?? this.quickAccess,
+      profitAndLoss: profitAndLoss ?? this.profitAndLoss,
+      showHideLogo: showHideLogo ?? this.showHideLogo,
+      statsCount: statsCount ?? this.statsCount,
+      todayTotalTxnChart: todayTotalTxnChart ?? this.todayTotalTxnChart,
+      transport: transport ?? this.transport,
+      orders: orders ?? this.orders,
+      benefit: benefit ?? this.benefit,
+      isWholeSale: isWholeSale ?? this.isWholeSale,
     );
   }
 
@@ -115,19 +195,20 @@ class SettingsVisibilityState extends Equatable {
     attendance,
     exchangeRate,
     currencyRates,
-    dashboardClock,
+    termsAndConditions,
+    customTermsAndConditions,
     recentTransactions,
     dateType,
     dateFormat,
     isDateExpiry,
     quickAccess,
     profitAndLoss,
-    todayTotalTransactions,
+    showHideLogo,
     statsCount,
     todayTotalTxnChart,
     transport,
     orders,
     benefit,
-    isWholeSale
+    isWholeSale,
   ];
 }

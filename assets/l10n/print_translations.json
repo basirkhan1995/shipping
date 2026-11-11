@@ -706,9 +706,9 @@
     "fa": "مجمع فرعی"
   },
   "number": {
-    "en": "No",
-    "ar": "شمېره",
-    "fa": "شماره"
+    "en": "#",
+    "ar": "ردیف",
+    "fa": "ردیف"
   },
   "invoiceType": {
     "en": "Invoice",
@@ -1363,7 +1363,7 @@
   "allBalances": {
     "en": "All Balances",
     "ar": "ټول بیلانسونه",
-    "fa": "همه حساب‌ها"
+    "fa": "همه حساب ‌ها"
   },
   "summary": {
     "en": "Summary",
@@ -1388,7 +1388,7 @@
   "ccy": {
     "en": "Ccy",
     "ar": "اسعار",
-    "fa": "ارز"
+    "fa": "اسعار"
   },
   "stockReport": {
     "en": "Stock Report",
@@ -1623,9 +1623,9 @@
     "fa": "شرایط و مقررات"
   },
   "termsAndCondition1": {
-    "en": "All electronic devices come with a warranty and guarantee in accordance with the company's policy.",
-    "ar": "همه وسایل الکترونیکی دارای ورنتی و گرنتی مطابق لایحه کمپنی میباشد.",
-    "fa": "همه وسایل الکترونیکی دارای ورنتی و گرنتی مطابق لایحه کمپنی میباشد."
+    "en": "All products come with a warranty and guarantee in accordance with the company's policy.",
+    "ar": "همه محصولات دارای ورنتی و گرنتی مطابق لایحه کمپنی میباشد.",
+    "fa": "همه محصولات دارای ورنتی و گرنتی مطابق لایحه کمپنی میباشد."
   },
   "termsAndCondition2": {
     "en": "This document is not valid without a stamp and signature.",

@@ -49,6 +49,7 @@ import 'package:shipping/Routes/Home/View/Stock/Sale/bloc/sale_invoice_bloc.dart
 import 'package:shipping/Routes/Home/View/Transactions/View/Bulk/bloc/bulk_transfer_bloc.dart';
 import 'package:shipping/Routes/Home/View/Transactions/View/Exchange/bloc/exchange_bloc.dart';
 import 'package:shipping/Routes/Home/View/Transactions/View/FundTransfer/bloc/fund_transfer_bloc.dart';
+import 'package:shipping/Routes/Home/View/Transactions/View/OrdersTxn/bloc/orders_txn_bloc.dart';
 import 'package:shipping/Routes/Home/View/Transactions/bloc/transactions_bloc.dart';
 import 'Features/PrintSettings/bloc/PageOrientation/page_orientation_cubit.dart';
 import 'Features/PrintSettings/bloc/PageSize/paper_size_cubit.dart';
@@ -141,6 +142,7 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (_) => BulkTransferBloc(Repositories(ApiServices()))),
           BlocProvider(create: (_) => FundTransferBloc(Repositories(ApiServices()))),
           BlocProvider(create: (_) => ExchangeBloc(Repositories(ApiServices()))),
+          BlocProvider(create: (_) => OrdersTxnBloc(Repositories(ApiServices()))),
 
           ///Report
           BlocProvider(create: (_) => AccStatementBloc(Repositories(ApiServices()))),
@@ -174,7 +176,7 @@ class MyApp extends StatelessWidget {
          builder: (context, locale) {
            return BlocBuilder<ThemeBloc, ThemeMode>(
              builder: (context, themeMode) {
-               final theme = AppThemes(TextTheme.of(context));
+               final theme = AppThemes(TextTheme.of(context),locale: locale);
                return MaterialApp(
                  themeMode: themeMode,
                  locale: locale,

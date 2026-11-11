@@ -5,6 +5,7 @@ import '../../../../../../Features/Other/responsive_widget.dart';
 import '../../../../../../Features/Widgets/no_data_widget.dart';
 import '../../../../../../Features/Widgets/zbutton.dart';
 import '../../../../../../l10n/app_localizations.dart';
+import '../../../Stock/Orders/features/status_method.dart';
 import 'add_edit_cat.dart';
 import 'bloc/pro_cat_bloc.dart';
 
@@ -162,12 +163,10 @@ class _BaseProCatViewState extends State<_BaseProCatView> {
     } else {
       // SIMPLIFIED DESKTOP HEADER
       return Container(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.symmetric(horizontal: 0,vertical: 8),
+        margin: const EdgeInsets.symmetric(vertical: 3,horizontal: 12),
         decoration: BoxDecoration(
           color: color.surface,
-          border: Border(
-            bottom: BorderSide(color: color.outline.withValues(alpha: .1)),
-          ),
         ),
         child: Row(
           children: [
@@ -177,14 +176,16 @@ class _BaseProCatViewState extends State<_BaseProCatView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    tr.category,
+                    tr.productCategory,
                     style: textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
                     ),
                   ),
                   Text(
-                    tr.category,
+                    tr.productCatHint,
                     style: textTheme.bodyMedium?.copyWith(
+                      letterSpacing: 0.5,
                       color: color.onSurface.withValues(alpha: .6),
                     ),
                   ),
@@ -202,11 +203,12 @@ class _BaseProCatViewState extends State<_BaseProCatView> {
                 },
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
 
             // Buttons
             ZOutlineButton(
               width: 100,
+              height: 36,
               icon: Icons.refresh,
               onPressed: onRefresh,
               label: Text(tr.refresh),
@@ -214,6 +216,7 @@ class _BaseProCatViewState extends State<_BaseProCatView> {
             const SizedBox(width: 8),
             ZOutlineButton(
               width: 100,
+              height: 36,
               isActive: true,
               icon: Icons.add,
               onPressed: () {
@@ -271,11 +274,11 @@ class _BaseProCatViewState extends State<_BaseProCatView> {
                         ),
                       ),
                     ),
-                    // StatusBadge(
-                    //   status: cat.pcStatus!,
-                    //   trueValue: tr.active,
-                    //   falseValue: tr.inactive,
-                    // ),
+                    StatusBadge(
+                      status: cat.pcStatus!,
+                      trueValue: tr.active,
+                      falseValue: tr.inactive,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -352,19 +355,21 @@ class _BaseProCatViewState extends State<_BaseProCatView> {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
         decoration: BoxDecoration(
-          color: index.isEven ? color.primary.withValues(alpha: .02) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          color: index.isOdd ? color.primary.withValues(alpha: .04) : Colors.transparent,
+          borderRadius: BorderRadius.circular(3),
         ),
         child: InkWell(
+          hoverColor: color.primary.withValues(alpha: .04),
+          highlightColor: color.primary.withValues(alpha: .04),
           onTap: () {
             showDialog(
               context: context,
               builder: (context) => AddEditProCategoryView(model: cat),
             );
           },
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(3),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
                 // ID
@@ -380,22 +385,25 @@ class _BaseProCatViewState extends State<_BaseProCatView> {
                 ),
 
                 // Name
-                Expanded(
+                SizedBox(
+                  width: 120,
                   child: Text(
                     cat.pcName ?? "",
                     style: textTheme.titleMedium,
                   ),
                 ),
 
+                Expanded(
+                  child: Text(cat.pcDescription??""),
+                ),
                 // Status
-                // SizedBox(
-                //   width: 100,
-                //   child: StatusBadge(
-                //     status: cat.pcStatus!,
-                //     trueValue: tr.active,
-                //     falseValue: tr.inactive,
-                //   ),
-                // ),
+                SizedBox(
+                  child: StatusBadge(
+                    status: cat.pcStatus!,
+                    trueValue: tr.active,
+                    falseValue: tr.inactive,
+                  ),
+                ),
               ],
             ),
           ),
@@ -422,8 +430,12 @@ class _BaseProCatViewState extends State<_BaseProCatView> {
               margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: color.primary.withValues(alpha: .05),
-                borderRadius: BorderRadius.circular(2),
+                border: Border(
+                  bottom: BorderSide(
+                    color: color.primary,
+                    width: 1.3,
+                  ),
+                ),
               ),
               child: Row(
                 children: [
@@ -433,7 +445,7 @@ class _BaseProCatViewState extends State<_BaseProCatView> {
                       "#",
                       style: textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: color.primary,
+                        color: color.outline,
                       ),
                     ),
                   ),
@@ -442,7 +454,7 @@ class _BaseProCatViewState extends State<_BaseProCatView> {
                       tr.category,
                       style: textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: color.primary,
+                        color: color.outline,
                       ),
                     ),
                   ),
@@ -452,7 +464,7 @@ class _BaseProCatViewState extends State<_BaseProCatView> {
                       tr.status,
                       style: textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: color.primary,
+                        color: color.outline,
                       ),
                       textAlign: TextAlign.center,
                     ),

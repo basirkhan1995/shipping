@@ -60,13 +60,13 @@ abstract class PrintServices {
     try {
       // Load regular font
       final ByteData englishRegularData = await rootBundle.load(
-        'assets/fonts/Vazir/Vazirmatn-Regular.ttf',
+        'assets/fonts/Inter/Inter-Regular.ttf',
       );
       _englishRegular = pw.Font.ttf(englishRegularData);
 
       // Load bold font
       final ByteData englishBoldData = await rootBundle.load(
-        'assets/fonts/Vazir/Vazirmatn-Bold.ttf',
+        'assets/fonts/Inter/Inter-Bold.ttf',
       );
       _englishBold = pw.Font.ttf(englishBoldData);
     } catch (e) {
@@ -82,7 +82,6 @@ abstract class PrintServices {
         // For web, try Amiri first (better Arabic/Persian support)
         await _loadWebPersianFonts();
       } else {
-        // For mobile/desktop, use NotoNaskh
         await _loadNativePersianFonts();
       }
     } catch (e) {
@@ -170,45 +169,59 @@ abstract class PrintServices {
   }
 
   // ── Header ───────────────────────────────────────────────
+  // ── Header ───────────────────────────────────────────────
   Future<pw.Widget> header({required ReportModel report}) async {
-    final phoneIcon = pw.MemoryImage(
-      (await rootBundle.load('assets/images/phone.png')).buffer.asUint8List(),
-    );
-    final whatsappIcon = pw.MemoryImage(
-      (await rootBundle.load('assets/images/whatsapp.png')).buffer.asUint8List(),
-    );
-    final emailIcon = pw.MemoryImage(
-      (await rootBundle.load('assets/images/email.png')).buffer.asUint8List(),
-    );
-    final websiteIcon = pw.MemoryImage(
-      (await rootBundle.load('assets/images/internet.png')).buffer.asUint8List(),
-    );
-    final instagramIcon = pw.MemoryImage((await rootBundle.load('assets/images/instagram.png')).buffer.asUint8List(),
-    );
-    final facebookIcon = pw.MemoryImage(
-      (await rootBundle.load('assets/images/facebook.png')).buffer.asUint8List(),
-    );
-    final addressIcon = pw.MemoryImage(
-      (await rootBundle.load('assets/images/location.png')).buffer.asUint8List(),
-    );
+    // ── Load icons (defensive: a missing asset must not break the header) ──
+    Future<pw.MemoryImage?> loadIcon(String path) async {
+      try {
+        final data = await rootBundle.load(path);
+        return pw.MemoryImage(data.buffer.asUint8List());
+      } catch (e) {
+        debugPrint('⚠️ Header icon load failed ($path): $e');
+        return null;
+      }
+    }
 
-    final bool hasCompanyLogo = report.comLogo != null &&
-        report.comLogo is Uint8List &&
-        report.comLogo!.isNotEmpty;
+    final phoneIcon    = await loadIcon('assets/images/phone.png');
+    final whatsappIcon = await loadIcon('assets/images/whatsapp.png');
+    final emailIcon    = await loadIcon('assets/images/email.png');
+    final websiteIcon  = await loadIcon('assets/images/internet.png');
+    final instagramIcon= await loadIcon('assets/images/instagram.png');
+    final facebookIcon = await loadIcon('assets/images/facebook.png');
+    final addressIcon  = await loadIcon('assets/images/location.png');
+
+    // ── Company logo (robust) ──
+    final bool hasCompanyLogo =
+        report.comLogo != null &&
+            report.comLogo is Uint8List &&
+            report.comLogo!.isNotEmpty;
 
     pw.ImageProvider? logoImage;
     if (hasCompanyLogo) {
       logoImage = pw.MemoryImage(report.comLogo!);
     }
 
-    // ── Colors (PdfColor / PdfColors live in pdf.dart, no `pw.`) ──
-    final primaryColor = PdfColor.fromHex('#1E407C');
-    final accentColor = PdfColor.fromHex('#00A8E8');
-    final softBg = PdfColor.fromHex('#EFF4FA');
-    final iconBg = PdfColor.fromHex('#E6F0FA');
+    // ── Visibility flag: treat null as "show" so invoices without
+    //    an explicit `visible` model still render the logo. ──
+    final bool showLogo = report.visible?.showHideLogo ?? true;
 
+    debugPrint(
+      'HEADER → hasCompanyLogo=$hasCompanyLogo '
+          'bytes=${report.comLogo?.length} '
+          'isUint8List=${report.comLogo is Uint8List} '
+          'showHideLogo=${report.visible?.showHideLogo} '
+          'showLogo=$showLogo',
+    );
+
+    // ── Colors ──
+    final primaryColor = PdfColor.fromHex('#1E407C');
+    final accentColor  = PdfColor.fromHex('#00A8E8');
+    final softBg       = PdfColor.fromHex('#EFF4FA');
+    final iconBg       = PdfColor.fromHex('#E6F0FA');
+
+    // ── Contact row helper ──
     pw.Widget contactRow({
-      required pw.ImageProvider icon,
+      required pw.ImageProvider? icon,
       required String text,
       pw.FontWeight weight = pw.FontWeight.normal,
     }) {
@@ -233,7 +246,9 @@ abstract class PrintServices {
                 color: iconBg,
                 borderRadius: pw.BorderRadius.circular(5.5),
               ),
-              child: pw.Image(icon, width: 6.5, height: 6.5),
+              child: icon == null
+                  ? pw.SizedBox()
+                  : pw.Image(icon, width: 6.5, height: 6.5),
             ),
           ],
         ),
@@ -280,7 +295,7 @@ abstract class PrintServices {
                     child: pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
-                        if (logoImage != null)
+                        if (logoImage != null && showLogo)
                           pw.Container(
                             width: 50,
                             height: 50,
@@ -302,7 +317,8 @@ abstract class PrintServices {
                             color: PdfColors.grey700,
                           ),
                         ],
-                        if (report.comAddress != null && report.comAddress!.isNotEmpty) ...[
+                        if (report.comAddress != null &&
+                            report.comAddress!.isNotEmpty) ...[
                           pw.SizedBox(height: 3),
                           pw.Row(
                             crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -315,7 +331,10 @@ abstract class PrintServices {
                                   color: iconBg,
                                   borderRadius: pw.BorderRadius.circular(2),
                                 ),
-                                child: pw.Image(addressIcon, width: 12, height: 12),
+                                child: addressIcon == null
+                                    ? pw.SizedBox()
+                                    : pw.Image(addressIcon,
+                                    width: 12, height: 12),
                               ),
                               pw.SizedBox(width: 6),
                               zText(
@@ -353,7 +372,9 @@ abstract class PrintServices {
                           if (report.comEmail != null &&
                               report.comEmail!.isNotEmpty)
                             contactRow(
-                                icon: emailIcon, text: report.comEmail!),
+                              icon: emailIcon,
+                              text: report.comEmail!,
+                            ),
                           if (report.comWebsite != null &&
                               report.comWebsite!.isNotEmpty)
                             contactRow(

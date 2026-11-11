@@ -4,15 +4,14 @@ sealed class SettingsVisibleEvent extends Equatable {
   const SettingsVisibleEvent();
 }
 
-class SaveSettingsEvent extends SettingsVisibleEvent{
+class SaveSettingsEvent extends SettingsVisibleEvent {
   final SettingsVisibilityState value;
   const SaveSettingsEvent(this.value);
   @override
   List<Object?> get props => [value];
 }
 
-
-class LoadSettingsEvent extends SettingsVisibleEvent{
+class LoadSettingsEvent extends SettingsVisibleEvent {
   @override
   List<Object?> get props => [];
 }
@@ -24,7 +23,14 @@ class UpdateSettingsEvent extends SettingsVisibleEvent {
   final bool? attendance;
   final bool? exchangeRate;
   final bool? currencyRates;
-  final bool? dashboardClock;
+
+  /// Toggle: show/hide the terms block. Unchanged.
+  final bool? termsAndConditions;
+
+  /// Custom text. Pass `''` (empty) to clear & fall back to defaults.
+  /// Pass `null` to leave as-is.
+  final String? customTermsAndConditions;
+
   final bool? benefit;
   final bool? quickAccess;
   final bool? recentTransactions;
@@ -34,7 +40,7 @@ class UpdateSettingsEvent extends SettingsVisibleEvent {
   final bool? profitAndLoss;
   final bool? transport;
   final bool? orders;
-  final bool? todayTotalTransactions;
+  final bool? showHideLogo;
   final bool? statsCount;
   final bool? todayTotalTxnChart;
   final bool? isWholeSale;
@@ -48,7 +54,8 @@ class UpdateSettingsEvent extends SettingsVisibleEvent {
     this.benefit,
     this.isDateExpiry,
     this.currencyRates,
-    this.dashboardClock,
+    this.termsAndConditions,
+    this.customTermsAndConditions,
     this.quickAccess,
     this.dateType,
     this.dateFormat,
@@ -56,10 +63,10 @@ class UpdateSettingsEvent extends SettingsVisibleEvent {
     this.profitAndLoss,
     this.transport,
     this.orders,
-    this.todayTotalTransactions,
+    this.showHideLogo,
     this.statsCount,
     this.todayTotalTxnChart,
-    this.isWholeSale
+    this.isWholeSale,
   });
 
   @override
@@ -72,7 +79,8 @@ class UpdateSettingsEvent extends SettingsVisibleEvent {
     benefit,
     isDateExpiry,
     currencyRates,
-    dashboardClock,
+    termsAndConditions,
+    customTermsAndConditions,
     quickAccess,
     recentTransactions,
     dateType,
@@ -80,9 +88,9 @@ class UpdateSettingsEvent extends SettingsVisibleEvent {
     profitAndLoss,
     transport,
     orders,
-    todayTotalTransactions,
+    showHideLogo,
     statsCount,
     todayTotalTxnChart,
-    isWholeSale
+    isWholeSale,
   ];
 }

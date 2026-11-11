@@ -1916,11 +1916,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get invoiceProfitHint =>
-      'Show or hide profit & loss inside the sale invoice.';
+      'Enable profit & loss widget inside the sale invoice';
 
   @override
   String get inventoryHint =>
-      'Product purchase, sale & goods shifting between wharehouses.';
+      'Enable stock to access purchase, sale invoices & goods shifting';
 
   @override
   String get stockReport => 'Stock';
@@ -1944,7 +1944,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get totalOut => 'Total OUT';
 
   @override
-  String get stockBalance => 'Balance';
+  String get stockBalance => 'Stock Balance';
 
   @override
   String get inAndOut => 'IN | OUT';
@@ -2127,4 +2127,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get txnType => 'Txn Type';
+
+  @override
+  String get productCatHint => 'Manage product categories';
+
+  @override
+  String get termsAndConditions => 'Terms & Conditions';
+
+  @override
+  String get termsAndConditonsHint =>
+      'Enable terms and conditions in sale invoices print';
+
+  @override
+  String get logoPrint => 'Logo Print';
+
+  @override
+  String get textTermsAndConditionsHint =>
+      'Leave empty to use the default terms';
+
+  @override
+  String get customTermsHint =>
+      'Shown instead of the default terms when filled.';
+
+  @override
+  String get resetToDefault => 'Reset';
+
+  @override
+  String get logoPrintHint => 'Show logo in invoices print';
+
+  @override
+  String get productMovementHint => 'Products In & Out reports';
+
+  @override
+  String get stockBalanceHint =>
+      'Stock balance to report products in all inventories';
+
+  @override
+  String get saleInvoiceReportHint => 'Sale Invoices report';
+
+  @override
+  String get purchaseInvoiceReportHint => 'Purchase invoices report';
 }

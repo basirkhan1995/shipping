@@ -130,12 +130,7 @@ class AllBalancesPrintSettings extends PrintServices {
         build: (context) => [
           // Report Title
           _buildTitle(language),
-          pw.SizedBox(height: 10),
-
-          // Summary Section
-          _buildSummarySection(currencyTotals, language),
-          pw.SizedBox(height: 15),
-
+          pw.SizedBox(height: 5),
           // Table Header
           _buildTableHeader(language),
           pw.SizedBox(height: 2),
@@ -170,79 +165,6 @@ class AllBalancesPrintSettings extends PrintServices {
   }
 
   // Summary Section - Clean and Simple
-  pw.Widget _buildSummarySection(Map<String, double> currencyTotals, String language) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(8),
-      decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: pw.PdfColors.grey300, width: 0.5),
-        borderRadius: pw.BorderRadius.circular(2),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          zText(
-            text: tr(text: 'summary', tr: language),
-            fontSize: 10,
-            fontWeight: pw.FontWeight.bold,
-          ),
-          pw.Divider(height: 8, thickness: 0.5),
-          ...currencyTotals.entries.map((entry) {
-            final isPositive = entry.value >= 0;
-            return pw.Padding(
-              padding: const pw.EdgeInsets.symmetric(vertical: 2),
-              child: pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Row(
-                    children: [
-                      pw.Container(
-                        width: 8,
-                        height: 8,
-                        decoration: pw.BoxDecoration(
-                          color: isPositive ? pw.PdfColors.green700 : pw.PdfColors.red700,
-                          shape: pw.BoxShape.circle,
-                        ),
-                      ),
-                      pw.SizedBox(width: 6),
-                      zText(
-                        text: entry.key,
-                        fontSize: 9,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
-                    ],
-                  ),
-                  zText(
-                    text: entry.value.toStringAsFixed(2),
-                    fontSize: 9,
-                    fontWeight: pw.FontWeight.bold,
-                    color: isPositive ? pw.PdfColors.green700 : pw.PdfColors.red700,
-                    textAlign: language == 'en' ? pw.TextAlign.right : pw.TextAlign.left,
-                  ),
-                ],
-              ),
-            );
-          }),
-          pw.Divider(height: 8, thickness: 0.5),
-          pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            children: [
-              zText(
-                text: tr(text: 'total', tr: language),
-                fontSize: 10,
-                fontWeight: pw.FontWeight.bold,
-              ),
-              zText(
-                text: _formatGrandTotal(currencyTotals),
-                fontSize: 10,
-                fontWeight: pw.FontWeight.bold,
-                textAlign: language == 'en' ? pw.TextAlign.right : pw.TextAlign.left,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   // Table Header - Clean Design
   pw.Widget _buildTableHeader(String language) {
@@ -256,9 +178,8 @@ class AllBalancesPrintSettings extends PrintServices {
       ),
       child: pw.Row(
         children: [
-          _buildHeaderCell(tr(text: 'account', tr: language), 80, language),
-          _buildHeaderCell(tr(text: 'name', tr: language), 150, language, flex: 2),
-          _buildHeaderCell(tr(text: 'ccy', tr: language), 40, language),
+          _buildHeaderCell(tr(text: 'accountNumber', tr: language), 80, language),
+          _buildHeaderCell(tr(text: 'accountName', tr: language), 150, language, flex: 2),
           _buildHeaderCell(tr(text: 'branch', tr: language), 40, language),
           _buildHeaderCell(tr(text: 'category', tr: language), 100, language),
           _buildHeaderCell(tr(text: 'balance', tr: language), 100, language, align: pw.TextAlign.right),
@@ -298,14 +219,13 @@ class AllBalancesPrintSettings extends PrintServices {
           decoration: pw.BoxDecoration(
             color: isEven ? pw.PdfColors.grey50 : pw.PdfColors.white,
             border: pw.Border(
-              bottom: pw.BorderSide(color: pw.PdfColors.grey200, width: 0.3),
+              bottom: pw.BorderSide(color: pw.PdfColors.grey100, width: 0.3),
             ),
           ),
           child: pw.Row(
             children: [
               _buildCell(balance.trdAccount?.toString() ?? '', 80, language),
               _buildCell(balance.accName ?? '', 150, language, flex: 2),
-              _buildCell(balance.trdCcy ?? '', 40, language),
               _buildCell(balance.trdBranch?.toString() ?? '', 40, language),
               _buildCell(balance.acgName ?? '', 100, language),
               _buildBalanceCell(
@@ -368,13 +288,6 @@ class AllBalancesPrintSettings extends PrintServices {
   }
 
   // Helper to format grand total
-  String _formatGrandTotal(Map<String, double> currencyTotals) {
-    if (currencyTotals.isEmpty) return '0.00';
-    if (currencyTotals.length == 1) {
-      return currencyTotals.values.first.toStringAsFixed(2);
-    }
-    return 'Multiple Currencies';
-  }
 
   String _getCurrentDate() {
     final now = DateTime.now();

@@ -172,7 +172,9 @@ class InvoicePrintService extends PrintServices {
   /// ============================================================
   ///  SALE INVOICE — TERMS & CONDITIONS MESSAGE (Persian only)
   /// ============================================================
-  pw.Widget _saleTermsMessage({required String language}) {
+  pw.Widget _saleTermsMessage({required String language, ReportModel? company}) {
+    final custom = company?.customTermsAndConditions?.trim();
+    final hasCustom = custom != null && custom.isNotEmpty;
     return pw.Container(
       padding: const pw.EdgeInsets.symmetric(vertical: 2, horizontal: 2),
       child: pw.Row(
@@ -188,13 +190,15 @@ class InvoicePrintService extends PrintServices {
                   fontWeight: pw.FontWeight.bold,
                   color: _InvoiceColors.primaryDark,
                 ),
-                pw.SizedBox(height: 3),
-                zText(
-                    text: tr(text: "termsAndCondition1", tr: language), fontSize: 8),
-                pw.SizedBox(height: 2),
-                zText(text: tr(text: "termsAndCondition2", tr: language), fontSize: 8),
-                pw.SizedBox(height: 2),
-                zText(text: tr(text: "termsAndCondition3", tr: language), fontSize: 8),
+                if (hasCustom)
+                  zText(text: custom, fontSize: 8)
+                else ...[
+                  zText(text: tr(text: "termsAndCondition1", tr: language), fontSize: 8),
+                  pw.SizedBox(height: 2),
+                  zText(text: tr(text: "termsAndCondition2", tr: language), fontSize: 8),
+                  pw.SizedBox(height: 2),
+                  zText(text: tr(text: "termsAndCondition3", tr: language), fontSize: 8),
+                ],
               ],
             ),
           ),
@@ -1047,11 +1051,11 @@ class InvoicePrintService extends PrintServices {
           pw.Row(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              if (isSale) ...[
+              if (isSale && company.visible?.termsAndConditions == true) ...[
                 pw.SizedBox(width: 15),
                 pw.Expanded(
                   flex: 1,
-                  child: _saleTermsMessage(language: language),
+                  child: _saleTermsMessage(language: language,company: company),
                 ),
               ],
               pw.Expanded(
@@ -1190,7 +1194,7 @@ class InvoicePrintService extends PrintServices {
     const priceWidth = 50.0;
     const totalWidth = 60.0;
     const batchWidth = 45.0;
-    double headerFontSize = 11;
+    double headerFontSize = 9;
 
     final isRtl = language == 'fa' || language == 'ar';
     final isWholeSale = report.visible?.isWholeSale ?? false;

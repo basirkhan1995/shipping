@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../../../../../Features/Other/form_dialog.dart';
 import '../../../../../../Features/Other/responsive_widget.dart';
 import '../../../../../../Features/Widgets/ztextfield.dart';
@@ -380,7 +379,7 @@ class _BaseProCatAddEditState extends State<_BaseProCatAddEdit> {
       return ZFormDialog(
         onAction: onSubmit,
         padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-        width: 500,
+        width: 400,
         actionLabel: _buildActionButton(tr, color, isEdit),
         title: isEdit ? tr.edit : tr.newKeyword,
         child: Form(
@@ -502,8 +501,10 @@ class _BaseProCatAddEditState extends State<_BaseProCatAddEdit> {
       return BlocBuilder<ProCatBloc, ProCatState>(
         builder: (context, catState) {
           return ZFormDialog(
+            icon: isEdit? Icons.edit : Icons.calendar_view_month_rounded,
+            width: 500,
             onAction: onSubmit,
-            padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
+            padding: const EdgeInsets.all(10),
             actionLabel: catState is ProCatLoadingState
                 ? SizedBox(
               height: 16,
@@ -512,8 +513,7 @@ class _BaseProCatAddEditState extends State<_BaseProCatAddEdit> {
                 color: color.surface,
                 strokeWidth: 2,
               ),
-            )
-                : Text(isEdit ? tr.update : tr.create),
+            ) : Text(isEdit ? tr.update : tr.create),
             title: isEdit ? tr.edit : tr.newKeyword,
             child: Form(
               key: formKey,
@@ -521,6 +521,7 @@ class _BaseProCatAddEditState extends State<_BaseProCatAddEdit> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   ZTextFieldEntitled(
+                    isRequired: true,
                     title: tr.category,
                     controller: catName,
                     validator: (value) {

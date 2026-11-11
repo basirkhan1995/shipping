@@ -95,7 +95,7 @@ class ReusableSearchBar extends StatefulWidget {
   /// When null, the height is derived from the text field's intrinsic size.
   final double? height;
 
-  /// 👇 NEW: Inner padding of the [TextField] (content padding).
+  /// 👇 NEW: Inter padding of the [TextField] (content padding).
   /// Defaults to a small symmetric padding; increase/decrease as needed.
   final EdgeInsetsGeometry? contentPadding;
 
@@ -207,7 +207,7 @@ class _ReusableSearchBarState extends State<ReusableSearchBar> {
     final resolvedHintStyle = widget.hintStyle ??
         TextStyle(color: scheme.onSurfaceVariant.withValues(alpha: 0.7));
 
-    // Inner content padding — small default that plays nicely with [height].
+    // Inter content padding — small default that plays nicely with [height].
     final resolvedContentPadding = widget.contentPadding ??
         const EdgeInsets.symmetric(horizontal: 4, vertical: 10);
 

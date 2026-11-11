@@ -1,8 +1,35 @@
 import "package:flutter/material.dart";
+/// Font families used by the app.
+class AppFonts {
+  static const String persian = "Vazir";   // Pashto + Persian + Arabic
+  static const String latin   = "Inter";   // English (and any other LTR Latin locale)
+
+  /// Returns the font family that should be used for [locale].
+  ///
+  /// English → Inter (Latin, tighter metrics)
+  /// fa / ps / ar → Vazir (Persian / Pashto script)
+  static String forLocale(Locale? locale) {
+    final code = (locale?.languageCode ?? "en").toLowerCase();
+    switch (code) {
+      case "fa":
+      case "ps":
+      case "ar":
+        return persian;
+      default:
+        return latin;
+    }
+  }
+}
 
 class AppThemes {
   final TextTheme textTheme;
-  const AppThemes(this.textTheme);
+  /// The active locale, injected from `LocalizationBloc`.
+  final Locale? locale;
+
+  const AppThemes(this.textTheme, {this.locale});
+
+  /// Font family resolved once per construction.
+  String get _fontFamily => AppFonts.forLocale(locale);
 
   static ColorScheme lightScheme() {
     return const ColorScheme(
@@ -116,7 +143,7 @@ class AppThemes {
 
   ThemeData theme(ColorScheme colorScheme, bool isLight) => ThemeData(
     useMaterial3: true,
-    fontFamily: "Vazir",
+    fontFamily: _fontFamily,
     brightness: colorScheme.brightness,
     colorScheme: colorScheme,
     // Enhanced AppBar with elevation and shadow
@@ -135,7 +162,7 @@ class AppThemes {
     ),
     // Enhanced text theme with better typography
     textTheme: textTheme.apply(
-      fontFamily: "Vazir",
+      fontFamily: _fontFamily,
       bodyColor: colorScheme.onSurface,
       displayColor: colorScheme.onSurface,
     ),

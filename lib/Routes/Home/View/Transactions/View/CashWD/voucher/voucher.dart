@@ -500,7 +500,7 @@ class CashTxnVoucherPrintSettings extends PrintServices {
         border: pw.Border.all(width: 0.5, color: PdfColors.grey800),
       ),
       // ── Force LTR row layout so logo stays left and contacts
-      //    stay right in BOTH LTR and RTL documents. Inner text
+      //    stay right in BOTH LTR and RTL documents. Inter text
       //    still renders RTL per-string via zText.
       child: pw.Directionality(
         textDirection: pw.TextDirection.ltr,

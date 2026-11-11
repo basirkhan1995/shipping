@@ -23,6 +23,7 @@ import '../../../../../Features/Widgets/zbutton.dart';
 import '../../../../../l10n/Bloc/localizations_bloc.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../Auth/bloc/auth_bloc.dart';
+import '../../../../Auth/features/com_logo.dart';
 import '../../Settings/View/Company/CompanyProfile/bloc/company_profile_bloc.dart';
 import '../../Settings/Visibility/bloc/settings_visible_bloc.dart';
 import '../../Stakeholder/View/StkAccount/bloc/stk_accounts_event.dart';
@@ -761,14 +762,8 @@ class _DesktopState extends State<_Desktop> {
             company.endDate = toDate;
             company.statementDate = DateTime.now().toFullDateTime;
             final base64Logo = auth.company?.comLogo;
-            if (base64Logo != null && base64Logo.isNotEmpty) {
-              try {
-                _companyLogo = base64Decode(base64Logo);
-                company.comLogo = _companyLogo;
-              } catch (e) {
-                _companyLogo = Uint8List(0);
-              }
-            }
+            _companyLogo = CompanyLogoUtils.safeBytes(base64Logo) ?? Uint8List(0);
+            company.comLogo = _companyLogo.isEmpty ? null : _companyLogo;
           }
 
           return Form(
@@ -1294,6 +1289,7 @@ class _DesktopState extends State<_Desktop> {
   void _onPrint() {
     if (formKey.currentState!.validate()) {
       final visibilityState = context.read<SettingsVisibleBloc>().state;
+
       showDialog(
         context: context,
         builder: (_) => PrintPreviewDialog<AccountStatementModel>(

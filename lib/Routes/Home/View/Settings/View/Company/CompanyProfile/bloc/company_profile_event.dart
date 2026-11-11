@@ -10,7 +10,7 @@ class LoadCompanyProfileEvent extends CompanyProfileEvent{
 }
 
 class UpdateCompanyProfileEvent extends CompanyProfileEvent{
-  final CompanySettingsModel company;
+  final CompanyProfileModel company;
   const UpdateCompanyProfileEvent(this.company);
   @override
   List<Object> get props => [company];

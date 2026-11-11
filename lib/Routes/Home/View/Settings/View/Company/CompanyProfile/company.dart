@@ -64,7 +64,7 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm>
   final TextEditingController country = TextEditingController();
   final TextEditingController comLicense = TextEditingController();
 
-  CompanySettingsModel? loadedCompany;
+  CompanyProfileModel? loadedCompany;
   bool isUpdateMode = false;
   Uint8List _companyLogo = Uint8List(0);
   int? comId;
@@ -296,7 +296,7 @@ class _BaseCompanyFormState extends State<_BaseCompanyForm>
 
   void _updateCompanyProfile() {
     context.read<CompanyProfileBloc>().add(UpdateCompanyProfileEvent(
-      CompanySettingsModel(
+      CompanyProfileModel(
         comName: businessName.text,
         comWebsite: website.text,
         comEmail: email.text,

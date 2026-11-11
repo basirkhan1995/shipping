@@ -777,14 +777,13 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
         // Fixed width — never expands to eat the account text.
         // Divider is added in `build()` alongside this widget.
         return SizedBox(
-          width: widget.currencySelectorWidth - 20, // leave room for padding
+          width: widget.currencySelectorWidth - 40, // leave room for padding
           child: DropdownButtonHideUnderline(
             child: DropdownButton<_CcyItem>(
               value: selectedItem,
               isDense: true,
               isExpanded: false,
-              selectedItemBuilder: (context) =>
-                  _ccyItems.map(_buildCcyRow).toList(),
+              selectedItemBuilder: (context) => _ccyItems.map(_buildCcyRow).toList(),
               items: _ccyItems
                   .map((c) => DropdownMenuItem<_CcyItem>(
                 value: c,
@@ -800,8 +799,8 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
               }
                   : null,
               icon: Icon(
-                Icons.arrow_drop_down_rounded,
-                size: 18,
+                Icons.keyboard_arrow_down_rounded,
+                size: 16,
                 color: Theme.of(context).colorScheme.outline,
               ),
               elevation: 2,
@@ -829,6 +828,7 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
             maxLines: 1,
             style: const TextStyle(
               fontWeight: FontWeight.w700,
+              letterSpacing: .5,
               fontSize: 12,
             ),
           ),
@@ -965,10 +965,8 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.only(
-                              left: 8,
-                              right: 6,
-                            ),
+                            padding: const EdgeInsets.symmetric(
+                            horizontal: 8),
                             child: _buildCurrencySelector(),
                           ),
                           // Vertical divider between currency
@@ -981,7 +979,7 @@ class _GenericTextFieldState<T, B extends BlocBase<S>, S>
                                 .outline
                                 .withValues(alpha: 0.25),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 2),
                         ],
                       )
                           : widget.icon != null

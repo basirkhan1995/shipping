@@ -4,11 +4,11 @@
 
 import 'dart:convert';
 
-List<CompanySettingsModel> companySettingsModelFromMap(String str) => List<CompanySettingsModel>.from(json.decode(str).map((x) => CompanySettingsModel.fromMap(x)));
+List<CompanyProfileModel> companySettingsModelFromMap(String str) => List<CompanyProfileModel>.from(json.decode(str).map((x) => CompanyProfileModel.fromMap(x)));
 
-String companySettingsModelToMap(List<CompanySettingsModel> data) => json.encode(List<dynamic>.from(data.map((x) => x.toMap())));
+String companySettingsModelToMap(List<CompanyProfileModel> data) => json.encode(List<dynamic>.from(data.map((x) => x.toMap())));
 
-class CompanySettingsModel {
+class CompanyProfileModel {
   final int? comId;
   final String? comName;
   final String? comLicenseNo;
@@ -33,7 +33,7 @@ class CompanySettingsModel {
   final String? addCountry;
   final String? addZipCode;
 
-  CompanySettingsModel({
+  CompanyProfileModel({
     this.comId,
     this.comName,
     this.comLicenseNo,
@@ -59,7 +59,7 @@ class CompanySettingsModel {
     this.addZipCode,
   });
 
-  CompanySettingsModel copyWith({
+  CompanyProfileModel copyWith({
     int? comId,
     String? comName,
     String? comLicenseNo,
@@ -84,7 +84,7 @@ class CompanySettingsModel {
     String? addCountry,
     String? addZipCode,
   }) =>
-      CompanySettingsModel(
+      CompanyProfileModel(
         comId: comId ?? this.comId,
         comName: comName ?? this.comName,
         comLicenseNo: comLicenseNo ?? this.comLicenseNo,
@@ -110,7 +110,7 @@ class CompanySettingsModel {
         addZipCode: addZipCode ?? this.addZipCode,
       );
 
-  factory CompanySettingsModel.fromMap(Map<String, dynamic> json) => CompanySettingsModel(
+  factory CompanyProfileModel.fromMap(Map<String, dynamic> json) => CompanyProfileModel(
     comId: json["comID"],
     comName: json["comName"],
     comLicenseNo: json["comLicenseNo"],

@@ -42,14 +42,14 @@ class EntityWidget extends StatelessWidget {
 
     return Material(
       color: rowBg,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(4),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(4),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,

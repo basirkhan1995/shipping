@@ -6,6 +6,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Date/shamsi_converter.dart';
 import 'package:shipping/Features/Widgets/extensions.dart';
 import 'package:shipping/Features/Widgets/no_data_widget.dart';
+import 'package:shipping/Features/Widgets/shimmer.dart';
+import 'package:shipping/Routes/Home/View/Transactions/View/OrdersTxn/orders_txn_view.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 
 import '../../../../../../Features/Other/responsive_widget.dart';
@@ -364,6 +366,32 @@ class _DesktopViewState extends State<_DesktopView> {
     }
   }
 
+  Future<void> _openOrdTxnDialog({String? reference}) async {
+    final auth = context.read<AuthBloc>().state;
+    if (auth is! AuthenticatedState) return;
+
+    final saved = await showOrdersTxnDialog(
+      context,
+      usrName: auth.loginData.usrName ?? '',
+      baseCurrency: _baseCurrency(),
+      reference: reference,
+    );
+
+    if (!mounted) return;
+    if (saved == true) {
+      _reload();
+      final tr = AppLocalizations.of(context)!;
+      ToastManager.show(
+        context: context,
+        title: tr.save,
+        message: reference != null
+            ? 'Order transfer updated'
+            : 'Bulk transfer created',
+        type: ToastType.success,
+      );
+    }
+  }
+
 
   Future<void> _openCashDialogForEdit({
     required String typeCode,
@@ -456,7 +484,10 @@ class _DesktopViewState extends State<_DesktopView> {
       case 'BULK':
         await _openBulkDialog(reference: row.reference);
         break;
-
+      case 'SALE':
+      case 'PURCHASE':
+        await _openOrdTxnDialog(reference: row.reference);
+        break;
       case 'CRFX':
         await _openExchangeDialog(reference: row.reference);
         break;
@@ -480,8 +511,7 @@ class _DesktopViewState extends State<_DesktopView> {
 
   void _onActionTapped(_ActionButtonSpec spec) {
     final auth = context.read<AuthBloc>().state;
-    final allowed = auth is AuthenticatedState &&
-        _checkPermission(auth.loginData, spec.permission);
+    final allowed = auth is AuthenticatedState && _checkPermission(auth.loginData, spec.permission);
 
     if (!allowed) {
       final tr = AppLocalizations.of(context)!;
@@ -507,6 +537,10 @@ class _DesktopViewState extends State<_DesktopView> {
       case 'ATAT':
         _openFundTransferDialog();
         break;
+
+      case 'SALE':
+      case 'PURCHASE':
+         _openOrdTxnDialog();
 
       case 'BULK':
         _openBulkDialog();
@@ -820,15 +854,15 @@ class _DesktopViewState extends State<_DesktopView> {
   }
 
   Widget _buildTableHeader(ColorScheme color, TextTheme textTheme) {
-    final titleStyle = textTheme.titleSmall?.copyWith(letterSpacing: 1.2,fontSize: 12,fontWeight: FontWeight.bold);
+    final titleStyle = textTheme.titleSmall?.copyWith(letterSpacing: 1,fontSize: 13,fontWeight: FontWeight.bold);
     final tr = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: Colors.grey,
-            width: 1.0,
+            color: Theme.of(context).colorScheme.primary,
+            width: 1.3,
           ),
         ),
       ),
@@ -858,7 +892,7 @@ class _DesktopViewState extends State<_DesktopView> {
           if (state.previous.isNotEmpty) {
             return _buildList(state.previous, color, dim: true);
           }
-          return const Center(child: CircularProgressIndicator());
+          return Center(child: UniversalShimmer.dataList(itemCount: 8,numberOfColumns: 6));
         }
         if (state is TransactionsErrorState) {
           return _buildError(state.message, color);

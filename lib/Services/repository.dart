@@ -1077,7 +1077,7 @@ class Repositories {
   // ═════════════════════════════════════════════════════════════════
   // Company profile
   // ═════════════════════════════════════════════════════════════════
-  Future<CompanySettingsModel> getCompanyProfile({CancelToken? cancelToken,}) async {
+  Future<CompanyProfileModel> getCompanyProfile({CancelToken? cancelToken,}) async {
     final response = await _api.get(
       endpoint: '/setting/companyProfile.php',
       cancelToken: cancelToken,
@@ -1087,7 +1087,7 @@ class Repositories {
 
     // Case 1: a single JSON object.
     if (body is Map<String, dynamic>) {
-      return CompanySettingsModel.fromMap(body);
+      return CompanyProfileModel.fromMap(body);
     }
 
     // Case 2: an array — take the first element.
@@ -1097,16 +1097,16 @@ class Repositories {
       }
       final first = body.first;
       if (first is Map<String, dynamic>) {
-        return CompanySettingsModel.fromMap(first);
+        return CompanyProfileModel.fromMap(first);
       }
       if (first is Map) {
-        return CompanySettingsModel.fromMap(Map<String, dynamic>.from(first));
+        return CompanyProfileModel.fromMap(Map<String, dynamic>.from(first));
       }
     }
 
     _fail(body, fallback: 'Invalid company profile response');
   }
-  Future<void> editCompanyProfile({required CompanySettingsModel newData,}) async {
+  Future<void> editCompanyProfile({required CompanyProfileModel newData,}) async {
     final response = await _api.put(
       endpoint: '/setting/companyProfile.php',
       data: newData.toMap(),
