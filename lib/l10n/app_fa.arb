@@ -714,5 +714,6 @@
   "productMovementHint": "راپور ورود و خروج کالا ها",
   "stockBalanceHint": "راپور موجودی کالاها در تمام گدام ها",
   "saleInvoiceReportHint": "راپور سوابق بل های فروش",
-  "purchaseInvoiceReportHint": "راپور سوابق بل های خرید"
+  "purchaseInvoiceReportHint": "راپور سوابق بل های خرید",
+  "watermark":"واترمارک"
 }

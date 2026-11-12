@@ -2167,4 +2167,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get purchaseInvoiceReportHint => 'Purchase invoices report';
+
+  @override
+  String get watermark => 'Watermark';
 }

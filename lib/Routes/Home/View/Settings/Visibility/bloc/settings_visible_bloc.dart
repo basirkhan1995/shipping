@@ -83,7 +83,7 @@ class SettingsVisibleBloc
       isDateExpiry: event.isDateExpiry,
       dateFormat: event.dateFormat,
       profitAndLoss: event.profitAndLoss,
-      transport: event.transport,
+      invoiceWatermark: event.invoiceWatermark,
       orders: event.orders,
       showHideLogo: event.showHideLogo,
       statsCount: event.statsCount,

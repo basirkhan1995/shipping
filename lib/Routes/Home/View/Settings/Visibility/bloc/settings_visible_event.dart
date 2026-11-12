@@ -38,7 +38,7 @@ class UpdateSettingsEvent extends SettingsVisibleEvent {
   final bool? isDateExpiry;
   final String? dateFormat;
   final bool? profitAndLoss;
-  final bool? transport;
+  final bool? invoiceWatermark;
   final bool? orders;
   final bool? showHideLogo;
   final bool? statsCount;
@@ -61,7 +61,7 @@ class UpdateSettingsEvent extends SettingsVisibleEvent {
     this.dateFormat,
     this.recentTransactions,
     this.profitAndLoss,
-    this.transport,
+    this.invoiceWatermark,
     this.orders,
     this.showHideLogo,
     this.statsCount,
@@ -86,7 +86,7 @@ class UpdateSettingsEvent extends SettingsVisibleEvent {
     dateType,
     dateFormat,
     profitAndLoss,
-    transport,
+    invoiceWatermark,
     orders,
     showHideLogo,
     statsCount,

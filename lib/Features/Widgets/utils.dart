@@ -52,6 +52,7 @@ class Utils{
     }
   }
 
+
   static Future<void> copyToClipboard(String text) async {
     if (text.isNotEmpty) {
       await Clipboard.setData(ClipboardData(text: text));

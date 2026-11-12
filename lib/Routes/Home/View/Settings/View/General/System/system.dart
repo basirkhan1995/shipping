@@ -93,6 +93,16 @@ class SystemView extends StatelessWidget {
                         ),
                         bulletPoint(tr.logoPrintHint),
 
+                        /// Watermark in prints
+                        LabeledCheckbox(
+                          title: tr.watermark,
+                          value: state.invoiceWatermark,
+                          onChanged: (e) {
+                            context.read<SettingsVisibleBloc>().add(UpdateSettingsEvent(invoiceWatermark: e));
+                          },
+                        ),
+                        bulletPoint(tr.watermark),
+
                         /// ── Terms and Conditions (toggle) ──
                         LabeledCheckbox(
                           title: tr.termsAndConditions,

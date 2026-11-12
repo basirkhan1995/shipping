@@ -415,18 +415,10 @@ class _DesktopState extends State<_Desktop> {
               ),
             ),
             const SizedBox(height: 8),
-            Container(
+            ZCover(
               padding:
               const EdgeInsets.symmetric(horizontal: 8.0, vertical: 5),
               margin: const EdgeInsets.symmetric(horizontal: 5.0),
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: Colors.grey,
-                    width: 1.0,
-                  ),
-                ),
-              ),
               child: Row(
                 children: [
                   SizedBox(

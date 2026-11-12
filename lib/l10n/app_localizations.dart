@@ -4311,6 +4311,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Purchase invoices report'**
   String get purchaseInvoiceReportHint;
+
+  /// No description provided for @watermark.
+  ///
+  /// In en, this message translates to:
+  /// **'Watermark'**
+  String get watermark;
 }
 
 class _AppLocalizationsDelegate

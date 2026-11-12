@@ -205,14 +205,6 @@ abstract class PrintServices {
     //    an explicit `visible` model still render the logo. ──
     final bool showLogo = report.visible?.showHideLogo ?? true;
 
-    debugPrint(
-      'HEADER → hasCompanyLogo=$hasCompanyLogo '
-          'bytes=${report.comLogo?.length} '
-          'isUint8List=${report.comLogo is Uint8List} '
-          'showHideLogo=${report.visible?.showHideLogo} '
-          'showLogo=$showLogo',
-    );
-
     // ── Colors ──
     final primaryColor = PdfColor.fromHex('#1E407C');
     final accentColor  = PdfColor.fromHex('#00A8E8');
@@ -239,8 +231,8 @@ abstract class PrintServices {
             ),
             pw.SizedBox(width: 3),
             pw.Container(
-              width: 11,
-              height: 11,
+              width: 13,
+              height: 13,
               alignment: pw.Alignment.center,
               decoration: pw.BoxDecoration(
                 color: iconBg,
@@ -248,7 +240,7 @@ abstract class PrintServices {
               ),
               child: icon == null
                   ? pw.SizedBox()
-                  : pw.Image(icon, width: 6.5, height: 6.5),
+                  : pw.Image(icon, width: 8.5, height: 8.5),
             ),
           ],
         ),
@@ -285,7 +277,7 @@ abstract class PrintServices {
               ),
             ),
             pw.Container(
-              padding: const pw.EdgeInsets.fromLTRB(18, 10, 18, 8),
+              padding: const pw.EdgeInsets.fromLTRB(10, 10, 10, 8),
               child: pw.Row(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -350,7 +342,7 @@ abstract class PrintServices {
                   ),
                   pw.SizedBox(width: 8),
                   pw.Expanded(
-                    flex: 2,
+                    flex: 3,
                     child: pw.Padding(
                       padding: const pw.EdgeInsets.only(top: 1, right: 2),
                       child: pw.Column(

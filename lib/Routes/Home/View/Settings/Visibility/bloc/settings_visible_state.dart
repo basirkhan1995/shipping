@@ -32,7 +32,7 @@ class SettingsVisibilityState extends Equatable {
   final bool showHideLogo;
   final bool statsCount;
   final bool todayTotalTxnChart;
-  final bool transport;
+  final bool invoiceWatermark;
   final bool orders;
   final bool benefit;
   final bool isWholeSale;
@@ -56,7 +56,7 @@ class SettingsVisibilityState extends Equatable {
     this.showHideLogo = true,
     this.statsCount = true,
     this.todayTotalTxnChart = true,
-    this.transport = true,
+    this.invoiceWatermark = true,
     this.orders = true,
     this.isWholeSale = false,
   });
@@ -85,7 +85,7 @@ class SettingsVisibilityState extends Equatable {
       statsCount: map['statsCount'] ?? true,
       showHideLogo: map['showHideLogo'] ?? true,
       todayTotalTxnChart: map['todayTotalTxnChart'] ?? true,
-      transport: map['transport'] ?? true,
+      invoiceWatermark: map['invoiceWatermark'] ?? true,
       orders: map['orders'] ?? true,
       isWholeSale: map['isWholeSale'] ?? false,
     );
@@ -111,7 +111,7 @@ class SettingsVisibilityState extends Equatable {
       'statsCount': statsCount,
       'showHideLogo': showHideLogo,
       'todayTotalTxnChart': todayTotalTxnChart,
-      'transport': transport,
+      'invoiceWatermark': invoiceWatermark,
       'orders': orders,
       'isWholeSale': isWholeSale,
     };
@@ -155,7 +155,7 @@ class SettingsVisibilityState extends Equatable {
     bool? showHideLogo,
     bool? statsCount,
     bool? todayTotalTxnChart,
-    bool? transport,
+    bool? invoiceWatermark,
     bool? orders,
     bool? benefit,
     bool? isWholeSale,
@@ -180,7 +180,7 @@ class SettingsVisibilityState extends Equatable {
       showHideLogo: showHideLogo ?? this.showHideLogo,
       statsCount: statsCount ?? this.statsCount,
       todayTotalTxnChart: todayTotalTxnChart ?? this.todayTotalTxnChart,
-      transport: transport ?? this.transport,
+      invoiceWatermark: invoiceWatermark ?? this.invoiceWatermark,
       orders: orders ?? this.orders,
       benefit: benefit ?? this.benefit,
       isWholeSale: isWholeSale ?? this.isWholeSale,
@@ -206,7 +206,7 @@ class SettingsVisibilityState extends Equatable {
     showHideLogo,
     statsCount,
     todayTotalTxnChart,
-    transport,
+    invoiceWatermark,
     orders,
     benefit,
     isWholeSale,

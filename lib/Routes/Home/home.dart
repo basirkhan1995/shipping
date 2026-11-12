@@ -113,13 +113,13 @@ class _DesktopView extends StatelessWidget {
           value: MenuName.stock,
           label: AppLocalizations.of(context)!.stock,
           screen: const OrdersView(),
-          icon: Icons.shopify_rounded,
+          icon: Icons.add_shopping_cart_rounded,
         ),
         MenuDefinition(
           value: MenuName.products,
           label: AppLocalizations.of(context)!.products,
           screen: const ProductsView(),
-          icon: Icons.production_quantity_limits_rounded,
+          icon: Icons.shopify_rounded,
         ),
       ],
 

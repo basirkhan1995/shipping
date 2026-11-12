@@ -2158,4 +2158,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get purchaseInvoiceReportHint => 'راپور سوابق بل های خرید';
+
+  @override
+  String get watermark => 'واترمارک';
 }

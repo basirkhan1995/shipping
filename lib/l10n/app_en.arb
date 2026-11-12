@@ -714,5 +714,6 @@
   "productMovementHint": "Products In & Out reports",
   "stockBalanceHint": "Stock balance to report products in all inventories",
   "saleInvoiceReportHint": "Sale Invoices report",
-  "purchaseInvoiceReportHint": "Purchase invoices report"
+  "purchaseInvoiceReportHint": "Purchase invoices report",
+  "watermark":"Watermark"
 }

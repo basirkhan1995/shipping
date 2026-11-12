@@ -330,6 +330,7 @@ class InvoicePrintService extends PrintServices {
         build: (context) {
           return pw.Stack(
             children: [
+              if(company.visible?.invoiceWatermark == true)
               pw.Positioned.fill(
                 child: _buildWatermark(
                   company: company,
@@ -1008,7 +1009,7 @@ class InvoicePrintService extends PrintServices {
       buildBackground: (pw.Context context) => pw.FullPage(
         ignoreMargins: true,
         child: pw.Center(
-          child: _buildWatermark(
+          child: company.visible?.invoiceWatermark == true? _buildWatermark(
             company: company,
             pageFormat: pageFormat,
             opacity: 0.15,
@@ -1017,7 +1018,7 @@ class InvoicePrintService extends PrintServices {
             angle: -0.35,
             fit: pw.BoxFit.contain,
             topOffset: 60,
-          ),
+          ) : null,
         ),
       ),
     );

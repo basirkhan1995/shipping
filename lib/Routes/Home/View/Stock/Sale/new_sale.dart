@@ -672,11 +672,11 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
                                             focusNode: _accountFocusNode,
                                             controller: _accountController,
                                             title: tr.accounts,
-                                            hintText: "selectAccount",
+                                            hintText: tr.selectAccount,
                                             isRequired: current.paymentMode != PaymentMode.cash,
                                             validator: (value) {
                                               if (current.paymentMode != PaymentMode.cash && (value == null || value.isEmpty)) {
-                                                return "selectCreditAccountMsg";
+                                                return tr.selectAccount;
                                               }
                                               return null;
                                             },
@@ -949,28 +949,27 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
   Widget _buildItemsHeader(BuildContext context) {
     final locale = AppLocalizations.of(context)!;
     final color = Theme.of(context).colorScheme;
-    TextStyle? title = Theme.of(context).textTheme.titleSmall?.copyWith(color: color.surface);
+    TextStyle? title = Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: color.surface,fontSize: 14);
     final visibility = context.read<SettingsVisibleBloc>().state;
     final needsLocalConv = _needsLocalConversion(context);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
       decoration: BoxDecoration(
         color: color.primary,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(2),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const SizedBox(width: 30, child: Text('#', textAlign: TextAlign.center)),
           Expanded(child: Text(locale.products, style: title)),
           SizedBox(width: 80, child: Text(locale.qty)),
-          if(visibility.isWholeSale)
-            SizedBox(width: 100, child: Text(locale.batchTitle)),
+          if(visibility.isWholeSale)SizedBox(width: 100, child: Text(locale.batchTitle)),
           SizedBox(width: 100, child: Text(locale.unit)),
-          SizedBox(width: 130, child: Text("${locale.unitPrice} ($baseCurrency)")),
-          if (needsLocalConv)
-            SizedBox(width: 130, child: Text("${locale.unitPrice} (${_getAccountCurrency(context)})")),
+          SizedBox(width: 130, child: Text("${locale.unitPrice} | $baseCurrency")),
+          if (needsLocalConv)SizedBox(width: 130, child: Text("${locale.unitPrice} | ${_getAccountCurrency(context)}")),
           SizedBox(width: 140, child: Text(locale.discount)),
-          SizedBox(width: 140, child: Text("${locale.totalTitle} ($baseCurrency)")),
+          SizedBox(width: 140, child: Text("${locale.totalTitle} | $baseCurrency")),
           SizedBox(width: 60, child: Text(locale.actions)),
         ].map((child) => DefaultTextStyle(style: title!, child: child)).toList(),
       ),
