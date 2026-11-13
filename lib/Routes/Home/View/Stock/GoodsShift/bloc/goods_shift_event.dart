@@ -1,4 +1,3 @@
-// goods_shift_event.dart
 part of 'goods_shift_bloc.dart';
 
 abstract class GoodsShiftEvent extends Equatable {
@@ -18,34 +17,26 @@ class LoadGoodsShiftByIdEvent extends GoodsShiftEvent {
 
 class AddGoodsShiftEvent extends GoodsShiftEvent {
   final String usrName;
-  final String account;
-  final String amount;
   final List<ShiftRecord> records;
   const AddGoodsShiftEvent({
     required this.usrName,
-    required this.account,
-    required this.amount,
     required this.records,
   });
   @override
-  List<Object?> get props => [usrName, account, amount, records];
+  List<Object?> get props => [usrName, records];
 }
 
 class UpdateGoodsShiftEvent extends GoodsShiftEvent {
   final int ordID;
   final String usrName;
-  final String account;
-  final String amount;
   final List<ShiftRecord> records;
   const UpdateGoodsShiftEvent({
     required this.ordID,
     required this.usrName,
-    required this.account,
-    required this.amount,
     required this.records,
   });
   @override
-  List<Object?> get props => [ordID, usrName, account, amount, records];
+  List<Object?> get props => [ordID, usrName, records];
 }
 
 class DeleteGoodsShiftEvent extends GoodsShiftEvent {
@@ -57,6 +48,16 @@ class DeleteGoodsShiftEvent extends GoodsShiftEvent {
   });
   @override
   List<Object?> get props => [orderId, usrName];
+}
+
+/// NEW — bulk authorize one or more goods shifts.
+/// Payload shape matches the backend `change_orders_status`:
+///   [{ "ordID": 5, "ordStatus": "Authorized" }, ...]
+class AuthorizeGoodsShiftsEvent extends GoodsShiftEvent {
+  final List<Map<String, dynamic>> ordersData;
+  const AuthorizeGoodsShiftsEvent(this.ordersData);
+  @override
+  List<Object?> get props => [ordersData];
 }
 
 class ReturnToShiftsListEvent extends GoodsShiftEvent {}

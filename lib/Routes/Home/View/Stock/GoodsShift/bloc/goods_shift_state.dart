@@ -1,4 +1,3 @@
-// goods_shift_state.dart
 part of 'goods_shift_bloc.dart';
 
 abstract class GoodsShiftState extends Equatable {
@@ -37,6 +36,21 @@ class GoodsShiftDeletedState extends GoodsShiftState {
   @override
   List<Object?> get props => [message];
 }
+
+// ── NEW ─────────────────────────────────────────────────────────
+class GoodsShiftAuthorizingState extends GoodsShiftState {}
+
+class GoodsShiftAuthorizedState extends GoodsShiftState {
+  final String message;
+  final int count;
+  const GoodsShiftAuthorizedState({
+    required this.message,
+    required this.count,
+  });
+  @override
+  List<Object?> get props => [message, count];
+}
+// ────────────────────────────────────────────────────────────────
 
 class GoodsShiftDetailLoadingState extends GoodsShiftState {}
 

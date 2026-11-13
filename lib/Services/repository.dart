@@ -3508,14 +3508,10 @@ class Repositories {
 
   Future<Map<String, dynamic>> addShift({
     required String usrName,
-    required String account,
-    required String amount,
     required List<ShiftRecord> records,
   }) async {
     final data = {
       "usrName": usrName,
-      "account": account,
-      "amount": amount,
       "records": records.map((r) => r.toMap()).toList(),
     };
 
@@ -3532,15 +3528,11 @@ class Repositories {
   Future<Map<String, dynamic>> updateShift({
     required int ordID,
     required String usrName,
-    required String account,
-    required String amount,
     required List<ShiftRecord> records,
   }) async {
     final data = {
       "ordID": ordID,
       "usrName": usrName,
-      "account": account,
-      "amount": amount,
       "records": records.map((r) => r.toMap()).toList(),
     };
 

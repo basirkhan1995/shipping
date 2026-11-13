@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/search_field.dart';
 import 'package:shipping/Routes/Home/View/Report/Inventory/Cardx/Ui/cardx.dart';
 import 'package:shipping/Routes/Home/View/Report/Inventory/StockAvailability/product_report.dart';
-import 'package:shipping/Routes/Home/View/Stock/GoodsShift/add_shift.dart';
+import 'package:shipping/Routes/Home/View/Stock/GoodsShift/goods_shift.dart';
 import 'package:shipping/Routes/Home/View/Stock/Orders/features/status_method.dart';
 import '../../../../../../Features/Date/shamsi_converter.dart';
 import '../../../../../../Features/Other/global_shortcut.dart';
@@ -271,7 +271,7 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
         Utils.goto(context, const NewPurchaseOrderView());
         break;
       case 'SHIFT':
-        Utils.goto(context, const AddGoodsShiftView());
+        Utils.goto(context, const GoodsShiftView());
         break;
       case 'INOUT':
         Utils.goto(context, const StockRecordReportView());

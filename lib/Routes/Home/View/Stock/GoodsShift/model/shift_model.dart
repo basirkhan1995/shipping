@@ -1,18 +1,16 @@
 import 'dart:convert';
 
-List<GoodShiftModel> goodShiftModelFromMap(String str) => List<GoodShiftModel>.from(json.decode(str).map((x) => GoodShiftModel.fromMap(x)));
+List<GoodShiftModel> goodShiftModelFromMap(String str) =>
+    List<GoodShiftModel>.from(
+        json.decode(str).map((x) => GoodShiftModel.fromMap(x)));
 
-String goodShiftModelToMap(List<GoodShiftModel> data) => json.encode(List<dynamic>.from(data.map((x) => x.toMap())));
+String goodShiftModelToMap(List<GoodShiftModel> data) =>
+    json.encode(List<dynamic>.from(data.map((x) => x.toMap())));
 
 class GoodShiftModel {
   final int? ordId;
   final String? ordName;
-  final dynamic ordPersonal;
-  final dynamic ordPersonalName;
-  final dynamic ordxRef;
   final String? ordTrnRef;
-  final int? account;
-  final String? amount;
   final String? trnStateText;
   final DateTime? ordEntryDate;
   List<ShiftRecord>? records;
@@ -20,12 +18,7 @@ class GoodShiftModel {
   GoodShiftModel({
     this.ordId,
     this.ordName,
-    this.ordPersonal,
-    this.ordPersonalName,
-    this.ordxRef,
     this.ordTrnRef,
-    this.account,
-    this.amount,
     this.trnStateText,
     this.ordEntryDate,
     this.records,
@@ -34,12 +27,7 @@ class GoodShiftModel {
   GoodShiftModel copyWith({
     int? ordId,
     String? ordName,
-    dynamic ordPersonal,
-    dynamic ordPersonalName,
-    dynamic ordxRef,
     String? ordTrnRef,
-    int? account,
-    String? amount,
     String? trnStateText,
     DateTime? ordEntryDate,
     List<ShiftRecord>? records,
@@ -47,12 +35,7 @@ class GoodShiftModel {
       GoodShiftModel(
         ordId: ordId ?? this.ordId,
         ordName: ordName ?? this.ordName,
-        ordPersonal: ordPersonal ?? this.ordPersonal,
-        ordPersonalName: ordPersonalName ?? this.ordPersonalName,
-        ordxRef: ordxRef ?? this.ordxRef,
         ordTrnRef: ordTrnRef ?? this.ordTrnRef,
-        account: account ?? this.account,
-        amount: amount ?? this.amount,
         trnStateText: trnStateText ?? this.trnStateText,
         ordEntryDate: ordEntryDate ?? this.ordEntryDate,
         records: records ?? this.records,
@@ -61,39 +44,33 @@ class GoodShiftModel {
   factory GoodShiftModel.fromMap(Map<String, dynamic> json) => GoodShiftModel(
     ordId: json["ordID"],
     ordName: json["ordName"],
-    ordPersonal: json["ordPersonal"],
-    ordPersonalName: json["ordPersonalName"],
-    ordxRef: json["ordxRef"],
     ordTrnRef: json["ordTrnRef"],
-    account: json["account"],
-    amount: json["amount"],
     trnStateText: json["trnStateText"],
-    ordEntryDate: json["ordEntryDate"] == null ? null : DateTime.parse(json["ordEntryDate"]),
+    ordEntryDate: json["ordEntryDate"] == null
+        ? null
+        : DateTime.parse(json["ordEntryDate"]),
     records: json["records"] != null
-        ? (json["records"] as List).map((x) => ShiftRecord.fromMap(x)).toList()
+        ? (json["records"] as List)
+        .map((x) => ShiftRecord.fromMap(x))
+        .toList()
         : null,
   );
 
   Map<String, dynamic> toMap() => {
     "ordID": ordId,
     "ordName": ordName,
-    "ordPersonal": ordPersonal,
-    "ordPersonalName": ordPersonalName,
-    "ordxRef": ordxRef,
     "ordTrnRef": ordTrnRef,
-    "account": account,
-    "amount": amount,
     "trnStateText": trnStateText,
     "ordEntryDate": ordEntryDate?.toIso8601String(),
     "records": records?.map((x) => x.toMap()).toList(),
   };
 
-  double get totalAmount => double.tryParse(amount ?? "0") ?? 0;
-  bool get hasExpense => account != null && amount != null && totalAmount > 0;
-  int get outCount => records?.where((r) => r.stkEntryType == "OUT").length ?? 0;
-  int get inCount => records?.where((r) => r.stkEntryType == "IN").length ?? 0;
-
-
+  // Convenience getters used in the UI
+  bool get isPending => (trnStateText ?? '').toLowerCase() == 'pending';
+  int get outCount =>
+      records?.where((r) => r.stkEntryType == "OUT").length ?? 0;
+  int get inCount =>
+      records?.where((r) => r.stkEntryType == "IN").length ?? 0;
 }
 
 class ShiftRecord {
@@ -113,6 +90,7 @@ class ShiftRecord {
   final int? stkQtyInBatch;
   final int? storageId;
   final String? storageName;
+
   ShiftRecord({
     this.stkID,
     this.stkOrder,
@@ -144,19 +122,20 @@ class ShiftRecord {
     String? stkSalePrice,
     String? stkLandedPurPrice,
     int? stkQtyInBatch,
-  }) => ShiftRecord(
-    stkID: stkID ?? this.stkID,
-    stkOrder: stkOrder ?? this.stkOrder,
-    stkProduct: stkProduct ?? this.stkProduct,
-    stkEntryType: stkEntryType ?? this.stkEntryType,
-    fromStorageId: fromStorage ?? fromStorageId,
-    toStorageId: toStorage ?? toStorageId,
-    stkQuantity: stkQuantity ?? this.stkQuantity,
-    stkPurPrice: stkPurPrice ?? this.stkPurPrice,
-    stkSalePrice: stkSalePrice ?? this.stkSalePrice,
-    stkLandedPurPrice: stkLandedPurPrice ?? this.stkLandedPurPrice,
-    stkQtyInBatch: stkQtyInBatch ?? this.stkQtyInBatch,
-  );
+  }) =>
+      ShiftRecord(
+        stkID: stkID ?? this.stkID,
+        stkOrder: stkOrder ?? this.stkOrder,
+        stkProduct: stkProduct ?? this.stkProduct,
+        stkEntryType: stkEntryType ?? this.stkEntryType,
+        fromStorageId: fromStorage ?? fromStorageId,
+        toStorageId: toStorage ?? toStorageId,
+        stkQuantity: stkQuantity ?? this.stkQuantity,
+        stkPurPrice: stkPurPrice ?? this.stkPurPrice,
+        stkSalePrice: stkSalePrice ?? this.stkSalePrice,
+        stkLandedPurPrice: stkLandedPurPrice ?? this.stkLandedPurPrice,
+        stkQtyInBatch: stkQtyInBatch ?? this.stkQtyInBatch,
+      );
 
   factory ShiftRecord.fromMap(Map<String, dynamic> json) => ShiftRecord(
     stkID: json["stkID"],
@@ -192,5 +171,3 @@ class ShiftRecord {
   bool get isOutEntry => stkEntryType == "OUT";
   bool get isInEntry => stkEntryType == "IN";
 }
-
-

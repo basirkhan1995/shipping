@@ -3,13 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/toast.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
+import '../../../../../Features/Other/form_dialog.dart';
 import '../../../../../Features/Widgets/cover.dart';
 import '../../../../../Features/Widgets/extensions.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../Auth/bloc/auth_bloc.dart';
 import '../../Products/bloc/products_bloc.dart';
 import '../../Products/model/product_stock_model.dart';
-import '../../Settings/View/Company/CompanyProfile/bloc/company_profile_bloc.dart';
 import '../../Settings/View/Company/Storage/bloc/storage_bloc.dart';
 import '../../Settings/View/Company/Storage/model/storage_model.dart';
 import '../Purchase/features/underline_field.dart';
@@ -17,8 +17,46 @@ import '../Sale/features/sale_product_field.dart';
 import 'bloc/goods_shift_bloc.dart';
 import 'model/shift_model.dart';
 
+// ------------------------------------------------------------------
+// PUBLIC ENTRY POINT — open create or edit dialog
+// ------------------------------------------------------------------
+Future<bool?> showGoodsShiftDialog(
+    BuildContext context, {
+      required String usrName,
+      int? ordId,
+    }) {
+  final bloc = context.read<GoodsShiftBloc>();
+
+  return showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => BlocProvider.value(
+      value: bloc,
+      child: AddGoodsShiftView(
+        ordId: ordId,
+        usrNameOverride: usrName,
+      ),
+    ),
+  );
+}
+
+// ------------------------------------------------------------------
+// WIDGET
+// ------------------------------------------------------------------
 class AddGoodsShiftView extends StatefulWidget {
-  const AddGoodsShiftView({super.key});
+  /// When null → create mode. When set → edit mode (loads + prefills).
+  final int? ordId;
+
+  /// Optional override (e.g. from caller). Falls back to AuthBloc.
+  final String? usrNameOverride;
+
+  const AddGoodsShiftView({
+    super.key,
+    this.ordId,
+    this.usrNameOverride,
+  });
+
+  bool get isEdit => ordId != null;
 
   @override
   State<AddGoodsShiftView> createState() => _AddGoodsShiftViewState();
@@ -30,11 +68,7 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
   final List<TextEditingController> _toStorageControllers = [];
   final List<TextEditingController> _qtyControllers = [];
 
-  final TextEditingController _accountController = TextEditingController();
-  final TextEditingController _amountController = TextEditingController();
-
   String? _userName;
-  String? baseCurrency;
   final List<ShiftRecord> _records = [];
 
   final List<ProductsStockModel?> _selectedProducts = [];
@@ -43,44 +77,43 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
 
   bool _isSaving = false;
   bool _hasError = false;
+  bool _isLoadingDetail = false;
   String? _errorMessage;
 
-  // Focus nodes for form navigation
+  /// Prevents the edit-prefill listener from firing more than once.
+  bool _prefilled = false;
+
   final List<List<FocusNode>> _rowFocusNodes = [];
-  final FocusNode _accountFocusNode = FocusNode();
-  final FocusNode _amountFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
-    _addEmptyItem();
 
-    final companyState = context.read<CompanyProfileBloc>().state;
-    if (companyState is CompanyProfileLoadedState) {
-      baseCurrency = companyState.company.comLocalCcy ?? "";
-    }
-
+    // Resolve user
     final authState = context.read<AuthBloc>().state;
-    if (authState is AuthenticatedState) {
-      _userName = authState.loginData.usrName;
-    }
+    _userName = widget.usrNameOverride ??
+        (authState is AuthenticatedState
+            ? authState.loginData.usrName
+            : null);
 
-    // Add listeners to update summary
-    _accountController.addListener(_updateSummary);
-    _amountController.addListener(_updateSummary);
-
-    // Auto-focus the first product field after build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) {
-          _focusFirstProductField();
-        }
+    if (widget.isEdit) {
+      // EDIT: load the shift, don't create an empty row yet
+      _isLoadingDetail = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context
+            .read<GoodsShiftBloc>()
+            .add(LoadGoodsShiftByIdEvent(widget.ordId!));
       });
-    });
-  }
-
-  void _updateSummary() {
-    setState(() {});
+    } else {
+      // CREATE: start with one empty row and focus
+      _addEmptyItem();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) _focusFirstProductField();
+        });
+      });
+    }
   }
 
   void _focusFirstProductField() {
@@ -91,32 +124,29 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
 
   @override
   void dispose() {
-    _accountController.removeListener(_updateSummary);
-    _amountController.removeListener(_updateSummary);
-    for (final controller in _productControllers) {
-      controller.dispose();
+    for (final c in _productControllers) {
+      c.dispose();
     }
-    for (final controller in _fromStorageControllers) {
-      controller.dispose();
+    for (final c in _fromStorageControllers) {
+      c.dispose();
     }
-    for (final controller in _toStorageControllers) {
-      controller.dispose();
+    for (final c in _toStorageControllers) {
+      c.dispose();
     }
-    for (final controller in _qtyControllers) {
-      controller.dispose();
+    for (final c in _qtyControllers) {
+      c.dispose();
     }
     for (final nodes in _rowFocusNodes) {
-      for (final node in nodes) {
-        node.dispose();
+      for (final n in nodes) {
+        n.dispose();
       }
     }
-    _accountController.dispose();
-    _amountController.dispose();
-    _accountFocusNode.dispose();
-    _amountFocusNode.dispose();
     super.dispose();
   }
 
+  // ------------------------------------------------------------------
+  // ROW MANAGEMENT
+  // ------------------------------------------------------------------
   void _addEmptyItem() {
     _productControllers.add(TextEditingController());
     _fromStorageControllers.add(TextEditingController());
@@ -137,33 +167,34 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
       stkQtyInBatch: 0,
     ));
 
-    // Focus nodes: [Product, Quantity, ToStorage]
-    _rowFocusNodes.add([
-      FocusNode(), // Product
-      FocusNode(), // Quantity
-      FocusNode(), // To Storage
-    ]);
+    _rowFocusNodes.add([FocusNode(), FocusNode(), FocusNode()]);
   }
 
   void _removeItem(int index) {
     if (_records.length <= 1) {
-      ToastManager.show(context: context,title: "Error",  message: 'Must have at least one item', type: ToastType.error);
+      ToastManager.show(
+        context: context,
+        title: "Error",
+        message: 'Must have at least one item',
+        type: ToastType.error,
+      );
       return;
     }
 
     setState(() {
-      _productControllers.removeAt(index);
-      _fromStorageControllers.removeAt(index);
-      _toStorageControllers.removeAt(index);
-      _qtyControllers.removeAt(index);
+      _productControllers.removeAt(index).dispose();
+      _fromStorageControllers.removeAt(index).dispose();
+      _toStorageControllers.removeAt(index).dispose();
+      _qtyControllers.removeAt(index).dispose();
       _selectedProducts.removeAt(index);
       _selectedFromStorages.removeAt(index);
       _selectedToStorages.removeAt(index);
       _records.removeAt(index);
-      _rowFocusNodes.removeAt(index);
+      for (final n in _rowFocusNodes.removeAt(index)) {
+        n.dispose();
+      }
     });
 
-    // Focus the previous row's product field or first row if available
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_rowFocusNodes.isNotEmpty) {
         final focusIndex = index > 0 ? index - 1 : 0;
@@ -174,15 +205,16 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
     });
   }
 
-  void _updateRecord(int index, {
-    int? productId,
-    int? fromStorage,
-    int? toStorage,
-    double? quantity,
-    double? purchasePrice,
-    double? landedPurPrice,
-    int? qtyInBatch,
-  }) {
+  void _updateRecord(
+      int index, {
+        int? productId,
+        int? fromStorage,
+        int? toStorage,
+        double? quantity,
+        double? purchasePrice,
+        double? landedPurPrice,
+        int? qtyInBatch,
+      }) {
     final record = _records[index];
 
     _records[index] = record.copyWith(
@@ -191,7 +223,8 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
       toStorage: toStorage ?? record.toStorageId,
       stkQuantity: quantity ?? record.stkQuantity,
       stkPurPrice: purchasePrice?.toStringAsFixed(2) ?? record.stkPurPrice,
-      stkLandedPurPrice: landedPurPrice?.toStringAsFixed(2) ?? record.stkLandedPurPrice,
+      stkLandedPurPrice:
+      landedPurPrice?.toStringAsFixed(2) ?? record.stkLandedPurPrice,
       stkQtyInBatch: qtyInBatch ?? record.stkQtyInBatch,
     );
 
@@ -206,20 +239,16 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
     return total;
   }
 
-  double get _totalAmount {
-    return double.tryParse(_amountController.text.replaceAll(',', '')) ?? 0.0;
-  }
-
   void _addNewRowAndFocus() {
     final lastRecord = _records.isNotEmpty ? _records.last : null;
 
-    // Don't add new row if last record is empty
     if (lastRecord != null &&
         (lastRecord.stkProduct == null || lastRecord.stkProduct == 0)) {
-      // Focus the existing empty row's product field with delay
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Future.delayed(const Duration(milliseconds: 200), () {
-          if (mounted && _rowFocusNodes.isNotEmpty && _rowFocusNodes.last.isNotEmpty) {
+          if (mounted &&
+              _rowFocusNodes.isNotEmpty &&
+              _rowFocusNodes.last.isNotEmpty) {
             _rowFocusNodes.last[0].requestFocus();
           }
         });
@@ -227,264 +256,360 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
       return;
     }
 
-    setState(() {
-      _addEmptyItem();
-    });
+    setState(() => _addEmptyItem());
 
-    // Focus the new row's product field with delay
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted && _rowFocusNodes.isNotEmpty && _rowFocusNodes.last.isNotEmpty) {
+        if (mounted &&
+            _rowFocusNodes.isNotEmpty &&
+            _rowFocusNodes.last.isNotEmpty) {
           _rowFocusNodes.last[0].requestFocus();
         }
       });
     });
   }
 
+  // ------------------------------------------------------------------
+  // EDIT MODE — prefill rows from loaded shift
+  // ------------------------------------------------------------------
+  void _prefillFromShift(GoodShiftModel shift) {
+    if (_prefilled) return;
+    _prefilled = true;
+
+    // Wipe any current rows
+    for (final c in _productControllers) {
+      c.dispose();
+    }
+    for (final c in _fromStorageControllers) {
+      c.dispose();
+    }
+    for (final c in _toStorageControllers) {
+      c.dispose();
+    }
+    for (final c in _qtyControllers) {
+      c.dispose();
+    }
+    for (final nodes in _rowFocusNodes) {
+      for (final n in nodes) {
+        n.dispose();
+      }
+    }
+    _productControllers.clear();
+    _fromStorageControllers.clear();
+    _toStorageControllers.clear();
+    _qtyControllers.clear();
+    _rowFocusNodes.clear();
+    _records.clear();
+    _selectedProducts.clear();
+    _selectedFromStorages.clear();
+    _selectedToStorages.clear();
+
+    // The API returns one OUT row + one IN row per shift line.
+    // We rebuild one editable row per OUT row, matching its IN counterpart.
+    final outs = (shift.records ?? []).where((r) => r.isOutEntry).toList();
+    final ins = (shift.records ?? []).where((r) => r.isInEntry).toList();
+
+    for (final out in outs) {
+      // Find the matching IN (same product, batch, qty)
+      ShiftRecord? match;
+      for (final r in ins) {
+        if (r.stkProduct == out.stkProduct &&
+            r.stkQtyInBatch == out.stkQtyInBatch &&
+            r.stkQuantity == out.stkQuantity) {
+          match = r;
+          break;
+        }
+      }
+
+      _productControllers.add(TextEditingController(text: out.proName ?? ''));
+      _fromStorageControllers
+          .add(TextEditingController(text: out.storageName ?? ''));
+      _toStorageControllers
+          .add(TextEditingController(text: match?.storageName ?? ''));
+      _qtyControllers.add(
+          TextEditingController(text: (out.stkQuantity ?? 0).toString()));
+
+      _selectedProducts.add(null);
+      _selectedFromStorages.add(null);
+      _selectedToStorages.add(null);
+
+      _records.add(ShiftRecord(
+        stkProduct: out.stkProduct,
+        fromStorageId: out.storageId,
+        toStorageId: match?.storageId,
+        stkQuantity: out.stkQuantity,
+        stkPurPrice: out.stkPurPrice ?? '0.00',
+        stkLandedPurPrice: out.stkLandedPurPrice ?? '0.00',
+        stkQtyInBatch: out.stkQtyInBatch,
+      ));
+
+      _rowFocusNodes.add([FocusNode(), FocusNode(), FocusNode()]);
+    }
+
+    // Safety: if the order somehow had no records, show one empty row
+    if (_records.isEmpty) {
+      _addEmptyItem();
+    }
+
+    setState(() {
+      _isLoadingDetail = false;
+    });
+
+    // Focus the first product field after prefill
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 150), () {
+        if (mounted) _focusFirstProductField();
+      });
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // BUILD
+  // ------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme;
     final tr = AppLocalizations.of(context)!;
+    final color = Theme.of(context).colorScheme;
 
     return BlocListener<GoodsShiftBloc, GoodsShiftState>(
-      listener: (context, state) {
-        if (state is GoodsShiftErrorState) {
-          ToastManager.show(context: context,title: "Error",  message: state.error, type: ToastType.error);
-          setState(() {
-            _isSaving = false;
-            _hasError = true;
-            _errorMessage = state.error;
-          });
-        }
-        if (state is GoodsShiftSavedState) {
-          ToastManager.show(context: context,title: "Success",  message: state.message, type: ToastType.success);
-          Navigator.pop(context);
-        }
-        if (state is GoodsShiftSavingState) {
-          setState(() {
-            _isSaving = true;
-            _hasError = false;
-          });
-        }
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(tr.goodShift),
-          titleSpacing: 0,
-          actionsPadding: const EdgeInsets.all(8),
-        ),
-        body: Stack(
-          children: [
-            Row(
-              children: [
-                // LEFT SIDE - Fixed width 350
-                ZCover(
-                  margin: EdgeInsets.all(8),
-                  radius: 5,
-                  borderColor: Theme.of(context).colorScheme.primary.withAlpha(100),
-                  child: Container(
-                    width: 400,
-                    color: color.surface,
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Summary Section with Shadow and Border
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.start,
+      listener: _onBlocStateChange,
+      child: ZFormDialog(
+        title: widget.isEdit ? '${tr.edit} ${tr.goodShift}' : tr.goodShift,
+        icon: widget.isEdit ? Icons.edit : Icons.swap_horiz,
+        isLoading: _isSaving || _isLoadingDetail,
+        isButtonEnabled: !_isSaving && !_isLoadingDetail,
+        errorMessage: _hasError ? _errorMessage : null,
+        width: MediaQuery.sizeOf(context).width * .85,
+        height: MediaQuery.sizeOf(context).height * .85,
+        padding: const EdgeInsets.all(8),
+        actionLabel: Text(widget.isEdit ? tr.update : tr.create),
+        onAction: _createGoodsShift,
+        child: _isLoadingDetail
+            ? const SizedBox(
+          height: 300,
+          child: Center(child: CircularProgressIndicator()),
+        )
+            : SizedBox(
+          width: double.infinity,
+          height: MediaQuery.sizeOf(context).height * .70,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // LEFT: Summary
+              SizedBox(
+                width: 260,
+                child: ZCover(
+                  radius: 10,
+                  padding: EdgeInsets.all(15),
+                  borderColor: color.primary.withValues(alpha: .3),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment:
+                        MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            tr.details,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                          Icon(Icons.move_down_rounded,
+                              size: 20, color: color.primary),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Divider(
+                          thickness: 1.2,
+                          color: color.outline
+                              .withValues(alpha: .5)),
+                      const SizedBox(height: 6),
+                      _buildSummaryRow(
+                        label: tr.totalItems,
+                        value: _records.length.toDouble(),
+                        isAmount: false,
+                      ),
+                      _buildSummaryRow(
+                        label: tr.totalQty,
+                        value: _totalQuantity,
+                        isAmount: false,
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: color.primary.withValues(alpha: .06),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Row(
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  tr.summary,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
+                            Icon(Icons.info_outline,
+                                size: 16, color: color.primary),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                widget.isEdit
+                                    ? 'Shift will remain Pending'
+                                    : 'Shift will be saved as Pending',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: color.primary,
                                 ),
-                                Icon(Icons.summarize, size: 22, color: color.primary),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Divider(thickness: 1.5, color: color.outline.withValues(alpha: .5)),
-                            const SizedBox(height: 8),
-                            // Total Items
-                            _buildSummaryRow(
-                              label: tr.totalItems,
-                              value: _records.length.toDouble(),
-                              isAmount: false,
-                            ),
-                            // Total Quantity
-                            _buildSummaryRow(
-                              label: tr.totalQty,
-                              value: _totalQuantity,
-                              isAmount: false,
-                            ),
-                            // Account
-                            if (_accountController.text.isNotEmpty)
-                              _buildSummaryTextRow(
-                                label: tr.accounts,
-                                value: _accountController.text,
                               ),
-                            // Amount
-                            if (_amountController.text.isNotEmpty)
-                              _buildSummaryRow(
-                                label: tr.amount,
-                                value: _totalAmount,
-                                isAmount: true,
-                                isTotal: true,
-                              ),
-                            // Grand Total
-                            if (_amountController.text.isNotEmpty) ...[
-                              Divider(color: color.outline.withValues(alpha: .2)),
-                              _buildSummaryRow(
-                                label: '${tr.totalExpense} ${tr.amount}',
-                                value: _totalAmount,
-                                isAmount: true,
-                                isTotal: true,
-                                color: Colors.green,
-                              ),
-                            ],
+                            ),
                           ],
                         ),
-
-                        const Spacer(),
-
-                        // Submit Button
-                        SizedBox(
-                          width: double.infinity,
-                          child: ZOutlineButton(
-                            width: double.infinity,
-                            height: 45,
-                            label: Text(tr.create),
-                            onPressed: _isSaving ? null : _createGoodsShift,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // RIGHT SIDE - Takes remaining space
-                Expanded(
-                  child: ZCover(
-                    color: color.surface,
-                    margin: EdgeInsets.all(8),
-                    radius: 5,
-                    borderColor: Theme.of(context).colorScheme.primary.withAlpha(100),
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Items header
-                        _buildItemsHeader(tr),
-                        const SizedBox(height: 8),
-                        // Items list
-                        Expanded(
-                          child: SingleChildScrollView(
-                            child: Column(
-                              children: [
-                                ...List.generate(_records.length, (index) {
-                                  final isLastRow = index == _records.length - 1;
-                                  return _buildItemRow(index, isLastRow, tr);
-                                }),
-                                // Add item button
-                                Row(
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 8),
-                                      child: ZOutlineButton(
-                                        width: 120,
-                                        icon: Icons.add,
-                                        label: Text(tr.addItem),
-                                        onPressed: _isSaving ? null : _addNewRowAndFocus,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                // Show error banner if there's an error
-                                if (_hasError && _errorMessage != null)
-                                  Container(
-                                    margin: const EdgeInsets.only(top: 16),
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.red.shade50,
-                                      border: Border.all(color: Colors.red.shade200),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.error_outline, color: Colors.red.shade600),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            _errorMessage!,
-                                            style: TextStyle(color: Colors.red.shade700),
-                                          ),
-                                        ),
-                                        IconButton(
-                                          icon: Icon(Icons.close, size: 16, color: Colors.red.shade600),
-                                          onPressed: () {
-                                            setState(() {
-                                              _hasError = false;
-                                              _errorMessage = null;
-                                            });
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (_isSaving)
-              Positioned.fill(
-                child: Container(
-                  color: Colors.black.withValues(alpha: .3),
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Theme.of(context).colorScheme.primary,
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ),
-          ],
+              const SizedBox(width: 8),
+
+              // RIGHT: Items
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(5.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildItemsHeader(tr),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              ...List.generate(_records.length, (index) {
+                                final isLastRow = index == _records.length - 1;
+                                return _buildItemRow(index, isLastRow, tr);
+                              }),
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Row(
+                                  children: [
+                                    ZOutlineButton(
+                                      width: 120,
+                                      icon: Icons.add,
+                                      label: Text(tr.addItem),
+                                      onPressed: _isSaving
+                                          ? null
+                                          : _addNewRowAndFocus,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
+  // ------------------------------------------------------------------
+  // BLOC LISTENER — single source of truth for state transitions
+  // ------------------------------------------------------------------
+  void _onBlocStateChange(BuildContext context, GoodsShiftState state) {
+    // 1) EDIT — prefill once
+    if (state is GoodsShiftDetailLoadedState && widget.isEdit) {
+      _prefillFromShift(state.shift);
+      return;
+    }
 
+    // 2) Error
+    if (state is GoodsShiftErrorState) {
+      ToastManager.show(
+        context: context,
+        title: "Error",
+        message: state.error,
+        type: ToastType.error,
+      );
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+          _isLoadingDetail = false;
+          _hasError = true;
+          _errorMessage = state.error;
+        });
+      }
+      return;
+    }
+
+    // 3) Success (create or update)
+    if (state is GoodsShiftSavedState || state is GoodsShiftUpdatedState) {
+      final msg = state is GoodsShiftSavedState
+          ? state.message
+          : (state as GoodsShiftUpdatedState).message;
+      ToastManager.show(
+        context: context,
+        title: "Success",
+        message: msg,
+        type: ToastType.success,
+      );
+      if (mounted) Navigator.pop(context, true);
+      return;
+    }
+
+    // 4) Busy
+    if (state is GoodsShiftSavingState || state is GoodsShiftUpdatingState) {
+      if (!mounted) return;
+      setState(() {
+        _isSaving = true;
+        _hasError = false;
+        _errorMessage = null;
+      });
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // HEADER / ROWS / SUMMARY
+  // ------------------------------------------------------------------
   Widget _buildItemsHeader(AppLocalizations tr) {
     final color = Theme.of(context).colorScheme;
-    TextStyle? title = Theme.of(context).textTheme.titleSmall?.copyWith(
-      color: color.surface,
-    );
+    final title = Theme.of(context)
+        .textTheme
+        .titleSmall
+        ?.copyWith(color: color.surface,fontSize: 15,letterSpacing: 0.6);
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
       decoration: BoxDecoration(
         color: color.primary,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(3),
       ),
       child: Row(
         children: [
-          SizedBox(width: 40, child: Text('#',style: title, textAlign: TextAlign.center)),
-          Expanded(flex: 5, child: Text(tr.products,style: title,  textAlign: TextAlign.start)),
-          Expanded(flex: 2, child: Text(tr.fromStorage,style: title,  textAlign: TextAlign.start)),
-          Expanded(flex: 2, child: Text(tr.toStorage,style: title,  textAlign: TextAlign.start)),
-          Expanded(flex: 2, child: Text(tr.qty, style: title, textAlign: TextAlign.start)),
-          SizedBox(width: 60, child: Text(tr.actions,style: title,  textAlign: TextAlign.center)),
+          SizedBox(
+              width: 36,
+              child: Text('#', style: title, textAlign: TextAlign.center)),
+          Expanded(
+              flex: 5,
+              child: Text(tr.products,
+                  style: title, textAlign: TextAlign.start)),
+          Expanded(
+              flex: 2,
+              child: Text(tr.fromStorage,
+                  style: title, textAlign: TextAlign.start)),
+          Expanded(
+              flex: 2,
+              child: Text(tr.toStorage,
+                  style: title, textAlign: TextAlign.start)),
+          Expanded(
+              flex: 2,
+              child:
+              Text(tr.qty, style: title, textAlign: TextAlign.start)),
+          SizedBox(
+              width: 50,
+              child: Text(tr.actions,
+                  style: title, textAlign: TextAlign.center)),
         ].map((child) => DefaultTextStyle(
           style: TextStyle(color: color.surface),
           child: child,
@@ -500,31 +625,36 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: color.outline.withAlpha(50))),
-        color: index.isOdd ? color.outline.withValues(alpha: .06) : Colors.transparent,
+        border:
+        Border(bottom: BorderSide(color: color.outline.withValues(alpha: .2))),
+        color: index.isOdd
+            ? color.outline.withValues(alpha: .06)
+            : Colors.transparent,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Row number
           SizedBox(
-            width: 40,
+            width: 36,
             child: Text(
               (index + 1).toString(),
               textAlign: TextAlign.center,
             ),
           ),
 
-          // Product - Using ProductSearchField
+          // Product
           Expanded(
             flex: 5,
-            child: ProductSearchField<ProductsStockModel, ProductsBloc, ProductsState>(
+            child: ProductSearchField<ProductsStockModel, ProductsBloc,
+                ProductsState>(
               controller: _productControllers[index],
               hintText: tr.products,
-              focusNode: nodes[0], // Product field focus
+              focusNode: nodes[0],
               bloc: context.read<ProductsBloc>(),
-              searchFunction: (bloc, query) => bloc.add(LoadProductsStockEvent(input: query)),
-              fetchAllFunction: (bloc) => bloc.add(LoadProductsStockEvent()),
+              searchFunction: (bloc, query) =>
+                  bloc.add(LoadProductsStockEvent(input: query)),
+              fetchAllFunction: (bloc) =>
+                  bloc.add(LoadProductsStockEvent()),
               stateToItems: (state) {
                 if (state is ProductsStockLoadedState) return state.products;
                 return [];
@@ -546,21 +676,23 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
               onProductSelected: (product) {
                 if (product == null) return;
 
-                // Extract all required values from the selected product
                 final purchasePrice = double.tryParse(
                   product.averagePrice?.replaceAll(',', '') ?? "0.0",
-                ) ?? 0.0;
+                ) ??
+                    0.0;
 
                 final landedPurPrice = double.tryParse(
-                  product.recentLandedPurPrice?.replaceAll(',', '') ?? "0.0",
-                ) ?? 0.0;
+                  product.recentLandedPurPrice?.replaceAll(',', '') ??
+                      "0.0",
+                ) ??
+                    0.0;
 
                 final qtyInBatch = product.stkQtyInBatch ?? 0;
 
                 _selectedProducts[index] = product;
-                _fromStorageControllers[index].text = product.stgName ?? '';
+                _fromStorageControllers[index].text =
+                    product.stgName ?? '';
 
-                // Update the record with all product data
                 _updateRecord(
                   index,
                   productId: product.proId,
@@ -570,19 +702,13 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
                   qtyInBatch: qtyInBatch,
                 );
 
-                // After product selected, move focus to ToStorage field
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (nodes.length > 2) {
-                    nodes[2].requestFocus(); // Focus ToStorage
-                  }
+                  if (nodes.length > 2) nodes[2].requestFocus();
                 });
               },
               onSubmit: () {
-                // If product field submitted, move to ToStorage
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (nodes.length > 2) {
-                    nodes[2].requestFocus();
-                  }
+                  if (nodes.length > 2) nodes[2].requestFocus();
                 });
               },
               openOverlayOnFocus: true,
@@ -591,27 +717,28 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
             ),
           ),
 
-          // From Storage (Auto-filled from product, read-only)
+          // From Storage (read-only)
           Expanded(
             flex: 2,
             child: TextField(
               controller: _fromStorageControllers[index],
               readOnly: true,
               decoration: InputDecoration(
-                hintText: AppLocalizations.of(context)!.fromStorage,
+                hintText: tr.fromStorage,
                 border: InputBorder.none,
                 isDense: true,
               ),
             ),
           ),
 
-          // To Storage - Searchable storage selection
+          // To Storage
           Expanded(
             flex: 2,
-            child: GenericUnderlineTextfield<StorageModel, StorageBloc, StorageState>(
+            child:
+            GenericUnderlineTextfield<StorageModel, StorageBloc, StorageState>(
               controller: _toStorageControllers[index],
               hintText: tr.toStorage,
-              focusNode: nodes[2], // ToStorage field focus
+              focusNode: nodes[2],
               bloc: context.read<StorageBloc>(),
               fetchAllFunction: (bloc) => bloc.add(LoadStorageEvent()),
               searchFunction: (bloc, query) => bloc.add(LoadStorageEvent()),
@@ -629,21 +756,15 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
                 _selectedToStorages[index] = storage;
                 _updateRecord(index, toStorage: storage.stgId);
 
-                // After storage selected, move focus to Quantity
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (nodes.length > 1) {
-                    nodes[1].requestFocus(); // Focus Quantity
-                  }
+                  if (nodes.length > 1) nodes[1].requestFocus();
                 });
               },
               title: '',
               enabled: !_isSaving,
               onSubmitted: (e) {
-                // If storage field submitted, move to Quantity
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (nodes.length > 1) {
-                    nodes[1].requestFocus();
-                  }
+                  if (nodes.length > 1) nodes[1].requestFocus();
                 });
               },
             ),
@@ -660,7 +781,7 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
               ],
               decoration: InputDecoration(
-                hintText: AppLocalizations.of(context)!.qty,
+                hintText: tr.qty,
                 border: InputBorder.none,
                 isDense: true,
               ),
@@ -670,21 +791,16 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
               },
               onSubmitted: (_) {
                 if (isLastRow) {
-                  // Check if last record has product selected
                   final lastRecord = _records.last;
-                  if (lastRecord.stkProduct != null && lastRecord.stkProduct! > 0) {
-                    // Add new row
+                  if (lastRecord.stkProduct != null &&
+                      lastRecord.stkProduct! > 0) {
                     _addNewRowAndFocus();
                   } else {
-                    // Focus the same row's product if empty
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (nodes.isNotEmpty) {
-                        nodes[0].requestFocus();
-                      }
+                      if (nodes.isNotEmpty) nodes[0].requestFocus();
                     });
                   }
                 } else {
-                  // Focus next row's product field
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (_rowFocusNodes.length > index + 1 &&
                         _rowFocusNodes[index + 1].isNotEmpty) {
@@ -697,9 +813,9 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
             ),
           ),
 
-          // Remove button
+          // Remove
           SizedBox(
-            width: 60,
+            width: 50,
             child: IconButton(
               icon: Icon(Icons.delete_outline, size: 18, color: color.error),
               onPressed: _isSaving ? null : () => _removeItem(index),
@@ -714,28 +830,20 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
     required String label,
     required double value,
     bool isAmount = true,
-    bool isTotal = false,
-    Color? color,
   }) {
-    final textColor = color ?? Theme.of(context).colorScheme.primary;
+    final color = Theme.of(context).colorScheme.primary;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          Text(label, style: const TextStyle(fontSize: 14)),
           Text(
-            label,
+            isAmount ? value.toAmount() : value.toAmount(decimal: 0),
             style: TextStyle(
-              fontSize: isTotal ? 22 : 18,
-              fontWeight: isTotal ? FontWeight.w600 : FontWeight.normal,
-            ),
-          ),
-          Text(
-            isAmount ? "${value.toAmount()} $baseCurrency" : value.toAmount(decimal: 0),
-            style: TextStyle(
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
-              fontSize: isTotal ? 22 : 18,
-              color: textColor,
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: color,
             ),
           ),
         ],
@@ -743,94 +851,87 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
     );
   }
 
-  Widget _buildSummaryTextRow({required String label, required String value}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(fontSize: 13),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              textAlign: TextAlign.end,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-                fontSize: 13,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
+  // ------------------------------------------------------------------
+  // SUBMIT
+  // ------------------------------------------------------------------
   void _createGoodsShift() {
     if (_userName == null) {
-      ToastManager.show(context: context,title: "Error",  message: 'User not authenticated', type: ToastType.error);
+      ToastManager.show(
+        context: context,
+        title: "Error",
+        message: 'User not authenticated',
+        type: ToastType.error,
+      );
       return;
     }
 
-    final accountText = _accountController.text.trim();
-    final amountText = _amountController.text.trim();
-
-    // Validate account and amount
-    if (amountText.isNotEmpty && accountText.isEmpty) {
-      ToastManager.show(context: context,title: "Error",  message: 'Please enter account number', type: ToastType.error);
-      return;
-    } else if (accountText.isNotEmpty && amountText.isEmpty) {
-      ToastManager.show(context: context,title: "Error",  message: 'Please enter amount', type: ToastType.error);
-      return;
-    }
-
-    // Validate all items have required data
+    // Validate all items
     for (var i = 0; i < _records.length; i++) {
       final record = _records[i];
 
       if (record.stkProduct == null || record.stkProduct == 0) {
-        ToastManager.show(context: context,title: "Error",  message: 'Please select a product for item ${i + 1}', type: ToastType.error);
+        ToastManager.show(
+          context: context,
+          title: "Error",
+          message: 'Please select a product for item ${i + 1}',
+          type: ToastType.error,
+        );
         return;
       }
 
       if (record.fromStorageId == null || record.fromStorageId == 0) {
-        ToastManager.show(context: context,title: "Error",  message: 'Please select from storage for item ${i + 1}', type: ToastType.error);
+        ToastManager.show(
+          context: context,
+          title: "Error",
+          message: 'Please select from storage for item ${i + 1}',
+          type: ToastType.error,
+        );
         return;
       }
 
       if (record.toStorageId == null || record.toStorageId == 0) {
-        ToastManager.show(context: context,title: "Error",  message: 'Please select to storage for item ${i + 1}', type: ToastType.error);
+        ToastManager.show(
+          context: context,
+          title: "Error",
+          message: 'Please select to storage for item ${i + 1}',
+          type: ToastType.error,
+        );
         return;
       }
 
       if (record.fromStorageId == record.toStorageId) {
-        ToastManager.show(context: context,title: "Error",  message: 'From and to storage cannot be same for item ${i + 1}', type: ToastType.error);
+        ToastManager.show(
+          context: context,
+          title: "Error",
+          message: 'From and to storage cannot be same for item ${i + 1}',
+          type: ToastType.error,
+        );
         return;
       }
 
       final qty = record.quantity;
       if (qty! <= 0) {
-        ToastManager.show(context: context,title: "Error",  message: 'Please enter a valid quantity for item ${i + 1}', type: ToastType.error);
+        ToastManager.show(
+          context: context,
+          title: "Error",
+          message: 'Please enter a valid quantity for item ${i + 1}',
+          type: ToastType.error,
+        );
         return;
       }
     }
 
-    // Log the records being sent for debugging
-    debugPrint('Sending goods shift with ${_records.length} items');
-    for (var i = 0; i < _records.length; i++) {
-      final record = _records[i];
-      debugPrint('Item ${i + 1}: Product=${record.stkProduct}, From=${record.fromStorageId}, To=${record.toStorageId}, Qty=${record.stkQuantity}, Batch=${record.stkQtyInBatch}, PurPrice=${record.stkPurPrice}, LandedPurPrice=${record.stkLandedPurPrice}');
+    if (widget.isEdit) {
+      context.read<GoodsShiftBloc>().add(UpdateGoodsShiftEvent(
+        ordID: widget.ordId!,
+        usrName: _userName!,
+        records: _records,
+      ));
+    } else {
+      context.read<GoodsShiftBloc>().add(AddGoodsShiftEvent(
+        usrName: _userName!,
+        records: _records,
+      ));
     }
-
-    // Create the goods shift with all required fields
-    context.read<GoodsShiftBloc>().add(AddGoodsShiftEvent(
-      usrName: _userName!,
-      account: _accountController.text,
-      amount: _amountController.text,
-      records: _records,
-    ));
   }
 }
