@@ -324,9 +324,9 @@ class _StakeholderDesktopState extends State<_StakeholderDesktop> {
                             .textTheme
                             .headlineSmall
                             ?.copyWith(
-                            fontWeight: FontWeight.w600, letterSpacing: 1.3),
+                            fontWeight: FontWeight.w700, letterSpacing: .5),
                       ),
-                      SizedBox(height: 3),
+                      SizedBox(height: 1),
                       Text(
                         tr.stakeholderHint.toUpperCase(),
                         style:

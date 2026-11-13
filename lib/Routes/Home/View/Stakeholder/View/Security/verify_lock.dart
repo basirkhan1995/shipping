@@ -187,7 +187,7 @@ class _LockVerifyDialogState extends State<LockVerifyDialog> {
       elevation: 0,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 440),
+        constraints: const BoxConstraints(maxWidth: 460),
         child: DecoratedBox(
           decoration: BoxDecoration(
             border: Border.all(color: Theme.of(context).colorScheme.primary,width: 1),
@@ -329,13 +329,13 @@ class _FormBody extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 50,
+                  height: 50,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: accent.withValues(alpha: .12),
+                    color: accent.withValues(alpha: .08),
                   ),
-                  child: Icon(icon, size: 22, color: accent),
+                  child: Icon(icon, size: 27, color: accent),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -343,14 +343,14 @@ class _FormBody extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        title,
+                        title.toUpperCase(),
                         style: textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w700,
-                          letterSpacing: -0.2,
+                          letterSpacing: 0.2,
                           height: 1.15,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 0),
                       Text(
                         stakeholderName,
                         style: textTheme.bodyMedium?.copyWith(
@@ -412,8 +412,8 @@ class _FormBody extends StatelessWidget {
             child: Row(
               children: [
                 Icon(
-                  Icons.person_outline,
-                  size: 14,
+                  Icons.verified_user_outlined,
+                  size: 15,
                   color: scheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 6),

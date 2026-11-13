@@ -528,7 +528,6 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
 
               // ── Authorize ───────────────────────────────
               ZOutlineButton(
-                width: 120,
                 isActive: true,
                 icon: Icons.check_circle,
                 onPressed: _updateSelectedOrdersStatus,
