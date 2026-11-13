@@ -2161,4 +2161,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get watermark => 'واترمارک';
+
+  @override
+  String get no => 'نه';
 }

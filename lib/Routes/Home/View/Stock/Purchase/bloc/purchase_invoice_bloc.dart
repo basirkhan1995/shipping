@@ -3,6 +3,7 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:shipping/Features/Widgets/extensions.dart';
 import '../../../../../../Services/repository.dart';
+import '../../../../../Auth/bloc/auth_bloc.dart';
 import '../../../Finance/View/ExchangeRate/bloc/exchange_rate_bloc.dart';
 import '../../../Settings/View/Company/Storage/model/storage_model.dart';
 import '../../../Stakeholder/model/stk_model.dart';
@@ -16,7 +17,22 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
   final Repositories repo;
   ExchangeRateBloc? _exchangeRateBloc;
   StreamSubscription? _exchangeRateSubscription;
+  AuthBloc? _authBloc;
 
+  void setAuthBloc(AuthBloc authBloc) {
+    _authBloc = authBloc;
+  }
+
+  String? _resolveBaseCurrency({String? fromEvent}) {
+    final auth = _authBloc?.state;
+    if (auth is AuthenticatedState) {
+      final ccy = auth.loginData.company?.comLocalCcy?.trim();
+      if (ccy != null && ccy.isNotEmpty) return ccy;
+    }
+    final fallback = (fromEvent ?? '').trim();
+    if (fallback.isNotEmpty) return fallback;
+    return null;
+  }
   @override
   Future<void> close() {
     _exchangeRateSubscription?.cancel();
@@ -500,24 +516,28 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
   // ==================== PAYMENT HANDLERS (Unified) ====================
 
   void _onAddPayment(AddPaymentEvent event, Emitter<PurchaseInvoiceState> emit) {
-    if (state is PurchaseInvoiceLoaded) {
-      final current = state as PurchaseInvoiceLoaded;
+    if (state is! PurchaseInvoiceLoaded) return;
+    final current = state as PurchaseInvoiceLoaded;
 
-      final newPayment = PurchasePaymentRecord(
-        accountNumber: 0,
-        amount: 0.0,
-        currency: current.supplierAccount?.accCurrency ?? current.fromCurrency ?? '',
-        exRate: current.exchangeRate ?? 1.0,
-        narration: '',
-        isExpense: event.isExpense,
-      );
+    final baseCcy = _resolveBaseCurrency(fromEvent: current.fromCurrency) ?? '';
+    final supplierCcy = (current.supplierAccount?.accCurrency ?? '').trim();
+    final seedCcy = supplierCcy.isNotEmpty ? supplierCcy : baseCcy;
 
-      final updatedPayments = List<PurchasePaymentRecord>.from(current.payments)..add(newPayment);
-      emit(current.copyWith(payments: updatedPayments));
+    final newPayment = PurchasePaymentRecord(
+      accountNumber: 0,
+      amount: 0.0,
+      currency: seedCcy,
+      exRate: current.exchangeRate ?? 1.0,
+      narration: '',
+      isExpense: event.isExpense,
+    );
 
-      if (event.isExpense) {
-        add(UpdateAllLandedPricesEvent());
-      }
+    final updatedPayments =
+    List<PurchasePaymentRecord>.from(current.payments)..add(newPayment);
+    emit(current.copyWith(payments: updatedPayments));
+
+    if (event.isExpense) {
+      add(UpdateAllLandedPricesEvent());
     }
   }
   void _onRemovePayment(RemovePaymentEvent event, Emitter<PurchaseInvoiceState> emit) {
@@ -566,11 +586,9 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
     }
 
     final current = state as PurchaseInvoiceLoaded;
-
-    // Save current state for error recovery
     final savedState = current.copyWith();
 
-    // Validations (keep existing validations)
+    // ── Validations (unchanged) ────────────────────────────────────────
     if (current.supplier == null) {
       emit(PurchaseInvoiceError('Please select a supplier'));
       emit(savedState);
@@ -613,18 +631,23 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
       }
     }
 
-    if (current.paymentMode == PaymentMode.credit || current.paymentMode == PaymentMode.mixed) {
+    if (current.paymentMode == PaymentMode.credit ||
+        current.paymentMode == PaymentMode.mixed) {
       if (current.supplierAccount == null) {
-        emit(PurchaseInvoiceError('Please select a supplier account for credit payment'));
+        emit(PurchaseInvoiceError(
+          'Please select a supplier account for credit payment',
+        ));
         emit(savedState);
         event.completer.complete('');
         return;
       }
     }
 
-    if(current.paymentMode == PaymentMode.cash){
-      if(current.cashPayment != current.subtotal){
-        emit(PurchaseInvoiceError('Cash payment not equal to total invoice amount'));
+    if (current.paymentMode == PaymentMode.cash) {
+      if (current.cashPayment != current.subtotal) {
+        emit(PurchaseInvoiceError(
+          'Cash payment not equal to total invoice amount',
+        ));
         emit(savedState);
         event.completer.complete('');
         return;
@@ -633,20 +656,24 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
 
     if (current.paymentMode == PaymentMode.mixed) {
       if (current.cashPayment <= 0) {
-        emit(PurchaseInvoiceError('For mixed payment, cash payment must be greater than 0'));
+        emit(PurchaseInvoiceError(
+          'For mixed payment, cash payment must be greater than 0',
+        ));
         emit(savedState);
         event.completer.complete('');
         return;
       }
       if (current.cashPayment >= current.subtotal) {
-        emit(PurchaseInvoiceError('For mixed payment, cash payment must be less than total amount'));
+        emit(PurchaseInvoiceError(
+          'For mixed payment, cash payment must be less than total amount',
+        ));
         emit(savedState);
         event.completer.complete('');
         return;
       }
     }
 
-    // Emit saving state
+    // ── Saving state ──────────────────────────────────────────────────
     emit(PurchaseInvoiceSaving(
       items: current.items,
       payments: current.payments,
@@ -655,18 +682,26 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
       cashPayment: current.cashPayment,
       paymentMode: current.paymentMode,
       storages: current.storages,
+      exchangeRate: current.exchangeRate,
+      fromCurrency: current.fromCurrency,
+      toCurrency: current.toCurrency,
+      cashCurrency: current.cashCurrency,
+      cashExchangeRate: current.cashExchangeRate,
+      xRef: current.xRef,
+      reference: current.reference,
+      remark: current.remark,
+      orderId: current.orderId,
+      ordName: current.ordName,
     ));
 
-
     try {
-
-      // Build records for API
+      // ── Records ─────────────────────────────────────────────────────
       final records = current.items.map((item) {
-        // Use stored percentage if available, otherwise calculate from amount
         double? percentageToSave = item.sellPrice;
-
-        // If no percentage stored but we have an amount, calculate it
-        if (percentageToSave == null && item.sellPriceAmount > 0 && item.purPrice != null && item.purPrice! > 0) {
+        if (percentageToSave == null &&
+            item.sellPriceAmount > 0 &&
+            item.purPrice != null &&
+            item.purPrice! > 0) {
           percentageToSave = (item.sellPriceAmount / item.purPrice!) * 100;
           percentageToSave = percentageToSave.clamp(1.0, 100.0);
         }
@@ -680,47 +715,56 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
         );
       }).toList();
 
-      // Build unified payments list for API
-      final List<PurchasePaymentRecord> apiPayments = [];
+      // ── Base currency: from AuthBloc, NOT fromCurrency ──────────────
+      final baseCurrency = _resolveBaseCurrency(fromEvent: event.baseCurrency);
+      if (baseCurrency == null) {
+        emit(PurchaseInvoiceError(
+          'Company base currency not configured. Please contact administrator.',
+        ));
+        emit(savedState);
+        event.completer.complete('');
+        return;
+      }
 
-      // Determine the base currency for calculations
-      final baseCurrency = current.fromCurrency ?? '';
       final exchangeRate = current.exchangeRate ?? 1.0;
-
-      // Get supplier account currency if available
-      final supplierCurrency = current.supplierAccount?.accCurrency ?? baseCurrency;
+      final supplierCurrency =
+      (current.supplierAccount?.accCurrency ?? '').trim().isEmpty
+          ? baseCurrency
+          : current.supplierAccount!.accCurrency!.trim();
       final needsConversion = supplierCurrency != baseCurrency;
 
-      // ============ 1. HANDLE EXPENSES (DEBIT expense account) ============
-      // Expenses are recorded as debit to expense account (cash is credited separately)
+      final List<PurchasePaymentRecord> apiPayments = [];
+
+      // ── 1. Expenses — always resolve currency ───────────────────────
       for (final expense in current.expenses) {
         if (expense.amount > 0 && expense.accountNumber != 0) {
-          // DEBIT the expense account (records the expense)
+          final raw = (expense.currency).trim();
+          final resolved = raw.isEmpty ? baseCurrency : raw;
+
           apiPayments.add(PurchasePaymentRecord(
             accountNumber: expense.accountNumber,
             amount: expense.amount,
-            currency: baseCurrency,
+            currency: resolved,
             exRate: 1.0,
-            narration: expense.narration!.isNotEmpty ? expense.narration : 'Expense: ${expense.accountNumber}',
+            narration: (expense.narration ?? '').isNotEmpty
+                ? expense.narration!
+                : 'Expense: ${expense.accountNumber}',
             isExpense: true,
           ));
         }
       }
 
-      // ============ 2. HANDLE SUPPLIER PAYMENT (Credit/Debit to supplier account) ============
+      // ── 2. Supplier payment (credit / mixed) ────────────────────────
       final supplierPaymentAmount = current.subtotal;
 
-      // Add supplier payment if applicable (credit or mixed payment)
-      if (current.paymentMode != PaymentMode.cash && current.supplierAccount != null) {
+      if (current.paymentMode != PaymentMode.cash &&
+          current.supplierAccount != null) {
         double amountToPay = supplierPaymentAmount;
-
-        // If mixed payment, subtract cash payment from supplier amount
         if (current.paymentMode == PaymentMode.mixed) {
           amountToPay = supplierPaymentAmount - current.cashPayment;
         }
 
         if (amountToPay > 0) {
-          // Convert to supplier's currency if needed
           double convertedAmount = amountToPay;
           String paymentCurrency = baseCurrency;
           double paymentExRate = 1.0;
@@ -731,7 +775,11 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
             paymentExRate = exchangeRate;
           }
 
-          // DEBIT supplier account (records liability/payment)
+          // Final guard — never send empty currency
+          if (paymentCurrency.trim().isEmpty) {
+            paymentCurrency = baseCurrency;
+          }
+
           apiPayments.add(PurchasePaymentRecord(
             accountNumber: current.supplierAccount!.accNumber!,
             amount: convertedAmount,
@@ -743,41 +791,27 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
         }
       }
 
-      // ============ 3. HANDLE CASH PAYMENT FOR INVOICE ============
-      // This is the cash portion that goes to supplier
+      // ── 3. Cash payment ─────────────────────────────────────────────
       if (current.cashPayment > 0) {
         double cashAmount = current.cashPayment;
-
-        // If cash payment is full payment, it's the entire invoice
         if (current.paymentMode == PaymentMode.cash) {
           cashAmount = supplierPaymentAmount;
         }
 
         if (cashAmount > 0) {
-          // Determine cash currency - use selected cash currency or base currency
-          String cashCurrency = (current.cashCurrency != null && current.cashCurrency!.isNotEmpty)
-              ? current.cashCurrency!
-              : baseCurrency;
+          String cashCurrency =
+          (current.cashCurrency ?? '').trim().isEmpty
+              ? baseCurrency
+              : current.cashCurrency!.trim();
 
-          if (cashCurrency.isEmpty) {
-            cashCurrency = baseCurrency;
-          }
-
-          // Determine exchange rate for cash payment
-          double cashExRate;
-          if (cashCurrency != baseCurrency && current.cashExchangeRate > 0) {
-            // User selected a different currency for cash payment
-            cashExRate = current.cashExchangeRate;
-          } else {
-            cashExRate = 1.0;
-          }
-
-          // Convert base amount to cash currency
+          final cashExRate =
+          (cashCurrency != baseCurrency && current.cashExchangeRate > 0)
+              ? current.cashExchangeRate
+              : 1.0;
           final amountInCashCurrency = cashAmount * cashExRate;
 
-          // CREDIT cash account (positive amount = credit in their API)
           apiPayments.add(PurchasePaymentRecord(
-            accountNumber: 10101010, // Cash account
+            accountNumber: 10101010,
             amount: amountInCashCurrency,
             currency: cashCurrency,
             exRate: cashExRate,
@@ -787,6 +821,7 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
         }
       }
 
+      // ── Send ─────────────────────────────────────────────────────────
       final xRef = event.xRef ?? '';
       final response = await repo.addPurchaseInvoice(
         usrName: event.usrName,
@@ -800,11 +835,11 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
 
       final message = response['msg']?.toString() ?? 'No response message';
 
-      if (message.toLowerCase().contains('success') || message.toLowerCase().contains('authorized')) {
-        String invoiceNumber = response['invoiceNo']?.toString() ??
+      if (message.toLowerCase().contains('success') ||
+          message.toLowerCase().contains('authorized')) {
+        final invoiceNumber = response['invoiceNo']?.toString() ??
             response['ordID']?.toString() ??
             'Generated';
-
         final invoiceData = current.copyWith();
 
         emit(PurchaseInvoiceSaved(
@@ -812,18 +847,14 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
           invoiceNumber: invoiceNumber,
           invoiceData: invoiceData,
         ));
-
         event.completer.complete(invoiceNumber);
 
         Future.microtask(() {
-          if (!emit.isDone) {
-            add(ResetPurchaseInvoiceEvent());
-          }
+          if (!emit.isDone) add(ResetPurchaseInvoiceEvent());
         });
       } else {
         String errorMessage;
         final msgLower = message.toLowerCase();
-
         if (msgLower.contains('over limit')) {
           errorMessage = 'Account credit limit exceeded';
         } else if (msgLower.contains('block')) {
@@ -862,8 +893,6 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
     }
 
     final current = state as PurchaseInvoiceLoaded;
-
-    // Use orderId from event if provided, otherwise from state
     final orderIdToUse = event.orderId ?? current.orderId;
 
     if (orderIdToUse == null || orderIdToUse <= 0) {
@@ -872,10 +901,9 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
       return;
     }
 
-    // Save current state for error recovery
     final savedState = current.copyWith();
 
-    // Validations
+    // ── Validations (unchanged) ────────────────────────────────────────
     if (current.supplier == null) {
       emit(PurchaseInvoiceError('Please select a supplier'));
       emit(savedState);
@@ -918,9 +946,12 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
       }
     }
 
-    if (current.paymentMode == PaymentMode.credit || current.paymentMode == PaymentMode.mixed) {
+    if (current.paymentMode == PaymentMode.credit ||
+        current.paymentMode == PaymentMode.mixed) {
       if (current.supplierAccount == null) {
-        emit(PurchaseInvoiceError('Please select a supplier account for credit payment'));
+        emit(PurchaseInvoiceError(
+          'Please select a supplier account for credit payment',
+        ));
         emit(savedState);
         event.completer.complete('');
         return;
@@ -928,8 +959,11 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
     }
 
     if (current.paymentMode == PaymentMode.cash) {
-      if (current.cashPayment != current.grandTotalLocal || current.cashPayment != current.totalInvoice) {
-        emit(PurchaseInvoiceError('Cash payment not equal to total invoice amount'));
+      if (current.cashPayment != current.grandTotalLocal ||
+          current.cashPayment != current.totalInvoice) {
+        emit(PurchaseInvoiceError(
+          'Cash payment not equal to total invoice amount',
+        ));
         emit(savedState);
         event.completer.complete('');
         return;
@@ -938,20 +972,24 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
 
     if (current.paymentMode == PaymentMode.mixed) {
       if (current.cashPayment <= 0) {
-        emit(PurchaseInvoiceError('For mixed payment, cash payment must be greater than 0'));
+        emit(PurchaseInvoiceError(
+          'For mixed payment, cash payment must be greater than 0',
+        ));
         emit(savedState);
         event.completer.complete('');
         return;
       }
       if (current.cashPayment >= current.subtotal) {
-        emit(PurchaseInvoiceError('For mixed payment, cash payment must be less than total amount'));
+        emit(PurchaseInvoiceError(
+          'For mixed payment, cash payment must be less than total amount',
+        ));
         emit(savedState);
         event.completer.complete('');
         return;
       }
     }
 
-    // Emit saving state
+    // ── Saving state ──────────────────────────────────────────────────
     emit(PurchaseInvoiceSaving(
       items: current.items,
       payments: current.payments,
@@ -960,17 +998,26 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
       cashPayment: current.cashPayment,
       paymentMode: current.paymentMode,
       storages: current.storages,
+      exchangeRate: current.exchangeRate,
+      fromCurrency: current.fromCurrency,
+      toCurrency: current.toCurrency,
+      cashCurrency: current.cashCurrency,
+      cashExchangeRate: current.cashExchangeRate,
+      xRef: current.xRef,
+      reference: current.reference,
+      remark: current.remark,
+      orderId: current.orderId,
+      ordName: current.ordName,
     ));
 
     try {
-      // Build records for API
+      // ── Records ─────────────────────────────────────────────────────
       final records = current.items.map((item) {
-
-        // Use stored percentage if available, otherwise calculate from amount
         double? percentageToSave = item.sellPrice;
-
-        // If no percentage stored but we have an amount, calculate it
-        if (percentageToSave == null && item.sellPriceAmount > 0 && item.purPrice != null && item.purPrice! > 0) {
+        if (percentageToSave == null &&
+            item.sellPriceAmount > 0 &&
+            item.purPrice != null &&
+            item.purPrice! > 0) {
           percentageToSave = (item.sellPriceAmount / item.purPrice!) * 100;
           percentageToSave = percentageToSave.clamp(1.0, 100.0);
         }
@@ -985,37 +1032,51 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
         );
       }).toList();
 
-      // Build unified payments list for API
-      final List<PurchasePaymentRecord> apiPayments = [];
+      // ── Base currency: from AuthBloc, NOT fromCurrency ──────────────
+      final baseCurrency = _resolveBaseCurrency(fromEvent: event.baseCurrency);
+      if (baseCurrency == null) {
+        emit(PurchaseInvoiceError(
+          'Company base currency not configured. Please contact administrator.',
+        ));
+        emit(savedState);
+        event.completer.complete('');
+        return;
+      }
 
-      // Determine the base currency for calculations
-      final baseCurrency = current.fromCurrency ?? '';
       final exchangeRate = current.exchangeRate ?? 1.0;
-
-      // Get supplier account currency if available
-      final supplierCurrency = current.supplierAccount?.accCurrency ?? baseCurrency;
+      final supplierCurrency =
+      (current.supplierAccount?.accCurrency ?? '').trim().isEmpty
+          ? baseCurrency
+          : current.supplierAccount!.accCurrency!.trim();
       final needsConversion = supplierCurrency != baseCurrency;
 
-      // ============ 1. HANDLE EXPENSES (DEBIT expense account) ============
+      final List<PurchasePaymentRecord> apiPayments = [];
+
+      // ── 1. Expenses — always resolve currency ───────────────────────
       for (final expense in current.expenses) {
         if (expense.amount > 0 && expense.accountNumber != 0) {
+          final raw = (expense.currency).trim();
+          final resolved = raw.isEmpty ? baseCurrency : raw;
+
           apiPayments.add(PurchasePaymentRecord(
             accountNumber: expense.accountNumber,
             amount: expense.amount,
-            currency: baseCurrency,
+            currency: resolved,
             exRate: 1.0,
-            narration: expense.narration!.isNotEmpty ? expense.narration : 'Expense: ${expense.accountNumber}',
+            narration: (expense.narration ?? '').isNotEmpty
+                ? expense.narration!
+                : 'Expense: ${expense.accountNumber}',
             isExpense: true,
           ));
         }
       }
 
-      // ============ 2. HANDLE SUPPLIER PAYMENT ============
+      // ── 2. Supplier payment (credit / mixed) ────────────────────────
       final supplierPaymentAmount = current.subtotal;
 
-      if (current.paymentMode != PaymentMode.cash && current.supplierAccount != null) {
+      if (current.paymentMode != PaymentMode.cash &&
+          current.supplierAccount != null) {
         double amountToPay = supplierPaymentAmount;
-
         if (current.paymentMode == PaymentMode.mixed) {
           amountToPay = supplierPaymentAmount - current.cashPayment;
         }
@@ -1031,6 +1092,10 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
             paymentExRate = exchangeRate;
           }
 
+          if (paymentCurrency.trim().isEmpty) {
+            paymentCurrency = baseCurrency;
+          }
+
           apiPayments.add(PurchasePaymentRecord(
             accountNumber: current.supplierAccount!.accNumber!,
             amount: convertedAmount,
@@ -1042,30 +1107,27 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
         }
       }
 
-      // ============ 3. HANDLE CASH PAYMENT ============
+      // ── 3. Cash payment ─────────────────────────────────────────────
       if (current.cashPayment > 0) {
         double cashAmount = current.cashPayment;
-
         if (current.paymentMode == PaymentMode.cash) {
           cashAmount = supplierPaymentAmount;
         }
 
         if (cashAmount > 0) {
-          final cashCurrency = (current.cashCurrency != null && current.cashCurrency!.isNotEmpty)
-              ? current.cashCurrency!
-              : baseCurrency;
+          String cashCurrency =
+          (current.cashCurrency ?? '').trim().isEmpty
+              ? baseCurrency
+              : current.cashCurrency!.trim();
 
-          double cashExRate;
-          if (cashCurrency != baseCurrency && current.cashExchangeRate > 0) {
-            cashExRate = current.cashExchangeRate;
-          } else {
-            cashExRate = 1.0;
-          }
-
+          final cashExRate =
+          (cashCurrency != baseCurrency && current.cashExchangeRate > 0)
+              ? current.cashExchangeRate
+              : 1.0;
           final amountInCashCurrency = cashAmount * cashExRate;
 
           apiPayments.add(PurchasePaymentRecord(
-            accountNumber: 10101010, // Cash account
+            accountNumber: 10101010,
             amount: amountInCashCurrency,
             currency: cashCurrency,
             exRate: cashExRate,
@@ -1075,9 +1137,9 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
         }
       }
 
+      // ── Send ─────────────────────────────────────────────────────────
       final xRef = event.xRef ?? current.reference ?? '';
 
-      // Use the orderId we determined at the start
       final response = await repo.updatePurchaseInvoice(
         usrName: event.usrName,
         perID: event.ordPersonal,
@@ -1091,11 +1153,11 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
 
       final message = response['msg']?.toString() ?? 'No response message';
 
-      if (message.toLowerCase().contains('success') || message.toLowerCase().contains('authorized')) {
-        String invoiceNumber = response['invoiceNo']?.toString() ??
+      if (message.toLowerCase().contains('success') ||
+          message.toLowerCase().contains('authorized')) {
+        final invoiceNumber = response['invoiceNo']?.toString() ??
             response['ordID']?.toString() ??
             orderIdToUse.toString();
-
         final invoiceData = current.copyWith();
 
         emit(PurchaseInvoiceSaved(
@@ -1103,18 +1165,14 @@ class PurchaseInvoiceBloc extends Bloc<PurchaseInvoiceEvent, PurchaseInvoiceStat
           invoiceNumber: invoiceNumber,
           invoiceData: invoiceData,
         ));
-
         event.completer.complete(invoiceNumber);
 
         Future.microtask(() {
-          if (!emit.isDone) {
-            add(ResetPurchaseInvoiceEvent());
-          }
+          if (!emit.isDone) add(ResetPurchaseInvoiceEvent());
         });
       } else {
         String errorMessage;
         final msgLower = message.toLowerCase();
-
         if (msgLower.contains('over limit')) {
           errorMessage = 'Account credit limit exceeded';
         } else if (msgLower.contains('block')) {

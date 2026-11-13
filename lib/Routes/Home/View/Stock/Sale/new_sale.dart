@@ -54,8 +54,6 @@ class NewSaleView extends StatelessWidget {
     );
   }
 }
-
-
 class _DesktopNewSaleView extends StatefulWidget {
   final dynamic orderId;
   const _DesktopNewSaleView(this.orderId);
@@ -91,30 +89,55 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
   Timer? _debounce;
   bool toggleProfit = true;
 
+
+
   void _confirmDeleteOrder() {
     final tr = AppLocalizations.of(context)!;
     final saleState = context.read<SaleInvoiceBloc>().state;
-    String? ref;
-    int? ordId;
-    if (saleState is SaleInvoiceLoaded) {
-      ref = saleState.trnRef;
-      ordId = saleState.orderId;
-    }
-    showDialog(
+    if (saleState is! SaleInvoiceLoaded) return;
+
+    final ordId = saleState.orderId;
+    final ref = saleState.trnRef;
+
+    if (ordId == null || ordId <= 0) {
+      ToastManager.show(
         context: context,
-        builder: (context) => ZAlertDialog(
-            title: tr.areYouSure,
-            content: tr.areYouSure,
-            onYes: (){
-              context.read<OrdersBloc>().add(
-                DeleteOrderEvent(
-                  orderId: ordId!,
-                  usrName: _userName??"",
-                  ref: ref,
-                  orderName: 'Sale',
-                ),
-              );
-            })
+        title: tr.errorTitle,
+        message: 'Cannot delete: order id missing',
+        type: ToastType.error,
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _DeleteSaleConfirmDialog(
+        ordId: ordId,
+        ref: ref,
+        usrName: _userName ?? '',
+        orderName: 'Sale',
+        onDeleted: () {
+          if (!mounted) return;
+          ToastManager.show(
+            context: context,
+            title: tr.successTitle,
+            message: 'Invoice deleted',
+            type: ToastType.success,
+          );
+          // The OrdersBloc's OrdersDeletedState listener (in the Orders view)
+          // is what refreshes the list / closes the screen.
+        },
+        onError: (msg) {
+          if (!mounted) return;
+          ToastManager.show(
+            context: context,
+            title: tr.errorTitle,
+            message: msg,
+            type: ToastType.error,
+          );
+        },
+      ),
     );
   }
 
@@ -491,12 +514,25 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
                   ),
                   const SizedBox(width: 8),
                 ],
-                if(widget.orderId !=null)...[
-                  ZOutlineButton(
-                    icon: Icons.delete_outline_rounded,
-                    backgroundHover: Theme.of(context).colorScheme.error,
-                    onPressed: _confirmDeleteOrder,
-                    label: Text(tr.delete),
+                if (widget.orderId != null) ...[
+                  BlocBuilder<OrdersBloc, OrdersState>(
+                    builder: (context, ordersState) {
+                      final deleting = ordersState is OrdersDeletingState &&
+                          ordersState.orderId == ordNumber;
+
+                      return ZOutlineButton(
+                        icon: deleting ? null : Icons.delete_outline_rounded,
+                        backgroundHover: Theme.of(context).colorScheme.error,
+                        onPressed: deleting ? null : _confirmDeleteOrder,
+                        label: deleting
+                            ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                            : Text(tr.delete),
+                      );
+                    },
                   ),
                   const SizedBox(width: 8),
                 ],
@@ -2648,6 +2684,84 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
           );
         },
       ),
+    );
+  }
+}
+
+class _DeleteSaleConfirmDialog extends StatefulWidget {
+  final int ordId;
+  final String? ref;
+  final String usrName;
+  final String orderName;
+  final VoidCallback onDeleted;
+  final ValueChanged<String> onError;
+
+  const _DeleteSaleConfirmDialog({
+    required this.ordId,
+    required this.ref,
+    required this.usrName,
+    required this.orderName,
+    required this.onDeleted,
+    required this.onError,
+  });
+
+  @override
+  State<_DeleteSaleConfirmDialog> createState() =>
+      _DeleteSaleConfirmDialogState();
+}
+
+class _DeleteSaleConfirmDialogState extends State<_DeleteSaleConfirmDialog> {
+  bool _isDeleting = false;
+
+  Future<void> _confirm() async {
+    if (_isDeleting) return;
+    setState(() => _isDeleting = true);
+
+    final completer = Completer<String>();
+    context.read<OrdersBloc>().add(
+      DeleteOrderEvent(
+        orderId: widget.ordId,
+        usrName: widget.usrName,
+        ref: widget.ref,
+        orderName: widget.orderName,
+        completer: completer,
+      ),
+    );
+
+    String result;
+    try {
+      result = await completer.future;
+    } catch (e) {
+      result = e.toString();
+    }
+
+    if (!mounted) return;
+
+    if (result == 'success') {
+      // Close the dialog. Parent handles the toast + closing the invoice view.
+      Navigator.of(context).pop();
+      widget.onDeleted();
+      return;
+    }
+
+    // Failure → stop the spinner, keep the dialog open so user can retry.
+    setState(() => _isDeleting = false);
+    widget.onError(result.isEmpty ? 'Delete not confirmed by server' : result);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context)!;
+
+    return ZAlertDialog(
+      title: tr.areYouSure,
+      content: tr.areYouSure,
+      isYesLoading: _isDeleting,
+      onYes: _isDeleting ? null : _confirm,
+      // Cancel uses the default "pop" behavior from ZAlertDialog.
+      onNo: _isDeleting ? null : () => Navigator.of(context).pop(),
+      yesLabel: tr.yes,
+      noLabel: tr.no,
     );
   }
 }

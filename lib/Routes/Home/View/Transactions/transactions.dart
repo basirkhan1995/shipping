@@ -471,8 +471,6 @@ class _DesktopViewState extends State<_DesktopView> {
     }
   }
 
-
-
   Future<void> _onRowTapped(TransactionListItem row) async {
     final type = row.typeCode.toUpperCase();
 

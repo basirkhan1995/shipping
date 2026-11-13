@@ -715,5 +715,6 @@
   "stockBalanceHint": "Stock balance to report products in all inventories",
   "saleInvoiceReportHint": "Sale Invoices report",
   "purchaseInvoiceReportHint": "Purchase invoices report",
-  "watermark":"Watermark"
+  "watermark": "Watermark",
+  "no": "No"
 }

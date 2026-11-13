@@ -715,5 +715,6 @@
   "stockBalanceHint": "راپور موجودی کالاها در تمام گدام ها",
   "saleInvoiceReportHint": "راپور سوابق بل های فروش",
   "purchaseInvoiceReportHint": "راپور سوابق بل های خرید",
-  "watermark":"واترمارک"
+  "watermark": "واترمارک",
+  "no": "نخیر"
 }

@@ -68,23 +68,16 @@ class PurchaseInvoiceLoaded extends PurchaseInvoiceState {
   double get subtotal {
     return items.fold(0.0, (sum, item) => sum + item.totalPurchase);
   }
+
   double get grandTotalLocal {
     if (!needsExchangeRate) return subtotal;
     return subtotal * safeExchangeRate;
   }
 
-
   double get supplierAccountPayment {
     if (supplierAccount == null) return 0.0;
-
-    // Calculate amount to be paid to supplier account
-    if (paymentMode == PaymentMode.credit) {
-      return subtotal; // Full amount to supplier
-    } else if (paymentMode == PaymentMode.mixed) {
-      return subtotal - cashPayment; // Remaining after cash payment
-    } else if (paymentMode == PaymentMode.cash) {
-      return 0.0;
-    }
+    if (paymentMode == PaymentMode.credit) return subtotal;
+    if (paymentMode == PaymentMode.mixed) return subtotal - cashPayment;
     return 0.0;
   }
 
@@ -92,17 +85,13 @@ class PurchaseInvoiceLoaded extends PurchaseInvoiceState {
     return expenses.fold(0.0, (sum, expense) => sum + expense.amount);
   }
 
-  double get totalWithExpenses {
-    return subtotal + totalExpenses;
-  }
+  double get totalWithExpenses => subtotal + totalExpenses;
+
   bool get isExchangeRateLoading => exchangeRate != null && exchangeRate! < 0;
 
   double get creditAmount {
-    if (paymentMode == PaymentMode.credit) {
-      return subtotal;
-    } else if (paymentMode == PaymentMode.mixed) {
-      return subtotal - cashPayment;
-    }
+    if (paymentMode == PaymentMode.credit) return subtotal;
+    if (paymentMode == PaymentMode.mixed) return subtotal - cashPayment;
     return 0.0;
   }
 
@@ -116,7 +105,6 @@ class PurchaseInvoiceLoaded extends PurchaseInvoiceState {
     return cashPayment * exchangeRate!;
   }
 
-  // NEW: Get cash amount in selected cash currency
   double get cashPaymentInCashCurrency {
     if (needsCashConversion && cashExchangeRate > 0) {
       return cashPayment * cashExchangeRate;
@@ -136,9 +124,7 @@ class PurchaseInvoiceLoaded extends PurchaseInvoiceState {
     return 0.0;
   }
 
-  double get newBalance {
-    return currentBalance + creditAmountLocal;
-  }
+  double get newBalance => currentBalance + creditAmountLocal;
 
   double get safeExchangeRate {
     if (exchangeRate == null || exchangeRate! <= 0) return 1.0;
@@ -173,20 +159,18 @@ class PurchaseInvoiceLoaded extends PurchaseInvoiceState {
     if (supplierAccount == null) return false;
     final accountCurrency = supplierAccount!.accCurrency ?? '';
     final baseCurrency = fromCurrency ?? '';
-    return accountCurrency.isNotEmpty && baseCurrency.isNotEmpty && accountCurrency != baseCurrency;
+    return accountCurrency.isNotEmpty &&
+        baseCurrency.isNotEmpty &&
+        accountCurrency != baseCurrency;
   }
 
-  // NEW: Check if cash currency is different from base currency
   bool get needsCashConversion {
     if (cashCurrency == null || cashCurrency!.isEmpty) return false;
     final baseCurr = fromCurrency ?? '';
     return baseCurr.isNotEmpty && cashCurrency != baseCurr;
   }
 
-// Total invoice including expenses
-  double get totalInvoice {
-    return subtotal + totalExpenses;
-  }
+  double get totalInvoice => subtotal + totalExpenses;
 
   PurchaseInvoiceLoaded copyWith({
     List<PurchaseInvoiceItem>? items,
@@ -225,29 +209,14 @@ class PurchaseInvoiceLoaded extends PurchaseInvoiceState {
       remark: remark ?? this.remark,
       orderId: orderId ?? this.orderId,
       ordName: ordName ?? this.ordName,
-
     );
   }
 
   @override
   List<Object?> get props => [
-    items,
-    payments,
-    supplier,
-    supplierAccount,
-    paymentMode,
-    storages,
-    exchangeRate,
-    fromCurrency,
-    toCurrency,
-    cashPayment,
-    cashCurrency,
-    cashExchangeRate,
-    xRef,
-    reference,
-    remark,
-    orderId,
-    ordName,
+    items, payments, supplier, supplierAccount, paymentMode, storages,
+    exchangeRate, fromCurrency, toCurrency, cashPayment, cashCurrency,
+    cashExchangeRate, xRef, reference, remark, orderId, ordName,
   ];
 }
 
@@ -257,9 +226,19 @@ class PurchaseInvoiceSaving extends PurchaseInvoiceLoaded {
     required super.payments,
     super.supplier,
     super.supplierAccount,
-    required super.cashPayment,
     super.paymentMode,
     super.storages,
+    super.exchangeRate,
+    super.fromCurrency,
+    super.toCurrency,
+    required super.cashPayment,
+    super.cashCurrency,
+    super.cashExchangeRate,
+    super.xRef,
+    super.reference,
+    super.remark,
+    super.orderId,
+    super.ordName,
   });
 }
 
@@ -267,7 +246,8 @@ class PurchaseInvoiceSaved extends PurchaseInvoiceState {
   final bool success;
   final String? invoiceNumber;
   final PurchaseInvoiceLoaded? invoiceData;
-  const PurchaseInvoiceSaved(this.success, {this.invoiceNumber, this.invoiceData});
+  const PurchaseInvoiceSaved(this.success,
+      {this.invoiceNumber, this.invoiceData});
   @override
   List<Object?> get props => [success, invoiceNumber, invoiceData];
 }

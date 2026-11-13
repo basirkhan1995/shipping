@@ -84,27 +84,50 @@ class _DesktopPurchaseOrderViewState extends State<_DesktopPurchaseOrderView> {
   void _confirmDeleteOrder() {
     final tr = AppLocalizations.of(context)!;
     final purState = context.read<PurchaseInvoiceBloc>().state;
-    String? ref;
-    int? ordId;
-    if (purState is PurchaseInvoiceLoaded) {
-      ref = purState.reference;
-      ordId = purState.orderId;
-    }
-    showDialog(
+    if (purState is! PurchaseInvoiceLoaded) return;
+
+    final ordId = purState.orderId;
+    final ref = purState.reference;
+
+    if (ordId == null || ordId <= 0) {
+      ToastManager.show(
         context: context,
-        builder: (context) => ZAlertDialog(
-            title: tr.areYouSure,
-            content: tr.areYouSure,
-            onYes: (){
-              context.read<OrdersBloc>().add(
-                DeleteOrderEvent(
-                  orderId: ordId!,
-                  usrName: _userName??"",
-                  ref: ref,
-                  orderName: 'Purchase',
-                ),
-              );
-            })
+        title: tr.errorTitle,
+        message: 'Cannot delete: order id missing',
+        type: ToastType.error,
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _DeletePurchaseConfirmDialog(
+        ordId: ordId,
+        ref: ref,
+        usrName: _userName ?? '',
+        orderName: 'Purchase',
+        onDeleted: () {
+          if (!mounted) return;
+          ToastManager.show(
+            context: context,
+            title: tr.successTitle,
+            message: 'Invoice deleted',
+            type: ToastType.success,
+          );
+          // The Orders view handles list refresh / screen close via the
+          // OrdersBloc listener, same as the sale flow.
+        },
+        onError: (msg) {
+          if (!mounted) return;
+          ToastManager.show(
+            context: context,
+            title: tr.errorTitle,
+            message: msg,
+            type: ToastType.error,
+          );
+        },
+      ),
     );
   }
   void _showExpensesDialog(BuildContext context) {
@@ -223,6 +246,7 @@ class _DesktopPurchaseOrderViewState extends State<_DesktopPurchaseOrderView> {
       final purchaseBloc = context.read<PurchaseInvoiceBloc>();
       final exchangeBloc = context.read<ExchangeRateBloc>();
       purchaseBloc.setExchangeRateBloc(exchangeBloc);
+      purchaseBloc.setAuthBloc(context.read<AuthBloc>());
       final purState = purchaseBloc.state;
       if (purState is PurchaseInvoiceLoaded || purState is PurchaseInvoiceSaving) {
         final current = purState is PurchaseInvoiceSaving ? purState : (purState as PurchaseInvoiceLoaded);
@@ -509,12 +533,24 @@ class _DesktopPurchaseOrderViewState extends State<_DesktopPurchaseOrderView> {
             titleSpacing: 0,
             actionsPadding: const EdgeInsets.symmetric(horizontal: 12),
             actions: [
-              if(widget.orderId !=null)
-                ZOutlineButton(
-                  icon: Icons.delete_outline_rounded,
-                  backgroundHover: Theme.of(context).colorScheme.error,
-                  onPressed: _confirmDeleteOrder,
-                  label: Text(tr.delete),
+              if (widget.orderId != null)
+                BlocBuilder<OrdersBloc, OrdersState>(
+                  builder: (context, ordersState) {
+                    final deleting = ordersState is OrdersDeletingState &&
+                        ordersState.orderId == ordNumber;
+                    return ZOutlineButton(
+                      icon: deleting ? null : Icons.delete_outline_rounded,
+                      backgroundHover: Theme.of(context).colorScheme.error,
+                      onPressed: deleting ? null : _confirmDeleteOrder,
+                      label: deleting
+                          ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                          : Text(tr.delete),
+                    );
+                  },
                 ),
               if(widget.orderId ==null)...[
                 const SizedBox(width: 8),
@@ -1437,6 +1473,7 @@ class _DesktopPurchaseOrderViewState extends State<_DesktopPurchaseOrderView> {
         ordPersonal: state.supplier!.perId!,
         xRef: _xRefController.text.isNotEmpty ? _xRefController.text : null,
         remark: _remark.text,
+        baseCurrency: baseCurrency??"",
         completer: completer,
       ),
     );
@@ -1458,6 +1495,7 @@ class _DesktopPurchaseOrderViewState extends State<_DesktopPurchaseOrderView> {
         xRef: _xRefController.text.isNotEmpty ? _xRefController.text : null,
         orderId: state.orderId,
         remark: _remark.text,
+        baseCurrency: baseCurrency ?? "",
         completer: completer,
       ),
     );
@@ -1482,13 +1520,32 @@ class _DesktopPurchaseOrderViewState extends State<_DesktopPurchaseOrderView> {
       return;
     }
 
-    // Determine the invoice number to use
+    // Determine the invoice number to use.
+// Priority:
+//   1) explicit argument (passed by save listener with fresh server value)
+//   2) widget.orderId (edit mode: initial route param)
+//   3) current state's orderId (edit mode: loaded from server)
+//   4) empty string (new invoice with no id yet)
     final String finalInvoiceNumber;
-    if (invoiceNumber != null && invoiceNumber.isNotEmpty) {
-      finalInvoiceNumber = ordNumber.toString();
-    } else if (ordNumber == null) {
-      finalInvoiceNumber = widget.orderId.toString();
+    final String? candidate =
+    (invoiceNumber != null && invoiceNumber.isNotEmpty)
+        ? invoiceNumber
+        : (widget.orderId != null && widget.orderId != 0)
+        ? widget.orderId.toString()
+        : (current.orderId != null && current.orderId! > 0)
+        ? current.orderId.toString()
+        : null;
+
+    if (candidate != null && candidate.isNotEmpty && candidate != 'null') {
+      finalInvoiceNumber = candidate;
     } else {
+      // No invoice number available — show a helpful warning but still allow print.
+      ToastManager.show(
+        context: context,
+        title: "Warning",
+        message: "Invoice number is not available yet",
+        type: ToastType.warning,
+      );
       finalInvoiceNumber = '';
     }
 
@@ -1644,7 +1701,81 @@ class _DesktopPurchaseOrderViewState extends State<_DesktopPurchaseOrderView> {
     );
   }
 }
+class _DeletePurchaseConfirmDialog extends StatefulWidget {
+  final int ordId;
+  final String? ref;
+  final String usrName;
+  final String orderName;
+  final VoidCallback onDeleted;
+  final ValueChanged<String> onError;
 
+  const _DeletePurchaseConfirmDialog({
+    required this.ordId,
+    required this.ref,
+    required this.usrName,
+    required this.orderName,
+    required this.onDeleted,
+    required this.onError,
+  });
+
+  @override
+  State<_DeletePurchaseConfirmDialog> createState() =>
+      _DeletePurchaseConfirmDialogState();
+}
+
+class _DeletePurchaseConfirmDialogState
+    extends State<_DeletePurchaseConfirmDialog> {
+  bool _isDeleting = false;
+
+  Future<void> _confirm() async {
+    if (_isDeleting) return;
+    setState(() => _isDeleting = true);
+
+    final completer = Completer<String>();
+    context.read<OrdersBloc>().add(
+      DeleteOrderEvent(
+        orderId: widget.ordId,
+        usrName: widget.usrName,
+        ref: widget.ref,
+        orderName: widget.orderName,
+        completer: completer,
+      ),
+    );
+
+    String result;
+    try {
+      result = await completer.future;
+    } catch (e) {
+      result = e.toString();
+    }
+
+    if (!mounted) return;
+
+    if (result == 'success') {
+      Navigator.of(context).pop();
+      widget.onDeleted();
+      return;
+    }
+
+    setState(() => _isDeleting = false);
+    widget.onError(result.isEmpty ? 'Delete not confirmed by server' : result);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context)!;
+
+    return ZAlertDialog(
+      title: tr.areYouSure,
+      content: tr.areYouSure,
+      isYesLoading: _isDeleting,
+      onYes: _isDeleting ? null : _confirm,
+      onNo: _isDeleting ? null : () => Navigator.of(context).pop(),
+      yesLabel: tr.yes,
+      noLabel: tr.no,
+    );
+  }
+}
 class _PurchaseItemRow extends StatefulWidget {
   final PurchaseInvoiceItem item;
   final bool isLastRow;

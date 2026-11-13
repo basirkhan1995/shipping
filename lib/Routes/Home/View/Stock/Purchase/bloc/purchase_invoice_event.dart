@@ -95,6 +95,7 @@ class SavePurchaseInvoiceEvent extends PurchaseInvoiceEvent {
   final int ordPersonal;
   final String? xRef;
   final String? remark;
+  final String baseCurrency;
   final Completer<String> completer;
   const SavePurchaseInvoiceEvent({
     required this.usrName,
@@ -102,10 +103,11 @@ class SavePurchaseInvoiceEvent extends PurchaseInvoiceEvent {
     required this.orderName,
     this.xRef,
     this.remark,
+    required this.baseCurrency,
     required this.completer,
   });
   @override
-  List<Object?> get props => [usrName, ordPersonal, orderName, xRef, remark, completer];
+  List<Object?> get props => [usrName, ordPersonal, orderName, xRef, remark,baseCurrency, completer];
 }
 
 class UpdatePurchaseInvoiceEvent extends PurchaseInvoiceEvent {
@@ -114,6 +116,7 @@ class UpdatePurchaseInvoiceEvent extends PurchaseInvoiceEvent {
   final int ordPersonal;
   final String? xRef;
   final int? orderId;
+  final String baseCurrency;
   final String? remark;
   final Completer<String> completer;
   const UpdatePurchaseInvoiceEvent({
@@ -123,10 +126,11 @@ class UpdatePurchaseInvoiceEvent extends PurchaseInvoiceEvent {
     this.xRef,
     this.orderId,
     this.remark,
+    required this.baseCurrency,
     required this.completer,
   });
   @override
-  List<Object?> get props => [usrName, ordPersonal, orderName, xRef, orderId, remark, completer];
+  List<Object?> get props => [usrName, ordPersonal, orderName, xRef, orderId, remark,baseCurrency, completer];
 }
 
 class ClearSupplierAccountEvent extends PurchaseInvoiceEvent {

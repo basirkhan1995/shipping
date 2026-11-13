@@ -2170,4 +2170,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get watermark => 'Watermark';
+
+  @override
+  String get no => 'No';
 }

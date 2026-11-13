@@ -1,6 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-
+import 'dart:async';
 import '../../../../../../Services/repository.dart';
 import '../model/orders_model.dart';
 
@@ -58,16 +58,12 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
     }
   }
 
-  // Add this new delete handler
   Future<void> _onDeleteOrder(DeleteOrderEvent event, Emitter<OrdersState> emit) async {
-    // Save current state to revert if needed
     final previousState = state;
 
     try {
-      // Emit deleting state
       emit(OrdersDeletingState(event.orderId));
 
-      // Call the repository delete method
       final success = await _repo.deleteOrder(
         orderId: event.orderId,
         usrName: event.usrName,
@@ -76,42 +72,47 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
       );
 
       if (success) {
-        // Emit success
-        emit(OrdersDeletedState(true, message: '${event.orderName} order deleted successfully'));
+        emit(OrdersDeletedState(
+          true,
+          message: '${event.orderName} order deleted successfully',
+        ));
+        event.completer?.complete('success');                             // ← new
 
-        // Refresh the orders list by loading orders again
-        add(const LoadOrdersEvent());
+        // Refresh the list after the current emission settles
+        Future.microtask(() {
+          if (!isClosed) add(const LoadOrdersEvent());
+        });
       } else {
-        // Emit error - order might be verified/authorized
-        emit(OrdersDeletedState(false, message: 'Failed to delete ${event.orderName} order. The order may be verified or authorized.'));
+        final message =
+            'Failed to delete ${event.orderName} order. The order may be verified or authorized.';
+        emit(OrdersDeletedState(false, message: message));
+        event.completer?.complete(message);                               // ← new
 
-        // Restore previous state if it was a loaded state
         if (previousState is OrdersLoadedState) {
           emit(previousState);
         } else {
-          // If not loaded, refresh the list
-          add(const LoadOrdersEvent());
+          Future.microtask(() {
+            if (!isClosed) add(const LoadOrdersEvent());
+          });
         }
       }
     } catch (e) {
-      String errorMessage;
       final errorString = e.toString().toLowerCase();
-
-      if (errorString.contains('authorized') ||
+      final String errorMessage = (errorString.contains('authorized') ||
           errorString.contains('verified') ||
-          errorString.contains('cannot delete')) {
-        errorMessage = 'Cannot delete order: The transaction is verified and cannot be deleted.';
-      } else {
-        errorMessage = 'Error deleting order: ${e.toString()}';
-      }
+          errorString.contains('cannot delete'))
+          ? 'Cannot delete order: The transaction is verified and cannot be deleted.'
+          : 'Error deleting order: ${e.toString()}';
 
       emit(OrdersDeletedState(false, message: errorMessage));
+      event.completer?.complete(errorMessage);                            // ← new
 
-      // Restore previous state
       if (previousState is OrdersLoadedState) {
         emit(previousState);
       } else {
-        add(const LoadOrdersEvent());
+        Future.microtask(() {
+          if (!isClosed) add(const LoadOrdersEvent());
+        });
       }
     }
   }

@@ -2162,4 +2162,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get watermark => 'واترمارک';
+
+  @override
+  String get no => 'نخیر';
 }

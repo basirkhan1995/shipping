@@ -33,14 +33,16 @@ class DeleteOrderEvent extends OrdersEvent {
   final String usrName;
   final String? ref;
   final String orderName;
+  final Completer<String>? completer;   // ← new (nullable so existing call-sites don't break)
 
   const DeleteOrderEvent({
     required this.orderId,
     required this.usrName,
     required this.ref,
     required this.orderName,
+    this.completer,
   });
 
   @override
-  List<Object?> get props => [orderId, usrName, ref, orderName];
+  List<Object?> get props => [orderId, usrName, ref, orderName, completer];
 }

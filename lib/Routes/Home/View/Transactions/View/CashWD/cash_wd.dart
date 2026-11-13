@@ -285,8 +285,7 @@ class CashTxnFormState extends State<CashTxnForm> {
     );
   }
 
-  Widget _buildAccountPicker() =>
-      GenericTextField<StkAccountModel, StkAccountsBloc, StkAccountsState>(
+  Widget _buildAccountPicker() => GenericTextField<StkAccountModel, StkAccountsBloc, StkAccountsState>(
         controller: _accountCtrl,
         title: AppLocalizations.of(context)!.accounts,
         hintText: AppLocalizations.of(context)!.accNameOrNumber,

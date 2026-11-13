@@ -4317,6 +4317,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Watermark'**
   String get watermark;
+
+  /// No description provided for @no.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get no;
 }
 
 class _AppLocalizationsDelegate
