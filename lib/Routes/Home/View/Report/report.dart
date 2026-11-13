@@ -8,7 +8,7 @@ import 'package:shipping/Routes/Home/View/Report/Inventory/Cardx/Ui/cardx.dart';
 import 'package:shipping/Routes/Home/View/Report/Inventory/OrdersReport/Ui/order_report.dart';
 import 'package:shipping/Routes/Home/View/Report/Inventory/StockAvailability/product_report.dart';
 import 'package:shipping/Routes/Home/View/Report/TrialBalance/trial_balance.dart';
-import 'package:shipping/Routes/Home/View/Report/TxnReport/txn_report.dart';
+import 'package:shipping/Routes/Home/View/Report/AllTransactions/txn_report.dart';
 import 'package:shipping/Routes/Home/View/Report/UserLog/user_log_report.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../Features/Other/responsive_widget.dart';
@@ -183,7 +183,7 @@ class _ReportBody extends StatelessWidget {
             description: tr.allTransactionsHint,
             onTap: (ctx) => ZNavigator.goto(
               context: ctx,
-              const TransactionReportView(),
+              const AllTransactionReportView(),
             ),
           ),
         ],

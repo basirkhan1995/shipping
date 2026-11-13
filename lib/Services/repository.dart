@@ -33,8 +33,8 @@ import '../Routes/Home/View/Report/Inventory/OrdersReport/model/order_report_mod
 import '../Routes/Home/View/Report/Inventory/StockAvailability/model/product_report_model.dart';
 import '../Routes/Home/View/Report/TrialBalance/model/trial_balance_model.dart';
 import '../Routes/Home/View/Report/TxnByReference/model/txn_report_model.dart';
-import '../Routes/Home/View/Report/TxnReport/TxnTypes/model/txn_types_model.dart';
-import '../Routes/Home/View/Report/TxnReport/model/txn_report_model.dart';
+import '../Routes/Home/View/Report/AllTransactions/TxnTypes/model/txn_types_model.dart';
+import '../Routes/Home/View/Report/AllTransactions/model/txn_report_model.dart';
 import '../Routes/Home/View/Report/UserLog/model/user_log_model.dart';
 import '../Routes/Home/View/Settings/View/Company/Branch/Ui/BranchLimits/model/limit_model.dart';
 import '../Routes/Home/View/Settings/View/Company/Branches/model/branch_model.dart';
@@ -3468,11 +3468,27 @@ class Repositories {
   }
 
   ///Shift Goods ...............................................................
-  Future<List<GoodShiftModel>> getShifts({int? orderId, CancelToken? cancelToken}) async {
-    final queryParams = {'ordID': orderId};
+  Future<List<GoodShiftModel>> getShifts({
+    int? orderId,
+    String? status,
+    DateTime? from,
+    DateTime? to,
+    CancelToken? cancelToken,
+  }) async {
+    String ymd(DateTime d) =>
+        '${d.year.toString().padLeft(4, '0')}-'
+            '${d.month.toString().padLeft(2, '0')}-'
+            '${d.day.toString().padLeft(2, '0')}';
+
+    final queryParams = <String, dynamic>{};
+    if (orderId != null) queryParams['ordID'] = orderId;
+    if (status != null && status.isNotEmpty) queryParams['status'] = status;
+    if (from != null) queryParams['from'] = ymd(from);
+    if (to != null) queryParams['to'] = ymd(to);
+
     final response = await _api.get(
       endpoint: "/inventory/goodsShifting.php",
-      queryParams: queryParams,
+      queryParams: queryParams.isEmpty ? null : queryParams,
       cancelToken: cancelToken,
     );
 
@@ -3505,7 +3521,6 @@ class Repositories {
 
     return [];
   }
-
   Future<Map<String, dynamic>> addShift({
     required String usrName,
     required List<ShiftRecord> records,

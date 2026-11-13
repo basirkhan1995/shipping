@@ -18,12 +18,13 @@ import 'bloc/goods_shift_bloc.dart';
 import 'model/shift_model.dart';
 
 // ------------------------------------------------------------------
-// PUBLIC ENTRY POINT — open create or edit dialog
+// PUBLIC ENTRY POINT
 // ------------------------------------------------------------------
 Future<bool?> showGoodsShiftDialog(
     BuildContext context, {
       required String usrName,
       int? ordId,
+      bool readOnly = false,
     }) {
   final bloc = context.read<GoodsShiftBloc>();
 
@@ -35,6 +36,7 @@ Future<bool?> showGoodsShiftDialog(
       child: AddGoodsShiftView(
         ordId: ordId,
         usrNameOverride: usrName,
+        readOnly: readOnly,
       ),
     ),
   );
@@ -44,16 +46,15 @@ Future<bool?> showGoodsShiftDialog(
 // WIDGET
 // ------------------------------------------------------------------
 class AddGoodsShiftView extends StatefulWidget {
-  /// When null → create mode. When set → edit mode (loads + prefills).
   final int? ordId;
-
-  /// Optional override (e.g. from caller). Falls back to AuthBloc.
   final String? usrNameOverride;
+  final bool readOnly;
 
   const AddGoodsShiftView({
     super.key,
     this.ordId,
     this.usrNameOverride,
+    this.readOnly = false,
   });
 
   bool get isEdit => ordId != null;
@@ -80,16 +81,25 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
   bool _isLoadingDetail = false;
   String? _errorMessage;
 
-  /// Prevents the edit-prefill listener from firing more than once.
   bool _prefilled = false;
 
+  /// Loaded shift's current status — 'Pending' | 'Authorized' | null.
+  String? _loadedStatus;
+
   final List<List<FocusNode>> _rowFocusNodes = [];
+
+  /// True when the loaded shift is Authorized → edit is disallowed
+  /// until reverted. The server enforces this too.
+  bool get _isLockedByStatus =>
+      widget.isEdit && (_loadedStatus ?? 'Pending') != 'Pending';
+
+  bool get _isPending =>
+      (_loadedStatus ?? 'Pending').toLowerCase() == 'pending';
 
   @override
   void initState() {
     super.initState();
 
-    // Resolve user
     final authState = context.read<AuthBloc>().state;
     _userName = widget.usrNameOverride ??
         (authState is AuthenticatedState
@@ -97,7 +107,6 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
             : null);
 
     if (widget.isEdit) {
-      // EDIT: load the shift, don't create an empty row yet
       _isLoadingDetail = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -106,7 +115,6 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
             .add(LoadGoodsShiftByIdEvent(widget.ordId!));
       });
     } else {
-      // CREATE: start with one empty row and focus
       _addEmptyItem();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Future.delayed(const Duration(milliseconds: 300), () {
@@ -269,14 +277,13 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
     });
   }
 
-  // ------------------------------------------------------------------
-  // EDIT MODE — prefill rows from loaded shift
-  // ------------------------------------------------------------------
   void _prefillFromShift(GoodShiftModel shift) {
     if (_prefilled) return;
     _prefilled = true;
 
-    // Wipe any current rows
+    // Capture status BEFORE wiping state
+    _loadedStatus = shift.trnStateText;
+
     for (final c in _productControllers) {
       c.dispose();
     }
@@ -304,13 +311,10 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
     _selectedFromStorages.clear();
     _selectedToStorages.clear();
 
-    // The API returns one OUT row + one IN row per shift line.
-    // We rebuild one editable row per OUT row, matching its IN counterpart.
     final outs = (shift.records ?? []).where((r) => r.isOutEntry).toList();
     final ins = (shift.records ?? []).where((r) => r.isInEntry).toList();
 
     for (final out in outs) {
-      // Find the matching IN (same product, batch, qty)
       ShiftRecord? match;
       for (final r in ins) {
         if (r.stkProduct == out.stkProduct &&
@@ -326,8 +330,8 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
           .add(TextEditingController(text: out.storageName ?? ''));
       _toStorageControllers
           .add(TextEditingController(text: match?.storageName ?? ''));
-      _qtyControllers.add(
-          TextEditingController(text: (out.stkQuantity ?? 0).toString()));
+      _qtyControllers
+          .add(TextEditingController(text: (out.stkQuantity ?? 0).toString()));
 
       _selectedProducts.add(null);
       _selectedFromStorages.add(null);
@@ -346,7 +350,6 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
       _rowFocusNodes.add([FocusNode(), FocusNode(), FocusNode()]);
     }
 
-    // Safety: if the order somehow had no records, show one empty row
     if (_records.isEmpty) {
       _addEmptyItem();
     }
@@ -355,7 +358,6 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
       _isLoadingDetail = false;
     });
 
-    // Focus the first product field after prefill
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(milliseconds: 150), () {
         if (mounted) _focusFirstProductField();
@@ -364,26 +366,151 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
   }
 
   // ------------------------------------------------------------------
+  // AUTHORIZE / REVERT (from dialog)
+  // ------------------------------------------------------------------
+  Future<void> _changeStatusFromDialog(String targetStatus) async {
+    final tr = AppLocalizations.of(context)!;
+    final isRevert = targetStatus == 'Pending';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        title: Text(tr.areYouSure),
+        content: Text(
+          isRevert
+              ? 'Revert this goods shift to Pending so it can be edited again?'
+              : 'Do you want to authorize this goods shift? This action will finalize it and no further edits will be possible.',
+        ),
+        actions: [
+          ZOutlineButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            label: Text(tr.cancel),
+          ),
+          ZOutlineButton(
+            isActive: true,
+            onPressed: () => Navigator.pop(ctx, true),
+            label: Text(tr.confirm),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    context.read<GoodsShiftBloc>().add(AuthorizeGoodsShiftsEvent(
+      [
+        {'ordID': widget.ordId, 'ordStatus': targetStatus}
+      ],
+      targetStatus: targetStatus,
+    ));
+  }
+
+  Future<void> _authorizeFromDialog() =>
+      _changeStatusFromDialog('Authorized');
+
+  Future<void> _revertFromDialog() => _changeStatusFromDialog('Pending');
+
+  // ------------------------------------------------------------------
   // BUILD
   // ------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
     final color = Theme.of(context).colorScheme;
+    final readOnly = widget.readOnly;
+    final isPending = _isPending;
+    final canEdit = !readOnly && !_isLockedByStatus;
+
+    // ── Secondary footer action (only for edit mode) ───────────
+    // Pending    → Authorize
+    // Authorized → Revert to Pending
+    Widget? statusAction;
+    if (widget.isEdit && !readOnly && !_isLoadingDetail) {
+      if (isPending) {
+        statusAction = Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: ZOutlineButton(
+            width: 140,
+            height: 35,
+            icon: Icons.check_circle_outline,
+            isActive: !_isSaving,
+            onPressed: _isSaving ? null : _authorizeFromDialog,
+            label: Text(tr.authorize),
+          ),
+        );
+      } else {
+        statusAction = Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: ZOutlineButton(
+            width: 170,
+            height: 35,
+            icon: Icons.undo,
+            isActive: !_isSaving,
+            onPressed: _isSaving ? null : _revertFromDialog,
+            label: const Text('Revert to Pending'),
+          ),
+        );
+      }
+    }
+
+    // ── Primary footer button label ─────────────────────────────
+    // - readOnly        → Close
+    // - create mode     → Create
+    // - edit + Pending  → Update (enabled)
+    // - edit + Locked   → Update (disabled)
+    final String primaryLabel;
+    if (readOnly) {
+      primaryLabel = 'Close';
+    } else if (widget.isEdit) {
+      primaryLabel = tr.update;
+    } else {
+      primaryLabel = tr.create;
+    }
 
     return BlocListener<GoodsShiftBloc, GoodsShiftState>(
       listener: _onBlocStateChange,
       child: ZFormDialog(
-        title: widget.isEdit ? '${tr.edit} ${tr.goodShift}' : tr.goodShift,
-        icon: widget.isEdit ? Icons.edit : Icons.swap_horiz,
+        title: readOnly
+            ? '${tr.view} ${tr.goodShift}'
+            : widget.isEdit
+            ? '${tr.edit} ${tr.goodShift}'
+            : tr.goodShift,
+        icon: readOnly
+            ? Icons.visibility
+            : widget.isEdit
+            ? Icons.edit
+            : Icons.swap_horiz,
         isLoading: _isSaving || _isLoadingDetail,
-        isButtonEnabled: !_isSaving && !_isLoadingDetail,
+
+        // Primary button enabled only if:
+        //  - not busy
+        //  - not view mode
+        //  - in create mode OR edit mode + Pending
+        isButtonEnabled:
+        !_isSaving && !_isLoadingDetail && !readOnly && canEdit,
+
         errorMessage: _hasError ? _errorMessage : null,
         width: MediaQuery.sizeOf(context).width * .85,
         height: MediaQuery.sizeOf(context).height * .85,
         padding: const EdgeInsets.all(8),
-        actionLabel: Text(widget.isEdit ? tr.update : tr.create),
-        onAction: _createGoodsShift,
+        actionLabel: Text(primaryLabel),
+
+        // Primary action:
+        //  - readOnly → close
+        //  - create   → create
+        //  - edit + Pending → update
+        //  - edit + Locked  → null (button is disabled anyway)
+        onAction: readOnly
+            ? () => Navigator.pop(context)
+            : canEdit
+            ? _createGoodsShift
+            : null,
+
+        // Secondary: Authorize (Pending) / Revert (Authorized)
+        expandedAction: statusAction,
+
         child: _isLoadingDetail
             ? const SizedBox(
           height: 300,
@@ -400,7 +527,7 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
                 width: 260,
                 child: ZCover(
                   radius: 10,
-                  padding: EdgeInsets.all(15),
+                  padding: const EdgeInsets.all(15),
                   borderColor: color.primary.withValues(alpha: .3),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -423,8 +550,7 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
                       const SizedBox(height: 6),
                       Divider(
                           thickness: 1.2,
-                          color: color.outline
-                              .withValues(alpha: .5)),
+                          color: color.outline.withValues(alpha: .5)),
                       const SizedBox(height: 6),
                       _buildSummaryRow(
                         label: tr.totalItems,
@@ -445,13 +571,22 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.info_outline,
-                                size: 16, color: color.primary),
+                            Icon(
+                              readOnly || _isLockedByStatus
+                                  ? Icons.lock_outline
+                                  : Icons.info_outline,
+                              size: 16,
+                              color: color.primary,
+                            ),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                widget.isEdit
-                                    ? 'Shift will remain Pending'
+                                readOnly
+                                    ? 'View only — no changes can be saved'
+                                    : _isLockedByStatus
+                                    ? 'Authorized — revert to Pending to edit'
+                                    : widget.isEdit
+                                    ? 'Shift will remain Pending until authorized'
                                     : 'Shift will be saved as Pending',
                                 style: TextStyle(
                                   fontSize: 11.5,
@@ -482,24 +617,28 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
                           child: Column(
                             children: [
                               ...List.generate(_records.length, (index) {
-                                final isLastRow = index == _records.length - 1;
-                                return _buildItemRow(index, isLastRow, tr);
+                                final isLastRow =
+                                    index == _records.length - 1;
+                                return _buildItemRow(
+                                    index, isLastRow, tr);
                               }),
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8),
-                                child: Row(
-                                  children: [
-                                    ZOutlineButton(
-                                      width: 120,
-                                      icon: Icons.add,
-                                      label: Text(tr.addItem),
-                                      onPressed: _isSaving
-                                          ? null
-                                          : _addNewRowAndFocus,
-                                    ),
-                                  ],
+                              if (canEdit)
+                                Padding(
+                                  padding:
+                                  const EdgeInsets.only(top: 8),
+                                  child: Row(
+                                    children: [
+                                      ZOutlineButton(
+                                        width: 120,
+                                        icon: Icons.add,
+                                        label: Text(tr.addItem),
+                                        onPressed: _isSaving
+                                            ? null
+                                            : _addNewRowAndFocus,
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
                             ],
                           ),
                         ),
@@ -516,16 +655,14 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
   }
 
   // ------------------------------------------------------------------
-  // BLOC LISTENER — single source of truth for state transitions
+  // BLOC LISTENER
   // ------------------------------------------------------------------
   void _onBlocStateChange(BuildContext context, GoodsShiftState state) {
-    // 1) EDIT — prefill once
     if (state is GoodsShiftDetailLoadedState && widget.isEdit) {
       _prefillFromShift(state.shift);
       return;
     }
 
-    // 2) Error
     if (state is GoodsShiftErrorState) {
       ToastManager.show(
         context: context,
@@ -544,7 +681,6 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
       return;
     }
 
-    // 3) Success (create or update)
     if (state is GoodsShiftSavedState || state is GoodsShiftUpdatedState) {
       final msg = state is GoodsShiftSavedState
           ? state.message
@@ -559,7 +695,17 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
       return;
     }
 
-    // 4) Busy
+    if (state is GoodsShiftAuthorizedState) {
+      ToastManager.show(
+        context: context,
+        title: "Success",
+        message: state.message,
+        type: ToastType.success,
+      );
+      if (mounted) Navigator.pop(context, true);
+      return;
+    }
+
     if (state is GoodsShiftSavingState || state is GoodsShiftUpdatingState) {
       if (!mounted) return;
       setState(() {
@@ -578,7 +724,7 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
     final title = Theme.of(context)
         .textTheme
         .titleSmall
-        ?.copyWith(color: color.surface,fontSize: 15,letterSpacing: 0.6);
+        ?.copyWith(color: color.surface, fontSize: 15, letterSpacing: 0.6);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
       decoration: BoxDecoration(
@@ -621,12 +767,15 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
   Widget _buildItemRow(int index, bool isLastRow, AppLocalizations tr) {
     final color = Theme.of(context).colorScheme;
     final nodes = _rowFocusNodes[index];
+    final readOnly = widget.readOnly;
+    // Row is locked if saving, view-only, or the shift is Authorized.
+    final locked = _isSaving || readOnly || _isLockedByStatus;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
-        border:
-        Border(bottom: BorderSide(color: color.outline.withValues(alpha: .2))),
+        border: Border(
+            bottom: BorderSide(color: color.outline.withValues(alpha: .2))),
         color: index.isOdd
             ? color.outline.withValues(alpha: .06)
             : Colors.transparent,
@@ -645,75 +794,78 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
           // Product
           Expanded(
             flex: 5,
-            child: ProductSearchField<ProductsStockModel, ProductsBloc,
-                ProductsState>(
-              controller: _productControllers[index],
-              hintText: tr.products,
-              focusNode: nodes[0],
-              bloc: context.read<ProductsBloc>(),
-              searchFunction: (bloc, query) =>
-                  bloc.add(LoadProductsStockEvent(input: query)),
-              fetchAllFunction: (bloc) =>
-                  bloc.add(LoadProductsStockEvent()),
-              stateToItems: (state) {
-                if (state is ProductsStockLoadedState) return state.products;
-                return [];
-              },
-              stateToLoading: (state) => state is ProductsLoadingState,
-              itemToString: (product) => product.proName ?? '',
-              getProductId: (product) => product.proId?.toString(),
-              getProductName: (product) => product.proName,
-              getProductCode: (product) => product.proCode,
-              getStorageId: (product) => product.stkStorage,
-              getStorageName: (product) => product.stgName,
-              getAvailable: (product) => product.available,
-              getBatch: (product) => product.stkQtyInBatch ?? 0,
-              getLandedPrice: (product) => product.recentLandedPurPrice,
-              getProductUnit: (product) => product.proUnit,
-              getAveragePrice: (product) => product.averagePrice,
-              getRecentPrice: (product) => product.recentPurPrice,
-              getSellPrice: (product) => product.sellPrice,
-              onProductSelected: (product) {
-                if (product == null) return;
+            child: IgnorePointer(
+              ignoring: locked,
+              child: ProductSearchField<ProductsStockModel, ProductsBloc,
+                  ProductsState>(
+                controller: _productControllers[index],
+                hintText: tr.products,
+                focusNode: nodes[0],
+                bloc: context.read<ProductsBloc>(),
+                searchFunction: (bloc, query) =>
+                    bloc.add(LoadProductsStockEvent(input: query)),
+                fetchAllFunction: (bloc) =>
+                    bloc.add(LoadProductsStockEvent()),
+                stateToItems: (state) {
+                  if (state is ProductsStockLoadedState) return state.products;
+                  return [];
+                },
+                stateToLoading: (state) => state is ProductsLoadingState,
+                itemToString: (product) => product.proName ?? '',
+                getProductId: (product) => product.proId?.toString(),
+                getProductName: (product) => product.proName,
+                getProductCode: (product) => product.proCode,
+                getStorageId: (product) => product.stkStorage,
+                getStorageName: (product) => product.stgName,
+                getAvailable: (product) => product.available,
+                getBatch: (product) => product.stkQtyInBatch ?? 0,
+                getLandedPrice: (product) => product.recentLandedPurPrice,
+                getProductUnit: (product) => product.proUnit,
+                getAveragePrice: (product) => product.averagePrice,
+                getRecentPrice: (product) => product.recentPurPrice,
+                getSellPrice: (product) => product.sellPrice,
+                onProductSelected: (product) {
+                  if (product == null) return;
 
-                final purchasePrice = double.tryParse(
-                  product.averagePrice?.replaceAll(',', '') ?? "0.0",
-                ) ??
-                    0.0;
+                  final purchasePrice = double.tryParse(
+                    product.averagePrice?.replaceAll(',', '') ?? "0.0",
+                  ) ??
+                      0.0;
 
-                final landedPurPrice = double.tryParse(
-                  product.recentLandedPurPrice?.replaceAll(',', '') ??
-                      "0.0",
-                ) ??
-                    0.0;
+                  final landedPurPrice = double.tryParse(
+                    product.recentLandedPurPrice?.replaceAll(',', '') ??
+                        "0.0",
+                  ) ??
+                      0.0;
 
-                final qtyInBatch = product.stkQtyInBatch ?? 0;
+                  final qtyInBatch = product.stkQtyInBatch ?? 0;
 
-                _selectedProducts[index] = product;
-                _fromStorageControllers[index].text =
-                    product.stgName ?? '';
+                  _selectedProducts[index] = product;
+                  _fromStorageControllers[index].text =
+                      product.stgName ?? '';
 
-                _updateRecord(
-                  index,
-                  productId: product.proId,
-                  fromStorage: product.stkStorage,
-                  purchasePrice: purchasePrice,
-                  landedPurPrice: landedPurPrice,
-                  qtyInBatch: qtyInBatch,
-                );
+                  _updateRecord(
+                    index,
+                    productId: product.proId,
+                    fromStorage: product.stkStorage,
+                    purchasePrice: purchasePrice,
+                    landedPurPrice: landedPurPrice,
+                    qtyInBatch: qtyInBatch,
+                  );
 
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (nodes.length > 2) nodes[2].requestFocus();
-                });
-              },
-              onSubmit: () {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (nodes.length > 2) nodes[2].requestFocus();
-                });
-              },
-              openOverlayOnFocus: true,
-              showAllOnFocus: true,
-              noResultsText: tr.noDataFound,
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (nodes.length > 2) nodes[2].requestFocus();
+                  });
+                },
+                onSubmit: () {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (nodes.length > 2) nodes[2].requestFocus();
+                  });
+                },
+                openOverlayOnFocus: true,
+                showAllOnFocus: true,
+                noResultsText: tr.noDataFound,
+              ),
             ),
           ),
 
@@ -761,7 +913,7 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
                 });
               },
               title: '',
-              enabled: !_isSaving,
+              enabled: !locked,
               onSubmitted: (e) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (nodes.length > 1) nodes[1].requestFocus();
@@ -790,6 +942,7 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
                 _updateRecord(index, quantity: qty);
               },
               onSubmitted: (_) {
+                if (locked) return;
                 if (isLastRow) {
                   final lastRecord = _records.last;
                   if (lastRecord.stkProduct != null &&
@@ -809,7 +962,7 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
                   });
                 }
               },
-              enabled: !_isSaving,
+              enabled: !locked,
             ),
           ),
 
@@ -818,7 +971,7 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
             width: 50,
             child: IconButton(
               icon: Icon(Icons.delete_outline, size: 18, color: color.error),
-              onPressed: _isSaving ? null : () => _removeItem(index),
+              onPressed: locked ? null : () => _removeItem(index),
             ),
           ),
         ],
@@ -865,7 +1018,17 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
       return;
     }
 
-    // Validate all items
+    // Guard: server rejects updates for non-Pending shifts
+    if (widget.isEdit && _isLockedByStatus) {
+      ToastManager.show(
+        context: context,
+        title: "Locked",
+        message: 'This shift is Authorized. Revert it to Pending first.',
+        type: ToastType.warning,
+      );
+      return;
+    }
+
     for (var i = 0; i < _records.length; i++) {
       final record = _records[i];
 

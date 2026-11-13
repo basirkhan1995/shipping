@@ -37,18 +37,22 @@ class GoodsShiftDeletedState extends GoodsShiftState {
   List<Object?> get props => [message];
 }
 
-// ── NEW ─────────────────────────────────────────────────────────
+// ── Authorization / Revert ─────────────────────────────────────
 class GoodsShiftAuthorizingState extends GoodsShiftState {}
 
 class GoodsShiftAuthorizedState extends GoodsShiftState {
   final String message;
   final int count;
+  final String targetStatus; // 'Authorized' | 'Pending'
+
   const GoodsShiftAuthorizedState({
     required this.message,
     required this.count,
+    required this.targetStatus,
   });
+
   @override
-  List<Object?> get props => [message, count];
+  List<Object?> get props => [message, count, targetStatus];
 }
 // ────────────────────────────────────────────────────────────────
 

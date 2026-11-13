@@ -20,8 +20,8 @@ import 'bloc/txn_report_bloc.dart';
 import 'features/status_drop.dart';
 import 'model/txn_report_model.dart';
 
-class TransactionReportView extends StatelessWidget {
-  const TransactionReportView({super.key});
+class AllTransactionReportView extends StatelessWidget {
+  const AllTransactionReportView({super.key});
 
   @override
   Widget build(BuildContext context) {

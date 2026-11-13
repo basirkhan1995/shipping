@@ -6,7 +6,24 @@ abstract class GoodsShiftEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class LoadGoodsShiftsEvent extends GoodsShiftEvent {}
+/// Loads shifts with optional filters.
+/// - If `status` is null → backend default (Pending).
+/// - If `from`/`to` are null → no date bounds.
+/// - Pass `status: 'All'` to include Pending + Authorized + Deleted.
+class LoadGoodsShiftsEvent extends GoodsShiftEvent {
+  final String? status; // 'Pending' | 'Authorized' | 'Deleted' | 'All' | null
+  final DateTime? from;
+  final DateTime? to;
+
+  const LoadGoodsShiftsEvent({
+    this.status,
+    this.from,
+    this.to,
+  });
+
+  @override
+  List<Object?> get props => [status, from, to];
+}
 
 class LoadGoodsShiftByIdEvent extends GoodsShiftEvent {
   final int orderId;
@@ -50,14 +67,23 @@ class DeleteGoodsShiftEvent extends GoodsShiftEvent {
   List<Object?> get props => [orderId, usrName];
 }
 
-/// NEW — bulk authorize one or more goods shifts.
-/// Payload shape matches the backend `change_orders_status`:
-///   [{ "ordID": 5, "ordStatus": "Authorized" }, ...]
+/// Bulk status change. Backend `change_orders_status` receives:
+///   [{ "ordID": 5, "ordStatus": "Authorized" | "Pending" }, ...]
+///
+/// `targetStatus` is used only on the Flutter side to know what to
+/// toast after success — the actual status change is carried inside
+/// `ordersData`.
 class AuthorizeGoodsShiftsEvent extends GoodsShiftEvent {
   final List<Map<String, dynamic>> ordersData;
-  const AuthorizeGoodsShiftsEvent(this.ordersData);
+  final String targetStatus; // 'Authorized' | 'Pending'
+
+  const AuthorizeGoodsShiftsEvent(
+      this.ordersData, {
+        this.targetStatus = 'Authorized',
+      });
+
   @override
-  List<Object?> get props => [ordersData];
+  List<Object?> get props => [ordersData, targetStatus];
 }
 
 class ReturnToShiftsListEvent extends GoodsShiftEvent {}
