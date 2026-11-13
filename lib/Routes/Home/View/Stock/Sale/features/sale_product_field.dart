@@ -629,7 +629,7 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
                                       SizedBox(width: 80, child: Text(tr.unit, textAlign: TextAlign.center, style: titleStyle)),
                                       SizedBox(width: 120, child: Text(tr.stock, textAlign: isRTL ? TextAlign.center : TextAlign.center, style: titleStyle)),
                                       if(visibility.isWholeSale)
-                                        SizedBox(width: 100, child: Text(tr.batchTitle, textAlign: isRTL ? TextAlign.center : TextAlign.center, style: titleStyle)),
+                                      SizedBox(width: 100, child: Text(tr.batchTitle, textAlign: isRTL ? TextAlign.center : TextAlign.center, style: titleStyle)),
                                       SizedBox(width: 100, child: Text("${tr.unitPrice} | $baseCurrency", textAlign: isRTL ? TextAlign.center : TextAlign.center, style: titleStyle)),
                                     ],
                                   ),
