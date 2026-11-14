@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Date/shamsi_converter.dart';
+import 'package:shipping/Features/Widgets/shimmer.dart';
 
 import '../../../../../../Features/Widgets/extensions.dart';
 import '../../../../../../Features/Widgets/section.dart';
@@ -657,19 +658,7 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
                                 Expanded(
                                   child: _isLoading
                                       ? Center(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          AppLocalizations.of(context)!.loading,
-                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                            color: Theme.of(context).colorScheme.outline,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                    child: UniversalShimmer.dataList(itemCount: 11,numberOfColumns: 6)
                                   )
                                       : _currentSuggestions.isEmpty
                                       ? Center(
