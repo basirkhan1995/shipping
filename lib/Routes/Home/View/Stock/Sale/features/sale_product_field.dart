@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Date/shamsi_converter.dart';
+import 'package:shipping/Features/Widgets/search_field.dart';
 import 'package:shipping/Features/Widgets/shimmer.dart';
 
 import '../../../../../../Features/Widgets/extensions.dart';
@@ -573,60 +574,11 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
                                     ],
                                   ),
                                 ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
-                                  decoration: BoxDecoration(
-                                    border: Border(
-                                      bottom: BorderSide(
-                                        color: Theme.of(context).colorScheme.outline.withValues(alpha: .1),
-                                      ),
-                                    ),
-                                  ),
-                                  child: TextField(
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                  child: ReusableSearchBar(
                                     controller: _overlaySearchController,
                                     autofocus: true,
-                                    showCursor: true,
-                                    decoration: InputDecoration(
-                                      hintText: AppLocalizations.of(context)!.search,
-                                      prefixIcon: Icon(Icons.search,
-                                        color: Theme.of(context).colorScheme.primary,
-                                        size: 25,
-                                      ),
-                                      suffixIcon: _overlaySearchController.text.isNotEmpty
-                                          ? IconButton(
-                                        icon: Icon(Icons.clear,
-                                          color: Theme.of(context).colorScheme.outline,
-                                          size: 18,
-                                        ),
-                                        onPressed: () {
-                                          _overlaySearchController.clear();
-                                          _triggerSearch('');
-                                        },
-                                      )
-                                          : null,
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(3),
-                                        borderSide: BorderSide(
-                                          color: Theme.of(context).colorScheme.outline.withValues(alpha: .3),
-                                        ),
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(3),
-                                        borderSide: BorderSide(
-                                          color: Theme.of(context).colorScheme.outline.withValues(alpha: .3),
-                                        ),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(3),
-                                        borderSide: BorderSide(
-                                          color: Theme.of(context).colorScheme.primary,
-                                          width: 1,
-                                        ),
-                                      ),
-                                      filled: true,
-                                      fillColor: Theme.of(context).colorScheme.surface,
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                                    ),
                                     onSubmitted: (_) {
                                       if (_highlightedIndex >= 0 && _highlightedIndex < _currentSuggestions.length) {
                                         _handleItemSelection(_currentSuggestions[_highlightedIndex]);
@@ -634,6 +586,7 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
                                         _handleItemSelection(_currentSuggestions.first);
                                       }
                                     },
+                                    onChanged: (String value) {  },
                                   ),
                                 ),
                                 Container(
