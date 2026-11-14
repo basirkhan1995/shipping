@@ -8,7 +8,7 @@ import '../../../../Features/Other/image_crop.dart';
 import '../../../../Features/Other/image_helper.dart';
 import '../../../../Features/Widgets/utils.dart';
 import '../../../../Features/Widgets/ztextfield.dart';
-import '../../../../Features/zdropdown.dart';
+import '../../../../Features/Other/zdropdown.dart';
 import 'bloc/stakeholder_bloc.dart';
 import 'model/stk_model.dart';
 

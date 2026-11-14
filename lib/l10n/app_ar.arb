@@ -716,5 +716,10 @@
   "saleInvoiceReportHint": "راپور سوابق بل های فروش",
   "purchaseInvoiceReportHint": "راپور سوابق بل های خرید",
   "watermark": "واترمارک",
-  "no": "نه"
+  "no": "نه",
+  "avgPurchasePrice": "اوسط قیمت خرید",
+  "recentPurchasePrice": "آخرین قیمت خرید",
+  "productId": "کد کالا",
+  "customer": "مشتری",
+  "recentSales": "آخرین فروشات"
 }

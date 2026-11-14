@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:printing/printing.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../zdropdown.dart';
+import '../../Other/zdropdown.dart';
 import '../bloc/Printer/printer_cubit.dart';
 
 class PrinterDropdown extends StatefulWidget {

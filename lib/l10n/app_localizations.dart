@@ -4323,6 +4323,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No'**
   String get no;
+
+  /// No description provided for @avgPurchasePrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Average Purchased'**
+  String get avgPurchasePrice;
+
+  /// No description provided for @recentPurchasePrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Purchased'**
+  String get recentPurchasePrice;
+
+  /// No description provided for @productId.
+  ///
+  /// In en, this message translates to:
+  /// **'Pro ID'**
+  String get productId;
+
+  /// No description provided for @customer.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get customer;
+
+  /// No description provided for @recentSales.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Sales'**
+  String get recentSales;
 }
 
 class _AppLocalizationsDelegate

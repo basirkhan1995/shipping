@@ -753,7 +753,7 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
               child:
               Text(tr.qty, style: title, textAlign: TextAlign.start)),
           SizedBox(
-              width: 50,
+              width: 60,
               child: Text(tr.actions,
                   style: title, textAlign: TextAlign.center)),
         ].map((child) => DefaultTextStyle(
@@ -968,7 +968,7 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
 
           // Remove
           SizedBox(
-            width: 50,
+            width: 60,
             child: IconButton(
               icon: Icon(Icons.delete_outline, size: 18, color: color.error),
               onPressed: locked ? null : () => _removeItem(index),

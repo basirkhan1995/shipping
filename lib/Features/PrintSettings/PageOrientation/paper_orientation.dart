@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../../l10n/app_localizations.dart';
-import '../../zdropdown.dart';
+import '../../Other/zdropdown.dart';
 
 class PageOrientationHelper {
   static const List<pw.PageOrientation> availableOrientations = [

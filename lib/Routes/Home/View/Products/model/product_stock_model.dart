@@ -7,6 +7,38 @@ import 'dart:convert';
 ProductsStockModel productsStockModelFromMap(String str) => ProductsStockModel.fromMap(json.decode(str));
 
 String productsStockModelToMap(ProductsStockModel data) => json.encode(data.toMap());
+/// Parses `recent_txn` from the API. Handles:
+///   - null            → []
+///   - List<dynamic>   → normal case (new view / decoded by PHP)
+///   - String          → legacy case (MySQL JSON column stringified by PDO)
+List<RecentTxn> _parseRecentTxn(dynamic value) {
+  if (value == null) return const [];
+
+  if (value is List) {
+    return value
+        .whereType<Map>()
+        .map((x) => RecentTxn.fromMap(Map<String, dynamic>.from(x)))
+        .toList();
+  }
+
+  if (value is String) {
+    if (value.isEmpty) return const [];
+    try {
+      final decoded = jsonDecode(value);
+      if (decoded is List) {
+        return decoded
+            .whereType<Map>()
+            .map((x) => RecentTxn.fromMap(Map<String, dynamic>.from(x)))
+            .toList();
+      }
+    } catch (_) {
+      // malformed JSON string — treat as empty rather than crashing the list
+    }
+    return const [];
+  }
+
+  return const [];
+}
 
 class ProductsStockModel {
   final int? proId;
@@ -138,7 +170,7 @@ class ProductsStockModel {
     averagePrice: json["average_price"],
     averageLandedPrice: json["average_landed_price"],
     sellPrice: json["sell_price"],
-    recentTxn: json["recent_txn"] == null ? [] : List<RecentTxn>.from(json["recent_txn"]!.map((x) => RecentTxn.fromMap(x))),
+    recentTxn: _parseRecentTxn(json["recent_txn"]),
   );
 
   Map<String, dynamic> toMap() => {
@@ -172,7 +204,9 @@ class ProductsStockModel {
 class RecentTxn {
   final String? date;
   final int? amount;
+  final int? amountLocal;
   final String? currency;
+  final String? baseCurrency;
   final String? customer;
   final int? orderId;
   final int? quantity;
@@ -180,11 +214,14 @@ class RecentTxn {
   final String? orderType;
   final double? basePurchasePrice;
   final int? originalSalePrice;
+  final int? localSalePrice;
 
   RecentTxn({
     this.date,
     this.amount,
+    this.amountLocal,
     this.currency,
+    this.baseCurrency,
     this.customer,
     this.orderId,
     this.quantity,
@@ -192,12 +229,15 @@ class RecentTxn {
     this.orderType,
     this.basePurchasePrice,
     this.originalSalePrice,
+    this.localSalePrice,
   });
 
   RecentTxn copyWith({
     String? date,
     int? amount,
+    int? amountLocal,
     String? currency,
+    String? baseCurrency,
     String? customer,
     int? orderId,
     int? quantity,
@@ -205,11 +245,14 @@ class RecentTxn {
     String? orderType,
     double? basePurchasePrice,
     int? originalSalePrice,
+    int? localSalePrice,
   }) =>
       RecentTxn(
         date: date ?? this.date,
         amount: amount ?? this.amount,
+        amountLocal: amountLocal ?? this.amountLocal,
         currency: currency ?? this.currency,
+        baseCurrency: baseCurrency ?? this.baseCurrency,
         customer: customer ?? this.customer,
         orderId: orderId ?? this.orderId,
         quantity: quantity ?? this.quantity,
@@ -217,12 +260,15 @@ class RecentTxn {
         orderType: orderType ?? this.orderType,
         basePurchasePrice: basePurchasePrice ?? this.basePurchasePrice,
         originalSalePrice: originalSalePrice ?? this.originalSalePrice,
+        localSalePrice: localSalePrice ?? this.localSalePrice,
       );
 
   factory RecentTxn.fromMap(Map<String, dynamic> json) => RecentTxn(
     date: json["date"],
     amount: json["amount"],
+    amountLocal: json["amountLocal"],
     currency: json["currency"],
+    baseCurrency: json["baseCurrency"],
     customer: json["customer"],
     orderId: json["order_id"],
     quantity: json["quantity"],
@@ -230,12 +276,15 @@ class RecentTxn {
     orderType: json["order_type"],
     basePurchasePrice: json["basePurchasePrice"]?.toDouble(),
     originalSalePrice: json["originalSalePrice"],
+    localSalePrice: json["localSalePrice"],
   );
 
   Map<String, dynamic> toMap() => {
     "date": date,
     "amount": amount,
+    "amountLocal": amountLocal,
     "currency": currency,
+    "baseCurrency": baseCurrency,
     "customer": customer,
     "order_id": orderId,
     "quantity": quantity,
@@ -243,5 +292,6 @@ class RecentTxn {
     "order_type": orderType,
     "basePurchasePrice": basePurchasePrice,
     "originalSalePrice": originalSalePrice,
+    "localSalePrice": localSalePrice,
   };
 }

@@ -1267,7 +1267,7 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
 
       final double salePrice = double.tryParse(product.sellPrice ?? '') ?? 0.0;
       final averagePrice = double.tryParse(product.averagePrice?.toAmount(decimal: 8) ?? "0.0") ?? 0.0;
-      final landedPrice = double.tryParse(product.recentLandedPurPrice?.toAmount(decimal: 8) ?? "0.0") ?? 0.0;
+      final landedPrice = double.tryParse(product.averageLandedPrice?.toAmount(decimal: 8) ?? "0.0") ?? 0.0;
       final purchasePrice = double.tryParse(product.recentPurPrice?.toAmount(decimal: 8) ?? "0.0") ?? 0.0;
       final batch = product.stkQtyInBatch;
 
@@ -1698,6 +1698,7 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
                   getRecentPrice: (product) => product.recentPurPrice,
                   getSellPrice: (product) => product.sellPrice,
                   onProductSelected: onProductSelected,
+                  getRecentSales: (product) => product.recentTxn  ?? [],
                   onSubmit: () {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (nodes.length > 1 && nodes[1].canRequestFocus) {

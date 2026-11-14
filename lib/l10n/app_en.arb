@@ -716,5 +716,10 @@
   "saleInvoiceReportHint": "Sale Invoices report",
   "purchaseInvoiceReportHint": "Purchase invoices report",
   "watermark": "Watermark",
-  "no": "No"
+  "no": "No",
+  "avgPurchasePrice": "Average Purchased",
+  "recentPurchasePrice": "Recent Purchased",
+  "productId": "Pro ID",
+  "customer": "Customer",
+  "recentSales": "Recent Sales"
 }

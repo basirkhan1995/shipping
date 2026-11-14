@@ -9,7 +9,7 @@ import '../../../../../../../../../Features/PrintSettings/bloc/PageOrientation/p
 import '../../../../../../../../../Features/PrintSettings/bloc/PageSize/paper_size_cubit.dart';
 import '../../../../../../../../../Features/PrintSettings/bloc/Printer/printer_cubit.dart';
 import '../../../../../../../../../Features/PrintSettings/print_services.dart';
-import '../../../../../Features/zdropdown.dart';
+import '../../../../../Features/Other/zdropdown.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../model/product_model.dart';
 

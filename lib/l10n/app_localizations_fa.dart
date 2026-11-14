@@ -2165,4 +2165,19 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get no => 'نخیر';
+
+  @override
+  String get avgPurchasePrice => 'اوسط قیمت خرید';
+
+  @override
+  String get recentPurchasePrice => 'آخرین قیمت خرید';
+
+  @override
+  String get productId => 'کد کالا';
+
+  @override
+  String get customer => 'مشتری';
+
+  @override
+  String get recentSales => 'آخرین فروشات';
 }

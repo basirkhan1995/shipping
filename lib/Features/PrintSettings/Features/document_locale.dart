@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
-import '../../zdropdown.dart';
+import '../../Other/zdropdown.dart';
 
 class LanguageModel {
   final String code;

@@ -2173,4 +2173,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get no => 'No';
+
+  @override
+  String get avgPurchasePrice => 'Average Purchased';
+
+  @override
+  String get recentPurchasePrice => 'Recent Purchased';
+
+  @override
+  String get productId => 'Pro ID';
+
+  @override
+  String get customer => 'Customer';
+
+  @override
+  String get recentSales => 'Recent Sales';
 }
