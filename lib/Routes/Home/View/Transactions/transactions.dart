@@ -473,7 +473,9 @@ class _DesktopViewState extends State<_DesktopView> {
 
   Future<void> _onRowTapped(TransactionListItem row) async {
     final type = row.typeCode.toUpperCase();
+    debugPrint('TAP: type=${row.typeCode}, ref=${row.reference}');
 
+    debugPrint('TAP: normalized=$type');
     switch (type) {
       case 'ATAT':
         await _openFundTransferDialog(reference: row.reference);
@@ -482,7 +484,7 @@ class _DesktopViewState extends State<_DesktopView> {
         await _openBulkDialog(reference: row.reference);
         break;
       case 'SALE':
-      case 'PURCHASE':
+      case 'PRCH':
         await _openOrdTxnDialog(reference: row.reference);
         break;
       case 'CRFX':
@@ -536,9 +538,9 @@ class _DesktopViewState extends State<_DesktopView> {
         break;
 
       case 'SALE':
-      case 'PURCHASE':
+      case 'PRCH':
          _openOrdTxnDialog();
-
+         break;
       case 'BULK':
         _openBulkDialog();
         break;

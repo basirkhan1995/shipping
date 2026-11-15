@@ -721,5 +721,6 @@
   "recentPurchasePrice": "آخرین قیمت خرید",
   "productId": "کد کالا",
   "customer": "مشتری",
-  "recentSales": "آخرین فروشات"
+  "recentSales": "آخرین فروشات",
+  "invoices": "بل"
 }

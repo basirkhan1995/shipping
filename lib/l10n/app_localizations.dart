@@ -4353,6 +4353,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recent Sales'**
   String get recentSales;
+
+  /// No description provided for @invoices.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoices'**
+  String get invoices;
 }
 
 class _AppLocalizationsDelegate

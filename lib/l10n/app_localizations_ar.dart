@@ -2179,4 +2179,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get recentSales => 'آخرین فروشات';
+
+  @override
+  String get invoices => 'بل';
 }

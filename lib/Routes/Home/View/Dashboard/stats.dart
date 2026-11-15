@@ -218,6 +218,42 @@ class DashboardStatsView extends StatelessWidget {
                 );
               },
             ),
+
+            const SizedBox(height: 20),
+
+            // ── INVOICES (NEW)
+            const _SectionTitle('INVOICES'),
+            const SizedBox(height: 8),
+            LayoutBuilder(
+              builder: (context, c) {
+                final cols = _columnsFor(c.maxWidth);
+                return _Grid(
+                  cols: cols,
+                  children: [
+                    _InvoiceCard(
+                      icon: Icons.shopping_cart_outlined,
+                      label: 'Purchase',
+                      amount: loading ? null : stats!.invoice.purchase,
+                      invoiceCount:
+                      loading ? null : stats!.invoice.purchaseInvoices,
+                      currency: stats?.currency,
+                      accent: const Color(0xFF2563EB),
+                      bg: const Color(0xFFDBEAFE),
+                    ),
+                    _InvoiceCard(
+                      icon: Icons.point_of_sale_outlined,
+                      label: 'Sales',
+                      amount: loading ? null : stats!.invoice.sales,
+                      invoiceCount:
+                      loading ? null : stats!.invoice.salesInvoices,
+                      currency: stats?.currency,
+                      accent: const Color(0xFF059669),
+                      bg: const Color(0xFFD1FAE5),
+                    ),
+                  ],
+                );
+              },
+            ),
           ],
         );
       },
@@ -279,7 +315,7 @@ class _Grid extends StatelessWidget {
 }
 
 // =====================================================================
-// COUNT card (unchanged)
+// COUNT card
 // =====================================================================
 class _CountCard extends StatelessWidget {
   final IconData icon;
@@ -369,7 +405,7 @@ class _CountCard extends StatelessWidget {
 enum _Direction { inflow, outflow, net }
 
 // =====================================================================
-// MONEY card — polished, directional, highlighted when it's a total
+// MONEY card
 // =====================================================================
 class _MoneyCard extends StatelessWidget {
   final IconData icon;
@@ -399,7 +435,6 @@ class _MoneyCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        // Solid-ish tint for highlight cards, soft wash for others
         color: highlight
             ? bg.withValues(alpha: 0.55)
             : bg.withValues(alpha: 0.30),
@@ -414,7 +449,6 @@ class _MoneyCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Top row — icon + label + currency pill
             Row(
               children: [
                 Container(
@@ -467,8 +501,6 @@ class _MoneyCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-
-            // ── Amount row — directional pill + money
             SizedBox(
               height: 36,
               child: amount == null
@@ -549,7 +581,192 @@ class _MoneyCard extends StatelessWidget {
 }
 
 // =====================================================================
-// Small directional pill next to the amount
+// INVOICE card — total + invoice count badge
+// =====================================================================
+class _InvoiceCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final double? amount;
+  final int? invoiceCount;
+  final String? currency;
+  final Color accent;
+  final Color bg;
+
+  const _InvoiceCard({
+    required this.icon,
+    required this.label,
+    required this.amount,
+    required this.invoiceCount,
+    required this.currency,
+    required this.accent,
+    required this.bg,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg.withValues(alpha: 0.30),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accent.withValues(alpha: 0.25)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(icon, size: 17, color: accent),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.1,
+                      color: scheme.onSurface.withValues(alpha: 0.85),
+                    ),
+                  ),
+                ),
+                if (currency != null && currency!.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: scheme.surface.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: accent.withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: Text(
+                      currency!,
+                      style: TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                        color: accent,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 36,
+              child: amount == null
+                  ? const Align(
+                alignment: Alignment.centerLeft,
+                child: _ShimmerNumber(width: 130, height: 26),
+              )
+                  : Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          _formatMoney(amount!),
+                          maxLines: 1,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            height: 1.05,
+                            letterSpacing: -0.4,
+                            color: accent,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (invoiceCount != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: accent.withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.receipt_long_outlined,
+                            size: 12,
+                            color: accent,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '$invoiceCount',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: accent,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (invoiceCount != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                invoiceCount == 1 ? '1 invoice' : '$invoiceCount invoices',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatMoney(double v) {
+    final s = v.abs().toStringAsFixed(2);
+    final parts = s.split('.');
+    final intPart = parts[0];
+    final buf = StringBuffer();
+    for (int i = 0; i < intPart.length; i++) {
+      if (i > 0 && (intPart.length - i) % 3 == 0) buf.write(',');
+      buf.write(intPart[i]);
+    }
+    return '${v < 0 ? '-' : ''}${buf.toString()}.${parts[1]}';
+  }
+}
+
+// =====================================================================
+// Small directional pill
 // =====================================================================
 class _DirectionPill extends StatelessWidget {
   final _Direction direction;

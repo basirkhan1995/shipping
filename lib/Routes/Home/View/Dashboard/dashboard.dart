@@ -12,6 +12,7 @@ import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../Features/Other/responsive_widget.dart';
 import '../../bloc/menu_bloc.dart';
 import '../Finance/View/ExchangeRate/Ui/exchange_rate.dart';
+import '../Settings/Visibility/bloc/settings_visible_bloc.dart';
 import 'bloc/dashboard_stats_bloc.dart';
 
 class DashboardView extends StatefulWidget {
@@ -54,7 +55,7 @@ class _DashboardViewState extends State<DashboardView> {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// SHARED: Stats section — grid + cash + finance cards
+// SHARED: Stats section — grid + cash + finance + invoice cards
 // ═══════════════════════════════════════════════════════════════════
 class _StatsSection extends StatelessWidget {
   final int gridColumns;
@@ -68,6 +69,7 @@ class _StatsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
+    final visibility = context.watch<SettingsVisibleBloc>().state;
     return BlocBuilder<DashboardStatsBloc, DashboardStatsState>(
       builder: (context, state) {
         if (state is DashboardStatsFailure) {
@@ -110,11 +112,7 @@ class _StatsSection extends StatelessWidget {
           ),
         ];
 
-        // ═══════════════════════════════════════════════════════════
-        // CASH — Net Cash card (main) + In/Out breakdown row.
-        // Same visual language as count cards:
-        //   icon box + label + big colored number + subtitle line.
-        // ═══════════════════════════════════════════════════════════
+        // ── CASH — Net Cash + In/Out breakdown
         final netCash = s?.cash.net ?? 0;
         final netCashPos = !loading && netCash >= 0;
 
@@ -148,9 +146,7 @@ class _StatsSection extends StatelessWidget {
           ],
         );
 
-        // ═══════════════════════════════════════════════════════════
-        // FINANCE — Profit card (main) + Income/Expense breakdown row.
-        // ═══════════════════════════════════════════════════════════
+        // ── FINANCE — Profit + Income/Expense breakdown
         final profit = s?.finance.profit ?? 0;
         final profitPos = !loading && profit >= 0;
 
@@ -186,9 +182,31 @@ class _StatsSection extends StatelessWidget {
           ],
         );
 
+        // ── INVOICE — Purchase card + Sales card
+        final purchaseCard = _InvoiceFinCard(
+          icon: Icons.shopping_cart_outlined,
+          label: AppLocalizations.of(context)!.purchase,
+          value: loading ? null : s!.invoice.purchase,
+          invoiceCount: loading ? null : s?.invoice.purchaseInvoices,
+          currency: loading ? null : s?.currency,
+          accent: const Color(0xFF2563EB),
+          bg: const Color(0xFFDBEAFE),
+        );
+
+        final salesCard = _InvoiceFinCard(
+          icon: Icons.point_of_sale_outlined,
+          label: AppLocalizations.of(context)!.sales,
+          value: loading ? null : s!.invoice.sales,
+          invoiceCount: loading ? null : s?.invoice.salesInvoices,
+          currency: loading ? null : s?.currency,
+          accent: const Color(0xFF059669),
+          bg: const Color(0xFFD1FAE5),
+        );
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // ── COUNTS grid
             LayoutBuilder(
               builder: (context, constraints) {
                 final cols = gridColumns;
@@ -205,6 +223,8 @@ class _StatsSection extends StatelessWidget {
               },
             ),
             const SizedBox(height: 16),
+
+            // ── CASH + FINANCE
             if (stackFinancials) ...[
               cashCard,
               const SizedBox(height: 12),
@@ -218,9 +238,54 @@ class _StatsSection extends StatelessWidget {
                   Expanded(child: financeCard),
                 ],
               ),
+
+
+            if(visibility.orders)...[
+              const SizedBox(height: 16),
+
+              // ── INVOICES
+              _SectionTitle(AppLocalizations.of(context)!.invoices.toUpperCase()),
+              const SizedBox(height: 8),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final cols = stackFinancials ? 1 : 2;
+                  final spacing = 12.0;
+                  final cardWidth =
+                      (constraints.maxWidth - spacing * (cols - 1)) / cols;
+                  return Wrap(
+                    spacing: spacing,
+                    runSpacing: spacing,
+                    children: [purchaseCard, salesCard]
+                        .map((c) => SizedBox(width: cardWidth, child: c))
+                        .toList(),
+                  );
+                },
+              ),
+            ]
           ],
         );
       },
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Section title
+// ═══════════════════════════════════════════════════════════════════
+class _SectionTitle extends StatelessWidget {
+  final String text;
+  const _SectionTitle(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.1,
+        color: Theme.of(context).colorScheme.primary,
+      ),
     );
   }
 }
@@ -331,11 +396,10 @@ class _DesktopDashboard extends StatelessWidget {
                               width: rightSideWidth,
                               child: DashboardAlertReminder(),
                             ),
-
                             SizedBox(
                                 height: 600,
                                 width: rightSideWidth,
-                                child: BackupView())
+                                child: BackupView()),
                           ],
                         ),
                       ],
@@ -427,7 +491,7 @@ class _DesktopTopBar extends StatelessWidget {
           const SizedBox(width: 8),
           ZCover(
             radius: 20,
-            padding: const EdgeInsets.symmetric(horizontal: 12,vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             child: PopupMenuButton<String>(
               menuPadding: EdgeInsetsGeometry.all(5),
               tooltip: 'Account',
@@ -435,10 +499,13 @@ class _DesktopTopBar extends StatelessWidget {
               onSelected: (value) {
                 if (value == 'logout') {
                   context.read<AuthBloc>().add(OnLogoutEvent());
-                }if(value == "edit"){
+                }
+                if (value == 'edit') {
                   context.read<MenuBloc>().add(MenuOnChangedEvent(MenuName.settings));
-                  context.read<SettingsTabBloc>().add(SettingsOnChangeEvent(SettingsTabName.general));
-                  context.read<GeneralTabBloc>().add(GeneralTabOnChangedEvent(GeneralTabName.profileSettings));
+                  context.read<SettingsTabBloc>().add(
+                      SettingsOnChangeEvent(SettingsTabName.general));
+                  context.read<GeneralTabBloc>().add(
+                      GeneralTabOnChangedEvent(GeneralTabName.profileSettings));
                 }
               },
               itemBuilder: (context) => [
@@ -479,7 +546,7 @@ class _DesktopTopBar extends StatelessWidget {
                   ),
                 ),
                 const PopupMenuDivider(),
-                 PopupMenuItem(
+                PopupMenuItem(
                   value: 'logout',
                   child: Row(
                     children: [
@@ -493,7 +560,7 @@ class _DesktopTopBar extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  ImageHelper.stakeholderProfile(imageName: rawPhoto,size: 30),
+                  ImageHelper.stakeholderProfile(imageName: rawPhoto, size: 30),
                   const SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -541,7 +608,6 @@ class _DesktopTopBar extends StatelessWidget {
     if (hour < 21) return 'Good evening';
     return 'Good night';
   }
-
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -576,7 +642,7 @@ class _CountCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: color.withAlpha(10),
                 borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: color.withValues(alpha: .2))
+                border: Border.all(color: color.withValues(alpha: .2)),
               ),
               child: Icon(icon, color: color.withValues(alpha: .8), size: 22),
             ),
@@ -606,7 +672,7 @@ class _CountCard extends StatelessWidget {
                 color: scheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
                 fontSize: 14,
-                letterSpacing: 1
+                letterSpacing: 1,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -619,9 +685,7 @@ class _CountCard extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Finance / Cash card — same visual language as _CountCard:
-//   icon box + label + currency pill + big colored number +
-//   breakdown chips row (In/Out or Income/Expense).
+// Finance / Cash card
 // ═══════════════════════════════════════════════════════════════════
 class _FinCard extends StatelessWidget {
   final IconData icon;
@@ -656,7 +720,6 @@ class _FinCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header — icon box + label + currency pill
             Row(
               children: [
                 Container(
@@ -703,8 +766,6 @@ class _FinCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-
-            // Big amount — same colored number as count cards
             SizedBox(
               height: 30,
               child: value == null
@@ -724,8 +785,6 @@ class _FinCard extends StatelessWidget {
                 ),
               ),
             ),
-
-            // Breakdown chips
             if (breakdown != null && breakdown!.isNotEmpty) ...[
               const SizedBox(height: 10),
               Row(
@@ -1015,5 +1074,150 @@ class _CircleIconButtonState extends State<_CircleIconButton> {
       return Tooltip(message: widget.tooltip!, child: button);
     }
     return button;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Invoice finance card — total + invoice count badge
+// ═══════════════════════════════════════════════════════════════════
+class _InvoiceFinCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final double? value;
+  final int? invoiceCount;
+  final String? currency;
+  final Color accent;
+  final Color bg;
+
+  const _InvoiceFinCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.invoiceCount,
+    required this.currency,
+    required this.accent,
+    required this.bg,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return ZCover(
+      radius: 5,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header — icon + label + currency pill
+            Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: bg.withValues(alpha: .3),
+                    border: Border.all(color: bg.withValues(alpha: .2)),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(icon, size: 22, color: accent),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                ),
+                if (currency != null && currency!.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: scheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: Text(
+                      currency!,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.4,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Amount + invoice count badge
+            SizedBox(
+              height: 30,
+              child: value == null
+                  ? const _ShimmerBar(width: 100, height: 24)
+                  : Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          _fmt(value!),
+                          maxLines: 1,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            height: 1.1,
+                            color: accent,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                ],
+              ),
+            ),
+
+            // Invoice count subtitle
+            if (invoiceCount != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                invoiceCount == 1 ? '1 ${AppLocalizations.of(context)!.invoice}' : '$invoiceCount ${AppLocalizations.of(context)!.invoices}',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _fmt(double v) {
+    final neg = v < 0;
+    final s = v.abs().toStringAsFixed(2);
+    final parts = s.split('.');
+    final intPart = parts[0];
+    final buf = StringBuffer();
+    for (int i = 0; i < intPart.length; i++) {
+      if (i > 0 && (intPart.length - i) % 3 == 0) buf.write(',');
+      buf.write(intPart[i]);
+    }
+    return '${neg ? '-' : ''}${buf.toString()}.${parts[1]}';
   }
 }

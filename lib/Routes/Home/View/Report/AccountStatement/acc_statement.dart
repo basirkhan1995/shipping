@@ -73,6 +73,11 @@ class _MobileState extends State<_Mobile> {
   List<StmtRecord> records = [];
   AccountStatementModel? accountStatementModel;
 
+  /// True while the lock verification dialog is open (or the retry is
+  /// in flight). Used to suppress the builder's error display so we
+  /// never flash "locked" after a successful verification.
+  bool _pendingVerify = false;
+
   @override
   void initState() {
     myLocale = context.read<LocalizationBloc>().state.languageCode;
@@ -97,16 +102,16 @@ class _MobileState extends State<_Mobile> {
   }
 
   /// Loads the statement. If the owner is locked, prompts for admin
-  /// verification and retries with `unlock: true`.
-  Future<void> _loadStatement({
+  /// verification and retries with `unlock: true`. Returns `true` when
+  /// a statement was successfully loaded.
+  Future<bool> _loadStatement({
     required int accountNumber,
     required String fromDate,
     required String toDate,
   }) async {
-    // 1) Capture everything we need from `context` BEFORE the first await.
     final bloc = context.read<AccStatementBloc>();
 
-    // 2) Subscribe BEFORE dispatching, so we can't miss a synchronous emit.
+    // 1) Subscribe BEFORE dispatching, so we can't miss a synchronous emit.
     final firstResultFuture = bloc.stream.firstWhere(
           (s) => s is AccStatementLoadedState || s is AccStatementErrorState,
     );
@@ -117,18 +122,16 @@ class _MobileState extends State<_Mobile> {
       toDate: toDate,
     ));
 
-    // 3) Await the result.
     final result = await firstResultFuture;
 
-    // 4) `context` may now be gone — bail out before touching it.
-    if (!mounted) return;
+    if (!mounted) return false;
 
-    if (result is AccStatementLoadedState) return;
+    if (result is AccStatementLoadedState) return true;
 
-    // 5) Locked branch — still safe to use `context` here because we
-    //    re-checked `mounted` immediately before it. The dialog `await`
-    //    is the last async gap; nothing touches `context` after it.
+    // Locked branch.
     if (result is AccStatementErrorState && result.perID != null) {
+      setState(() => _pendingVerify = true);
+
       final ok = await LockVerifyDialog.show(
         context,
         perID: result.perID!,
@@ -136,11 +139,15 @@ class _MobileState extends State<_Mobile> {
         mode: LockVerifyMode.verifyOnly,
       );
 
-      // 6) After the dialog's await, re-check `mounted` BEFORE using
-      //    `bloc` (the bloc itself is fine to keep using — it's not a
-      //    BuildContext — but the widget may be unmounted and you may
-      //    not want to dispatch into a dead screen).
-      if (!ok || !mounted) return;
+      if (!ok || !mounted) {
+        if (mounted) setState(() => _pendingVerify = false);
+        return false;
+      }
+
+      // Subscribe for the retry result BEFORE dispatching.
+      final retryFuture = bloc.stream.firstWhere(
+            (s) => s is AccStatementLoadedState || s is AccStatementErrorState,
+      );
 
       bloc.add(LoadAccountStatementEvent(
         accountNumber: accountNumber,
@@ -148,7 +155,30 @@ class _MobileState extends State<_Mobile> {
         toDate: toDate,
         unlock: true,
       ));
+
+      final retry = await retryFuture;
+
+      if (!mounted) return false;
+      setState(() => _pendingVerify = false);
+
+      if (retry is AccStatementLoadedState) {
+        // Success — the BlocConsumer listener will show the print dialog.
+        return true;
+      }
+
+      if (retry is AccStatementErrorState) {
+        ToastManager.show(
+          context: context,
+          title: "Locked",
+          message: retry.message,
+          type: ToastType.error,
+        );
+      }
+      return false;
     }
+
+    // Any other error — surface it here (listener will also handle it).
+    return false;
   }
 
   Future<void> _generateAndShowPDF(BuildContext context) async {
@@ -282,7 +312,12 @@ class _MobileState extends State<_Mobile> {
                   );
                 }
               } else if (state is AccStatementErrorState &&
-                  state.perID == null) {
+                  state.perID == null &&
+                  !_pendingVerify) {
+                // Only surface the *non-lock* errors here. Lock errors
+                // are handled entirely inside `_loadStatement` so we
+                // never show the "locked" message after a successful
+                // verification/retry.
                 ToastManager.show(
                   context: context,
                   message: state.message,
@@ -615,6 +650,11 @@ class _DesktopState extends State<_Desktop> {
   List<AccountStatementModel> records = [];
   AccountStatementModel? accountStatementModel;
 
+  /// True while lock verification or its retry is in flight. Prevents
+  /// the builder from rendering the stale "locked" error message
+  /// after a successful retry.
+  bool _pendingVerify = false;
+
   Future<void> _copyToClipboard(String reference, BuildContext context) async {
     await Utils.copyToClipboard(reference);
     setState(() {
@@ -660,16 +700,15 @@ class _DesktopState extends State<_Desktop> {
   }
 
   /// Loads the statement. If the owner is locked, prompts for admin
-  /// verification and retries with `unlock: true`.
-  Future<void> _loadStatement({
+  /// verification and retries with `unlock: true`. Returns `true` on
+  /// success.
+  Future<bool> _loadStatement({
     required int accountNumber,
     required String fromDate,
     required String toDate,
   }) async {
-    // 1) Capture everything we need from `context` BEFORE the first await.
     final bloc = context.read<AccStatementBloc>();
 
-    // 2) Subscribe BEFORE dispatching, so we can't miss a synchronous emit.
     final firstResultFuture = bloc.stream.firstWhere(
           (s) => s is AccStatementLoadedState || s is AccStatementErrorState,
     );
@@ -680,18 +719,15 @@ class _DesktopState extends State<_Desktop> {
       toDate: toDate,
     ));
 
-    // 3) Await the result.
     final result = await firstResultFuture;
 
-    // 4) `context` may now be gone — bail out before touching it.
-    if (!mounted) return;
+    if (!mounted) return false;
 
-    if (result is AccStatementLoadedState) return;
+    if (result is AccStatementLoadedState) return true;
 
-    // 5) Locked branch — still safe to use `context` here because we
-    //    re-checked `mounted` immediately before it. The dialog `await`
-    //    is the last async gap; nothing touches `context` after it.
     if (result is AccStatementErrorState && result.perID != null) {
+      setState(() => _pendingVerify = true);
+
       final ok = await LockVerifyDialog.show(
         context,
         perID: result.perID!,
@@ -699,11 +735,14 @@ class _DesktopState extends State<_Desktop> {
         mode: LockVerifyMode.verifyOnly,
       );
 
-      // 6) After the dialog's await, re-check `mounted` BEFORE using
-      //    `bloc` (the bloc itself is fine to keep using — it's not a
-      //    BuildContext — but the widget may be unmounted and you may
-      //    not want to dispatch into a dead screen).
-      if (!ok || !mounted) return;
+      if (!ok || !mounted) {
+        if (mounted) setState(() => _pendingVerify = false);
+        return false;
+      }
+
+      final retryFuture = bloc.stream.firstWhere(
+            (s) => s is AccStatementLoadedState || s is AccStatementErrorState,
+      );
 
       bloc.add(LoadAccountStatementEvent(
         accountNumber: accountNumber,
@@ -711,7 +750,26 @@ class _DesktopState extends State<_Desktop> {
         toDate: toDate,
         unlock: true,
       ));
+
+      final retry = await retryFuture;
+
+      if (!mounted) return false;
+      setState(() => _pendingVerify = false);
+
+      if (retry is AccStatementLoadedState) return true;
+
+      if (retry is AccStatementErrorState) {
+        ToastManager.show(
+          context: context,
+          title: "Locked",
+          message: retry.message,
+          type: ToastType.error,
+        );
+      }
+      return false;
     }
+
+    return false;
   }
 
   Future<void> onSubmit() async {
@@ -1034,9 +1092,22 @@ class _DesktopState extends State<_Desktop> {
                               child: CircularProgressIndicator());
                         }
                         if (state is AccStatementErrorState) {
-                          return Center(
-                            child: Text(state.message),
-                          );
+                          // Suppress the locked error after a successful
+                          // verification/retry — otherwise the user sees
+                          // the lock message instead of their data.
+                          if (state.perID != null && !_pendingVerify) {
+                            return const Center(
+                              child: Text("No transactions found"),
+                            );
+                          }
+                          if (state.perID == null) {
+                            return Center(
+                              child: Text(state.message),
+                            );
+                          }
+                          // Locked error while verification is in flight.
+                          return const Center(
+                              child: CircularProgressIndicator());
                         }
                         if (state is AccStatementLoadedState) {
                           final records =
@@ -1071,7 +1142,6 @@ class _DesktopState extends State<_Desktop> {
                               return Container(
                                 margin: const EdgeInsets.symmetric(
                                   horizontal: 6,
-
                                 ),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 10,

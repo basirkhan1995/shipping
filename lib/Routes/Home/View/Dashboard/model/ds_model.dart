@@ -2,20 +2,23 @@ class DashboardStatsModel {
   final DashboardCounts counts;
   final DashboardCash cash;
   final DashboardFinance finance;
+  final DashboardInvoice invoice;
   final String currency;
 
   DashboardStatsModel({
     required this.counts,
     required this.cash,
     required this.finance,
+    required this.invoice,
     required this.currency,
   });
 
   factory DashboardStatsModel.fromMap(Map<String, dynamic> json) {
     return DashboardStatsModel(
-      counts: DashboardCounts.fromMap(json['counts'] ?? {}),
-      cash: DashboardCash.fromMap(json['cash'] ?? {}),
+      counts:  DashboardCounts.fromMap(json['counts']  ?? {}),
+      cash:    DashboardCash.fromMap(json['cash']      ?? {}),
       finance: DashboardFinance.fromMap(json['finance'] ?? {}),
+      invoice: DashboardInvoice.fromMap(json['invoice'] ?? {}),
       currency: json['currency']?.toString() ?? 'USD',
     );
   }
@@ -37,11 +40,11 @@ class DashboardCounts {
   });
 
   factory DashboardCounts.fromMap(Map<String, dynamic> j) => DashboardCounts(
-    accounts: _toInt(j['accounts']),
+    accounts:     _toInt(j['accounts']),
     stakeholders: _toInt(j['stakeholders']),
-    users: _toInt(j['users']),
-    employees: _toInt(j['employees']),
-    branches: _toInt(j['branches']),
+    users:        _toInt(j['users']),
+    employees:    _toInt(j['employees']),
+    branches:     _toInt(j['branches']),
   );
 }
 
@@ -57,9 +60,9 @@ class DashboardCash {
   });
 
   factory DashboardCash.fromMap(Map<String, dynamic> j) => DashboardCash(
-    inAmount: _toDouble(j['in']),
+    inAmount:  _toDouble(j['in']),
     outAmount: _toDouble(j['out']),
-    net: _toDouble(j['net']),
+    net:       _toDouble(j['net']),
   );
 }
 
@@ -75,9 +78,31 @@ class DashboardFinance {
   });
 
   factory DashboardFinance.fromMap(Map<String, dynamic> j) => DashboardFinance(
-    income: _toDouble(j['income']),
+    income:  _toDouble(j['income']),
     expense: _toDouble(j['expense']),
-    profit: _toDouble(j['profit']),
+    profit:  _toDouble(j['profit']),
+  );
+}
+
+/// NEW — invoice totals and their invoice counts for today.
+class DashboardInvoice {
+  final double purchase;
+  final int purchaseInvoices;
+  final double sales;
+  final int salesInvoices;
+
+  DashboardInvoice({
+    required this.purchase,
+    required this.purchaseInvoices,
+    required this.sales,
+    required this.salesInvoices,
+  });
+
+  factory DashboardInvoice.fromMap(Map<String, dynamic> j) => DashboardInvoice(
+    purchase:         _toDouble(j['purchase']),
+    purchaseInvoices: _toInt(j['purchaseInvoices']),
+    sales:            _toDouble(j['sales']),
+    salesInvoices:    _toInt(j['salesInvoices']),
   );
 }
 

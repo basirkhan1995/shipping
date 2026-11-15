@@ -2188,4 +2188,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get recentSales => 'Recent Sales';
+
+  @override
+  String get invoices => 'Invoices';
 }

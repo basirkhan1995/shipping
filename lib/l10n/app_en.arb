@@ -721,5 +721,6 @@
   "recentPurchasePrice": "Recent Purchased",
   "productId": "Pro ID",
   "customer": "Customer",
-  "recentSales": "Recent Sales"
+  "recentSales": "Recent Sales",
+  "invoices": "Invoices"
 }
