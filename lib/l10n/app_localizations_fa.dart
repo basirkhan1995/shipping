@@ -616,7 +616,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get date => 'تاریخ';
 
   @override
-  String get reference => 'نمبر حواله';
+  String get reference => 'نمبر تراکنش';
 
   @override
   String get type => 'نوع';
@@ -2183,4 +2183,37 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get invoices => 'بل';
+
+  @override
+  String get goodEvening => 'شام بخیر';
+
+  @override
+  String get goodAfternoon => 'عصر بخیر';
+
+  @override
+  String get goodNight => 'شب بخیر';
+
+  @override
+  String get totalSales => 'کل فروشات';
+
+  @override
+  String get totalPurchase => 'کل خریدها';
+
+  @override
+  String get invoiceNo => 'نمبر بل';
+
+  @override
+  String get saleInvoice => 'بل فروش';
+
+  @override
+  String get purchaseInvoice => 'بل خرید';
+
+  @override
+  String get usd => 'دالر';
+
+  @override
+  String get afn => 'افغانی';
+
+  @override
+  String get yen => 'ین';
 }

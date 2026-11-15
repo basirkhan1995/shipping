@@ -106,136 +106,133 @@ class _DesktopState extends State<_Desktop> {
         context.read<LocalizationBloc>().state.languageCode;
     final color = Theme.of(context).colorScheme;
 
-    return Container(
+    return SizedBox(
       width: widget.width ?? double.infinity,
-      margin: const EdgeInsets.symmetric(vertical: 1, horizontal: 3),
-      decoration: BoxDecoration(
-        color: color.surface,
-        borderRadius: BorderRadius.circular(5),
-        border: Border.all(color: color.outline.withValues(alpha: .3)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // ── Header
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Row(
-              children: [
-                Text(
-                  locale.fxRate,
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                const Spacer(),
+      child: ZCover(
+        radius: 7,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Header
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Row(
+                children: [
+                  Text(
+                    locale.fxRate,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const Spacer(),
 
-                // Refresh (always)
-                _CircleActionButton(
-                  tooltip: locale.refresh,
-                  icon: Icons.refresh,
-                  onPressed: _refresh,
-                  isActive: true,
-                ),
-
-                if (widget.newRateButton) ...[
-                  const SizedBox(width: 6),
+                  // Refresh (always)
                   _CircleActionButton(
-                    tooltip: locale.newKeyword,
-                    icon: Icons.add,
-                    onPressed: _openAddDialog,
+                    tooltip: locale.refresh,
+                    icon: Icons.refresh,
+                    onPressed: _refresh,
                     isActive: true,
                   ),
-                ],
 
-                if (widget.settingButton) ...[
-                  const SizedBox(width: 6),
-                  _CircleActionButton(
-                    tooltip: locale.settings,
-                    icon: Icons.settings,
-                    onPressed: () {
-                      context
-                          .read<MenuBloc>()
-                          .add(MenuOnChangedEvent(MenuName.finance));
-                      context.read<FinanceTabBloc>().add(
-                          FinanceOnChangedEvent(FinanceTabName.exchangeRate));
-                    },
-                    isActive: true,
-                  ),
-                ],
-              ],
-            ),
-          ),
-
-
-          // ── Column header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(locale.currencyTitle,
-                      style: Theme.of(context).textTheme.titleSmall),
-                ),
-                Text(locale.rate,
-                    style: Theme.of(context).textTheme.titleSmall),
-              ],
-            ),
-          ),
-          Divider(
-            indent: 5,
-            endIndent: 5,
-            color: color.primary.withValues(alpha: 0.09),
-          ),
-
-          // ── Body
-          BlocConsumer<ExchangeRateBloc, ExchangeRateState>(
-            listener: (context, state) {
-              if (state is ExchangeRateSuccessState) {
-                _refresh();
-              }
-            },
-            builder: (context, state) {
-              if (state is ExchangeRateErrorState) {
-                return Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Center(
-                    child: Text(
-                      state.message,
-                      textAlign: TextAlign.center,
+                  if (widget.newRateButton) ...[
+                    const SizedBox(width: 6),
+                    _CircleActionButton(
+                      tooltip: locale.newKeyword,
+                      icon: Icons.add,
+                      onPressed: _openAddDialog,
+                      isActive: true,
                     ),
+                  ],
+
+                  if (widget.settingButton) ...[
+                    const SizedBox(width: 6),
+                    _CircleActionButton(
+                      tooltip: locale.settings,
+                      icon: Icons.settings,
+                      onPressed: () {
+                        context
+                            .read<MenuBloc>()
+                            .add(MenuOnChangedEvent(MenuName.finance));
+                        context.read<FinanceTabBloc>().add(
+                            FinanceOnChangedEvent(FinanceTabName.exchangeRate));
+                      },
+                      isActive: true,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+
+            // ── Column header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(locale.currencyTitle,
+                        style: Theme.of(context).textTheme.titleSmall),
                   ),
-                );
-              }
-              if (state is ExchangeRateLoadingState) {
-                return const Padding(
-                  padding: EdgeInsets.all(10),
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-              if (state is ExchangeRateLoadedState) {
-                if (state.rates.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Center(child: Text("No rate")),
+                  Text(locale.rate,
+                      style: Theme.of(context).textTheme.titleSmall),
+                ],
+              ),
+            ),
+            Divider(
+              indent: 5,
+              endIndent: 5,
+              color: color.primary.withValues(alpha: 0.09),
+            ),
+
+            // ── Body
+            BlocConsumer<ExchangeRateBloc, ExchangeRateState>(
+              listener: (context, state) {
+                if (state is ExchangeRateSuccessState) {
+                  _refresh();
+                }
+              },
+              builder: (context, state) {
+                if (state is ExchangeRateErrorState) {
+                  return Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Center(
+                      child: Text(
+                        state.message,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                   );
                 }
-                return ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: state.rates.length,
-                  itemBuilder: (context, index) {
-                    final ccy = state.rates[index];
-                    return _RateRow(
-                      rate: ccy,
-                      isOdd: index.isOdd,
-                      locale: currentLocale,
-                      baseCcy: _baseCurrency(context),
+                if (state is ExchangeRateLoadingState) {
+                  return const Padding(
+                    padding: EdgeInsets.all(10),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (state is ExchangeRateLoadedState) {
+                  if (state.rates.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Center(child: Text("No rate")),
                     );
-                  },
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
-        ],
+                  }
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: state.rates.length,
+                    itemBuilder: (context, index) {
+                      final ccy = state.rates[index];
+                      return _RateRow(
+                        rate: ccy,
+                        isOdd: index.isOdd,
+                        locale: currentLocale,
+                        baseCcy: _baseCurrency(context),
+                      );
+                    },
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

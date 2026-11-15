@@ -205,7 +205,7 @@
   "search": "جستجو",
   "narration": "شرح",
   "date": "تاریخ",
-  "reference": "نمبر حواله",
+  "reference": "نمبر تراکنش",
   "type": "نوع",
   "maker": "ایجاد کننده",
   "cashDeposit": "دریافت نقدی",
@@ -722,5 +722,16 @@
   "productId": "کد کالا",
   "customer": "مشتری",
   "recentSales": "آخرین فروشات",
-  "invoices": "بل"
+  "invoices": "بل",
+  "goodEvening": "شام بخیر",
+  "goodAfternoon": "عصر بخیر",
+  "goodNight": "شب بخیر",
+  "totalSales": "کل فروشات",
+  "totalPurchase": "کل خریدها",
+  "invoiceNo": "نمبر بل",
+  "saleInvoice": "بل فروش",
+  "purchaseInvoice": "بل خرید",
+  "usd": "دالر",
+  "afn": "افغانی",
+  "yen": "ین"
 }

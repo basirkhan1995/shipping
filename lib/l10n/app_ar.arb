@@ -205,7 +205,7 @@
   "search": "لتون",
   "narration": "شرح",
   "date": "نېټه",
-  "reference": "حواله شمیره",
+  "reference": "تراکنش شمیره",
   "type": "دول",
   "maker": "جوړوونکی",
   "cashDeposit": "نغدي دریافت",
@@ -722,5 +722,16 @@
   "productId": "کد کالا",
   "customer": "مشتری",
   "recentSales": "آخرین فروشات",
-  "invoices": "بل"
+  "invoices": "بل",
+  "goodEvening": "شام بخیر",
+  "goodAfternoon": "عصر بخیر",
+  "goodNight": "شب بخیر",
+  "totalSales": "کل فروشات",
+  "totalPurchase": "کل خریدها",
+  "invoiceNo": "نمبر بل",
+  "saleInvoice": "بل فروش",
+  "purchaseInvoice": "بل خرید",
+  "usd": "دالر",
+  "afn": "افغانی",
+  "yen": "ین"
 }

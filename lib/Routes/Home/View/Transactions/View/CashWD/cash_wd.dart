@@ -131,10 +131,31 @@ class CashTxnFormState extends State<CashTxnForm> {
 
   int? get _effectiveAccountNo => _acc?.accNumber ?? _draftAccountNo;
 
+  /// Resolves the base currency with the safest priority order:
+  ///  1. widget.baseCurrency (if non-empty)  ← caller-provided
+  ///  2. authenticated user's comBaseCurrency ← source of truth
+  ///  3. picked account's accCurrency         ← last resort
+  String get _resolvedBaseCurrency {
+    final fromWidget = widget.baseCurrency.trim();
+    if (fromWidget.isNotEmpty) return fromWidget;
+
+    final auth = context.read<AuthBloc>().state;
+    if (auth is AuthenticatedState) {
+      final fromAuth =
+      (auth.loginData.company?.comLocalCcy ?? '').trim();   // ← adjust key
+      if (fromAuth.isNotEmpty) return fromAuth;
+    }
+
+    final fromAcc = (_acc?.accCurrency ?? '').trim();
+    if (fromAcc.isNotEmpty) return fromAcc;
+
+    return ''; // caller should handle — see step 4
+  }
+
   @override
   void initState() {
     super.initState();
-    _ccy = widget.baseCurrency;
+    _ccy = _resolvedBaseCurrency;
     _applyDraft(widget.initialDraft);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -146,6 +167,20 @@ class CashTxnFormState extends State<CashTxnForm> {
         if (mounted && _isEditable) _accountFocus.requestFocus();
       });
     });
+  }
+
+  bool _baseApplied = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_baseApplied) return;
+    _baseApplied = true;
+
+    final base = _resolvedBaseCurrency;
+    if (base.isNotEmpty && (_ccy ?? '').trim().isEmpty) {
+      _ccy = base;
+    }
   }
 
   @override
@@ -165,7 +200,13 @@ class CashTxnFormState extends State<CashTxnForm> {
   void _applyDraft(TransactionDraft? draft) {
     if (draft == null) return;
 
-    _ccy = draft.trdCcy ?? widget.baseCurrency;
+    final fromDraft = (draft.trdCcy ?? '').trim();
+    final base = _resolvedBaseCurrency;
+
+    _ccy = fromDraft.isNotEmpty
+        ? fromDraft
+        : (base.isNotEmpty ? base : null);
+
     _amountCtrl.text = draft.trdAmount ?? '';
     _narrationCtrl.text = draft.trdNarration ?? '';
 
@@ -225,13 +266,28 @@ class CashTxnFormState extends State<CashTxnForm> {
     final accNumber = _effectiveAccountNo;
     if (accNumber == null) return false;
 
+    // ── Resolve currency — never send empty ──
+    final base = _resolvedBaseCurrency;
+    final resolvedCcy = (_ccy ?? '').trim().isNotEmpty
+        ? _ccy!.trim()
+        : base;
+
+    if (resolvedCcy.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Currency is missing — cannot submit.'),
+        ),
+      );
+      return false;
+    }
+
     widget.onSubmit(
       TransactionDraft(
         trnReference: draft?.trnReference,
         trnType: widget.spec.typeCode,
         usrName: widget.usrName,
         trdAccount: accNumber,
-        trdCcy: _ccy ?? widget.baseCurrency,
+        trdCcy: resolvedCcy,                    // ← never empty
         trdAmount: _amountCtrl.text.replaceAll(',', '').trim(),
         trdNarration: _narrationCtrl.text.trim(),
       ),
@@ -262,15 +318,15 @@ class CashTxnFormState extends State<CashTxnForm> {
               if (_acc != null)
                 _AccountDetailsCard(
                   account: _acc!,
-                  fallbackCurrency: widget.baseCurrency,
+                  fallbackCurrency: _resolvedBaseCurrency,   // ← was widget.baseCurrency
                   label: tr.accountDetails,
-                  effectiveCurrencyOverride: _ccy,
+                  effectiveCurrencyOverride: _ccy ?? _resolvedBaseCurrency,
                 )
               else if (_effectiveAccountNo != null)
                 _PendingAccountCard(
                   accountNo: _effectiveAccountNo!,
-                  fallbackCurrency: widget.baseCurrency,
-                  effectiveCurrency: _ccy ?? widget.baseCurrency,
+                  fallbackCurrency: _resolvedBaseCurrency,   // ← was widget.baseCurrency
+                  effectiveCurrency: _ccy ?? _resolvedBaseCurrency,
                   label: tr.accountDetails,
                 ),
 
@@ -312,7 +368,7 @@ class CashTxnFormState extends State<CashTxnForm> {
               ),
               Text(
                 '${account.accBalance.toAmount()} '
-                    '${account.accCurrency ?? widget.baseCurrency}',
+                    '${account.accCurrency ?? _resolvedBaseCurrency}',
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
             ],
@@ -326,24 +382,38 @@ class CashTxnFormState extends State<CashTxnForm> {
           return _filterAccounts(s.accounts);
         },
         stateToLoading: (s) => s is StkAccountsLoadingState,
-        onSelected: (a) {
-          setState(() {
-            _acc = a;
-            _draftAccountNo = a.accNumber;
-            _pendingAccountNo = null;
+    onSelected: (a) {
+      setState(() {
+        _acc = a;
+        _draftAccountNo = a.accNumber;
+        _pendingAccountNo = null;
 
-            final isStakeholder = a.accCategory == _stakeholderCategory;
-            if (!isStakeholder) {
-              _ccy = widget.baseCurrency;
-            } else if (!widget.spec.editableCurrency) {
-              _ccy = a.accCurrency ?? widget.baseCurrency;
-            }
-          });
+        final base = _resolvedBaseCurrency;
+        final isStakeholder = a.accCategory == _stakeholderCategory;
 
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) _amountFocus.requestFocus();
-          });
-        },
+        if (!isStakeholder) {
+          // GL accounts → base currency, always
+          _ccy = base.isNotEmpty
+              ? base
+              : (a.accCurrency ?? '');
+        } else if (!widget.spec.editableCurrency) {
+          // Stakeholder + locked → account ccy → base
+          final accCcy = (a.accCurrency ?? '').trim();
+          _ccy = accCcy.isNotEmpty
+              ? accCcy
+              : (base.isNotEmpty ? base : null);
+        } else {
+          // Editable → keep current, fall back to base
+          if ((_ccy ?? '').trim().isEmpty && base.isNotEmpty) {
+            _ccy = base;
+          }
+        }
+      });
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _amountFocus.requestFocus();
+      });
+    },
         validator: (_) => _effectiveAccountNo == null ? 'Required' : null,
       );
 
@@ -365,15 +435,17 @@ class CashTxnFormState extends State<CashTxnForm> {
         .where((s) => s.isNotEmpty)
         .toSet();
 
+    final base = _resolvedBaseCurrency;
+
     return all.where((a) {
       if (include.isNotEmpty && !include.contains(a.accCategory)) {
         return false;
       }
       if (exclude.contains(a.accNumber.toString())) return false;
       if (widget.spec.restrictToBaseCurrency &&
-          widget.baseCurrency.isNotEmpty &&
+          base.isNotEmpty &&
           a.accCurrency != null &&
-          a.accCurrency != widget.baseCurrency) {
+          a.accCurrency != base) {
         return false;
       }
       return true;

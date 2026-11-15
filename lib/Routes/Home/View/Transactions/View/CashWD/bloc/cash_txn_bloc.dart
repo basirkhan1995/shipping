@@ -1,5 +1,3 @@
-// features/journal/cash/bloc/cash_txn_bloc.dart
-
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../../../../../../Services/api_exception.dart';

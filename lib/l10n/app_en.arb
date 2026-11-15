@@ -722,5 +722,16 @@
   "productId": "Pro ID",
   "customer": "Customer",
   "recentSales": "Recent Sales",
-  "invoices": "Invoices"
+  "invoices": "Invoices",
+  "goodEvening": "Good Evening",
+  "goodAfternoon": "Good Afternoon",
+  "goodNight": "Good Night",
+  "totalSales": "Total Sales",
+  "totalPurchase": "Total Purchase",
+  "invoiceNo": "Invoice",
+  "saleInvoice": "Sale Invoice",
+  "purchaseInvoice": "Purchase Invioce",
+  "usd": "USD",
+  "afn": "AFN",
+  "yen": "YEN"
 }

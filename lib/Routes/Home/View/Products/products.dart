@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/shimmer.dart';
+import 'package:shipping/Routes/Home/View/Stock/Orders/features/status_method.dart';
 import '../../../../../../../../Features/Widgets/search_field.dart';
 import '../../../../Features/Other/responsive_widget.dart';
 import '../../../../Features/Widgets/extensions.dart';
@@ -742,55 +743,6 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
   }
 
   // ─────────────────────────────────────────────────────────────
-  //  CLEAN STATUS WIDGET — 12×12 colored dot + label
-  // ─────────────────────────────────────────────────────────────
-  Widget _buildStatus(int status, AppLocalizations tr) {
-    final isActive = status == 1;
-    final Color dotColor =
-    isActive ? Colors.green.shade600 : Colors.grey.shade400;
-    final Color textColor =
-    isActive ? Colors.green.shade800 : Colors.grey.shade600;
-    final String label = isActive ? tr.active : tr.inactive;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Outer halo — soft glow ring that reads as "on/off" at a glance
-        Container(
-          width: 14,
-          height: 14,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: dotColor.withValues(alpha: isActive ? .18 : .08),
-          ),
-          child: Center(
-            // Inner solid dot
-            child: Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: dotColor,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: textColor,
-            letterSpacing: 0.2,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────
   //  PRODUCT ITEM
   // ─────────────────────────────────────────────────────────────
   Widget _buildProductItem(ProductsModel product, int index,
@@ -830,8 +782,7 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    // ✅ New clean status
-                    _buildStatus(product.proStatus ?? 1, tr),
+                    StatusDotIndicator(status: product.proStatus)
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -1055,8 +1006,7 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
                 SizedBox(
                   width: 120,
                   child: Center(
-                    // ✅ New clean status
-                    child: _buildStatus(product.proStatus ?? 1, tr),
+                    child: StatusDotIndicator(status: product.proStatus),
                   ),
                 ),
               ],
@@ -1166,8 +1116,7 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
                 SizedBox(
                   width: 100,
                   child: Center(
-                    // ✅ New clean status
-                    child: _buildStatus(product.proStatus ?? 1, tr),
+                    child: StatusDotIndicator(status: product.proStatus),
                   ),
                 ),
               ],

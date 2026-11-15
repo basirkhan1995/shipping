@@ -2191,4 +2191,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get invoices => 'Invoices';
+
+  @override
+  String get goodEvening => 'Good Evening';
+
+  @override
+  String get goodAfternoon => 'Good Afternoon';
+
+  @override
+  String get goodNight => 'Good Night';
+
+  @override
+  String get totalSales => 'Total Sales';
+
+  @override
+  String get totalPurchase => 'Total Purchase';
+
+  @override
+  String get invoiceNo => 'Invoice';
+
+  @override
+  String get saleInvoice => 'Sale Invoice';
+
+  @override
+  String get purchaseInvoice => 'Purchase Invioce';
+
+  @override
+  String get usd => 'USD';
+
+  @override
+  String get afn => 'AFN';
+
+  @override
+  String get yen => 'YEN';
 }

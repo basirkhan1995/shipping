@@ -18,7 +18,6 @@ import '../../../../../../Features/Widgets/zbutton.dart';
 import '../../../../../../l10n/app_localizations.dart';
 import '../../../../../Auth/bloc/auth_bloc.dart';
 import '../../../../../Auth/model/user_model.dart';
-import '../../../Settings/Visibility/bloc/settings_visible_bloc.dart';
 import '../../Purchase/bloc/purchase_invoice_bloc.dart';
 import '../../Purchase/new_purchase.dart';
 import '../../Sale/bloc/sale_invoice_bloc.dart';
@@ -437,7 +436,7 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8),
-      margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 5),
+      margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 0),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
@@ -449,12 +448,12 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
       child: Row(
         children: [
           SizedBox(
-            width: _isSelectionMode ? 74 : 50,
+            width: _isSelectionMode ? 100 : 80,
             child: Row(
               children: [
                 if (_isSelectionMode) const SizedBox(width: 24),
                 const SizedBox(width: 4),
-                Text("#", style: titleStyle),
+                Text(tr.invoiceNo, style: titleStyle),
               ],
             ),
           ),
@@ -555,8 +554,6 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme;
     final tr = AppLocalizations.of(context)!;
-    final visibility = context.read<SettingsVisibleBloc>().state;
-
     return Scaffold(
       body: MultiBlocListener(
         listeners: [
@@ -694,16 +691,18 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
 
                         Expanded(
                           child: ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                             itemCount: filteredList.length,
                             itemBuilder: (context, index) {
                               final ord = filteredList[index];
-                              final isCopied =
-                                  _copiedStates[ord.ordTrnRef ?? ""] ?? false;
+                              final isCopied = _copiedStates[ord.ordTrnRef ?? ""] ?? false;
                               final reference = ord.ordTrnRef ?? "";
                               final isSelected =
                               _selectedOrderIds.contains(ord.ordId);
-
+                              TextStyle? style = const TextStyle(
+                                fontWeight: FontWeight.w500,
+                                fontSize: 12,
+                              );
                               return InkWell(
                                 hoverColor: color.primary.withValues(alpha: .06),
                                 highlightColor: color.primary.withValues(alpha: .06),
@@ -728,8 +727,7 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
                                   }
                                 },
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8,),
-                                  margin: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 0),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                                   decoration: BoxDecoration(
                                     color: isSelected
                                         ? color.primary.withValues(alpha: .15)
@@ -746,7 +744,7 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
                                   child: Row(
                                     children: [
                                       SizedBox(
-                                        width: _isSelectionMode ? 74 : 50,
+                                        width: _isSelectionMode ? 100 : 80,
                                         child: Row(
                                           children: [
                                             if (_isSelectionMode)
@@ -779,27 +777,28 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
                                         ),
                                       ),
 
-                                      if (visibility.dateType ==
-                                          DateType.gregorian) ...[
-                                        SizedBox(
-                                          width: 100,
-                                          child: Text(
-                                            ord.ordEntryDate.toFormattedDate(),
-                                          ),
-                                        ),
-                                      ] else ...[
-                                        SizedBox(
-                                          width: 100,
-                                          child: Text(
-                                            ord.ordEntryDate?.shamsiDateString ??
-                                                "",
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                              fontSize: 17,
+                                      SizedBox(
+                                        width: 100,
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              ord.ordEntryDate?.shamsiDateString ?? "",
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w500,
+                                                fontSize: 12,
+                                              ),
                                             ),
-                                          ),
+                                            Text(
+                                              ord.ordEntryDate?.toFormattedDate() ?? "",
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w500,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ],
+                                      ),
 
                                       Row(
                                         children: [
@@ -864,9 +863,8 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
                                             child: Text(
                                               reference,
                                               style: TextStyle(
-                                                fontWeight: isSelected
-                                                    ? FontWeight.w500
-                                                    : FontWeight.normal,
+                                                fontSize: 13,
+                                                fontWeight:FontWeight.w500,
                                               ),
                                             ),
                                           ),
@@ -874,7 +872,7 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
                                       ),
                                       SizedBox(
                                         width: 100,
-                                        child: Text(ord.ordName ?? ""),
+                                        child: Text(Utils.invoiceType(type: ord.ordName ?? "", locale: tr), style:style),
                                       ),
                                       Expanded(
                                         child: Text(
@@ -883,6 +881,7 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
                                             color: isSelected
                                                 ? color.primary
                                                 : null,
+                                            fontSize: 13,
                                             fontWeight: isSelected
                                                 ? FontWeight.w500
                                                 : FontWeight.normal,
@@ -894,7 +893,7 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
                                             horizontal: 15),
                                         width: 160,
                                         child: Text(
-                                          "${ord.totalBill?.toAmount()} $baseCurrency",
+                                          "${ord.totalBill?.toAmount()} ${Utils.ccy(type: baseCurrency??"", locale: tr)}",
                                           style: Theme.of(context)
                                               .textTheme
                                               .titleSmall
@@ -912,7 +911,7 @@ class _DesktopOrdersViewState extends State<_DesktopOrdersView> {
                                       ),
                                       SizedBox(
                                         width: 60,
-                                        child: StatusIcon(
+                                        child: StatusDotIndicator(
                                           status: ord.ordStatus ?? "",
                                         ),
                                       ),

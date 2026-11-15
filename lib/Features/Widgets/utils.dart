@@ -52,6 +52,50 @@ class Utils{
     }
   }
 
+  static String invoiceType({required String type, required AppLocalizations locale}) {
+    if (type == "Sale") {
+      return locale.saleInvoice;
+    } else if (type == "Purchase") {
+      return locale.purchaseInvoice;
+    } else {
+      return "Undefined";
+    }
+  }
+
+  static String txnType({required String type, required AppLocalizations locale}) {
+    if (type == "SALE") {
+      return locale.saleInvoice;
+    } else if (type == "PRCH") {
+      return locale.purchaseInvoice;
+    }else if (type == "CHDP") {
+      return locale.cashDeposit;
+    }else if (type == "CHWL") {
+      return locale.cashWithdraw;
+    }else if (type == "XPNS") {
+      return locale.expense;
+    }else if (type == "INCM") {
+      return locale.income;
+    }else if (type == "BULK") {
+      return locale.bulkTransaction;
+    }else if (type == "ATAT") {
+      return locale.fundTransfer;
+    } else {
+      return type;
+    }
+  }
+
+  static String ccy({required String type, required AppLocalizations locale}) {
+    if (type == "USD") {
+      return locale.usd;
+    } else if (type == "AFN") {
+      return locale.afn;
+    }else if (type == "YEN") {
+      return locale.yen;
+    } else {
+      return type;
+    }
+  }
+
 
   static Future<void> copyToClipboard(String text) async {
     if (text.isNotEmpty) {

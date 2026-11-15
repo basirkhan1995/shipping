@@ -4359,6 +4359,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Invoices'**
   String get invoices;
+
+  /// No description provided for @goodEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Good Evening'**
+  String get goodEvening;
+
+  /// No description provided for @goodAfternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Good Afternoon'**
+  String get goodAfternoon;
+
+  /// No description provided for @goodNight.
+  ///
+  /// In en, this message translates to:
+  /// **'Good Night'**
+  String get goodNight;
+
+  /// No description provided for @totalSales.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Sales'**
+  String get totalSales;
+
+  /// No description provided for @totalPurchase.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Purchase'**
+  String get totalPurchase;
+
+  /// No description provided for @invoiceNo.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice'**
+  String get invoiceNo;
+
+  /// No description provided for @saleInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale Invoice'**
+  String get saleInvoice;
+
+  /// No description provided for @purchaseInvoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Invioce'**
+  String get purchaseInvoice;
+
+  /// No description provided for @usd.
+  ///
+  /// In en, this message translates to:
+  /// **'USD'**
+  String get usd;
+
+  /// No description provided for @afn.
+  ///
+  /// In en, this message translates to:
+  /// **'AFN'**
+  String get afn;
+
+  /// No description provided for @yen.
+  ///
+  /// In en, this message translates to:
+  /// **'YEN'**
+  String get yen;
 }
 
 class _AppLocalizationsDelegate

@@ -166,5 +166,110 @@ class StatusBadge extends StatelessWidget {
       ),
     );
   }
+}
 
+class StatusDotIndicator extends StatefulWidget {
+  final dynamic status;
+  final double size;
+
+  const StatusDotIndicator({
+    super.key,
+    required this.status,
+    this.size = 15,
+  });
+
+  @override
+  State<StatusDotIndicator> createState() => _StatusDotIndicatorState();
+}
+
+class _StatusDotIndicatorState extends State<StatusDotIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _c;
+
+  TxStatus get _tx {
+    final v = widget.status;
+    if (v is int) return v == 1 ? TxStatus.completed : TxStatus.pending;
+    if (v is bool) return v ? TxStatus.completed : TxStatus.pending;
+    return parseStatus(v?.toString() ?? '');
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+    if (_tx == TxStatus.pending) _c.repeat();
+  }
+
+  @override
+  void didUpdateWidget(covariant StatusDotIndicator old) {
+    super.didUpdateWidget(old);
+    if (_tx == TxStatus.pending && !_c.isAnimating) {
+      _c.repeat();
+    } else if (_tx != TxStatus.pending) {
+      _c.stop();
+      _c.reset();
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final style = StatusStyle.getStyle(_tx);
+
+    return Tooltip(
+      message: _tx.name,
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (_, _) {
+          final pulse = _tx == TxStatus.pending ? _c.value : 0.0;
+          return SizedBox(
+            width: widget.size * 2,
+            height: widget.size * 2,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                if (_tx == TxStatus.pending)
+                  Transform.scale(
+                    scale: 1.0 + pulse * 0.6,
+                    child: Container(
+                      width: widget.size,
+                      height: widget.size,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: style.color.withValues(
+                          alpha: (1 - pulse) * 0.9,
+                        ),
+                      ),
+                    ),
+                  ),
+                Container(
+                  width: widget.size,
+                  height: widget.size,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: style.color,
+                    boxShadow: [
+                      BoxShadow(
+                        color: style.color.withValues(alpha: 0.5),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
 }

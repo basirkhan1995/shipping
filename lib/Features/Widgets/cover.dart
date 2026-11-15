@@ -41,9 +41,9 @@ class ZCover extends StatelessWidget {
         border: Border.all(color: borderColor ?? Theme.of(context).colorScheme.outline.withValues(alpha: .2)),
         boxShadow: [
           BoxShadow(
-            color: shadowColor ?? Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: .5),
+            color: shadowColor ?? Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: .7),
             blurRadius: 3,
-            spreadRadius: 1,
+            spreadRadius: 2,
           ),
         ],
         borderRadius: BorderRadius.circular(radius ?? 3),

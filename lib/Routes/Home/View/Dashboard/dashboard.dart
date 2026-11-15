@@ -89,19 +89,19 @@ class _StatsSection extends StatelessWidget {
           _CountCard(
             label: tr.accounts,
             value: loading ? null : '${s!.counts.accounts}',
-            icon: Icons.account_balance_wallet_outlined,
+            icon: Icons.account_balance_rounded,
             color: Colors.blue,
           ),
           _CountCard(
             label: tr.stakeholders,
             value: loading ? null : '${s!.counts.stakeholders}',
-            icon: Icons.people_alt_outlined,
+            icon: Icons.people_alt_rounded,
             color: Colors.teal,
           ),
           _CountCard(
             label: tr.users,
             value: loading ? null : '${s!.counts.users}',
-            icon: Icons.person_outline,
+            icon: Icons.verified_user,
             color: Colors.deepPurple,
           ),
           _CountCard(
@@ -185,7 +185,7 @@ class _StatsSection extends StatelessWidget {
         // ── INVOICE — Purchase card + Sales card
         final purchaseCard = _InvoiceFinCard(
           icon: Icons.shopify_rounded,
-          label: AppLocalizations.of(context)!.purchase,
+          label: AppLocalizations.of(context)!.totalPurchase,
           value: loading ? null : s!.invoice.purchase,
           invoiceCount: loading ? null : s?.invoice.purchaseInvoices,
           currency: loading ? null : s?.currency,
@@ -195,7 +195,7 @@ class _StatsSection extends StatelessWidget {
 
         final salesCard = _InvoiceFinCard(
           icon: Icons.shopify_rounded,
-          label: AppLocalizations.of(context)!.sales,
+          label: AppLocalizations.of(context)!.totalSales,
           value: loading ? null : s!.invoice.sales,
           invoiceCount: loading ? null : s?.invoice.salesInvoices,
           currency: loading ? null : s?.currency,
@@ -285,7 +285,7 @@ class _MobileDashboard extends StatelessWidget {
         onRefresh: () async => onRefresh(),
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(8),
           children: const [
             _StatsSection(gridColumns: 2, stackFinancials: true),
           ],
@@ -345,7 +345,7 @@ class _DesktopDashboard extends StatelessWidget {
                 _DesktopTopBar(onRefresh: onRefresh),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(32),
+                    padding: const EdgeInsets.all(16),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -428,10 +428,10 @@ class _DesktopTopBar extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                '${_greeting()}, $fullName 👋',
+                '${_greeting(context)}, $fullName 👋',
                 style: textTheme.bodySmall?.copyWith(
                   color: scheme.onSurfaceVariant,
-                  fontSize: 12,
+                  fontSize: 16,
                   height: 1.1,
                 ),
               ),
@@ -578,12 +578,13 @@ class _DesktopTopBar extends StatelessWidget {
     );
   }
 
-  String _greeting() {
+  String _greeting(BuildContext context) {
+    final tr = AppLocalizations.of(context)!;
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    if (hour < 21) return 'Good evening';
-    return 'Good night';
+    if (hour < 12) return tr.goodMorning;
+    if (hour < 17) return tr.goodAfternoon;
+    if (hour < 21) return tr.goodEvening;
+    return tr.goodNight;
   }
 }
 
@@ -607,7 +608,7 @@ class _CountCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return ZCover(
-      radius: 5,
+      radius: 8,
       child: Padding(
         padding: const EdgeInsets.all(10),
         child: Column(
@@ -618,8 +619,8 @@ class _CountCard extends StatelessWidget {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: color.withAlpha(10),
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: color.withValues(alpha: .2)),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: color.withValues(alpha: .1)),
               ),
               child: Icon(icon, color: color.withValues(alpha: .8), size: 22),
             ),
@@ -691,7 +692,7 @@ class _FinCard extends StatelessWidget {
     final neg = (value ?? 0) < 0;
 
     return ZCover(
-      radius: 5,
+      radius: 8,
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -705,7 +706,7 @@ class _FinCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: bg.withValues(alpha: .3),
                     border: Border.all(color: bg.withValues(alpha: .2)),
-                    borderRadius: BorderRadius.circular(3),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   alignment: Alignment.center,
                   child: Icon(icon, size: 22, color: accent),
@@ -818,22 +819,21 @@ class _BreakdownChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: item.color.withAlpha(20),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: item.color.withAlpha(50)),
       ),
       child: Row(
         children: [
-          Icon(item.icon, size: 14, color: item.color),
-          const SizedBox(width: 5),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
+              spacing: 2,
               children: [
                 Text(
                   item.label,
                   style: TextStyle(
-                    fontSize: 9.5,
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w600,
                     color: scheme.onSurfaceVariant,
                   ),
@@ -843,13 +843,17 @@ class _BreakdownChip extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 12.5,
+                    fontSize: 17.5,
                     fontWeight: FontWeight.w700,
                     color: item.color,
                   ),
                 ),
               ],
             ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Icon(item.icon, size: 20, color: item.color),
           ),
         ],
       ),
@@ -940,6 +944,7 @@ class _ErrorTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return ZCover(
+      radius: 8,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -1081,7 +1086,7 @@ class _InvoiceFinCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
 
     return ZCover(
-      radius: 5,
+      radius: 8,
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -1096,7 +1101,7 @@ class _InvoiceFinCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: bg.withValues(alpha: .3),
                     border: Border.all(color: bg.withValues(alpha: .2)),
-                    borderRadius: BorderRadius.circular(3),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   alignment: Alignment.center,
                   child: Icon(icon, size: 27, color: accent),

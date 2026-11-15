@@ -5,6 +5,7 @@ import 'package:shipping/Features/Date/shamsi_converter.dart';
 import 'package:shipping/Features/Widgets/extensions.dart';
 import 'package:shipping/Features/Widgets/no_data_widget.dart';
 import 'package:shipping/Features/Widgets/shimmer.dart';
+import 'package:shipping/Features/Widgets/utils.dart';
 import 'package:shipping/Routes/Home/View/Transactions/View/OrdersTxn/orders_txn_view.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../../../Features/Other/responsive_widget.dart';
@@ -1313,7 +1314,7 @@ class _TransactionRowWidget extends StatelessWidget {
             SizedBox(
               width: 150,
               child: Text(
-                row.typeName.isEmpty ? row.typeCode : row.typeName,
+                Utils.txnType(type: row.typeCode, locale: AppLocalizations.of(context)!),
                 style: textTheme.bodySmall,
                 overflow: TextOverflow.ellipsis,
               ),
