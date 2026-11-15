@@ -170,13 +170,13 @@ class _StatsSection extends StatelessWidget {
             _BreakdownItem(
               label: tr.income,
               value: s!.finance.income,
-              icon: Icons.add_circle_outline,
+              icon: Icons.trending_up_rounded,
               color: const Color(0xFF059669),
             ),
             _BreakdownItem(
               label: tr.expense,
               value: s.finance.expense,
-              icon: Icons.remove_circle_outline,
+              icon: Icons.trending_down_rounded,
               color: const Color(0xFFDC2626),
             ),
           ],
@@ -184,7 +184,7 @@ class _StatsSection extends StatelessWidget {
 
         // ── INVOICE — Purchase card + Sales card
         final purchaseCard = _InvoiceFinCard(
-          icon: Icons.shopping_cart_outlined,
+          icon: Icons.shopify_rounded,
           label: AppLocalizations.of(context)!.purchase,
           value: loading ? null : s!.invoice.purchase,
           invoiceCount: loading ? null : s?.invoice.purchaseInvoices,
@@ -194,7 +194,7 @@ class _StatsSection extends StatelessWidget {
         );
 
         final salesCard = _InvoiceFinCard(
-          icon: Icons.point_of_sale_outlined,
+          icon: Icons.shopify_rounded,
           label: AppLocalizations.of(context)!.sales,
           value: loading ? null : s!.invoice.sales,
           invoiceCount: loading ? null : s?.invoice.salesInvoices,
@@ -244,8 +244,6 @@ class _StatsSection extends StatelessWidget {
               const SizedBox(height: 16),
 
               // ── INVOICES
-              _SectionTitle(AppLocalizations.of(context)!.invoices.toUpperCase()),
-              const SizedBox(height: 8),
               LayoutBuilder(
                 builder: (context, constraints) {
                   final cols = stackFinancials ? 1 : 2;
@@ -265,27 +263,6 @@ class _StatsSection extends StatelessWidget {
           ],
         );
       },
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// Section title
-// ═══════════════════════════════════════════════════════════════════
-class _SectionTitle extends StatelessWidget {
-  final String text;
-  const _SectionTitle(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 1.1,
-        color: Theme.of(context).colorScheme.primary,
-      ),
     );
   }
 }
@@ -1122,7 +1099,7 @@ class _InvoiceFinCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(3),
                   ),
                   alignment: Alignment.center,
-                  child: Icon(icon, size: 22, color: accent),
+                  child: Icon(icon, size: 27, color: accent),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
