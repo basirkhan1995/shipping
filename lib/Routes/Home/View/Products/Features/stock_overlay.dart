@@ -241,6 +241,7 @@ class _ProductPriceCheckerState extends State<ProductPriceChecker> {
                           child: Column(
                             children: [
                               _header(tr),
+                              const SizedBox(height: 6),
                               _searchBar(),
                               const SizedBox(height: 6),
                               _columnTitles(tr),
@@ -308,16 +309,21 @@ class _ProductPriceCheckerState extends State<ProductPriceChecker> {
     return Row(
       children: [
         IconButton(
+          padding: EdgeInsets.zero,
+          visualDensity: const VisualDensity(
+              horizontal: -3, vertical: -3),
+          isSelected: true,
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        const SizedBox(width: 4),
-        const Icon(Icons.shopify_rounded, size: 22),
-        const SizedBox(width: 6),
+        const SizedBox(width: 5),
+        const Icon(Icons.shopify_rounded, size: 23),
+        const SizedBox(width: 5),
         Text(
           tr.products.toUpperCase(),
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
+            fontSize: 16,
             letterSpacing: .3,
           ),
         ),

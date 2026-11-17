@@ -822,11 +822,12 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S>
                           Container(
                             width: 380,
                             height: double.infinity,
-                            margin: const EdgeInsets.all(8),
-                            child: ClipRRect(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surfaceContainerLow,
                               borderRadius: BorderRadius.circular(8),
-                              child: _buildProductDetailsPanel(),
                             ),
+                            child: _buildProductDetailsPanel(),
                           ),
                       ],
                     ),

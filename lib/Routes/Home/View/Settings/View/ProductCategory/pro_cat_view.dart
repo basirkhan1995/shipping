@@ -398,10 +398,8 @@ class _BaseProCatViewState extends State<_BaseProCatView> {
                 ),
                 // Status
                 SizedBox(
-                  child: StatusBadge(
+                  child: StatusDotIndicator(
                     status: cat.pcStatus!,
-                    trueValue: tr.active,
-                    falseValue: tr.inactive,
                   ),
                 ),
               ],
@@ -459,14 +457,14 @@ class _BaseProCatViewState extends State<_BaseProCatView> {
                     ),
                   ),
                   SizedBox(
-                    width: 100,
+                    width: 50,
                     child: Text(
                       tr.status,
                       style: textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: color.outline,
                       ),
-                      textAlign: TextAlign.center,
+                      textAlign: TextAlign.end,
                     ),
                   ),
                 ],

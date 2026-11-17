@@ -1502,7 +1502,7 @@ class _DesktopState extends State<_Desktop> {
                           itemBuilder: (context, index) {
                             final stk = state.stock[index];
                             final color = Theme.of(context).colorScheme;
-                            final qty = int.tryParse(stk.available ?? "");
+                            final qty = double.tryParse(stk.available ?? "");
 
                             TextStyle? style = TextStyle(
                                 color: qty == 0 || qty! < 0 ? Colors.red : color.onSurface,
