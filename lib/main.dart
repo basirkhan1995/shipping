@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shipping/Features/Other/global_shortcut.dart';
 import 'package:shipping/Features/PrintSettings/bloc/Language/print_language_cubit.dart';
 import 'package:shipping/Routes/Auth/bloc/auth_bloc.dart';
 import 'package:shipping/Routes/Auth/login.dart';
@@ -55,6 +57,8 @@ import 'Features/PrintSettings/bloc/PageOrientation/page_orientation_cubit.dart'
 import 'Features/PrintSettings/bloc/PageSize/paper_size_cubit.dart';
 import 'Features/PrintSettings/bloc/Printer/printer_cubit.dart';
 import 'Routes/Home/View/Dashboard/bloc/dashboard_stats_bloc.dart';
+import 'Routes/Home/View/Products/Features/stock_overlay.dart';
+import 'Routes/Home/View/Products/model/product_stock_model.dart';
 import 'Routes/Home/View/Report/BalanceSheet/bloc/balance_sheet_bloc.dart';
 import 'Routes/Home/View/Report/GLStatement/bloc/gl_statement_bloc.dart';
 import 'Routes/Home/View/Report/Inventory/OrdersReport/bloc/order_report_bloc.dart';
@@ -63,6 +67,7 @@ import 'Routes/Home/View/Report/AllTransactions/bloc/txn_report_bloc.dart';
 import 'Routes/Home/View/Settings/View/General/UserProfile/bloc/user_profile_bloc.dart';
 import 'Routes/Home/View/Settings/bloc/settings_tab_bloc.dart';
 import 'Routes/Home/View/Stakeholder/View/StakeholderById/bloc/stakeholder_by_id_bloc.dart';
+import 'Routes/Home/View/Stock/Sale/features/sale_product_field.dart';
 import 'Routes/Home/bloc/menu_bloc.dart';
 import 'Routes/Home/home.dart';
 import 'Services/api_services.dart';
@@ -177,28 +182,51 @@ class MyApp extends StatelessWidget {
            return BlocBuilder<ThemeBloc, ThemeMode>(
              builder: (context, themeMode) {
                final theme = AppThemes(TextTheme.of(context),locale: locale);
-               return MaterialApp(
-                 themeMode: themeMode,
-                 locale: locale,
-                 title: 'ZShipping',
-                 darkTheme: theme.dark(),
-                 theme: theme.light(),
-                 debugShowCheckedModeBanner: false,
-                 localizationsDelegates:
-                 AppLocalizations.localizationsDelegates,
-                 supportedLocales: AppLocalizations.supportedLocales,
-                 home: BlocBuilder<AuthBloc, AuthState>(
-                   builder: (context, state) {
-                     if (state is AuthenticatedState) {
-                       return const HomeView();
-                     }
-                     return const LoginView();
+               final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+               return GlobalShortcuts(
+                 shortcuts: {
+                   const SingleActivator(
+                     LogicalKeyboardKey.keyR,
+                     shift: true,
+                     control: true,
+                   ): () => ProductSearchFieldController.of<ProductsStockModel>().open(),
+                 },
+                 child: MaterialApp(
+                   themeMode: themeMode,
+                   navigatorKey: navigatorKey,
+                   locale: locale,
+                   title: 'ZShipping',
+                   darkTheme: theme.dark(),
+                   theme: theme.light(),
+                   debugShowCheckedModeBanner: false,
+                   localizationsDelegates:
+                   AppLocalizations.localizationsDelegates,
+                   supportedLocales: AppLocalizations.supportedLocales,
+                   home: BlocBuilder<AuthBloc, AuthState>(
+                     builder: (context, state) {
+                       if (state is AuthenticatedState) {
+                         return const HomeView();
+                       }
+                       return const LoginView();
+                     },
+                   ),
+                   builder: (context, child) {
+                     localizationService.update(AppLocalizations.of(context)!);
+                     return GlobalShortcuts(
+                       shortcuts: {
+                         const SingleActivator(
+                           LogicalKeyboardKey.keyR,
+                           shift: true,
+                           control: true,
+                         ): () {
+                           final ctx = navigatorKey.currentContext;
+                           if (ctx != null) showProductPriceChecker(ctx);
+                         },
+                       },
+                       child: child ?? const SizedBox.shrink(),
+                     );
                    },
                  ),
-                 builder: (context, child) {
-                   localizationService.update(AppLocalizations.of(context)!);
-                   return child!;
-                 },
                );
              },
            );

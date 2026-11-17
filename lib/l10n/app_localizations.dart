@@ -4425,6 +4425,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'YEN'**
   String get yen;
+
+  /// No description provided for @batchCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch No'**
+  String get batchCode;
+
+  /// No description provided for @cogs.
+  ///
+  /// In en, this message translates to:
+  /// **'COGS'**
+  String get cogs;
+
+  /// No description provided for @productStock.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock'**
+  String get productStock;
+
+  /// No description provided for @purchasePrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Price'**
+  String get purchasePrice;
+
+  /// No description provided for @batchPurPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Batch Purchased'**
+  String get batchPurPrice;
+
+  /// No description provided for @item.
+  ///
+  /// In en, this message translates to:
+  /// **'Item'**
+  String get item;
 }
 
 class _AppLocalizationsDelegate

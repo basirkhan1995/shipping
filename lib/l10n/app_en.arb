@@ -733,5 +733,11 @@
   "purchaseInvoice": "Purchase Invioce",
   "usd": "USD",
   "afn": "AFN",
-  "yen": "YEN"
+  "yen": "YEN",
+  "batchCode": "Batch No",
+  "cogs": "COGS",
+  "productStock": "Stock",
+  "purchasePrice": "Purchase Price",
+  "batchPurPrice": "Batch Purchased",
+  "item": "Item"
 }

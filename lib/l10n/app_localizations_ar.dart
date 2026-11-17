@@ -2215,4 +2215,22 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get yen => 'ین';
+
+  @override
+  String get batchCode => 'بچ نمبر';
+
+  @override
+  String get cogs => 'کل ارزش';
+
+  @override
+  String get productStock => 'موجودی';
+
+  @override
+  String get purchasePrice => 'قیمت خرید';
+
+  @override
+  String get batchPurPrice => 'قیمت خرید بچ';
+
+  @override
+  String get item => 'تعداد جنس';
 }

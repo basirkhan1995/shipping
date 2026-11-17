@@ -7,20 +7,12 @@ import 'dart:convert';
 ProductsStockModel productsStockModelFromMap(String str) => ProductsStockModel.fromMap(json.decode(str));
 
 String productsStockModelToMap(ProductsStockModel data) => json.encode(data.toMap());
-/// Parses `recent_txn` from the API. Handles:
-///   - null            → []
-///   - List<dynamic>   → normal case (new view / decoded by PHP)
-///   - String          → legacy case (MySQL JSON column stringified by PDO)
+
 List<RecentTxn> _parseRecentTxn(dynamic value) {
   if (value == null) return const [];
-
   if (value is List) {
-    return value
-        .whereType<Map>()
-        .map((x) => RecentTxn.fromMap(Map<String, dynamic>.from(x)))
-        .toList();
+    return value.whereType<Map>().map((x) => RecentTxn.fromMap(Map<String, dynamic>.from(x))).toList();
   }
-
   if (value is String) {
     if (value.isEmpty) return const [];
     try {
@@ -63,7 +55,16 @@ class ProductsStockModel {
   final String? recentLandedPurPrice;
   final String? averagePrice;
   final String? averageLandedPrice;
-  final dynamic sellPrice;
+
+  // ── New FIFO fields ──────────────────────────────────────────────
+  final String? fifoNextBatchRef;
+  final String? fifoNextBatchRemaining;
+  final String? fifoNextBatchEntry;
+  final String? fifoNextUnitCost;
+  final String? fifoNextUnitLanded;
+  final String? fifoCogsTotal;
+
+  final String? sellPrice;
   final List<RecentTxn>? recentTxn;
 
   ProductsStockModel({
@@ -89,6 +90,12 @@ class ProductsStockModel {
     this.recentLandedPurPrice,
     this.averagePrice,
     this.averageLandedPrice,
+    this.fifoNextBatchRef,
+    this.fifoNextBatchRemaining,
+    this.fifoNextBatchEntry,
+    this.fifoNextUnitCost,
+    this.fifoNextUnitLanded,
+    this.fifoCogsTotal,
     this.sellPrice,
     this.recentTxn,
   });
@@ -116,7 +123,13 @@ class ProductsStockModel {
     String? recentLandedPurPrice,
     String? averagePrice,
     String? averageLandedPrice,
-    dynamic sellPrice,
+    String? fifoNextBatchRef,
+    String? fifoNextBatchRemaining,
+    String? fifoNextBatchEntry,
+    String? fifoNextUnitCost,
+    String? fifoNextUnitLanded,
+    String? fifoCogsTotal,
+    String? sellPrice,
     List<RecentTxn>? recentTxn,
   }) =>
       ProductsStockModel(
@@ -139,39 +152,54 @@ class ProductsStockModel {
         available: available ?? this.available,
         availableItem: availableItem ?? this.availableItem,
         recentPurPrice: recentPurPrice ?? this.recentPurPrice,
-        recentLandedPurPrice: recentLandedPurPrice ?? this.recentLandedPurPrice,
+        recentLandedPurPrice:
+        recentLandedPurPrice ?? this.recentLandedPurPrice,
         averagePrice: averagePrice ?? this.averagePrice,
         averageLandedPrice: averageLandedPrice ?? this.averageLandedPrice,
+        fifoNextBatchRef: fifoNextBatchRef ?? this.fifoNextBatchRef,
+        fifoNextBatchRemaining:
+        fifoNextBatchRemaining ?? this.fifoNextBatchRemaining,
+        fifoNextBatchEntry: fifoNextBatchEntry ?? this.fifoNextBatchEntry,
+        fifoNextUnitCost: fifoNextUnitCost ?? this.fifoNextUnitCost,
+        fifoNextUnitLanded: fifoNextUnitLanded ?? this.fifoNextUnitLanded,
+        fifoCogsTotal: fifoCogsTotal ?? this.fifoCogsTotal,
         sellPrice: sellPrice ?? this.sellPrice,
         recentTxn: recentTxn ?? this.recentTxn,
       );
 
-  factory ProductsStockModel.fromMap(Map<String, dynamic> json) => ProductsStockModel(
-    proId: json["proID"],
-    proName: json["proName"],
-    proCode: json["proCode"],
-    proGrade: json["proGrade"],
-    proUnit: json["proUnit"],
-    proBrand: json["proBrand"],
-    proCategory: json["proCategory"],
-    proModel: json["proModel"],
-    proMadeIn: json["proMadeIn"],
-    proColor: json["proColor"],
-    proDetails: json["proDetails"],
-    proLsNqty: json["proLSNqty"],
-    proStatus: json["proStatus"],
-    stkStorage: json["stkStorage"],
-    stgName: json["stgName"],
-    stkQtyInBatch: json["stkQtyInBatch"],
-    available: json["available"],
-    availableItem: json["available_Item"],
-    recentPurPrice: json["recent_PurPrice"],
-    recentLandedPurPrice: json["recent_landedPurPrice"],
-    averagePrice: json["average_price"],
-    averageLandedPrice: json["average_landed_price"],
-    sellPrice: json["sell_price"],
-    recentTxn: _parseRecentTxn(json["recent_txn"]),
-  );
+  factory ProductsStockModel.fromMap(Map<String, dynamic> json) =>
+      ProductsStockModel(
+        proId: json["proID"],
+        proName: json["proName"],
+        proCode: json["proCode"],
+        proGrade: json["proGrade"],
+        proUnit: json["proUnit"],
+        proBrand: json["proBrand"],
+        proCategory: json["proCategory"],
+        proModel: json["proModel"],
+        proMadeIn: json["proMadeIn"],
+        proColor: json["proColor"],
+        proDetails: json["proDetails"],
+        proLsNqty: json["proLSNqty"],
+        proStatus: json["proStatus"],
+        stkStorage: json["stkStorage"],
+        stgName: json["stgName"],
+        stkQtyInBatch: json["stkQtyInBatch"],
+        available: json["available"],
+        availableItem: json["available_Item"],
+        recentPurPrice: json["recent_PurPrice"],
+        recentLandedPurPrice: json["recent_landedPurPrice"],
+        averagePrice: json["average_price"],
+        averageLandedPrice: json["average_landed_price"],
+        fifoNextBatchRef: json["fifo_next_batch_ref"],
+        fifoNextBatchRemaining: json["fifo_next_batch_remaining"],
+        fifoNextBatchEntry: json["fifo_next_batch_entry"],
+        fifoNextUnitCost: json["fifo_next_unit_cost"],
+        fifoNextUnitLanded: json["fifo_next_unit_landed"],
+        fifoCogsTotal: json["fifo_cogs_total"],
+        sellPrice: json["sell_price"],
+        recentTxn: _parseRecentTxn(json["recent_txn"]),
+      );
 
   Map<String, dynamic> toMap() => {
     "proID": proId,
@@ -196,102 +224,139 @@ class ProductsStockModel {
     "recent_landedPurPrice": recentLandedPurPrice,
     "average_price": averagePrice,
     "average_landed_price": averageLandedPrice,
+    "fifo_next_batch_ref": fifoNextBatchRef,
+    "fifo_next_batch_remaining": fifoNextBatchRemaining,
+    "fifo_next_batch_entry": fifoNextBatchEntry,
+    "fifo_next_unit_cost": fifoNextUnitCost,
+    "fifo_next_unit_landed": fifoNextUnitLanded,
+    "fifo_cogs_total": fifoCogsTotal,
     "sell_price": sellPrice,
-    "recent_txn": recentTxn == null ? [] : List<dynamic>.from(recentTxn!.map((x) => x.toMap())),
+    "recent_txn": recentTxn == null
+        ? []
+        : List<dynamic>.from(recentTxn!.map((x) => x.toMap())),
   };
 }
 
 class RecentTxn {
   final String? date;
-  final int? amount;
-  final int? amountLocal;
-  final String? currency;
-  final String? baseCurrency;
   final String? customer;
+  final String? currency;
   final int? orderId;
-  final int? quantity;
-  final int? batchQty;
+  final int? quantity;         // total units sold
+  final int? batchQty;         // items per box
   final String? orderType;
-  final double? basePurchasePrice;
-  final int? originalSalePrice;
-  final int? localSalePrice;
+  final num? unitPrice;        // per-unit sale price (base ccy)
 
-  RecentTxn({
+  const RecentTxn({
     this.date,
-    this.amount,
-    this.amountLocal,
-    this.currency,
-    this.baseCurrency,
     this.customer,
+    this.currency,
     this.orderId,
     this.quantity,
     this.batchQty,
     this.orderType,
-    this.basePurchasePrice,
-    this.originalSalePrice,
-    this.localSalePrice,
+    this.unitPrice,
   });
 
-  RecentTxn copyWith({
-    String? date,
-    int? amount,
-    int? amountLocal,
-    String? currency,
-    String? baseCurrency,
-    String? customer,
-    int? orderId,
-    int? quantity,
-    int? batchQty,
-    String? orderType,
-    double? basePurchasePrice,
-    int? originalSalePrice,
-    int? localSalePrice,
-  }) =>
-      RecentTxn(
-        date: date ?? this.date,
-        amount: amount ?? this.amount,
-        amountLocal: amountLocal ?? this.amountLocal,
-        currency: currency ?? this.currency,
-        baseCurrency: baseCurrency ?? this.baseCurrency,
-        customer: customer ?? this.customer,
-        orderId: orderId ?? this.orderId,
-        quantity: quantity ?? this.quantity,
-        batchQty: batchQty ?? this.batchQty,
-        orderType: orderType ?? this.orderType,
-        basePurchasePrice: basePurchasePrice ?? this.basePurchasePrice,
-        originalSalePrice: originalSalePrice ?? this.originalSalePrice,
-        localSalePrice: localSalePrice ?? this.localSalePrice,
-      );
+  /// Number of boxes = total units / items per box.
+  /// Returns null when either value is missing or batchQty is 0,
+  /// otherwise returns a double (e.g. 20 / 10 = 2.0).
+  double? get noBox {
+    final q = quantity;
+    final b = batchQty;
+    if (q == null || b == null || b == 0) return null;
+    return q / b;
+  }
 
   factory RecentTxn.fromMap(Map<String, dynamic> json) => RecentTxn(
     date: json["date"],
-    amount: json["amount"],
-    amountLocal: json["amountLocal"],
-    currency: json["currency"],
-    baseCurrency: json["baseCurrency"],
     customer: json["customer"],
+    currency: json["currency"],
     orderId: json["order_id"],
     quantity: json["quantity"],
     batchQty: json["batch_qty"],
     orderType: json["order_type"],
-    basePurchasePrice: json["basePurchasePrice"]?.toDouble(),
-    originalSalePrice: json["originalSalePrice"],
-    localSalePrice: json["localSalePrice"],
+    unitPrice: json["unit_price"] as num?,
   );
 
   Map<String, dynamic> toMap() => {
     "date": date,
-    "amount": amount,
-    "amountLocal": amountLocal,
-    "currency": currency,
-    "baseCurrency": baseCurrency,
     "customer": customer,
+    "currency": currency,
     "order_id": orderId,
     "quantity": quantity,
     "batch_qty": batchQty,
     "order_type": orderType,
-    "basePurchasePrice": basePurchasePrice,
-    "originalSalePrice": originalSalePrice,
-    "localSalePrice": localSalePrice,
+    "unit_price": unitPrice,
   };
+}
+
+class ProductFieldData {
+  final String? id;
+  final String? name;
+  final String? code;
+  final int? storageId;
+  final String? storageName;
+  final String? available;
+  final int? batch;
+  final String? landedPrice;
+  final String? averagePrice;
+  final String? recentPrice;
+  final String? sellPrice;
+  final String? unit;
+
+  final String? fifoNextBatchRef;
+  final String? fifoNextBatchRemaining;
+  final String? fifoNextBatchEntry;
+  final String? fifoNextUnitCost;
+  final String? fifoNextUnitLanded;
+  final String? fifoCogsTotal;
+
+  final List<dynamic> recentSales;
+
+  const ProductFieldData({
+    this.id,
+    this.name,
+    this.code,
+    this.storageId,
+    this.storageName,
+    this.available,
+    this.batch,
+    this.landedPrice,
+    this.averagePrice,
+    this.recentPrice,
+    this.sellPrice,
+    this.unit,
+    this.fifoNextBatchRef,
+    this.fifoNextBatchRemaining,
+    this.fifoNextBatchEntry,
+    this.fifoNextUnitCost,
+    this.fifoNextUnitLanded,
+    this.fifoCogsTotal,
+    this.recentSales = const [],
+  });
+}
+
+extension ProductsStockModelFieldData on ProductsStockModel {
+  ProductFieldData toFieldData() => ProductFieldData(
+    id: proId?.toString(),
+    name: proName,
+    code: proCode,
+    storageId: stkStorage,
+    storageName: stgName,
+    available: available,
+    batch: stkQtyInBatch,
+    landedPrice: averageLandedPrice,
+    averagePrice: averagePrice,
+    recentPrice: recentPurPrice,
+    sellPrice: sellPrice,
+    unit: proUnit,
+    fifoNextBatchRef: fifoNextBatchRef,
+    fifoNextBatchRemaining: fifoNextBatchRemaining,
+    fifoNextBatchEntry: fifoNextBatchEntry,
+    fifoNextUnitCost: fifoNextUnitCost,
+    fifoNextUnitLanded: fifoNextUnitLanded,
+    fifoCogsTotal: fifoCogsTotal,
+    recentSales: recentTxn ?? const [],
+  );
 }

@@ -1668,37 +1668,54 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
             children: [
               // Row number
               SizedBox(width: 50, child: Text((index + 1).toString(), textAlign: TextAlign.center)),
-
-              // Product field
               Expanded(
-                child: ProductSearchField<ProductsStockModel, ProductsBloc, ProductsState>(
+                child: ProductSearchField<
+                    ProductsStockModel,
+                    ProductsBloc,
+                    ProductsState>(
+                  key: ValueKey(item.rowId),
+
+                  controllerRef:
+                  ProductSearchFieldController.forKey<ProductsStockModel>(
+                    item.rowId,
+                  ),
+
                   controller: productController,
                   headerSearchController: headerProductController,
                   hintText: tr.products,
                   focusNode: nodes[0],
                   bloc: context.read<ProductsBloc>(),
-                  searchFunction: (bloc, query) => bloc.add(LoadProductsStockEvent(input: query)),
-                  fetchAllFunction: (bloc) => bloc.add(LoadProductsStockEvent()),
-                  stateToItems: (state) {
-                    if (state is ProductsStockLoadedState) return state.products;
-                    return [];
+
+                  searchFunction: (bloc, query) {
+                    bloc.add(LoadProductsStockEvent(input: query));
                   },
-                  stateToLoading: (state) => state is ProductsLoadingState,
+
+                  fetchAllFunction: (bloc) {
+                    bloc.add(LoadProductsStockEvent());
+                  },
+
+                  fetchByIdFunction: (bloc, id) {
+                    bloc.add(LoadProductsStockEvent(proId: id));
+                  },
+
+                  initialProductId: int.tryParse(item.productId.toString()),
+
+                  autoSelectInitialProduct: true,
+
+                  stateToItems: (state) =>
+                  state is ProductsStockLoadedState
+                      ? state.products
+                      : const [],
+
+                  stateToLoading: (state) =>
+                  state is ProductsLoadingState,
+
                   itemToString: (product) => product.proName ?? '',
-                  getProductId: (product) => product.proId?.toString(),
-                  getProductName: (product) => product.proName,
-                  getProductCode: (product) => product.proCode,
-                  getStorageId: (product) => product.stkStorage,
-                  getStorageName: (product) => product.stgName,
-                  getAvailable: (product) => product.available,
-                  getBatch: (product) => product.stkQtyInBatch,
-                  getLandedPrice: (product) => product.averageLandedPrice,
-                  getProductUnit: (product) => product.proUnit,
-                  getAveragePrice: (product) => product.averagePrice,
-                  getRecentPrice: (product) => product.recentPurPrice,
-                  getSellPrice: (product) => product.sellPrice,
+
+                  productToFieldData: (product) => product.toFieldData(),
+
                   onProductSelected: onProductSelected,
-                  getRecentSales: (product) => product.recentTxn  ?? [],
+
                   onSubmit: () {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (nodes.length > 1 && nodes[1].canRequestFocus) {
@@ -1706,11 +1723,11 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
                       }
                     });
                   },
+
                   openOverlayOnFocus: item.productId.isEmpty,
-                  showAllOnFocus: true,
+                  showAllOnFocus: item.productId.isEmpty,
                 ),
               ),
-
               // Quantity field
               SizedBox(
                 width: 80,

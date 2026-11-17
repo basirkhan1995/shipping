@@ -2224,4 +2224,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get yen => 'YEN';
+
+  @override
+  String get batchCode => 'Batch No';
+
+  @override
+  String get cogs => 'COGS';
+
+  @override
+  String get productStock => 'Stock';
+
+  @override
+  String get purchasePrice => 'Purchase Price';
+
+  @override
+  String get batchPurPrice => 'Batch Purchased';
+
+  @override
+  String get item => 'Item';
 }

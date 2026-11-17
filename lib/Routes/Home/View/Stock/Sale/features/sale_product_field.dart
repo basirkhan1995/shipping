@@ -5,11 +5,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Date/shamsi_converter.dart';
 import 'package:shipping/Features/Widgets/search_field.dart';
 import 'package:shipping/Features/Widgets/shimmer.dart';
-
 import '../../../../../../Features/Widgets/extensions.dart';
 import '../../../../../../Features/Widgets/section.dart';
 import '../../../../../../l10n/app_localizations.dart';
 import '../../../../../Auth/bloc/auth_bloc.dart';
+import '../../../Products/model/product_stock_model.dart';
 import '../../../Settings/Visibility/bloc/settings_visible_bloc.dart';
 
 typedef LoadingBuilder = Widget Function(BuildContext context);
@@ -21,9 +21,73 @@ typedef BlocFetchByIdFunction<B> = void Function(B bloc, int productId);
 typedef ProductListItemBuilder<T> = Widget Function(BuildContext context, T product);
 typedef ProductDetailsBuilder<T> = Widget Function(BuildContext context, T product);
 
-/// Optional generic that lets callers feed "recent sales" rows into the
-/// details panel. Leave it null and the section is not rendered.
-typedef RecentSalesProvider<T> = List<dynamic> Function(T product);
+/// Single mapper: model → panel data.
+typedef ProductFieldDataMapper<T> = ProductFieldData Function(T product);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Public controller — lets you open/close the product panel from anywhere.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class ProductSearchFieldController<T> {
+  ProductSearchFieldController._();
+
+  _ProductSearchFieldHandle<T>? _handle;
+
+  void _bind(_ProductSearchFieldHandle<T> handle) {
+    _handle = handle;
+  }
+
+  void _unbind(_ProductSearchFieldHandle<T> handle) {
+    if (identical(_handle, handle)) {
+      _handle = null;
+    }
+  }
+
+  void open([T? product]) {
+    _handle?.open(product);
+  }
+
+  void close() {
+    _handle?.close();
+  }
+
+  void toggle([T? product]) {
+    _handle?.toggle(product);
+  }
+
+  bool get isOpen => _handle?.isOpen ?? false;
+
+  // Default controller for one instance of a product field.
+  static ProductSearchFieldController<T> of<T>() {
+    return _Registry._instanceFor<T>(T);
+  }
+
+  // Separate controller for each invoice row.
+  static ProductSearchFieldController<T> forKey<T>(Object key) {
+    return _Registry._instanceFor<T>(key);
+  }
+}
+
+class _Registry {
+  static final Map<Object, Object> _instances = {};
+
+  static ProductSearchFieldController<T> _instanceFor<T>(Object key) {
+    return _instances.putIfAbsent(
+      key,
+          () => ProductSearchFieldController<T>._(),
+    ) as ProductSearchFieldController<T>;
+  }
+}
+
+abstract class _ProductSearchFieldHandle<T> {
+  void open([T? product]);
+
+  void close();
+
+  void toggle([T? product]);
+
+  bool get isOpen;
+}
 
 class ProductSearchField<T, B extends BlocBase<S>, S> extends StatefulWidget {
   final TextEditingController controller;
@@ -39,35 +103,19 @@ class ProductSearchField<T, B extends BlocBase<S>, S> extends StatefulWidget {
   final ItemToString<T> itemToString;
   final OnProductSelected<T>? onProductSelected;
 
-  final String? Function(T) getProductId;
-  final String? Function(T) getProductName;
-  final String? Function(T) getProductCode;
-  final int? Function(T) getStorageId;
-  final String? Function(T) getStorageName;
-  final String? Function(T) getAvailable;
-  final int? Function(T) getBatch;
-  final String? Function(T) getAveragePrice;
-  final String? Function(T) getRecentPrice;
-  final String? Function(T) getLandedPrice;
-  final String? Function(T) getSellPrice;
-
-  final String? Function(T)? getProductUnit;
-  final String? Function(T)? getProductBrand;
-  final String? Function(T)? getProductModel;
-  final String? Function(T)? getProductMadeIn;
-  final String? Function(T)? getProductGrade;
-  final String? Function(T)? getProductColor;
-  final String? Function(T)? getProductDetails;
-
-  /// Callback to pull recent sale transactions out of the product model.
-  /// Each element is expected to expose:
-  ///   [0] date (String?), [1] customer (String?), [2] qty (int?),
-  ///   [3] unitPrice (num?), [4] amount (num?), [5] currency (String?).
-  /// A small record type can be used instead — see `_RecentSaleView`.
-  final RecentSalesProvider<T>? getRecentSales;
+  final ProductFieldDataMapper<T> productToFieldData;
 
   final ProductListItemBuilder<T>? customListItemBuilder;
   final ProductDetailsBuilder<T>? customDetailsBuilder;
+
+  /// Bind to [ProductSearchFieldController] so the panel can be opened
+  /// programmatically from anywhere.
+  final ProductSearchFieldController<T>? controllerRef;
+
+  /// When true, this widget renders **nothing** inline. The overlay is only
+  /// opened externally through [controllerRef]. Use it once at app level for
+  /// a global "price / batch lookup" panel.
+  final bool viewOnly;
 
   final String noResultsText;
   final double? width;
@@ -86,32 +134,14 @@ class ProductSearchField<T, B extends BlocBase<S>, S> extends StatefulWidget {
     super.key,
     required this.controller,
     required this.bloc,
-    required this.searchFunction,
-    required this.getBatch,
-    required this.fetchAllFunction,
     required this.stateToItems,
     required this.itemToString,
-    required this.onProductSelected,
-    required this.getProductId,
-    required this.getProductName,
-    required this.getProductCode,
-    required this.getStorageId,
-    required this.getLandedPrice,
-    required this.getStorageName,
-    required this.getAvailable,
-    required this.getAveragePrice,
-    required this.getRecentPrice,
-    required this.getSellPrice,
+    required this.productToFieldData,
+    this.searchFunction,
+    this.fetchAllFunction,
+    this.fetchByIdFunction,
+    this.onProductSelected,
     this.focusNode,
-    this.getProductUnit,
-    this.onSubmit,
-    this.getProductBrand,
-    this.getProductModel,
-    this.getProductMadeIn,
-    this.getProductGrade,
-    this.getProductColor,
-    this.getProductDetails,
-    this.getRecentSales,
     this.customListItemBuilder,
     this.customDetailsBuilder,
     this.hintText,
@@ -125,15 +155,20 @@ class ProductSearchField<T, B extends BlocBase<S>, S> extends StatefulWidget {
     this.openOverlayOnFocus = false,
     this.headerSearchController,
     this.initialProductId,
-    this.fetchByIdFunction,
     this.autoSelectInitialProduct = true,
+    this.onSubmit,
+    this.controllerRef,
+    this.viewOnly = false,
   });
 
   @override
-  State<ProductSearchField<T, B, S>> createState() => _ProductSearchFieldState<T, B, S>();
+  State<ProductSearchField<T, B, S>> createState() =>
+      _ProductSearchFieldState<T, B, S>();
 }
 
-class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<ProductSearchField<T, B, S>> {
+class _ProductSearchFieldState<T, B extends BlocBase<S>, S>
+    extends State<ProductSearchField<T, B, S>>
+    implements _ProductSearchFieldHandle<T> {
   int _highlightedIndex = -1;
   final LayerLink _layerLink = LayerLink();
   OverlayEntry? _overlayEntry;
@@ -163,18 +198,51 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
 
   bool _isInitializing = false;
   bool _initialLoadDone = false;
+  bool _isSearching = false;
 
   FocusNode get _effectiveFocusNode => widget.focusNode ?? _internalFocusNode;
 
+  // ── Controller impl ────────────────────────────────────────────────
+  @override
+  bool get isOpen => _overlayEntry != null;
+
+  @override
+  void open([T? product]) {
+    if (!mounted) return;
+
+    if (product != null) {
+      _currentHighlightedItem = product;
+      if (!_currentSuggestions.contains(product)) {
+        _currentSuggestions = [product, ..._currentSuggestions];
+      }
+      _highlightedIndex = _currentSuggestions.indexOf(product);
+    } else if (_currentSuggestions.isEmpty && widget.fetchAllFunction != null) {
+      // bare open(): pull a list so the panel is populated
+      widget.fetchAllFunction!(widget.bloc!);
+    }
+
+    _showOverlay();
+    _refreshOverlay();
+  }
+
+  @override
+  void close() => _closeOverlay();
+
+  @override
+  void toggle([T? product]) => isOpen ? close() : open(product);
+
+  // ── lifecycle ─────────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
+    widget.controllerRef?._bind(this);
     _internalFocusNode = FocusNode();
     _effectiveFocusNode.addListener(_onFocusChange);
     widget.controller.addListener(_onMainControllerChanged);
     _overlaySearchController.addListener(_onOverlaySearchChanged);
 
-    if (widget.headerSearchController != null && widget.headerSearchController != widget.controller) {
+    if (widget.headerSearchController != null &&
+        widget.headerSearchController != widget.controller) {
       widget.headerSearchController!.addListener(_onHeaderSearchChanged);
       if (widget.headerSearchController!.text != widget.controller.text) {
         widget.headerSearchController!.text = widget.controller.text;
@@ -187,20 +255,25 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _keyboardListenerFocusNode.requestFocus();
-      _initializeFromProductId();
+      if (!mounted) return;
+      if (!widget.viewOnly) {
+        _keyboardListenerFocusNode.requestFocus();
+        _initializeFromProductId();
+      }
     });
   }
 
   @override
   void dispose() {
+    widget.controllerRef?._unbind(this);
     _effectiveFocusNode.removeListener(_onFocusChange);
     _internalFocusNode.dispose();
     _keyboardListenerFocusNode.dispose();
     widget.controller.removeListener(_onMainControllerChanged);
     _overlaySearchController.removeListener(_onOverlaySearchChanged);
 
-    if (widget.headerSearchController != null && widget.headerSearchController != widget.controller) {
+    if (widget.headerSearchController != null &&
+        widget.headerSearchController != widget.controller) {
       widget.headerSearchController!.removeListener(_onHeaderSearchChanged);
     }
 
@@ -212,6 +285,7 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
     super.dispose();
   }
 
+  // ── init / sync / debounce ────────────────────────────────────────
   void _initializeFromProductId() {
     if (_isInitializing || _initialLoadDone) return;
 
@@ -279,11 +353,9 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
     if (widget.controller.text != headerText) {
       widget.controller.text = headerText;
     }
-
     if (_overlaySearchController.text != headerText) {
       _overlaySearchController.text = headerText;
     }
-
     if (headerText != _currentSearchQuery) {
       _isSearching = true;
       _triggerSearch(headerText);
@@ -301,27 +373,23 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
       _loadingTimeout = Timer(const Duration(seconds: 10), () {
         if (mounted && _isLoading) {
           debugPrint('Loading timeout - clearing loading state');
-          setState(() {
-            _isLoading = false;
-          });
+          setState(() => _isLoading = false);
           _loadingTimeout = null;
           _refreshOverlay();
         }
       });
     }
 
-    setState(() {
-      _isLoading = loading;
-    });
-
+    setState(() => _isLoading = loading);
     _refreshOverlay();
   }
-  bool _isSearching = false;
+
   void _triggerSearch(String query) {
     _debounce?.cancel();
     _loadingTimeout?.cancel();
 
-    if (_selectedItem != null && query != widget.itemToString(_selectedItem as T)) {
+    if (_selectedItem != null &&
+        query != widget.itemToString(_selectedItem as T)) {
       setState(() {
         _selectedItem = null;
         _currentHighlightedItem = null;
@@ -337,21 +405,23 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
         _currentSearchQuery = '';
       });
       _loadingTimeout?.cancel();
-      _removeOverlay();
+      if (!widget.viewOnly) _removeOverlay();
       _isSearching = false;
       return;
     }
 
     _currentSearchQuery = query;
 
-    if (_effectiveFocusNode.hasFocus) {
+    if (_effectiveFocusNode.hasFocus || widget.viewOnly) {
       _showOverlay();
     }
 
     _debounce = Timer(const Duration(milliseconds: 700), () {
       if (!mounted) return;
 
-      if (query == _currentSearchQuery && query.isNotEmpty && widget.searchFunction != null) {
+      if (query == _currentSearchQuery &&
+          query.isNotEmpty &&
+          widget.searchFunction != null) {
         _isSearching = true;
         _setLoading(true);
 
@@ -369,16 +439,16 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
   void _closeOverlay({bool shouldResetFocus = true}) {
     _shouldKeepOverlayOpen = false;
     _removeOverlay();
-    setState(() {
-      _highlightedIndex = -1;
-      _currentHighlightedItem = null;
-    });
-    if (shouldResetFocus) {
+    if (mounted) {
+      setState(() {
+        _highlightedIndex = -1;
+        _currentHighlightedItem = null;
+      });
+    }
+    if (shouldResetFocus && !widget.viewOnly) {
       _effectiveFocusNode.unfocus();
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _keyboardListenerFocusNode.requestFocus();
-        }
+        if (mounted) _keyboardListenerFocusNode.requestFocus();
       });
     }
   }
@@ -387,13 +457,18 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
     if (!mounted) return;
 
     if (_effectiveFocusNode.hasFocus) {
-      if (widget.showAllOnFocus && _firstFocus && widget.fetchAllFunction != null) {
+      if (widget.showAllOnFocus &&
+          _firstFocus &&
+          widget.fetchAllFunction != null) {
         _isSearching = false;
         widget.fetchAllFunction!(widget.bloc!);
         _firstFocus = false;
       }
 
-      if ((_currentSuggestions.isNotEmpty || _isLoading || widget.controller.text.isNotEmpty || widget.openOverlayOnFocus) &&
+      if ((_currentSuggestions.isNotEmpty ||
+          _isLoading ||
+          widget.controller.text.isNotEmpty ||
+          widget.openOverlayOnFocus) &&
           widget.controller.text.isNotEmpty) {
         _showOverlay();
       }
@@ -424,15 +499,14 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.offset;
 
-    final double itemPosition;
-
     if (_scrollController.position.hasContentDimensions) {
-      final totalContentHeight = _scrollController.position.maxScrollExtent + viewportHeight;
+      final totalContentHeight =
+          _scrollController.position.maxScrollExtent + viewportHeight;
       final approximateItemHeight = _currentSuggestions.isNotEmpty
           ? totalContentHeight / _currentSuggestions.length
           : 72.0;
 
-      itemPosition = _highlightedIndex * approximateItemHeight;
+      final itemPosition = _highlightedIndex * approximateItemHeight;
       final itemEnd = itemPosition + approximateItemHeight;
 
       if (itemPosition < currentScroll) {
@@ -451,39 +525,34 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
     }
   }
 
+  // ── overlay builder ───────────────────────────────────────────────
   void _showOverlay() {
     if (_overlayEntry != null) {
       _refreshOverlay();
       return;
     }
+    if (!mounted) return;
 
-    final renderBox = context.findRenderObject() as RenderBox?;
     final overlay = Overlay.of(context).context.findRenderObject() as RenderBox?;
-
-    if (renderBox == null || overlay == null || !mounted) return;
+    if (overlay == null) return;
 
     final overlayWidth = overlay.size.width;
     final overlayHeight = overlay.size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    const double panelWidthPercentage = 0.85;
-    const double panelHeightPercentage = 0.93;
+    final panelWidth = (screenWidth * 0.85).clamp(800.0, 1400.0);
+    final panelHeight = (screenHeight * 0.93).clamp(500.0, 900.0);
 
-    double panelWidth = screenWidth * panelWidthPercentage;
-    double panelHeight = screenHeight * panelHeightPercentage;
-
-    const double maxPanelWidth = 1400;
-    const double maxPanelHeight = 900;
-    const double minPanelWidth = 800;
-    const double minPanelHeight = 500;
-
-    panelWidth = panelWidth.clamp(minPanelWidth, maxPanelWidth);
-    panelHeight = panelHeight.clamp(minPanelHeight, maxPanelHeight);
     final tr = AppLocalizations.of(context)!;
-    TextStyle? titleStyle = Theme.of(context).textTheme.titleSmall?.copyWith(fontSize: 14, color: Theme.of(context).colorScheme.outline);
+    final titleStyle = Theme.of(context).textTheme.titleSmall?.copyWith(
+      fontSize: 14,
+      color: Theme.of(context).colorScheme.outline,
+    );
+
     _shouldKeepOverlayOpen = true;
     final visibility = context.read<SettingsVisibleBloc>().state;
+
     _overlayEntry = OverlayEntry(
       builder: (context) => Material(
         color: Colors.transparent,
@@ -509,7 +578,10 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
                     color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(5),
                     border: Border.all(
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: .5),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: .5),
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -520,7 +592,7 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
                     ],
                   ),
                   child: Container(
-                    padding: EdgeInsets.all(4),
+                    padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       border: Border.all(
                         color: Theme.of(context).colorScheme.primary,
@@ -551,150 +623,192 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
                                     mainAxisAlignment: MainAxisAlignment.start,
                                     children: [
                                       IconButton(
-                                        icon: Icon(Icons.clear),
-                                        padding: const EdgeInsets.all(0.0),
-                                        visualDensity: VisualDensity(horizontal: -3,vertical: -3),
+                                        icon: const Icon(Icons.clear),
+                                        padding: EdgeInsets.zero,
+                                        visualDensity: const VisualDensity(
+                                            horizontal: -3, vertical: -3),
                                         isSelected: true,
-                                        onPressed: (){
-                                          _closeOverlay();
-                                        },
+                                        onPressed: _closeOverlay,
                                       ),
-                                      SizedBox(width: 5),
+                                      const SizedBox(width: 5),
                                       Wrap(
                                         spacing: 4,
-                                        crossAxisAlignment: WrapCrossAlignment.center,
+                                        crossAxisAlignment:
+                                        WrapCrossAlignment.center,
                                         children: [
-                                          Icon(Icons.shopify_rounded,size: 24,),
-                                          Text(tr.products.toUpperCase(),style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          const Icon(Icons.shopify_rounded,
+                                              size: 24),
+                                          Text(
+                                            tr.products.toUpperCase(),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleMedium
+                                                ?.copyWith(
                                               fontWeight: FontWeight.bold,
-                                              letterSpacing: .3
-                                          )),
+                                              letterSpacing: .3,
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ],
                                   ),
                                 ),
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                  padding:
+                                  const EdgeInsets.symmetric(vertical: 8.0),
                                   child: ReusableSearchBar(
                                     controller: _overlaySearchController,
                                     autofocus: true,
                                     onSubmitted: (_) {
-                                      if (_highlightedIndex >= 0 && _highlightedIndex < _currentSuggestions.length) {
-                                        _handleItemSelection(_currentSuggestions[_highlightedIndex]);
-                                      } else if (_currentSuggestions.isNotEmpty) {
-                                        _handleItemSelection(_currentSuggestions.first);
+                                      if (_highlightedIndex >= 0 &&
+                                          _highlightedIndex <
+                                              _currentSuggestions.length) {
+                                        _handleItemSelection(
+                                            _currentSuggestions[
+                                            _highlightedIndex]);
+                                      } else if (_currentSuggestions
+                                          .isNotEmpty) {
+                                        _handleItemSelection(
+                                            _currentSuggestions.first);
                                       }
                                     },
-                                    onChanged: (String value) {  },
+                                    onChanged: (String value) {},
                                   ),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  margin: const EdgeInsets.symmetric(horizontal: 1),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  margin:
+                                  const EdgeInsets.symmetric(horizontal: 1),
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.surfaceContainer,
-                                    borderRadius: BorderRadius.zero,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .surfaceContainer,
                                   ),
                                   child: Row(
                                     children: [
-                                      Expanded(child: Text(tr.productName, style: titleStyle?.copyWith(fontSize: 16))),
-                                      SizedBox(width: 125, child: Text(tr.storage, textAlign: TextAlign.start, style: titleStyle)),
-                                      SizedBox(width: 80, child: Text(tr.unit, textAlign: TextAlign.center, style: titleStyle)),
-                                      SizedBox(width: 120, child: Text(tr.stock, textAlign: TextAlign.center, style: titleStyle)),
-                                      if(visibility.isWholeSale)
-                                        SizedBox(width: 100, child: Text(tr.batchTitle, textAlign: TextAlign.center, style: titleStyle)),
-                                      SizedBox(width: 100, child: Text(tr.unitPrice, textAlign: TextAlign.end, style: titleStyle)),
+                                      Expanded(
+                                        child: Text(tr.productName,
+                                            style: titleStyle?.copyWith(
+                                                fontSize: 16)),
+                                      ),
+                                      SizedBox(
+                                          width: 125,
+                                          child: Text(tr.storage,
+                                              style: titleStyle)),
+                                      SizedBox(
+                                          width: 80,
+                                          child: Text(tr.unit,
+                                              textAlign: TextAlign.center,
+                                              style: titleStyle)),
+                                      if (visibility.isWholeSale)
+                                        SizedBox(
+                                            width: 80,
+                                            child: Text(tr.item,
+                                                textAlign: TextAlign.end,
+                                                style: titleStyle)),
+                                      SizedBox(
+                                          width: 140,
+                                          child: Text(tr.stockBalance,
+                                              textAlign: TextAlign.end,
+                                              style: titleStyle)),
+                                      SizedBox(
+                                          width: 100,
+                                          child: Text(tr.unitPrice,
+                                              textAlign: TextAlign.end,
+                                              style: titleStyle)),
                                     ],
                                   ),
                                 ),
                                 Expanded(
                                   child: _isLoading
                                       ? Center(
-                                    child: UniversalShimmer.dataList(itemCount: 11,numberOfColumns: 6)
-                                  )
+                                      child: UniversalShimmer.dataList(
+                                          itemCount: 11,
+                                          numberOfColumns: 6))
                                       : _currentSuggestions.isEmpty
-                                      ? Center(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.all(24),
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                _currentSearchQuery.isEmpty
-                                                    ? Icons.add_shopping_cart_rounded
-                                                    : Icons.remove_shopping_cart_outlined,
-                                                size: 68,
-                                                color: Theme.of(context).colorScheme.outline.withValues(alpha: .5),
-                                              ),
-                                              const SizedBox(height: 12),
-                                              Text(
-                                                _currentSearchQuery.isEmpty
-                                                    ? tr.searchProducts
-                                                    : widget.noResultsText,
-                                                textAlign: TextAlign.center,
-                                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                                  color: Theme.of(context).colorScheme.outline,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        )
-                                      ],
-                                    ),
-                                  )
+                                      ? _buildEmptyState(tr)
                                       : ListView.builder(
                                     controller: _scrollController,
-                                    padding: const EdgeInsets.symmetric(vertical: 8),
-                                    itemCount: _currentSuggestions.length,
+                                    padding: const EdgeInsets
+                                        .symmetric(vertical: 8),
+                                    itemCount:
+                                    _currentSuggestions.length,
                                     itemBuilder: (context, index) {
-                                      final item = _currentSuggestions[index];
-                                      final isHighlighted = index == _highlightedIndex;
-                                      final isRTL = Directionality.of(context) == TextDirection.rtl;
+                                      final item =
+                                      _currentSuggestions[index];
+                                      final isHighlighted =
+                                          index == _highlightedIndex;
+                                      final isRTL =
+                                          Directionality.of(context) ==
+                                              TextDirection.rtl;
 
                                       return Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                        padding: const EdgeInsets
+                                            .symmetric(
+                                            horizontal: 12,
+                                            vertical: 8),
                                         decoration: BoxDecoration(
                                           color: isHighlighted
-                                              ? Theme.of(context).colorScheme.primary.withValues(alpha: .08)
+                                              ? Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                              .withValues(
+                                              alpha: .08)
                                               : Colors.transparent,
                                           border: Border(
                                             bottom: BorderSide(
-                                              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                                              color: Theme.of(
+                                                  context)
+                                                  .colorScheme
+                                                  .outline
+                                                  .withValues(
+                                                  alpha: 0.2),
                                               width: 0.5,
                                             ),
-                                            left: isHighlighted && !isRTL
+                                            left: isHighlighted &&
+                                                !isRTL
                                                 ? BorderSide(
-                                              color: Theme.of(context).colorScheme.primary,
-                                              width: 3,
-                                            )
+                                                color: Theme.of(
+                                                    context)
+                                                    .colorScheme
+                                                    .primary,
+                                                width: 3)
                                                 : BorderSide.none,
-                                            right: isHighlighted && isRTL
+                                            right: isHighlighted &&
+                                                isRTL
                                                 ? BorderSide(
-                                              color: Theme.of(context).colorScheme.primary,
-                                              width: 3,
-                                            )
+                                                color: Theme.of(
+                                                    context)
+                                                    .colorScheme
+                                                    .primary,
+                                                width: 3)
                                                 : BorderSide.none,
                                           ),
                                         ),
                                         child: InkWell(
-                                          onTap: () => _handleItemSelection(item),
+                                          onTap: () =>
+                                              _handleItemSelection(
+                                                  item),
                                           onHover: (hovered) {
                                             if (hovered && mounted) {
                                               setState(() {
-                                                _highlightedIndex = index;
-                                                _currentHighlightedItem = item;
+                                                _highlightedIndex =
+                                                    index;
+                                                _currentHighlightedItem =
+                                                    item;
                                               });
                                               _refreshOverlay();
                                             }
                                           },
-                                          child: widget.customListItemBuilder != null
-                                              ? widget.customListItemBuilder!(context, item)
-                                              : _buildDefaultListItem(item),
+                                          child: widget
+                                              .customListItemBuilder !=
+                                              null
+                                              ? widget
+                                              .customListItemBuilder!(
+                                              context, item)
+                                              : _buildDefaultListItem(
+                                              item),
                                         ),
                                       );
                                     },
@@ -704,7 +818,7 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
                             ),
                           ),
                         ),
-                        if (_currentHighlightedItem != null && !_isLoading && _currentSuggestions.isNotEmpty)
+                        if (_currentHighlightedItem != null && !_isLoading)
                           Container(
                             width: 380,
                             height: double.infinity,
@@ -728,6 +842,38 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
     Overlay.of(context).insert(_overlayEntry!);
   }
 
+  Widget _buildEmptyState(AppLocalizations tr) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              _currentSearchQuery.isEmpty
+                  ? Icons.add_shopping_cart_rounded
+                  : Icons.remove_shopping_cart_outlined,
+              size: 68,
+              color: Theme.of(context).colorScheme.outline.withValues(alpha: .5),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _currentSearchQuery.isEmpty
+                  ? tr.searchProducts
+                  : widget.noResultsText,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── panel content ─────────────────────────────────────────────────
   Widget _buildProductDetailsPanel() {
     return SingleChildScrollView(
       child: widget.customDetailsBuilder != null
@@ -737,53 +883,41 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
   }
 
   Widget _buildDefaultListItem(T product) {
+    final data = widget.productToFieldData(product);
     final visibility = context.read<SettingsVisibleBloc>().state;
-    Color? fontColor = widget.getAvailable(product).toDoubleAmount() <= 0 ? Colors.red : null;
+    final fontColor =
+    (data.available?.toDoubleAmount() ?? 0) <= 0 ? Colors.red : null;
+
     return Row(
       children: [
         Expanded(
           child: Text(
-            widget.getProductName(product) ?? '',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17,color: fontColor),
+            data.name ?? '',
+            style: TextStyle(
+                fontWeight: FontWeight.bold, fontSize: 17, color: fontColor),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
         ),
         SizedBox(
           width: 125,
-          child: Text(
-            widget.getStorageName(product) ?? '0',
-            textAlign: TextAlign.start,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
+          child: Text(data.storageName ?? '0',
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold, fontSize: 16)),
         ),
         SizedBox(
           width: 80,
-          child: Text(
-            widget.getProductUnit!(product) ?? '0',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-        ),
-
-        SizedBox(
-          width: 120,
-          child: Text(
-            widget.getAvailable(product) ?? '0',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 17,
-              color: _getAvailabilityColor(widget.getAvailable(product) ?? '0'),
-            ),
-          ),
-        ),
-        if(visibility.isWholeSale)
-          SizedBox(
-            width: 100,
-            child: Text(
-              widget.getBatch(product).toString(),
+          child: Text(data.unit ?? '0',
               textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold, fontSize: 16)),
+        ),
+        if (visibility.isWholeSale)
+          SizedBox(
+            width: 80,
+            child: Text(
+              data.batch?.toString() ?? '0',
+              textAlign: TextAlign.end,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 17,
@@ -792,9 +926,21 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
             ),
           ),
         SizedBox(
+          width: 140,
+          child: Text(
+            data.available.toAmount(decimal: 2),
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 17,
+              color: _getAvailabilityColor(data.available ?? '0'),
+            ),
+          ),
+        ),
+        SizedBox(
           width: 100,
           child: Text(
-            widget.getSellPrice(product).toAmount(),
+            data.sellPrice.toAmount(),
             textAlign: TextAlign.end,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
           ),
@@ -812,6 +958,7 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
 
   Widget _buildDefaultDetails(T product) {
     final tr = AppLocalizations.of(context)!;
+    final data = widget.productToFieldData(product);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -830,44 +977,42 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
                       spacing: 3,
                       children: [
                         Text(
-                          widget.getProductName(product) ?? '',
-                          style: TextStyle(fontSize: context.scaledFont(0.03), fontWeight: FontWeight.bold),
+                          data.name ?? '',
+                          style: TextStyle(
+                            fontSize: context.scaledFont(0.03),
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         Wrap(
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
+                            Text(data.code ?? 'N/A',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .outline)),
+                            Text(data.unit ?? 'N/A',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .outline)),
+                            _separatorDot(),
+                            Text("${tr.productId} - ${data.id ?? 'N/A'}",
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .outline)),
+                            _separatorDot(),
                             Text(
-                              widget.getProductCode(product) ?? 'N/A',
-                              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.outline),
-                            ),
-                            Text(
-                              widget.getProductUnit?.call(product) ?? 'N/A',
-                              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.outline),
-                            ),
-                            Container(
-                              margin: EdgeInsets.all(5),
-                              height: 15,
-                              width: 1.5,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.outline.withAlpha(60),
-                              ),
-                            ),
-                            Text(
-                              "#${tr.productId} - ${widget.getProductId.call(product) ?? 'N/A'}",
-                              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.outline),
-                            ),
-                            Container(
-                              margin: EdgeInsets.all(5),
-                              height: 15,
-                              width: 1.5,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.outline.withAlpha(60),
-                              ),
-                            ),
-                            Text(
-                              "#${tr.batchTitle} - ${widget.getBatch(product)?.toString() ?? 'N/A'}",
-                              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.outline),
-                            ),
+                                "${tr.batchCode} - ${data.fifoNextBatchRef?.toString() ?? 'N/A'}",
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .outline)),
                           ],
                         ),
                       ],
@@ -878,58 +1023,71 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
             ],
           ),
         ),
-        const SizedBox(height: 8),
-        _buildDetailCard(tr.pricing, [
-          _buildDetailItem(Icons.trending_up, tr.avgPurchasePrice, widget.getAveragePrice(product).toAmount(decimal: 2), currency: baseCurrency),
-          _buildDetailItem(Icons.history, tr.recentPurchasePrice, widget.getRecentPrice(product).toAmount(decimal: 2), currency: baseCurrency),
-          _buildDetailItem(Icons.money, tr.landedCost, widget.getLandedPrice(product).toAmount(decimal: 2), currency: baseCurrency),
-          _buildDetailItem(Icons.attach_money, tr.sellPrice, widget.getSellPrice(product).toAmount(decimal: 2), color: Theme.of(context).colorScheme.primary, isLast: true, isBold: true, currency: baseCurrency),
-        ]),
-
-        // ── NEW: recent sales section (only rendered when data is provided)
-        if (widget.getRecentSales != null) ...[
+        if (_hasAnyFifo(data)) ...[
           const SizedBox(height: 8),
-          _buildRecentSalesCard(product),
+          _buildFifoCard(data, tr),
         ],
-
         const SizedBox(height: 8),
-        if (widget.getProductDetails != null && widget.getProductDetails!(product) != null && widget.getProductDetails!(product)!.isNotEmpty)
-          _buildDetailCard(tr.productDetails, [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                widget.getProductDetails!(product) ?? '',
-                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface),
-              ),
-            ),
-          ]),
+        _buildRecentSalesCard(data),
       ],
     );
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // Recent Sales
-  // ─────────────────────────────────────────────────────────────
+  Widget _separatorDot() => Container(
+    margin: const EdgeInsets.all(5),
+    height: 15,
+    width: 1.5,
+    decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.outline.withAlpha(60)),
+  );
 
-  /// Renders the recent sales list. The provider must return rows shaped like
-  /// `_RecentSaleView` (or anything with `date`, `customer`, `qty`,
-  /// `unitPrice`, `amount`, `currency`).
-  Widget _buildRecentSalesCard(T product) {
+  bool _hasAnyFifo(ProductFieldData d) =>
+      (d.fifoNextBatchRef?.isNotEmpty ?? false) ||
+          (d.fifoNextBatchRemaining?.isNotEmpty ?? false) ||
+          (d.fifoNextBatchEntry?.isNotEmpty ?? false) ||
+          (d.fifoNextUnitCost?.isNotEmpty ?? false) ||
+          (d.fifoNextUnitLanded?.isNotEmpty ?? false) ||
+          (d.fifoCogsTotal?.isNotEmpty ?? false);
+
+  Widget _buildFifoCard(ProductFieldData d, AppLocalizations tr) {
+    return _buildDetailCard(tr.pricing, endTitle: d.fifoNextBatchRef, [
+      if (d.fifoNextUnitCost != null)
+        _buildDetailItem(Icons.price_change_outlined, tr.batchPurPrice,
+            d.fifoNextUnitCost.toAmount(decimal: 2),
+            currency: baseCurrency),
+      if (d.fifoNextUnitLanded != null)
+        _buildDetailItem(Icons.local_shipping_outlined, tr.landedCost,
+            d.landedPrice.toAmount(decimal: 2),
+            currency: baseCurrency),
+      if (d.fifoNextUnitLanded != null)
+        _buildDetailItem(Icons.local_shipping_outlined, tr.avgPurchasePrice,
+            d.averagePrice.toAmount(decimal: 2),
+            currency: baseCurrency),
+      if (d.fifoNextUnitLanded != null)
+        _buildDetailItem(Icons.local_shipping_outlined, tr.recentPurchasePrice,
+            d.recentPrice.toAmount(decimal: 2),
+            currency: baseCurrency),
+      if (d.fifoCogsTotal != null)
+        _buildDetailItem(Icons.calculate_outlined, tr.cogs,
+            d.fifoCogsTotal.toAmount(decimal: 2),
+            currency: baseCurrency, isLast: true),
+    ]);
+  }
+
+  // ── recent sales ──────────────────────────────────────────────────
+  Widget _buildRecentSalesCard(ProductFieldData data) {
     final tr = AppLocalizations.of(context)!;
-    final rows = widget.getRecentSales!(product);
+    final rows = data.recentSales;
 
     if (rows.isEmpty) {
       return _buildDetailCard(tr.recentSales, [
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Center(
-            child: Text(
-              tr.noDataFound,
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.outline,
-              ),
-            ),
+            child: Text(tr.noDataFound,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.outline)),
           ),
         ),
       ]);
@@ -945,58 +1103,52 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
       fontSize: 12,
       color: Theme.of(context).colorScheme.onSurface,
     );
-    return _buildDetailCard(tr.recentSales, [
 
-      // Header row
+    return _buildDetailCard(tr.recentSales, [
       Container(
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              width: 1,
-              color: Theme.of(context).colorScheme.surfaceContainer,
-            ),
+                width: 1,
+                color: Theme.of(context).colorScheme.surfaceContainer),
           ),
         ),
         child: Row(
           children: [
             SizedBox(width: 70, child: Text(tr.date, style: headerStyle)),
             Expanded(child: Text(tr.customer, style: headerStyle)),
-            SizedBox(width: 35, child: Text(tr.qty, textAlign: TextAlign.center, style: headerStyle)),
-            SizedBox(width: 100, child: Text(tr.unitPrice, textAlign: TextAlign.end, style: headerStyle)),
+            SizedBox(
+                width: 35,
+                child: Text(tr.qty,
+                    textAlign: TextAlign.center, style: headerStyle)),
+            SizedBox(
+                width: 100,
+                child: Text(tr.unitPrice,
+                    textAlign: TextAlign.end, style: headerStyle)),
           ],
         ),
       ),
-      // Data rows
       ...rows.map((row) => _buildRecentSaleRow(row, cellStyle)),
     ]);
   }
 
-  Widget _buildRecentSaleRow(dynamic row, TextStyle cellStyle) {
-    final date = row.date as String? ?? '';
-    final customer = row.customer as String? ?? '';
-    final qty = (row.quantity as int?) ?? 0;
+  Widget _buildRecentSaleRow(RecentTxn row, TextStyle cellStyle) {
+    final date = row.date ?? '';
+    final customer = row.customer ?? '';
+    final qty = row.quantity ?? 0;
     final visibility = context.watch<SettingsVisibleBloc>().state;
     final isGre = visibility.dateType == DateType.gregorian;
-    // Local (account-currency) unit price and currency
-    final unitLocal = (row.localSalePrice as num?) ?? 0;
-    final localCurrency = row.currency as String? ?? '';
-
-    // Fallback to base values if local fields are missing (older data)
-    final unitBase = (row.originalSalePrice as num?) ?? 0;
-    final displayUnit = unitLocal > 0 ? unitLocal : unitBase;
-    final displayCurrency = localCurrency.isNotEmpty
-        ? localCurrency
-        : (baseCurrency ?? '');
+    final unitPrice = row.unitPrice ?? 0;
+    final ccy = row.currency ?? '';
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            width: .5,
-            color: Theme.of(context).colorScheme.surfaceContainer,
-          ),
+              width: .5,
+              color: Theme.of(context).colorScheme.surfaceContainer),
         ),
       ),
       child: Row(
@@ -1004,40 +1156,36 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
           SizedBox(
             width: 70,
             child: Text(
-             isGre? date.toFormattedDate() : date.shamsiDateString,
-              style: cellStyle.copyWith(fontSize: 11,fontWeight: FontWeight.bold),
+              isGre ? date.toFormattedDate() : date.shamsiDateString,
+              style: cellStyle.copyWith(
+                  fontSize: 11, fontWeight: FontWeight.bold),
               overflow: TextOverflow.ellipsis,
             ),
           ),
           Expanded(
-            child: Text(
-              customer,
-              style: cellStyle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            child: Text(customer,
+                style: cellStyle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
           ),
           SizedBox(
             width: 35,
-            child: Text(
-              qty.toString(),
-              textAlign: TextAlign.center,
-              style: cellStyle.copyWith(fontWeight: FontWeight.w600),
-            ),
+            child: Text(qty.toString(),
+                textAlign: TextAlign.center,
+                style: cellStyle.copyWith(fontWeight: FontWeight.w600)),
           ),
           SizedBox(
             width: 100,
-            child: Text(
-              "${displayUnit.toDouble().toAmount()} $displayCurrency",
-              textAlign: TextAlign.end,
-              style: cellStyle.copyWith(fontWeight: FontWeight.bold),
-            ),
+            child: Text("${unitPrice.toAmount()} $ccy",
+                textAlign: TextAlign.end,
+                style: cellStyle.copyWith(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
   }
 
+  // ── shared detail widgets ─────────────────────────────────────────
   Widget _buildDetailItem(
       IconData icon,
       String label,
@@ -1047,19 +1195,18 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
         bool isBold = false,
         bool isLast = false,
       }) {
-    final displayValue = currency != null && currency.isNotEmpty ? "$value $currency" : value;
+    final displayValue =
+    currency != null && currency.isNotEmpty ? "$value $currency" : value;
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 3,horizontal: 4),
+      padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 4),
       decoration: BoxDecoration(
           border: isLast
-              ? null : Border(
+              ? null
+              : Border(
               bottom: BorderSide(
                   width: 1,
-                  color: Theme.of(context).colorScheme.surfaceContainer
-              )
-          )
-      ),
+                  color: Theme.of(context).colorScheme.surfaceContainer))),
       child: Row(
         children: [
           Container(
@@ -1069,43 +1216,72 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
               color: Theme.of(context).colorScheme.surfaceContainer,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary.withValues(alpha: .8)),
+            child: Icon(icon,
+                size: 18,
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: .8)),
           ),
           const SizedBox(width: 12),
           SizedBox(
             width: 150,
-            child: Text(label, style: TextStyle(fontSize: 13,color: Theme.of(context).colorScheme.outline)),
+            child: Text(label,
+                style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(context).colorScheme.outline)),
           ),
           Expanded(
-            child: Text(
-              displayValue,
-              textAlign: TextAlign.end,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
-                color: color,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
+            child: Text(displayValue,
+                textAlign: TextAlign.end,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+                  color: color,
+                ),
+                overflow: TextOverflow.ellipsis),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDetailCard(String title, List<Widget> children) {
+  Widget _buildDetailCard(
+      String title,
+      List<Widget> children, {
+        String? endTitle,
+      }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.outline.withValues(alpha: .01),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: .2)),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: .2),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionTitle(title: title),
+          Padding(
+            padding: const EdgeInsets.all(5.0),
+            child: Row(
+              children: [
+                SectionTitle(title: title),
+                if (endTitle != null) ...[
+                  const Spacer(),
+                  Text(
+                    endTitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
           const SizedBox(height: 5),
           ...children,
         ],
@@ -1113,6 +1289,7 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
     );
   }
 
+  // ── selection / clear / keys ──────────────────────────────────────
   void _handleItemSelection(T item) {
     final selectedProductName = widget.itemToString(item);
 
@@ -1123,7 +1300,8 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
     widget.controller.text = selectedProductName;
     _overlaySearchController.text = selectedProductName;
 
-    if (widget.headerSearchController != null && widget.headerSearchController != widget.controller) {
+    if (widget.headerSearchController != null &&
+        widget.headerSearchController != widget.controller) {
       widget.headerSearchController!.text = selectedProductName;
     }
 
@@ -1134,17 +1312,19 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
     setState(() {
       _selectedItem = item;
       _currentHighlightedItem = item;
-      final selectedIndex = _currentSuggestions.indexWhere(
-            (element) => widget.itemToString(element) == widget.itemToString(item),
+      final idx = _currentSuggestions.indexWhere(
+            (e) => widget.itemToString(e) == widget.itemToString(item),
       );
-      if (selectedIndex >= 0) {
-        _highlightedIndex = selectedIndex;
-      }
+      if (idx >= 0) _highlightedIndex = idx;
     });
 
     widget.onProductSelected?.call(item);
-    _closeOverlay();
-    widget.onSubmit?.call();
+
+    if (!widget.viewOnly) {
+      _closeOverlay();
+      widget.onSubmit?.call();
+    }
+    // In view-only mode: keep the panel open so the user can keep inspecting.
   }
 
   Widget? _buildSuffixIcon() {
@@ -1152,7 +1332,8 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
         ? IconButton(
       constraints: const BoxConstraints(),
       splashRadius: 2,
-      icon: Icon(Icons.clear, size: 16, color: Theme.of(context).colorScheme.secondary),
+      icon: Icon(Icons.clear,
+          size: 16, color: Theme.of(context).colorScheme.secondary),
       onPressed: () {
         _isSyncingFromMain = true;
         _isSyncingFromOverlay = true;
@@ -1161,7 +1342,8 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
         widget.controller.clear();
         _overlaySearchController.clear();
 
-        if (widget.headerSearchController != null && widget.headerSearchController != widget.controller) {
+        if (widget.headerSearchController != null &&
+            widget.headerSearchController != widget.controller) {
           widget.headerSearchController!.clear();
         }
 
@@ -1195,10 +1377,7 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
 
     if (event.logicalKey == LogicalKeyboardKey.escape) {
-      if (_overlayEntry != null) {
-        _closeOverlay();
-        return KeyEventResult.handled;
-      }
+      if (_overlayEntry != null) _closeOverlay();
       return KeyEventResult.handled;
     }
 
@@ -1213,13 +1392,12 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
     if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
       if (_currentSuggestions.isNotEmpty && mounted) {
         setState(() {
-          _highlightedIndex = (_highlightedIndex + 1) % _currentSuggestions.length;
+          _highlightedIndex =
+              (_highlightedIndex + 1) % _currentSuggestions.length;
           _currentHighlightedItem = _currentSuggestions[_highlightedIndex];
         });
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            _scrollToHighlightedItem();
-          }
+          if (mounted) _scrollToHighlightedItem();
         });
         _refreshOverlay();
       }
@@ -1229,13 +1407,14 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
     if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
       if (_currentSuggestions.isNotEmpty && mounted) {
         setState(() {
-          _highlightedIndex = (_highlightedIndex - 1 + _currentSuggestions.length) % _currentSuggestions.length;
+          _highlightedIndex = (_highlightedIndex -
+              1 +
+              _currentSuggestions.length) %
+              _currentSuggestions.length;
           _currentHighlightedItem = _currentSuggestions[_highlightedIndex];
         });
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            _scrollToHighlightedItem();
-          }
+          if (mounted) _scrollToHighlightedItem();
         });
         _refreshOverlay();
       }
@@ -1243,9 +1422,9 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
     }
 
     if (event.logicalKey == LogicalKeyboardKey.enter) {
-      if (_highlightedIndex >= 0 && _highlightedIndex < _currentSuggestions.length) {
-        final selectedItem = _currentSuggestions[_highlightedIndex];
-        _handleItemSelection(selectedItem);
+      if (_highlightedIndex >= 0 &&
+          _highlightedIndex < _currentSuggestions.length) {
+        _handleItemSelection(_currentSuggestions[_highlightedIndex]);
       } else if (_currentSuggestions.isNotEmpty) {
         _handleItemSelection(_currentSuggestions.first);
       } else {
@@ -1258,8 +1437,119 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
     return KeyEventResult.ignored;
   }
 
+  // ── bloc listener (shared by both modes) ──────────────────────────
+  void _onBlocStateChanged(BuildContext context, S state) {
+    _loadingTimeout?.cancel();
+
+    final items = widget.stateToItems(state);
+    final isLoading =
+        widget.stateToLoading != null && widget.stateToLoading!(state);
+
+    if (!mounted) return;
+
+    setState(() {
+      if (_isSearching || _isInitializing) {
+        _currentSuggestions = items;
+      }
+
+      _isLoading = isLoading;
+
+      if (!isLoading) {
+        if (_isInitializing && items.isNotEmpty && !_initialLoadDone) {
+          final product = items.first;
+          final productName = widget.itemToString(product);
+
+          _isSyncingFromMain = true;
+          _isSyncingFromOverlay = true;
+          _isSyncingFromHeader = true;
+
+          widget.controller.text = productName;
+          _overlaySearchController.text = productName;
+
+          if (widget.headerSearchController != null &&
+              widget.headerSearchController != widget.controller) {
+            widget.headerSearchController!.text = productName;
+          }
+
+          _isSyncingFromMain = false;
+          _isSyncingFromOverlay = false;
+          _isSyncingFromHeader = false;
+
+          _selectedItem = product;
+          _currentHighlightedItem = product;
+          _highlightedIndex = 0;
+
+          widget.onProductSelected?.call(product);
+          _initialLoadDone = true;
+          _isInitializing = false;
+          _isSearching = false;
+        } else if (items.isNotEmpty && _highlightedIndex >= items.length) {
+          _highlightedIndex = items.length - 1;
+          _currentHighlightedItem = items[_highlightedIndex];
+        } else if (items.isEmpty) {
+          _highlightedIndex = -1;
+          _currentHighlightedItem = null;
+        } else if (items.isNotEmpty &&
+            _highlightedIndex >= 0 &&
+            _highlightedIndex < items.length) {
+          _currentHighlightedItem = items[_highlightedIndex];
+        } else if (items.isNotEmpty) {
+          _highlightedIndex = 0;
+          _currentHighlightedItem = items[0];
+        }
+
+        if (_selectedItem != null && items.isNotEmpty) {
+          final selectedIndex = items.indexWhere(
+                (item) =>
+            widget.itemToString(item) ==
+                widget.itemToString(_selectedItem as T),
+          );
+          if (selectedIndex >= 0) {
+            _highlightedIndex = selectedIndex;
+            _currentHighlightedItem = items[selectedIndex];
+          }
+        }
+
+        _isSearching = false;
+      }
+    });
+
+    if (!isLoading &&
+        _currentSuggestions.isNotEmpty &&
+        _highlightedIndex >= 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _scrollToHighlightedItem();
+      });
+    }
+
+    _refreshOverlay();
+
+    if (widget.viewOnly) {
+      // Keep the overlay open; nothing to do on focus.
+      return;
+    }
+
+    final hasText = widget.controller.text.isNotEmpty;
+    if (_effectiveFocusNode.hasFocus &&
+        (hasText || isLoading || widget.openOverlayOnFocus)) {
+      _showOverlay();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // View-only mode: contribute nothing to layout. Overlay is driven by
+    // controllerRef.open() / close().
+    if (widget.viewOnly) {
+      return widget.bloc != null
+          ? BlocListener<B, S>(
+        bloc: widget.bloc,
+        listener: _onBlocStateChanged,
+        child: const SizedBox.shrink(),
+      )
+          : const SizedBox.shrink();
+    }
+
     return Padding(
       padding: widget.padding ?? const EdgeInsets.symmetric(vertical: 8),
       child: SizedBox(
@@ -1282,12 +1572,11 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
                     if (_isSyncingFromOverlay || _isSyncingFromHeader) return;
 
                     if (mounted) {
-                      setState(() {
-                        _highlightedIndex = -1;
-                      });
+                      setState(() => _highlightedIndex = -1);
                     }
 
-                    if (_selectedItem != null && value != widget.itemToString(_selectedItem as T)) {
+                    if (_selectedItem != null &&
+                        value != widget.itemToString(_selectedItem as T)) {
                       setState(() {
                         _selectedItem = null;
                         _currentHighlightedItem = null;
@@ -1304,15 +1593,16 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
                         widget.headerSearchController!.text != value) {
                       widget.headerSearchController!.text = value;
                     }
-
                     _triggerSearch(value);
                   },
                   onFieldSubmitted: (_) {
                     if (_currentSuggestions.isEmpty) {
                       _closeOverlay();
                       widget.onSubmit?.call();
-                    } else if (_highlightedIndex >= 0 && _highlightedIndex < _currentSuggestions.length) {
-                      _handleItemSelection(_currentSuggestions[_highlightedIndex]);
+                    } else if (_highlightedIndex >= 0 &&
+                        _highlightedIndex < _currentSuggestions.length) {
+                      _handleItemSelection(
+                          _currentSuggestions[_highlightedIndex]);
                     } else if (_currentSuggestions.isNotEmpty) {
                       _handleItemSelection(_currentSuggestions.first);
                     } else {
@@ -1320,13 +1610,11 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
                       widget.onSubmit?.call();
                     }
                   },
-
                   decoration: InputDecoration(
                     border: InputBorder.none,
                     suffixIconConstraints: const BoxConstraints(),
                     suffixIcon: _buildSuffixIcon(),
                     isDense: true,
-
                     hintText: widget.hintText,
                   ),
                 ),
@@ -1335,98 +1623,7 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S> extends State<Produc
             if (widget.bloc != null)
               BlocListener<B, S>(
                 bloc: widget.bloc,
-                listener: (context, state) {
-                  _loadingTimeout?.cancel();
-
-                  final items = widget.stateToItems(state);
-                  final isLoading = widget.stateToLoading != null && widget.stateToLoading!(state);
-
-                  if (mounted) {
-                    setState(() {
-                      if (_isSearching || _isInitializing) {
-                        _currentSuggestions = items;
-                      } else if (!_isSearching && _isInitializing) {
-                        _currentSuggestions = items;
-                      }
-
-                      _isLoading = isLoading;
-
-                      if (!isLoading) {
-                        if (_isInitializing && items.isNotEmpty && !_initialLoadDone) {
-                          final product = items.first;
-                          final productName = widget.itemToString(product);
-
-                          _isSyncingFromMain = true;
-                          _isSyncingFromOverlay = true;
-                          _isSyncingFromHeader = true;
-
-                          widget.controller.text = productName;
-                          _overlaySearchController.text = productName;
-
-                          if (widget.headerSearchController != null &&
-                              widget.headerSearchController != widget.controller) {
-                            widget.headerSearchController!.text = productName;
-                          }
-
-                          _isSyncingFromMain = false;
-                          _isSyncingFromOverlay = false;
-                          _isSyncingFromHeader = false;
-
-                          _selectedItem = product;
-                          _currentHighlightedItem = product;
-                          _highlightedIndex = 0;
-
-                          widget.onProductSelected?.call(product);
-                          _initialLoadDone = true;
-                          _isInitializing = false;
-                          _isSearching = false;
-                        }
-                        else if (items.isNotEmpty && _highlightedIndex >= items.length) {
-                          _highlightedIndex = items.length - 1;
-                          _currentHighlightedItem = items[_highlightedIndex];
-                        }
-                        else if (items.isEmpty) {
-                          _highlightedIndex = -1;
-                          _currentHighlightedItem = null;
-                        }
-                        else if (items.isNotEmpty && _highlightedIndex >= 0 && _highlightedIndex < items.length) {
-                          _currentHighlightedItem = items[_highlightedIndex];
-                        }
-                        else if (items.isNotEmpty) {
-                          _highlightedIndex = 0;
-                          _currentHighlightedItem = items[0];
-                        }
-
-                        if (_selectedItem != null && items.isNotEmpty) {
-                          final selectedIndex = items.indexWhere(
-                                (item) => widget.itemToString(item) == widget.itemToString(_selectedItem as T),
-                          );
-                          if (selectedIndex >= 0) {
-                            _highlightedIndex = selectedIndex;
-                            _currentHighlightedItem = items[selectedIndex];
-                          }
-                        }
-
-                        _isSearching = false;
-                      }
-                    });
-
-                    if (!isLoading && _currentSuggestions.isNotEmpty && _highlightedIndex >= 0) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted) {
-                          _scrollToHighlightedItem();
-                        }
-                      });
-                    }
-
-                    _refreshOverlay();
-                  }
-
-                  final hasText = widget.controller.text.isNotEmpty;
-                  if (_effectiveFocusNode.hasFocus && (hasText || isLoading || widget.openOverlayOnFocus)) {
-                    _showOverlay();
-                  }
-                },
+                listener: _onBlocStateChanged,
                 child: const SizedBox.shrink(),
               ),
           ],

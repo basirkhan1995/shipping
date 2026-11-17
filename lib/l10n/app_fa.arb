@@ -733,5 +733,11 @@
   "purchaseInvoice": "بل خرید",
   "usd": "دالر",
   "afn": "افغانی",
-  "yen": "ین"
+  "yen": "ین",
+  "batchCode": "بچ نمبر",
+  "cogs": "کل ارزش",
+  "productStock": "موجودی",
+  "purchasePrice": "قیمت خرید",
+  "batchPurPrice": "قیمت خرید بچ",
+  "item": "تعداد جنس"
 }

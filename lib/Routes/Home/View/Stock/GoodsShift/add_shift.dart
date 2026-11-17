@@ -796,53 +796,41 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
             flex: 5,
             child: IgnorePointer(
               ignoring: locked,
-              child: ProductSearchField<ProductsStockModel, ProductsBloc,
-                  ProductsState>(
+              child: ProductSearchField<ProductsStockModel, ProductsBloc, ProductsState>(
+                // ✅ controllerRef is now optional and type-safe
+                controllerRef: ProductSearchFieldController.of<ProductsStockModel>(),
                 controller: _productControllers[index],
                 hintText: tr.products,
                 focusNode: nodes[0],
                 bloc: context.read<ProductsBloc>(),
                 searchFunction: (bloc, query) =>
                     bloc.add(LoadProductsStockEvent(input: query)),
-                fetchAllFunction: (bloc) =>
-                    bloc.add(LoadProductsStockEvent()),
+                fetchAllFunction: (bloc) => bloc.add(LoadProductsStockEvent()),
                 stateToItems: (state) {
                   if (state is ProductsStockLoadedState) return state.products;
-                  return [];
+                  return const [];
                 },
                 stateToLoading: (state) => state is ProductsLoadingState,
                 itemToString: (product) => product.proName ?? '',
-                getProductId: (product) => product.proId?.toString(),
-                getProductName: (product) => product.proName,
-                getProductCode: (product) => product.proCode,
-                getStorageId: (product) => product.stkStorage,
-                getStorageName: (product) => product.stgName,
-                getAvailable: (product) => product.available,
-                getBatch: (product) => product.stkQtyInBatch ?? 0,
-                getLandedPrice: (product) => product.recentLandedPurPrice,
-                getProductUnit: (product) => product.proUnit,
-                getAveragePrice: (product) => product.averagePrice,
-                getRecentPrice: (product) => product.recentPurPrice,
-                getSellPrice: (product) => product.sellPrice,
+
+                // ✅ ONE mapper replaces all 11 getXxx callbacks
+                productToFieldData: (product) => product.toFieldData(),
+
                 onProductSelected: (product) {
                   if (product == null) return;
 
                   final purchasePrice = double.tryParse(
                     product.averagePrice?.replaceAll(',', '') ?? "0.0",
-                  ) ??
-                      0.0;
+                  ) ?? 0.0;
 
                   final landedPurPrice = double.tryParse(
-                    product.recentLandedPurPrice?.replaceAll(',', '') ??
-                        "0.0",
-                  ) ??
-                      0.0;
+                    product.recentLandedPurPrice?.replaceAll(',', '') ?? "0.0",
+                  ) ?? 0.0;
 
                   final qtyInBatch = product.stkQtyInBatch ?? 0;
 
                   _selectedProducts[index] = product;
-                  _fromStorageControllers[index].text =
-                      product.stgName ?? '';
+                  _fromStorageControllers[index].text = product.stgName ?? '';
 
                   _updateRecord(
                     index,
@@ -857,11 +845,13 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
                     if (nodes.length > 2) nodes[2].requestFocus();
                   });
                 },
+
                 onSubmit: () {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (nodes.length > 2) nodes[2].requestFocus();
                   });
                 },
+
                 openOverlayOnFocus: true,
                 showAllOnFocus: true,
                 noResultsText: tr.noDataFound,
