@@ -13,6 +13,7 @@ import '../../../../Features/Other/responsive_widget.dart';
 import '../../bloc/menu_bloc.dart';
 import '../Finance/View/ExchangeRate/Ui/exchange_rate.dart';
 import '../Settings/Visibility/bloc/settings_visible_bloc.dart';
+import 'DailyPnL/pnl_chart.dart';
 import 'bloc/dashboard_stats_bloc.dart';
 
 class DashboardView extends StatefulWidget {
@@ -259,7 +260,9 @@ class _StatsSection extends StatelessWidget {
                   );
                 },
               ),
-            ]
+            ],
+            const SizedBox(height: 16),
+            const PnLChartContent(),
           ],
         );
       },

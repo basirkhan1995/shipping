@@ -5,6 +5,7 @@ import 'package:shipping/Features/Other/global_shortcut.dart';
 import 'package:shipping/Features/PrintSettings/bloc/Language/print_language_cubit.dart';
 import 'package:shipping/Routes/Auth/bloc/auth_bloc.dart';
 import 'package:shipping/Routes/Auth/login.dart';
+import 'package:shipping/Routes/Home/View/Dashboard/DailyPnL/bloc/pnl_stats_bloc.dart';
 import 'package:shipping/Routes/Home/View/Finance/View/Currencies/bloc/currencies_bloc.dart';
 import 'package:shipping/Routes/Home/View/Finance/View/EOY/bloc/eoy_bloc.dart';
 import 'package:shipping/Routes/Home/View/Finance/View/ExchangeRate/bloc/exchange_rate_bloc.dart';
@@ -56,6 +57,7 @@ import 'package:shipping/Routes/Home/View/Transactions/bloc/transactions_bloc.da
 import 'Features/PrintSettings/bloc/PageOrientation/page_orientation_cubit.dart';
 import 'Features/PrintSettings/bloc/PageSize/paper_size_cubit.dart';
 import 'Features/PrintSettings/bloc/Printer/printer_cubit.dart';
+import 'Routes/Home/View/Dashboard/DailyPnL/bloc/pnl_stats_event.dart';
 import 'Routes/Home/View/Dashboard/bloc/dashboard_stats_bloc.dart';
 import 'Routes/Home/View/Products/Features/stock_overlay.dart';
 import 'Routes/Home/View/Products/model/product_stock_model.dart';
@@ -176,6 +178,8 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (_) => SaleInvoiceBloc(Repositories(ApiServices()))),
           BlocProvider(create: (_) => SingleProductBloc(Repositories(ApiServices()))),
           BlocProvider(create: (_) => GoodsShiftBloc(Repositories(ApiServices()))),
+          BlocProvider(create: (context) => PnLChartBloc(Repositories(ApiServices()))..add(const LoadPnLChartEvent(days: 30)),
+          ),
         ],
         child: BlocBuilder<LocalizationBloc, Locale>(
          builder: (context, locale) {

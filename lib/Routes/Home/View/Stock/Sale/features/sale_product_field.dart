@@ -546,7 +546,7 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S>
 
     final tr = AppLocalizations.of(context)!;
     final titleStyle = Theme.of(context).textTheme.titleSmall?.copyWith(
-      fontSize: 14,
+      fontSize: 12,
       color: Theme.of(context).colorScheme.outline,
     );
 
@@ -689,31 +689,36 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S>
                                     children: [
                                       Expanded(
                                         child: Text(tr.productName,
-                                            style: titleStyle?.copyWith(
-                                                fontSize: 16)),
+                                            style: titleStyle?.copyWith()),
                                       ),
                                       SizedBox(
                                           width: 125,
                                           child: Text(tr.storage,
                                               style: titleStyle)),
                                       SizedBox(
-                                          width: 80,
+                                          width: 65,
                                           child: Text(tr.unit,
                                               textAlign: TextAlign.center,
                                               style: titleStyle)),
                                       if (visibility.isWholeSale)
                                         SizedBox(
-                                            width: 80,
+                                            width: 65,
+                                            child: Text(tr.qty,
+                                                textAlign: TextAlign.center,
+                                                style: titleStyle)),
+                                      if (visibility.isWholeSale)
+                                        SizedBox(
+                                            width: 65,
                                             child: Text(tr.item,
-                                                textAlign: TextAlign.end,
+                                                textAlign: TextAlign.center,
                                                 style: titleStyle)),
                                       SizedBox(
-                                          width: 140,
+                                          width: 120,
                                           child: Text(tr.stockBalance,
-                                              textAlign: TextAlign.end,
+                                              textAlign: TextAlign.center,
                                               style: titleStyle)),
                                       SizedBox(
-                                          width: 100,
+                                          width: 90,
                                           child: Text(tr.unitPrice,
                                               textAlign: TextAlign.end,
                                               style: titleStyle)),
@@ -889,13 +894,17 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S>
     final fontColor =
     (data.available?.toDoubleAmount() ?? 0) <= 0 ? Colors.red : null;
 
+    final available = double.tryParse(data.available ?? '0') ?? 0;
+    final batchSize = (data.batch ?? 0);
+    final boxes = batchSize > 0 ? available / batchSize : 0.0;
+
     return Row(
       children: [
         Expanded(
           child: Text(
             data.name ?? '',
             style: TextStyle(
-                fontWeight: FontWeight.bold, fontSize: 17, color: fontColor),
+                fontWeight: FontWeight.bold, fontSize: 15, color: fontColor),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -904,46 +913,59 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S>
           width: 125,
           child: Text(data.storageName ?? '0',
               style: const TextStyle(
-                  fontWeight: FontWeight.bold, fontSize: 16)),
+                  fontWeight: FontWeight.bold, fontSize: 13)),
         ),
         SizedBox(
-          width: 80,
+          width: 65,
           child: Text(data.unit ?? '0',
               textAlign: TextAlign.center,
               style: const TextStyle(
-                  fontWeight: FontWeight.bold, fontSize: 16)),
+                  fontWeight: FontWeight.bold, fontSize: 13)),
         ),
         if (visibility.isWholeSale)
           SizedBox(
-            width: 80,
+            width: 65,
             child: Text(
-              data.batch?.toString() ?? '0',
-              textAlign: TextAlign.end,
+              boxes.toString(),
+              textAlign: TextAlign.center,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 17,
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+        if (visibility.isWholeSale)
+          SizedBox(
+            width: 65,
+            child: Text(
+              data.batch?.toString() ?? '0',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
                 color: Theme.of(context).colorScheme.primary,
               ),
             ),
           ),
         SizedBox(
-          width: 140,
+          width: 120,
           child: Text(
             data.available.toAmount(decimal: 2),
-            textAlign: TextAlign.end,
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: 17,
+              fontSize: 14,
               color: _getAvailabilityColor(data.available ?? '0'),
             ),
           ),
         ),
         SizedBox(
-          width: 100,
+          width: 90,
           child: Text(
             data.sellPrice.toAmount(),
             textAlign: TextAlign.end,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           ),
         ),
       ],
@@ -1061,11 +1083,11 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S>
             d.landedPrice.toAmount(decimal: 2),
             currency: baseCurrency),
       if (d.fifoNextUnitLanded != null)
-        _buildDetailItem(Icons.local_shipping_outlined, tr.avgPurchasePrice,
+        _buildDetailItem(Icons.calculate_outlined, tr.avgPurchasePrice,
             d.averagePrice.toAmount(decimal: 2),
             currency: baseCurrency),
       if (d.fifoNextUnitLanded != null)
-        _buildDetailItem(Icons.local_shipping_outlined, tr.recentPurchasePrice,
+        _buildDetailItem(Icons.calculate_outlined, tr.recentPurchasePrice,
             d.recentPrice.toAmount(decimal: 2),
             currency: baseCurrency),
       if (d.fifoCogsTotal != null)

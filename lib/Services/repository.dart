@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shipping/Services/config.dart';
 import '../Routes/Auth/model/token.dart';
+import '../Routes/Home/View/Dashboard/DailyPnL/profit_loss_model.dart';
 import '../Routes/Home/View/Dashboard/model/ds_model.dart';
 import '../Routes/Home/View/Finance/View/Currencies/model/ccy_model.dart';
 import '../Routes/Home/View/Finance/View/EOY/model/eoy_model.dart';
@@ -3734,6 +3735,26 @@ class Repositories {
       data: model.toMap(),
     );
     return res.data is Map ? Map<String, dynamic>.from(res.data) : {};
+  }
+
+  Future<PnLChartModel> getDailyPnL({
+    int days = 30,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.get(
+      endpoint: '/reports/dailyPnL.php',
+      queryParams: {'days': days},
+      cancelToken: cancelToken,
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) {
+      throw ApiException('Invalid server response');
+    }
+    if (body['status']?.toString().toLowerCase() != 'success') {
+      _fail(body, fallback: 'Failed to load daily P&L');
+    }
+    return PnLChartModel.fromMap(body);
   }
 
 }

@@ -22,7 +22,7 @@ Future<void> showProductPriceChecker(
     }) {
   return showDialog<void>(
     context: context,
-    barrierColor: Colors.black.withValues(alpha: .35),
+    barrierColor: Colors.black.withValues(alpha: .2),
     builder: (_) => ProductPriceChecker(initialProductId: initialProductId),
   );
 }
@@ -373,12 +373,18 @@ class _ProductPriceCheckerState extends State<ProductPriceChecker> {
             SizedBox(
               width: 70,
               child:
-              Text(tr.item, textAlign: TextAlign.end, style: style),
+              Text(tr.qty, textAlign: TextAlign.center, style: style),
+            ),
+          if (vis.isWholeSale)
+            SizedBox(
+              width: 70,
+              child:
+              Text(tr.item, textAlign: TextAlign.center, style: style),
             ),
           SizedBox(
             width: 100,
             child: Text(tr.stockBalance,
-                textAlign: TextAlign.end, style: style),
+                textAlign: TextAlign.center, style: style),
           ),
           SizedBox(
             width: 90,
@@ -422,6 +428,8 @@ class _ProductPriceCheckerState extends State<ProductPriceChecker> {
         final p = _items[index];
         final sel = index == _highlightedIndex;
         final available = double.tryParse(p.available ?? '0') ?? 0;
+        final batchSize = (p.stkQtyInBatch ?? 0);
+        final boxes = batchSize > 0 ? available / batchSize : 0.0;
         final availColor = available <= 0
             ? Colors.red
             : available < 10
@@ -489,8 +497,21 @@ class _ProductPriceCheckerState extends State<ProductPriceChecker> {
                   SizedBox(
                     width: 70,
                     child: Text(
+                      (boxes).toString(),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                if (vis.isWholeSale)
+                  SizedBox(
+                    width: 70,
+                    child: Text(
                       (p.stkQtyInBatch ?? 0).toString(),
-                      textAlign: TextAlign.end,
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
@@ -502,7 +523,7 @@ class _ProductPriceCheckerState extends State<ProductPriceChecker> {
                   width: 100,
                   child: Text(
                     available.toAmount(decimal: 2),
-                    textAlign: TextAlign.end,
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -747,6 +768,7 @@ class _ProductPriceCheckerState extends State<ProductPriceChecker> {
               ],
             ),
             const SizedBox(height: 4),
+            Divider(),
             ...rows.map((r) => _recentRow(r, cellStyle)),
           ],
         ],
