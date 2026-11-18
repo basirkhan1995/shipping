@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/extensions.dart';
+import 'package:shipping/Features/Widgets/utils.dart';
+import 'package:shipping/Routes/Home/View/Stock/Orders/features/status_method.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../../Features/Other/image_helper.dart';
 import '../../../../Auth/bloc/auth_bloc.dart';
@@ -144,20 +146,11 @@ class EntityWidget extends StatelessWidget {
               // ── Balances (masked if locked) ──
               Expanded(
                 flex: 4,
-                child: _balanceStack(balances, scheme, textTheme),
+                child: _balanceStack(balances, scheme, textTheme,context),
               ),
-              const SizedBox(width: 8),
-
-              // ── Status dot ──
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: hasActive ? const Color(0xFF22C55E) : scheme.error,
-                ),
-              ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 10),
+              StatusDotIndicator(status: hasActive,size: 10),
+              const SizedBox(width: 3),
 
               // ── Menu ──
               _menu(context, scheme, AppLocalizations.of(context)!),
@@ -171,8 +164,8 @@ class EntityWidget extends StatelessWidget {
   // ── Avatar with lock badge stacked on the corner ─────────────────
   Widget _avatarWithBadge(ColorScheme scheme) {
     return SizedBox(
-      width: 46,
-      height: 46,
+      width: 50,
+      height: 50,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.center,
@@ -183,7 +176,7 @@ class EntityWidget extends StatelessWidget {
             flightShuttleBuilder: _buildHeroShuttle,
             child: ImageHelper.stakeholderProfile(
               imageName: stakeholder.imageProfile,
-              size: 45,
+              size: 49,
               shapeStyle: ShapeStyle.circle,
               placeholderColor: scheme.primaryContainer,
               placeholderIcon: Icons.person,
@@ -200,7 +193,7 @@ class EntityWidget extends StatelessWidget {
                 width: 18,
                 height: 18,
                 decoration: BoxDecoration(
-                  color: scheme.error,
+                  color: scheme.error.withValues(alpha: .7),
                   shape: BoxShape.circle,
                   border: Border.all(color: scheme.surface, width: 0.5),
                 ),
@@ -232,11 +225,7 @@ class EntityWidget extends StatelessWidget {
   }
 
   // ── Balances stacked; masked when locked ─────────────────────────
-  Widget _balanceStack(
-      Map<String, double> balances,
-      ColorScheme scheme,
-      TextTheme textTheme,
-      ) {
+  Widget _balanceStack(Map<String, double> balances, ColorScheme scheme, TextTheme textTheme,BuildContext context) {
     final masked = stakeholder.isLocked;
 
     if (balances.isEmpty) {
@@ -278,16 +267,16 @@ class EntityWidget extends StatelessWidget {
                   Text(
                     e.value.toAmount(),
                     style: textTheme.bodySmall?.copyWith(
-                      fontSize: 12,
+                      fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: scheme.onSurface,
                     ),
                   ),
                 const SizedBox(width: 4),
                 Text(
-                  e.key,
+                  Utils.ccy(type: e.key, locale: AppLocalizations.of(context)!),
                   style: textTheme.labelSmall?.copyWith(
-                    fontSize: 10,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: scheme.onSurfaceVariant,
                     letterSpacing: 0.5,

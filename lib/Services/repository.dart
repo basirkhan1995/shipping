@@ -3131,48 +3131,96 @@ class Repositories {
     return response.data;
   }
 
-  Future<List<ProductsModel>> getProduct({int? proId, String? input, CancelToken? cancelToken}) async {
-    final queryParams = <String, dynamic>{};
+  Future<List<ProductsModel>> getProduct({
+    int? proId,
+    String? input,
+    CancelToken? cancelToken,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{};
 
-    // Only add non-null parameters
-    if (proId != null) {
-      queryParams['proID'] = proId;
-    }
-    if (input != null && input.isNotEmpty) {
-      queryParams['input'] = input;
-    }
-
-    final response = await _api.get(
-      endpoint: "/inventory/product.php",
-      queryParams: queryParams,
-      cancelToken: cancelToken,
-    );
-
-    if (response.data is Map<String, dynamic> && response.data['msg'] != null) {
-      throw Exception(response.data['msg']);
-    }
-
-    if (response.data == null) {
-      return [];
-    }
-
-    // Handle single product
-    if (response.data is Map<String, dynamic>) {
-      if (response.data.containsKey('proID') ||
-          response.data.containsKey('proId')) {
-        return [ProductsModel.fromMap(response.data)];
+      // Add product ID if provided.
+      if (proId != null) {
+        queryParams['proID'] = proId;
       }
-    }
 
-    // Handle list of products
-    if (response.data is List) {
-      return (response.data as List)
-          .whereType<Map<String, dynamic>>()
-          .map((json) => ProductsModel.fromMap(json))
-          .toList();
-    }
+      // Add search input if provided.
+      if (input != null && input.trim().isNotEmpty) {
+        queryParams['input'] = input.trim();
+      }
 
-    return [];
+      final response = await _api.get(
+        endpoint: "/inventory/product.php",
+        queryParams: queryParams,
+        cancelToken: cancelToken,
+      );
+
+      final data = response.data;
+
+      // Handle empty response.
+      if (data == null) {
+        return [];
+      }
+
+      // Handle API error response.
+      if (data is Map) {
+        if (data['msg'] != null) {
+          throw Exception(data['msg'].toString());
+        }
+
+        if (data['error'] != null) {
+          throw Exception(data['error'].toString());
+        }
+
+        // Handle a single product object.
+        if (data.containsKey('proID') || data.containsKey('proId')) {
+          return [
+            ProductsModel.fromMap(
+              Map<String, dynamic>.from(data),
+            ),
+          ];
+        }
+
+        // Handle an empty or unexpected map response.
+        return [];
+      }
+
+      // Handle a list of products.
+      if (data is List) {
+        return data
+            .where((item) => item is Map)
+            .map(
+              (item) => ProductsModel.fromMap(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        )
+            .toList();
+      }
+
+      // Unexpected response format.
+      return [];
+    } on DioException catch (e) {
+      // Do not convert request cancellation into another error.
+      if (CancelToken.isCancel(e)) {
+        rethrow;
+      }
+
+      final responseData = e.response?.data;
+
+      if (responseData is Map) {
+        final message = responseData['msg'] ?? responseData['error'];
+
+        if (message != null) {
+          throw Exception(message.toString());
+        }
+      }
+
+      throw Exception(
+        e.message ?? 'Failed to fetch products.',
+      );
+    } catch (e) {
+      rethrow;
+    }
   }
 
   Future<ProductsModel> getProductById({required int proId, CancelToken? cancelToken}) async {

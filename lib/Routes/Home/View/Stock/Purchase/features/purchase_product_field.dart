@@ -2,7 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
+import 'package:shipping/Features/Widgets/cover.dart';
+import 'package:shipping/Features/Widgets/search_field.dart';
+import 'package:shipping/Features/Widgets/utils.dart';
+import '../../../../../../Features/Widgets/extensions.dart';
 import '../../../../../../Features/Widgets/section.dart';
 import '../../../../../../Features/Widgets/zbutton.dart';
 import '../../../../../../l10n/app_localizations.dart';
@@ -401,9 +404,9 @@ class _ProductsSearchFieldState extends State<ProductsSearchField> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: .2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                        color: Theme.of(context).colorScheme.primary,
+                        blurRadius: 5,
+                        spreadRadius: 2,
                       ),
                     ],
                   ),
@@ -476,58 +479,16 @@ class _ProductsSearchFieldState extends State<ProductsSearchField> {
                                       ),
                                     ),
                                   ),
-                                  child: TextField(
+                                  child: ReusableSearchBar(
                                     controller: _overlaySearchController,
                                     autofocus: true,
-                                    showCursor: true,
-                                    decoration: InputDecoration(
-                                      hintText: AppLocalizations.of(context)!.searchProducts,
-                                      prefixIcon: Icon(Icons.search,
-                                        color: Theme.of(context).colorScheme.primary,
-                                        size: 30,
-                                      ),
-                                      suffixIcon: _overlaySearchController.text.isNotEmpty
-                                          ? IconButton(
-                                        icon: Icon(Icons.clear,
-                                          color: Theme.of(context).colorScheme.outline,
-                                          size: 20,
-                                        ),
-                                        onPressed: () {
-                                          _overlaySearchController.clear();
-                                          _triggerSearch('');
-                                        },
-                                      )
-                                          : null,
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(3),
-                                        borderSide: BorderSide(
-                                          color: Theme.of(context).colorScheme.outline.withValues(alpha: .3),
-                                        ),
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(3),
-                                        borderSide: BorderSide(
-                                          color: Theme.of(context).colorScheme.outline.withValues(alpha: .3),
-                                        ),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(3),
-                                        borderSide: BorderSide(
-                                          color: Theme.of(context).colorScheme.primary,
-                                          width: 1,
-                                        ),
-                                      ),
-                                      filled: true,
-                                      fillColor: Theme.of(context).colorScheme.surface,
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                                    ),
                                     onSubmitted: (_) {
                                       if (_highlightedIndex >= 0 && _highlightedIndex < _currentSuggestions.length) {
                                         _handleItemSelection(_currentSuggestions[_highlightedIndex]);
                                       } else if (_currentSuggestions.isNotEmpty) {
                                         _handleItemSelection(_currentSuggestions.first);
                                       }
-                                    },
+                                    }, onChanged: (String value) {  },
                                   ),
                                 ),
                                 // Header row - Product Name, Unit, Brand, Grade
@@ -566,7 +527,7 @@ class _ProductsSearchFieldState extends State<ProductsSearchField> {
                                       SizedBox(
                                         width: 100,
                                         child: Text(tr.totalQty,
-                                            textAlign: TextAlign.end,
+                                            textAlign: TextAlign.center,
                                             style: titleStyle),
                                       ),
                                       if(visibility.isWholeSale)
@@ -725,7 +686,7 @@ class _ProductsSearchFieldState extends State<ProductsSearchField> {
   Widget _buildDefaultListItem(ProductsModel product) {
     final visibility = context.read<SettingsVisibleBloc>().state;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
           Expanded(
@@ -768,7 +729,7 @@ class _ProductsSearchFieldState extends State<ProductsSearchField> {
             width: 100,
             child: Text(
               product.totalQty ?? 'N/A',
-              textAlign: TextAlign.end,
+              textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 15,fontWeight: FontWeight.bold),
               overflow: TextOverflow.ellipsis,
             ),
@@ -794,7 +755,6 @@ class _ProductsSearchFieldState extends State<ProductsSearchField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-
         _buildDetailCard(tr.basicInformation, [
           _buildDetailItem(Icons.important_devices_sharp, tr.productCode, product.proCode ?? 'N/A'),
           _buildDetailItem(Icons.category, tr.unit, product.proUnit ?? 'N/A'),
@@ -804,17 +764,178 @@ class _ProductsSearchFieldState extends State<ProductsSearchField> {
           _buildDetailItem(Icons.star, tr.grade, product.proGrade ?? 'N/A'),
         ]),
         const SizedBox(height: 8),
+        _buildRecentTransactionsCard(product),
+        const SizedBox(height: 8),
         if (product.proDetails != null && product.proDetails!.isNotEmpty)
           _buildDetailCard(tr.productDetails, [
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
                 product.proDetails ?? '',
-                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
             ),
           ]),
       ],
+    );
+  }
+
+  Widget _buildRecentTransactionsCard(ProductsModel product) {
+    final transactions = product.recentTxn ?? const [];
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final headerStyle = TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w700,
+      color: colors.outline,
+    );
+    final tr = AppLocalizations.of(context)!;
+    return ZCover(
+      padding: const EdgeInsets.all(8),
+      radius: 5,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(Icons.history, size: 18, color: colors.primary),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  AppLocalizations.of(context)!.recentTransactions,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: colors.primary.withValues(alpha: .10),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '${transactions.length}',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.all(5.0),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 60,
+                  child: Text(tr.invoice, style: headerStyle),
+                ),
+                Expanded(
+                  child: Text(tr.supplier, style: headerStyle),
+                ),
+                SizedBox(
+                  width: 35,
+                  child: Text(
+                    tr.qty,
+                    textAlign: TextAlign.center,
+                    style: headerStyle,
+                  ),
+                ),
+                SizedBox(
+                  width: 80,
+                  child: Text(
+                    tr.unitPrice,
+                    textAlign: TextAlign.end,
+                    style: headerStyle,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(),
+          if (transactions.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+              decoration: BoxDecoration(
+                color: colors.surface,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Column(
+                children: [
+                  Icon(Icons.receipt_long_outlined,
+                      size: 27, color: colors.outline),
+                  const SizedBox(height: 6),
+                  Text(
+                    'No recent transactions',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            ...transactions.take(8).map(_buildRecentTransactionItem),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentTransactionItem(RecentPurchase transaction) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final tr = AppLocalizations.of(context)!;
+    final quantity = transaction.quantity?.toString() ?? '—';
+    final unitPrice = transaction.unitPrice?.toString().toAmount() ?? '—';
+    final ordId = transaction.orderId.toString();
+    final ccy = transaction.currency;
+
+    final cellStyle = TextStyle(
+      fontSize: 12,
+      color: colors.onSurface,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.all(5),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 60,
+            child: Text(ordId, style: cellStyle),
+          ),
+          Expanded(
+            child: Text(
+              transaction.customer ?? '',
+              style: cellStyle,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          SizedBox(
+            width: 35,
+            child: Text(
+              quantity,
+              textAlign: TextAlign.center,
+              style: cellStyle,
+            ),
+          ),
+          SizedBox(
+            width: 80,
+            child: Text(
+              "$unitPrice ${Utils.ccy(type: ccy??"", locale: tr)}",
+              textAlign: TextAlign.end,
+              style: cellStyle,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -831,15 +952,15 @@ class _ProductsSearchFieldState extends State<ProductsSearchField> {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: Colors.grey.withValues(alpha: .1),
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Icon(icon, size: 20, color: Colors.grey[600]),
+            child: Icon(icon, size: 20, color: Theme.of(context).colorScheme.outline),
           ),
           const SizedBox(width: 12),
           SizedBox(
             width: 100,
-            child: Text('$label:', style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+            child: Text('$label:', style: TextStyle(fontSize: 14)),
           ),
           Expanded(
             child: Text(
@@ -857,14 +978,9 @@ class _ProductsSearchFieldState extends State<ProductsSearchField> {
   }
 
   Widget _buildDetailCard(String title, List<Widget> children) {
-    return Container(
-      width: double.infinity,
+    return ZCover(
       padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.grey.withValues(alpha: .02),
-        borderRadius: BorderRadius.circular(5),
-        border: Border.all(color: Colors.grey.withValues(alpha: .2)),
-      ),
+      radius: 5,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

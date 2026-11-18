@@ -1,8 +1,53 @@
+
 import 'dart:convert';
 
-ProductsModel productsModelFromMap(String str) => ProductsModel.fromMap(json.decode(str));
+ProductsModel productsModelFromMap(String str) =>
+    ProductsModel.fromMap(json.decode(str));
 
-String productsModelToMap(ProductsModel data) => json.encode(data.toMap());
+String productsModelToMap(ProductsModel data) =>
+    json.encode(data.toMap());
+
+List<RecentPurchase> _parseRecentTxn(dynamic value) {
+  if (value == null) return const [];
+
+  if (value is List) {
+    return value
+        .whereType<Map>()
+        .map((x) => RecentPurchase.fromMap(
+      Map<String, dynamic>.from(x),
+    ))
+        .toList();
+  }
+
+  if (value is String && value.isNotEmpty) {
+    try {
+      final decoded = jsonDecode(value);
+
+      if (decoded is List) {
+        return decoded
+            .whereType<Map>()
+            .map((x) => RecentPurchase.fromMap(
+          Map<String, dynamic>.from(x),
+        ))
+            .toList();
+      }
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  return const [];
+}
+
+int? _toInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse(value.toString());
+}
+
+String? _toStringValue(dynamic value) =>
+    value == null ? null : value.toString();
 
 class ProductsModel {
   final int? proId;
@@ -29,7 +74,11 @@ class ProductsModel {
   final int? pcStatus;
   final String? totalQty;
   final String? totalItems;
+
   final List<Batch>? batches;
+
+  // Recent purchase history
+  final List<RecentPurchase>? recentTxn;
 
   ProductsModel({
     this.proId,
@@ -57,6 +106,7 @@ class ProductsModel {
     this.pcDescription,
     this.pcStatus,
     this.batches,
+    this.recentTxn,
   });
 
   ProductsModel copyWith({
@@ -85,6 +135,7 @@ class ProductsModel {
     List<Batch>? batches,
     String? totalQty,
     String? totalItems,
+    List<RecentPurchase>? recentTxn,
   }) =>
       ProductsModel(
         proId: proId ?? this.proId,
@@ -112,35 +163,46 @@ class ProductsModel {
         pcDescription: pcDescription ?? this.pcDescription,
         pcStatus: pcStatus ?? this.pcStatus,
         batches: batches ?? this.batches,
+        recentTxn: recentTxn ?? this.recentTxn,
       );
 
-  factory ProductsModel.fromMap(Map<String, dynamic> json) => ProductsModel(
-    proId: json["proID"],
-    proName: json["proName"],
-    proCode: json["proCode"],
-    proUnit: json["proUnit"],
-    proBrand: json["proBrand"],
-    proMadeIn: json["proMadeIn"],
-    proModel: json["proModel"],
-    proGrade: json["proGrade"],
-    proCategory: json["proCategory"],
-    totalQty: json["total_quantity"],
-    totalItems: json["total_items"],
-    proDetails: json["proDetails"],
-    proLsNqty: json["proLSNQty"],
-    proColor: json["proColor"],
-    proStatus: json["proStatus"],
-    proWidth: json["proWidth"],
-    proWeight: json["proWeight"],
-    proBreadth: json["proBreadth"],
-    proSpp: json["proSPP"],
-    proLength: json["proLength"],
-    pcId: json["pcID"],
-    pcName: json["pcName"],
-    pcDescription: json["pcDescription"],
-    pcStatus: json["pcStatus"],
-    batches: json["batches"] == null ? [] : List<Batch>.from(json["batches"]!.map((x) => Batch.fromMap(x))),
-  );
+  factory ProductsModel.fromMap(Map<String, dynamic> json) =>
+      ProductsModel(
+        proId: _toInt(json["proID"]),
+        proName: _toStringValue(json["proName"]),
+        proCode: _toStringValue(json["proCode"]),
+        proUnit: _toStringValue(json["proUnit"]),
+        proBrand: _toStringValue(json["proBrand"]),
+        proMadeIn: _toStringValue(json["proMadeIn"]),
+        proModel: _toStringValue(json["proModel"]),
+        proGrade: _toStringValue(json["proGrade"]),
+        proCategory: _toInt(json["proCategory"]),
+        totalQty: _toStringValue(json["total_quantity"]),
+        totalItems: _toStringValue(json["total_items"]),
+        proDetails: _toStringValue(json["proDetails"]),
+        proLsNqty: _toInt(json["proLSNQty"] ?? json["proLSNqty"]),
+        proColor: _toStringValue(json["proColor"]),
+        proStatus: _toInt(json["proStatus"]),
+        proWidth: _toStringValue(json["proWidth"]),
+        proWeight: _toStringValue(json["proWeight"]),
+        proBreadth: _toStringValue(json["proBreadth"]),
+        proSpp: _toStringValue(json["proSPP"]),
+        proLength: _toStringValue(json["proLength"]),
+        pcId: _toInt(json["pcID"]),
+        pcName: _toStringValue(json["pcName"]),
+        pcDescription: _toStringValue(json["pcDescription"]),
+        pcStatus: _toInt(json["pcStatus"]),
+
+        batches: json["batches"] == null
+            ? []
+            : List<Batch>.from(
+          json["batches"].map(
+                (x) => Batch.fromMap(x),
+          ),
+        ),
+
+        recentTxn: _parseRecentTxn(json["recent_txn"]),
+      );
 
   Map<String, dynamic> toMap() => {
     "proID": proId,
@@ -165,9 +227,22 @@ class ProductsModel {
     "pcName": pcName,
     "pcDescription": pcDescription,
     "pcStatus": pcStatus,
-    "batches": batches == null ? [] : List<dynamic>.from(batches!.map((x) => x.toMap())),
+    "total_quantity": totalQty,
+    "total_items": totalItems,
+
+    "batches": batches == null
+        ? []
+        : batches!.map((x) => x.toMap()).toList(),
+
+    "recent_txn": recentTxn == null
+        ? []
+        : recentTxn!.map((x) => x.toMap()).toList(),
   };
 }
+
+// ─────────────────────────────────────────────
+// Batch model
+// ─────────────────────────────────────────────
 
 class Batch {
   final int? storageId;
@@ -196,10 +271,10 @@ class Batch {
       );
 
   factory Batch.fromMap(Map<String, dynamic> json) => Batch(
-    storageId: json["storage_id"],
-    storageName: json["storage_name"],
-    batch: json["batch"],
-    availableQuantity: json["available_Quantity"],
+    storageId: _toInt(json["storage_id"]),
+    storageName: _toStringValue(json["storage_name"]),
+    batch: _toInt(json["batch"]),
+    availableQuantity: _toStringValue(json["available_Quantity"]),
   );
 
   Map<String, dynamic> toMap() => {
@@ -207,5 +282,70 @@ class Batch {
     "storage_name": storageName,
     "batch": batch,
     "available_Quantity": availableQuantity,
+  };
+}
+
+// ─────────────────────────────────────────────
+// Recent purchase transaction model
+// ─────────────────────────────────────────────
+
+class RecentPurchase {
+  final String? date;
+  final String? customer;
+  final String? currency;
+  final int? orderId;
+  final int? quantity;
+  final int? batchQty;
+  final String? orderType;
+  final num? unitPrice;
+
+  const RecentPurchase({
+    this.date,
+    this.customer,
+    this.currency,
+    this.orderId,
+    this.quantity,
+    this.batchQty,
+    this.orderType,
+    this.unitPrice,
+  });
+
+  // Number of boxes = total items / items per box.
+  double? get noBox {
+    final q = quantity;
+    final b = batchQty;
+
+    if (q == null || b == null || b == 0) {
+      return null;
+    }
+
+    return q / b;
+  }
+
+  factory RecentPurchase.fromMap(Map<String, dynamic> json) =>
+      RecentPurchase(
+        date: _toStringValue(json["date"]),
+        customer: _toStringValue(json["customer"]),
+        currency: _toStringValue(json["currency"]),
+        orderId: _toInt(json["order_id"]),
+        quantity: _toInt(json["quantity"]),
+        batchQty: _toInt(json["batch_qty"]),
+        orderType: _toStringValue(json["order_type"]),
+        unitPrice: json["unit_price"] is num
+            ? json["unit_price"] as num
+            : num.tryParse(
+          json["unit_price"]?.toString() ?? '',
+        ),
+      );
+
+  Map<String, dynamic> toMap() => {
+    "date": date,
+    "customer": customer,
+    "currency": currency,
+    "order_id": orderId,
+    "quantity": quantity,
+    "batch_qty": batchQty,
+    "order_type": orderType,
+    "unit_price": unitPrice,
   };
 }
