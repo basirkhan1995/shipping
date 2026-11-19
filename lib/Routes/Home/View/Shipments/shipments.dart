@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shipping/Features/Date/shamsi_converter.dart';
 import 'package:shipping/Features/Other/responsive_widget.dart';
 import 'package:shipping/Features/Widgets/extensions.dart';
 import 'package:shipping/Features/Widgets/search_field.dart';
@@ -7,6 +8,7 @@ import 'package:shipping/Features/Widgets/no_data_widget.dart';
 import 'package:shipping/Features/Widgets/shimmer.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
 import 'package:shipping/Features/Date/z_range_picker.dart';
+import 'package:shipping/Routes/Home/View/Shipments/shp_form.dart';
 import 'package:shipping/Routes/Home/View/Stock/Orders/features/status_method.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../Features/Other/zdropdown.dart';
@@ -243,6 +245,14 @@ class _DesktopViewState extends State<_DesktopView> {
           label: 'Refresh',
           onPressed: _reload,
         ),
+
+        _ShipmentPillButton(
+          icon: Icons.add,
+          label: 'Add Shipment',
+          onPressed: (){
+            ShipmentContainerDialog.show(context);
+          },
+        ),
       ],
     );
   }
@@ -333,7 +343,7 @@ class _DesktopViewState extends State<_DesktopView> {
     final tr = AppLocalizations.of(context)!;
     final style = textTheme.titleSmall?.copyWith(
       letterSpacing: 0.8,
-      fontSize: 13,
+      fontSize: 12,
       fontWeight: FontWeight.bold,
     );
 
@@ -426,9 +436,17 @@ class _DesktopViewState extends State<_DesktopView> {
           );
         }
 
-        return _ShipmentRowWidget(
-          shipment: shipments[index],
-          isOdd: index.isOdd,
+        return InkWell(
+           onTap: (){
+             ShipmentContainerDialog.show(
+               context,
+               shipment: shipments[index],
+             );
+           },
+          child: _ShipmentRowWidget(
+            shipment: shipments[index],
+            isOdd: index.isOdd,
+          ),
         );
       },
     );
@@ -519,7 +537,13 @@ class _ShipmentRowWidget extends StatelessWidget {
       ),
       child: Row(
         children: [
-          cell(shipment.loadingDate ?? '—', width: 115),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              cell(shipment.loadingDate?.shamsiDateString ?? '—', width: 115),
+              cell(shipment.loadingDate ?? '—', width: 115),
+            ],
+          ),
           cell(
             shipment.containerNo ?? '—',
             width: 155,

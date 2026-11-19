@@ -1,12 +1,13 @@
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Services/repository.dart';
+
 import 'shipment_event.dart';
 import 'shipment_state.dart';
 
 class ShipmentBloc extends Bloc<ShipmentEvent, ShipmentState> {
   final Repositories _repository;
 
-  String? _usrName;
   String _status = 'pending';
   String? _shpReference;
   String? _containerNo;
@@ -21,7 +22,15 @@ class ShipmentBloc extends Bloc<ShipmentEvent, ShipmentState> {
     on<LoadShipments>(_onLoadShipments);
     on<LoadMoreShipments>(_onLoadMoreShipments);
     on<RefreshShipments>(_onRefreshShipments);
+
+    on<CreateShipment>(_onCreateShipment);
+    on<UpdateShipment>(_onUpdateShipment);
+    on<DeleteShipment>(_onDeleteShipment);
   }
+
+  // ─────────────────────────────────────────────────────────────
+  // LOAD CONTAINERS
+  // ─────────────────────────────────────────────────────────────
 
   Future<void> _onLoadShipments(
       LoadShipments event,
@@ -64,17 +73,27 @@ class ShipmentBloc extends Bloc<ShipmentEvent, ShipmentState> {
     }
   }
 
-  Future<void> _onLoadMoreShipments(LoadMoreShipments event, Emitter<ShipmentState> emit) async {
+  // ─────────────────────────────────────────────────────────────
+  // LOAD MORE
+  // ─────────────────────────────────────────────────────────────
+
+  Future<void> _onLoadMoreShipments(
+      LoadMoreShipments event,
+      Emitter<ShipmentState> emit,
+      ) async {
     final currentState = state;
+
     if (currentState is! ShipmentLoaded ||
         currentState.isLoadingMore ||
-        !currentState.hasMore ||
-        _usrName == null) {
+        !currentState.hasMore) {
       return;
     }
+
     emit(currentState.copyWith(isLoadingMore: true));
+
     try {
       final nextPage = _currentPage + 1;
+
       final result = await _repository.getContainers(
         status: _status,
         shpReference: _shpReference,
@@ -97,18 +116,18 @@ class ShipmentBloc extends Bloc<ShipmentEvent, ShipmentState> {
         ),
       );
     } catch (e) {
-      emit(
-        currentState.copyWith(isLoadingMore: false),
-      );
+      emit(currentState.copyWith(isLoadingMore: false));
     }
   }
+
+  // ─────────────────────────────────────────────────────────────
+  // REFRESH
+  // ─────────────────────────────────────────────────────────────
 
   Future<void> _onRefreshShipments(
       RefreshShipments event,
       Emitter<ShipmentState> emit,
       ) async {
-    if (_usrName == null) return;
-
     add(
       LoadShipments(
         status: _status,
@@ -119,5 +138,104 @@ class ShipmentBloc extends Bloc<ShipmentEvent, ShipmentState> {
         to: _to,
       ),
     );
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // CREATE CONTAINER
+  // ─────────────────────────────────────────────────────────────
+
+  Future<void> _onCreateShipment(
+      CreateShipment event,
+      Emitter<ShipmentState> emit,
+      ) async {
+    emit(const ShipmentOperationLoading('create'));
+
+    try {
+      final shpId = await _repository.createContainer(
+        usrName: event.usrName,
+        portName: event.portName,
+        containerNo: event.containerNo,
+        loadingDate: event.loadingDate,
+        sequenceNo: event.sequenceNo,
+        unloadingDate: event.unloadingDate,
+        description: event.description,
+      );
+
+      emit(
+        ShipmentOperationSuccess(
+          message: 'Container created successfully.',
+          shpId: shpId,
+        ),
+      );
+
+      add(RefreshShipments());
+    } catch (e) {
+      emit(ShipmentOperationError(e.toString()));
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // UPDATE CONTAINER
+  // ─────────────────────────────────────────────────────────────
+
+  Future<void> _onUpdateShipment(
+      UpdateShipment event,
+      Emitter<ShipmentState> emit,
+      ) async {
+    emit(const ShipmentOperationLoading('update'));
+
+    try {
+      await _repository.updateContainer(
+        usrName: event.usrName,
+        shpId: event.shpId,
+        portName: event.portName,
+        containerNo: event.containerNo,
+        sequenceNo: event.sequenceNo,
+        loadingDate: event.loadingDate,
+        unloadingDate: event.unloadingDate,
+        description: event.description,
+        status: event.status,
+      );
+
+      emit(
+        ShipmentOperationSuccess(
+          message: 'Container updated successfully.',
+          shpId: event.shpId,
+        ),
+      );
+
+      add(RefreshShipments());
+    } catch (e) {
+      emit(ShipmentOperationError(e.toString()));
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // DELETE CONTAINER
+  // ─────────────────────────────────────────────────────────────
+
+  Future<void> _onDeleteShipment(
+      DeleteShipment event,
+      Emitter<ShipmentState> emit,
+      ) async {
+    emit(const ShipmentOperationLoading('delete'));
+
+    try {
+      await _repository.deleteContainer(
+        usrName: event.usrName,
+        shpId: event.shpId,
+      );
+
+      emit(
+        ShipmentOperationSuccess(
+          message: 'Container deleted successfully.',
+          shpId: event.shpId,
+        ),
+      );
+
+      add(RefreshShipments());
+    } catch (e) {
+      emit(ShipmentOperationError(e.toString()));
+    }
   }
 }

@@ -1,3 +1,4 @@
+
 import 'package:equatable/equatable.dart';
 import '../model/shp_model.dart';
 
@@ -66,6 +67,41 @@ class ShipmentError extends ShipmentState {
   final String message;
 
   const ShipmentError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+// ─────────────────────────────────────────────────────────────
+// CONTAINER OPERATIONS
+// ─────────────────────────────────────────────────────────────
+
+class ShipmentOperationLoading extends ShipmentState {
+  final String operation;
+
+  const ShipmentOperationLoading(this.operation);
+
+  @override
+  List<Object?> get props => [operation];
+}
+
+class ShipmentOperationSuccess extends ShipmentState {
+  final String message;
+  final int? shpId;
+
+  const ShipmentOperationSuccess({
+    required this.message,
+    this.shpId,
+  });
+
+  @override
+  List<Object?> get props => [message, shpId];
+}
+
+class ShipmentOperationError extends ShipmentState {
+  final String message;
+
+  const ShipmentOperationError(this.message);
 
   @override
   List<Object?> get props => [message];

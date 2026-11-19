@@ -3932,6 +3932,115 @@ class Repositories {
     }
   }
 
+
+  // ═══════════════════════════════════════════════════════════════
+  // SHIPMENT CONTAINER: CREATE
+  // ═══════════════════════════════════════════════════════════════
+
+  Future<int> createContainer({
+    required String usrName,
+    required String portName,
+    required String containerNo,
+    required String loadingDate,
+    String? sequenceNo,
+    String? unloadingDate,
+    String? description,
+  }) async {
+    final response = await _api.post(
+      endpoint: '/shipment/shipment.php',
+      data: {
+        'action': 'create',
+        'usrName': usrName,
+        'portName': portName,
+        'containerNo': containerNo,
+        'sequenceNo': sequenceNo,
+        'loadingDate': loadingDate,
+        'unloadingDate': unloadingDate,
+        'description': description,
+      },
+    );
+
+    final body = _asMap(response.data);
+
+    if (body == null || body['ok'] != true) {
+      _fail(body, fallback: 'Failed to create container');
+    }
+
+    final id = _asInt(body['shpId']);
+
+    if (id == null) {
+      throw ApiException('Container created but ID was not returned.');
+    }
+
+    return id;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SHIPMENT CONTAINER: UPDATE
+  // ═══════════════════════════════════════════════════════════════
+
+  Future<void> updateContainer({
+    required String usrName,
+    required int shpId,
+    String? portName,
+    String? containerNo,
+    String? sequenceNo,
+    String? loadingDate,
+    String? unloadingDate,
+    String? description,
+    String? status,
+  }) async {
+    final data = <String, dynamic>{
+      'action': 'update',
+      'usrName': usrName,
+      'shpId': shpId,
+    };
+
+    if (portName != null) data['portName'] = portName;
+    if (containerNo != null) data['containerNo'] = containerNo;
+    if (sequenceNo != null) data['sequenceNo'] = sequenceNo;
+    if (loadingDate != null) data['loadingDate'] = loadingDate;
+    if (unloadingDate != null) data['unloadingDate'] = unloadingDate;
+    if (description != null) data['description'] = description;
+    if (status != null) data['status'] = status;
+
+    final response = await _api.post(
+      endpoint: '/shipment/shipment.php',
+      data: data,
+    );
+
+    final body = _asMap(response.data);
+
+    if (body == null || body['ok'] != true) {
+      _fail(body, fallback: 'Failed to update container');
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // SHIPMENT CONTAINER: DELETE
+  // ═══════════════════════════════════════════════════════════════
+
+  Future<void> deleteContainer({
+    required String usrName,
+    required int shpId,
+  }) async {
+    final response = await _api.post(
+      endpoint: '/shipment/shipment.php',
+      data: {
+        'action': 'delete',
+        'usrName': usrName,
+        'shpId': shpId,
+      },
+    );
+
+    final body = _asMap(response.data);
+
+    if (body == null || body['ok'] != true) {
+      _fail(body, fallback: 'Failed to delete container');
+    }
+  }
+
+
   // ─────────────────────────────────────────────────────────────
   // UPDATE SHIPMENT ITEM
   // ─────────────────────────────────────────────────────────────
