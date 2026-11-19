@@ -233,7 +233,7 @@ class _ToastContainer extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 20),
         child: Material(
           elevation: 0,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(3),
           color: Colors.transparent,
           child: Container(
             constraints: const BoxConstraints(minHeight: 88),
@@ -247,7 +247,7 @@ class _ToastContainer extends StatelessWidget {
                   color.withValues(alpha: .85),
                 ],
               ),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(3),
               border: Border.all(
                 color: color,
                 width: 1.5,
