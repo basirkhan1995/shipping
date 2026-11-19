@@ -79,7 +79,7 @@ Widget _rowMenu({
         case 'edit':
           onEdit();
           break;
-        case 'view':
+        case 'routes':
           onView();
           break;
         case 'delete':
@@ -106,7 +106,7 @@ Widget _rowMenu({
             ]),
           ),
         PopupMenuItem(
-          value: 'view',
+          value: 'routes',
           child: Row(children: [
             const Icon(Icons.visibility, size: 16),
             const SizedBox(width: 8),
@@ -180,7 +180,7 @@ mixin _GoodsShiftActions<T extends StatefulWidget> on State<T> {
     }
   }
 
-  // ── is any filter currently narrowing the view? ────────────
+  // ── is any filter currently narrowing the routes? ────────────
   bool get _hasActiveFilter {
     // status: null = All (default), so any non-null means filtered
     if (_statusFilter != null) return true;
@@ -328,7 +328,7 @@ mixin _GoodsShiftActions<T extends StatefulWidget> on State<T> {
   Future<void> _revertSelected() =>
       _changeStatusFor(_selectedIds, targetStatus: 'Pending');
 
-  // ── add / edit / view / delete ─────────────────────────────
+  // ── add / edit / routes / delete ─────────────────────────────
   Future<void> _openAddEdit({int? ordId}) async {
     final auth = context.read<AuthBloc>().state;
     if (auth is! AuthenticatedState) return;

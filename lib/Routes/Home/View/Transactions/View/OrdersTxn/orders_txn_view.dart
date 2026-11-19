@@ -655,7 +655,7 @@ class _RowControllers {
   }
 }
 
-// ── Row widget (view-only) ─────────────────────────────────────
+// ── Row widget (routes-only) ─────────────────────────────────────
 
 class _OrdersTxnRowWidget extends StatefulWidget {
   final int index;

@@ -163,7 +163,7 @@ class _MobileState extends State<_Mobile> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Enter a reference number to view details',
+                        'Enter a reference number to routes details',
                         style: textTheme.bodyMedium?.copyWith(
                           color: color.outline.withValues(alpha: .5),
                         ),

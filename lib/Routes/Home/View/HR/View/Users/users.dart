@@ -430,7 +430,7 @@ class _UsersListState extends State<_UsersList> {
                 );
               }
 
-              // Error: only show the error view if we have no data to
+              // Error: only show the error routes if we have no data to
               // display behind it. Otherwise keep the list and let the
               // page-level listener surface a SnackBar.
               if (state is UsersErrorState && _lastUsers.isEmpty) {

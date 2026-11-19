@@ -506,7 +506,7 @@ class _MobileState extends State<_Mobile> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Load cash balances to view data',
+                  'Load cash balances to routes data',
                   style: TextStyle(color: color.outline),
                 ),
                 const SizedBox(height: 24),
@@ -1311,7 +1311,7 @@ class _TabletState extends State<_Tablet> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Load cash balances to view data',
+                  'Load cash balances to routes data',
                   style: TextStyle(color: color.outline),
                 ),
                 const SizedBox(height: 24),

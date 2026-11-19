@@ -12,7 +12,7 @@ class GoodsShiftBloc extends Bloc<GoodsShiftEvent, GoodsShiftState> {
   List<GoodShiftModel> _cachedShifts = [];
 
   /// Remember the last filter so reloads (after add/edit/delete) keep
-  /// the same view the user is looking at.
+  /// the same routes the user is looking at.
   String? _lastStatus;
   DateTime? _lastFrom;
   DateTime? _lastTo;

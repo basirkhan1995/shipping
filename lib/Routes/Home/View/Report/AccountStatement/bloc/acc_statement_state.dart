@@ -25,7 +25,7 @@ final class AccStatementErrorState extends AccStatementState {
   final String message;
 
   /// Non-null when the error is "the account's owner is locked".
-  /// The view uses this to open the verify dialog.
+  /// The routes uses this to open the verify dialog.
   final int? perID;
 
   const AccStatementErrorState(this.message, {this.perID});

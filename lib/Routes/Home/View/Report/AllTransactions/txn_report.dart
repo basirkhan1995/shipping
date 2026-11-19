@@ -372,7 +372,7 @@ class _MobileState extends State<_Mobile> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          "Select filters above and Apply to view transactions.",
+                          "Select filters above and Apply to routes transactions.",
                           textAlign: TextAlign.center,
                           style: TextStyle(color: color.outline),
                         ),
@@ -990,7 +990,7 @@ class _DesktopState extends State<_Desktop> {
                   return NoDataWidget(
                     title: "Transaction Report",
                     message:
-                    "Select filters above and click Apply to view transactions.",
+                    "Select filters above and click Apply to routes transactions.",
                     enableAction: false,
                   );
                 }

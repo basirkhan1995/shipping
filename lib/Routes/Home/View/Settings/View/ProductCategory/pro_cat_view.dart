@@ -236,7 +236,7 @@ class _BaseProCatViewState extends State<_BaseProCatView> {
   // Build category item based on screen size
   Widget _buildCategoryItem(dynamic cat, int index, TextTheme textTheme, ColorScheme color, AppLocalizations tr) {
     if (widget.isMobile) {
-      // Mobile card view
+      // Mobile card routes
       return Card(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         elevation: 1,
@@ -306,7 +306,7 @@ class _BaseProCatViewState extends State<_BaseProCatView> {
         ),
       );
     } else if (widget.isTablet) {
-      // Tablet row view
+      // Tablet row routes
       return ListTile(
         onTap: () {
           showDialog(

@@ -336,7 +336,7 @@ class _EmployeeList extends StatelessWidget {
 
         final employees = _extractList(state);
 
-        // Show the full-page error view only when we have nothing to render.
+        // Show the full-page error routes only when we have nothing to render.
         if (state is EmployeeErrorState && employees.isEmpty) {
           return _ErrorView(
             message: state.message,

@@ -125,7 +125,7 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
             message: 'Invoice deleted',
             type: ToastType.success,
           );
-          // The OrdersBloc's OrdersDeletedState listener (in the Orders view)
+          // The OrdersBloc's OrdersDeletedState listener (in the Orders routes)
           // is what refreshes the list / closes the screen.
         },
         onError: (msg) {
@@ -2756,7 +2756,7 @@ class _DeleteSaleConfirmDialogState extends State<_DeleteSaleConfirmDialog> {
     if (!mounted) return;
 
     if (result == 'success') {
-      // Close the dialog. Parent handles the toast + closing the invoice view.
+      // Close the dialog. Parent handles the toast + closing the invoice routes.
       Navigator.of(context).pop();
       widget.onDeleted();
       return;

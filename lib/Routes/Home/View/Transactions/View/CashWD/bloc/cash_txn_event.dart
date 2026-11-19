@@ -30,7 +30,7 @@ class CashTxnReset extends CashTxnEvent {
   const CashTxnReset();
 }
 
-/// Load an existing cash transaction for edit / view.
+/// Load an existing cash transaction for edit / routes.
 class CashTxnLoadRequested extends CashTxnEvent {
   final String reference;
   const CashTxnLoadRequested(this.reference);

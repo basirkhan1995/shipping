@@ -329,7 +329,7 @@ class EntityWidget extends StatelessWidget {
       position: PopupMenuPosition.under,
       onSelected: (v) {
         switch (v) {
-          case 'view':
+          case 'routes':
             onTapView?.call();
             break;
           case 'edit':
@@ -348,7 +348,7 @@ class EntityWidget extends StatelessWidget {
       },
       itemBuilder: (_) => [
         PopupMenuItem(
-          value: 'view',
+          value: 'routes',
           height: 40,
           child: Row(
             children: [

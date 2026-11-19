@@ -14,7 +14,7 @@ class _AboutViewState extends State<AboutView> {
   @override
   void initState() {
     super.initState();
-    // Always start at the top when the view is opened
+    // Always start at the top when the routes is opened
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (_scrollCtrl.hasClients) {

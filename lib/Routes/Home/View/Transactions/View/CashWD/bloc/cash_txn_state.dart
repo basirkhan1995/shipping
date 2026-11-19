@@ -14,7 +14,7 @@ class CashTxnSubmitting extends CashTxnState {
   const CashTxnSubmitting();
 }
 
-/// Loading the reference for edit/view.
+/// Loading the reference for edit/routes.
 class CashTxnLoading extends CashTxnState {
   const CashTxnLoading();
 }

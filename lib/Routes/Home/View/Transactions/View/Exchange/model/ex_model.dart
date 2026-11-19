@@ -149,7 +149,7 @@ class ExchangeListItem extends Equatable {
 }
 
 // ═════════════════════════════════════════════════════════════════
-// Full single-record view (edit form).
+// Full single-record routes (edit form).
 // ═════════════════════════════════════════════════════════════════
 class ExchangeDetail extends Equatable {
   final String reference;

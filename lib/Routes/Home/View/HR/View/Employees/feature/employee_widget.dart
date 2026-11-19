@@ -252,7 +252,7 @@ class EmployeeWidget extends StatelessWidget {
       position: PopupMenuPosition.under,
       onSelected: (v) {
         switch (v) {
-          case 'view':
+          case 'routes':
             onTapView?.call();
             break;
           case 'edit':
@@ -265,7 +265,7 @@ class EmployeeWidget extends StatelessWidget {
       },
       itemBuilder: (_) => [
         PopupMenuItem(
-          value: 'view',
+          value: 'routes',
           enabled: onTapView != null,
           height: 40,
           child: _rowItem(

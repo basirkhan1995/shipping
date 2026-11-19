@@ -41,7 +41,7 @@ final class TransactionsLoadedState extends TransactionsState {
   /// Cleared by [ClearRowActionErrorEvent] or the next action.
   final String? actionError;
 
-  /// Set on successful row action. The view shows a toast and then
+  /// Set on successful row action. The routes shows a toast and then
   /// dispatches [ClearRowActionSuccessEvent] to dismiss it.
   final String? actionSuccess;
 

@@ -39,7 +39,7 @@ class CurrenciesLoadedState extends CurrenciesState {
 
   const CurrenciesLoadedState(this.byStatus);
 
-  /// The "all currencies" slice used by the Finance view.
+  /// The "all currencies" slice used by the Finance routes.
   List<CurrenciesModel> get all => byStatus[null] ?? const [];
 
   /// The "active only" slice used by currency selectors.

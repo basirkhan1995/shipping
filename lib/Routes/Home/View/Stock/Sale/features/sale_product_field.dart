@@ -1347,7 +1347,7 @@ class _ProductSearchFieldState<T, B extends BlocBase<S>, S>
       _closeOverlay();
       widget.onSubmit?.call();
     }
-    // In view-only mode: keep the panel open so the user can keep inspecting.
+    // In routes-only mode: keep the panel open so the user can keep inspecting.
   }
 
   Widget? _buildSuffixIcon() {

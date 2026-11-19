@@ -68,6 +68,7 @@ import 'Routes/Home/View/Report/AllTransactions/TxnTypes/bloc/txn_types_bloc.dar
 import 'Routes/Home/View/Report/AllTransactions/bloc/txn_report_bloc.dart';
 import 'Routes/Home/View/Settings/View/General/UserProfile/bloc/user_profile_bloc.dart';
 import 'Routes/Home/View/Settings/bloc/settings_tab_bloc.dart';
+import 'Routes/Home/View/Shipments/bloc/shipment_bloc.dart';
 import 'Routes/Home/View/Stakeholder/View/StakeholderById/bloc/stakeholder_by_id_bloc.dart';
 import 'Routes/Home/View/Stock/Sale/features/sale_product_field.dart';
 import 'Routes/Home/bloc/menu_bloc.dart';
@@ -178,8 +179,9 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (_) => SaleInvoiceBloc(Repositories(ApiServices()))),
           BlocProvider(create: (_) => SingleProductBloc(Repositories(ApiServices()))),
           BlocProvider(create: (_) => GoodsShiftBloc(Repositories(ApiServices()))),
-          BlocProvider(create: (context) => PnLChartBloc(Repositories(ApiServices()))..add(const LoadPnLChartEvent(days: 30)),
-          ),
+          BlocProvider(create: (context) => PnLChartBloc(Repositories(ApiServices()))..add(const LoadPnLChartEvent(days: 30))),
+          BlocProvider(create: (context) => ShipmentBloc(Repositories(ApiServices()))),
+
         ],
         child: BlocBuilder<LocalizationBloc, Locale>(
          builder: (context, locale) {

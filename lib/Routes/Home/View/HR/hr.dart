@@ -164,7 +164,7 @@ List<ZTabItem<HrTabName>> _buildTabs(
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Friendly "no access" view
+// Friendly "no access" routes
 // ═══════════════════════════════════════════════════════════════════
 class _NoAccessView extends StatelessWidget {
   final String title;

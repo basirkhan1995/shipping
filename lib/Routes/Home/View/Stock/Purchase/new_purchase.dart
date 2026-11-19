@@ -115,7 +115,7 @@ class _DesktopPurchaseOrderViewState extends State<_DesktopPurchaseOrderView> {
             message: 'Invoice deleted',
             type: ToastType.success,
           );
-          // The Orders view handles list refresh / screen close via the
+          // The Orders routes handles list refresh / screen close via the
           // OrdersBloc listener, same as the sale flow.
         },
         onError: (msg) {

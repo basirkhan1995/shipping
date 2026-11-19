@@ -45,6 +45,7 @@ import '../Routes/Home/View/Settings/View/General/DefaultPermissions/model/permi
 import '../Routes/Home/View/Settings/View/General/UserProfile/model/user_profile_model.dart';
 import '../Routes/Home/View/Settings/View/General/UserRole/model/role_model.dart';
 import '../Routes/Home/View/Settings/View/ProductCategory/model/pro_cat_model.dart';
+import '../Routes/Home/View/Shipments/model/shp_model.dart';
 import '../Routes/Home/View/Stakeholder/model/stk_model.dart';
 import '../Routes/Home/View/Stock/GoodsShift/model/shift_model.dart';
 import '../Routes/Home/View/Stock/Orders/model/orders_model.dart';
@@ -177,14 +178,14 @@ class Repositories {
   // Private helpers — the only place that decides "success vs error"
   // ═════════════════════════════════════════════════════════════════
 
-  /// Returns a map view of the body, or null if it isn't a map.
+  /// Returns a map routes of the body, or null if it isn't a map.
   Map<String, dynamic>? _asMap(dynamic body) {
     if (body is Map<String, dynamic>) return body;
     if (body is Map) return Map<String, dynamic>.from(body);
     return null;
   }
 
-  /// Returns a list view of the body, or null if it isn't a list.
+  /// Returns a list routes of the body, or null if it isn't a list.
   List<dynamic>? _asList(dynamic body) => body is List ? body : null;
 
   /// Extracts the server's error message from `error`, `message`, or `msg`.
@@ -3188,10 +3189,10 @@ class Repositories {
       // Handle a list of products.
       if (data is List) {
         return data
-            .where((item) => item is Map)
+            .whereType<Map>()
             .map(
               (item) => ProductsModel.fromMap(
-            Map<String, dynamic>.from(item as Map),
+            Map<String, dynamic>.from(item),
           ),
         )
             .toList();
@@ -3805,4 +3806,240 @@ class Repositories {
     return PnLChartModel.fromMap(body);
   }
 
+
+  ///SHIPMENTS
+  Future<ShipmentListResponse> getContainers({
+    String status = 'pending',
+    String? shpReference,
+    String? containerNo,
+    String? sequenceNo,
+    String? from,
+    String? to,
+    int page = 1,
+    int size = 50,
+    CancelToken? cancelToken,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'action': 'list',
+        'status': status,
+        'page': page,
+        'size': size,
+      };
+
+      if (shpReference != null && shpReference.trim().isNotEmpty) {
+        queryParams['shpReference'] = shpReference.trim();
+      }
+
+      if (containerNo != null && containerNo.trim().isNotEmpty) {
+        queryParams['containerNo'] = containerNo.trim();
+      }
+
+      if (sequenceNo != null && sequenceNo.trim().isNotEmpty) {
+        queryParams['sequenceNo'] = sequenceNo.trim();
+      }
+
+      if (from != null && from.trim().isNotEmpty) {
+        queryParams['from'] = from.trim();
+      }
+
+      if (to != null && to.trim().isNotEmpty) {
+        queryParams['to'] = to.trim();
+      }
+
+      final response = await _api.get(
+        endpoint: '/shipment/shipment.php',
+        queryParams: queryParams,
+        cancelToken: cancelToken,
+      );
+
+      final responseData = response.data;
+
+      if (responseData is! Map) {
+        throw ApiException('Invalid shipment response from server.');
+      }
+
+      final json = Map<String, dynamic>.from(responseData);
+
+      if (json['ok'] != true) {
+        throw ApiException(
+          json['error']?.toString() ??
+              json['message']?.toString() ??
+              'Failed to load containers.',
+        );
+      }
+
+      return ShipmentListResponse.fromJson(json);
+    } on DioException catch (e) {
+      // Normally ApiServices already converts DioException to ApiException.
+      throw ApiException(e.message ?? 'Failed to load containers.');
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // ADD SHIPMENT ITEM
+  // ─────────────────────────────────────────────────────────────
+
+  Future<int> addItem({
+    required String usrName,
+    required int shpId,
+    required String accountNo,
+    required String itemDescription,
+    required double qty,
+    double cbm = 0,
+    double weight = 0,
+    double ratePerCbm = 0,
+    double ratePerWeight = 0,
+    double extraCharges = 0,
+  }) async {
+    try {
+      final response = await _api.post(
+        endpoint: "/shipment/shipment.php",
+        data: {
+          'action': 'addItem',
+          'usrName': usrName,
+          'shpId': shpId,
+          'AccountNo': accountNo,
+
+          // PHP API expects itemsDescription.
+          'itemsDescription': itemDescription,
+
+          'qty': qty,
+          'cbm': cbm,
+          'weight': weight,
+          'ratePerCbm': ratePerCbm,
+          'ratePerWeight': ratePerWeight,
+          'extraCharges': extraCharges,
+        },
+      );
+
+      final data = _validateResponse(response.data);
+
+      final shpItmId = data['shpItmId'];
+
+      if (shpItmId == null) {
+        throw ApiException(
+          'Item added, but shipment item ID was not returned.',
+        );
+      }
+
+      return int.parse(shpItmId.toString());
+    } on DioException catch (e) {
+      throw ApiException(
+        e.message ?? 'Failed to add shipment item.',
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // UPDATE SHIPMENT ITEM
+  // ─────────────────────────────────────────────────────────────
+
+  Future<void> updateItem({
+    required String usrName,
+    required int shpItmId,
+    String? accountNo,
+    String? itemDescription,
+    double? qty,
+    double? cbm,
+    double? weight,
+    double? ratePerCbm,
+    double? ratePerWeight,
+    double? extraCharges,
+  }) async {
+    try {
+      final Map<String, dynamic> payload = {
+        'action': 'updateItem',
+        'usrName': usrName,
+        'shpItmId': shpItmId,
+      };
+
+      // Only send fields that were provided.
+      if (accountNo != null) {
+        payload['AccountNo'] = accountNo;
+      }
+
+      if (itemDescription != null) {
+        payload['itemsDescription'] = itemDescription;
+      }
+
+      if (qty != null) payload['qty'] = qty;
+      if (cbm != null) payload['cbm'] = cbm;
+      if (weight != null) payload['weight'] = weight;
+
+      if (ratePerCbm != null) {
+        payload['ratePerCbm'] = ratePerCbm;
+      }
+
+      if (ratePerWeight != null) {
+        payload['ratePerWeight'] = ratePerWeight;
+      }
+
+      if (extraCharges != null) {
+        payload['extraCharges'] = extraCharges;
+      }
+
+      final response = await _api.post(
+        endpoint: "/shipment/shipment.php",
+        data: payload,
+      );
+
+      _validateResponse(response.data);
+    } on DioException catch (e) {
+      throw ApiException(
+        e.message ?? 'Failed to update shipment item.',
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // DELETE SHIPMENT ITEM
+  // ─────────────────────────────────────────────────────────────
+
+  Future<void> deleteItem({
+    required String usrName,
+    required int shpItmId,
+  }) async {
+    try {
+      final response = await _api.post(
+        endpoint: "/shipment/shipment.php",
+        data: {
+          'action': 'deleteItem',
+          'usrName': usrName,
+          'shpItmId': shpItmId,
+        },
+      );
+
+      _validateResponse(response.data);
+    } on DioException catch (e) {
+      throw ApiException(
+        e.message ?? 'Failed to delete shipment item.',
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // RESPONSE VALIDATION
+  // ─────────────────────────────────────────────────────────────
+
+  Map<String, dynamic> _validateResponse(dynamic response) {
+    if (response is! Map) {
+      throw ApiException('Invalid server response.');
+    }
+
+    final data = Map<String, dynamic>.from(response);
+
+    if (data['ok'] != true) {
+      throw ApiException(
+        data['msg']?.toString() ??
+            data['message']?.toString() ??
+            'Shipment operation failed.',
+      );
+    }
+
+    return data;
+  }
 }

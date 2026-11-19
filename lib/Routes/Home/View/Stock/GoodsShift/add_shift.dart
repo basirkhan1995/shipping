@@ -486,7 +486,7 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
 
         // Primary button enabled only if:
         //  - not busy
-        //  - not view mode
+        //  - not routes mode
         //  - in create mode OR edit mode + Pending
         isButtonEnabled:
         !_isSaving && !_isLoadingDetail && !readOnly && canEdit,
@@ -768,7 +768,7 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
     final color = Theme.of(context).colorScheme;
     final nodes = _rowFocusNodes[index];
     final readOnly = widget.readOnly;
-    // Row is locked if saving, view-only, or the shift is Authorized.
+    // Row is locked if saving, routes-only, or the shift is Authorized.
     final locked = _isSaving || readOnly || _isLockedByStatus;
 
     return Container(

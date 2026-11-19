@@ -183,7 +183,7 @@ class _BaseBranchLimitsState extends State<_BaseBranchLimits> {
     final amountValue = _parseAmount(limit.balLimitAmount);
 
     if (widget.isMobile) {
-      // Mobile card view - Enhanced Design
+      // Mobile card routes - Enhanced Design
       return InkWell(
         onTap: () {
           showDialog(
@@ -250,7 +250,7 @@ class _BaseBranchLimitsState extends State<_BaseBranchLimits> {
         ),
       );
     } else if (widget.isTablet) {
-      // Tablet row view - Enhanced Design
+      // Tablet row routes - Enhanced Design
       return InkWell(
         onTap: () {
           showDialog(
@@ -317,7 +317,7 @@ class _BaseBranchLimitsState extends State<_BaseBranchLimits> {
         ),
       );
     } else {
-      // Desktop row view - Enhanced Design
+      // Desktop row routes - Enhanced Design
       return InkWell(
         onTap: () {
           showDialog(

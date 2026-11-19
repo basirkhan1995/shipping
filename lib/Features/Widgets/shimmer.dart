@@ -222,7 +222,7 @@ class UniversalShimmer {
     );
   }
 
-  /// Grid view shimmer
+  /// Grid routes shimmer
   static Widget gridView({
     int count = 4,
     int crossAxisCount = 2,

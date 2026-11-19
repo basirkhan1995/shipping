@@ -65,7 +65,7 @@ class TransactionListItem {
 }
 
 class TransactionDraft {
-  /// ── Identity (server-side, read back into the detail view) ──
+  /// ── Identity (server-side, read back into the detail routes) ──
   final String? trnReference;
   final String? trnType;        // CHDP | CHWL | INCM | XPNS | GLDR | GLCR | ATAT | BULK | CRFX
   final String? trntName;

@@ -821,7 +821,7 @@ class _DesktopViewState extends State<_DesktopView> {
             initialValue: _statusLabel(tr, _status),
             itemLabel: (s) => _statusLabel(tr, s),
             height: 40,
-            onItemSelected: (s) {
+            onItemSelected : (s) {
               setState(() => _status = s);
               _reload();
             },

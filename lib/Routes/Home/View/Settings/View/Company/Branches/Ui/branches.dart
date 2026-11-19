@@ -191,7 +191,7 @@ class _BaseBranchesViewState extends State<_BaseBranchesView> {
   // Build table header for different screen sizes
   Widget _buildTableHeader(AppLocalizations locale, TextTheme textTheme) {
     if (widget.isMobile) {
-      // Mobile card view doesn't need a table header
+      // Mobile card routes doesn't need a table header
       return const SizedBox.shrink();
     } else if (widget.isTablet) {
       // Tablet table header
@@ -248,7 +248,7 @@ class _BaseBranchesViewState extends State<_BaseBranchesView> {
   // Build branch item based on screen size
   Widget _buildBranchItem(dynamic brc, int index, TextTheme textTheme, ColorScheme color) {
     if (widget.isMobile) {
-      // Mobile card view
+      // Mobile card routes
       return Card(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         elevation: 1,
@@ -326,7 +326,7 @@ class _BaseBranchesViewState extends State<_BaseBranchesView> {
         ),
       );
     } else if (widget.isTablet) {
-      // Tablet row view
+      // Tablet row routes
       return InkWell(
         onTap: () {
           showDialog(
@@ -384,7 +384,7 @@ class _BaseBranchesViewState extends State<_BaseBranchesView> {
         ),
       );
     } else {
-      // Desktop row view
+      // Desktop row routes
       return InkWell(
         onTap: () {
           showDialog(

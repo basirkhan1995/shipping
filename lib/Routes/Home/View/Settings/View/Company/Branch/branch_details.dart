@@ -35,7 +35,7 @@ class _BaseBranchDetails extends StatelessWidget {
     final theme = Theme.of(context).colorScheme;
 
     if (isMobile) {
-      // Mobile full-screen details view
+      // Mobile full-screen details routes
       return Dialog(
         insetPadding: EdgeInsets.zero,
         backgroundColor: Colors.transparent,

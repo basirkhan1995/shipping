@@ -126,7 +126,7 @@ class FundTransferListItem extends Equatable {
   ];
 }
 
-/// Full single-record view (used by the edit form).
+/// Full single-record routes (used by the edit form).
 class FundTransferDetail extends Equatable {
   final String reference;
   final int status;

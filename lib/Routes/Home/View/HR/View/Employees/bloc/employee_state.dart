@@ -23,7 +23,7 @@ final class EmployeeLoadedState extends EmployeeState {
 }
 
 /// Emitted after a successful add / update / delete.
-/// Used by the dialog to close and by the view listener to toast + refresh.
+/// Used by the dialog to close and by the routes listener to toast + refresh.
 final class EmployeeSavedState extends EmployeeState {
   final String message;
   final bool isEdit;

@@ -202,7 +202,7 @@ class _BaseStorageViewState extends State<_BaseStorageView> {
     final titleStyle = textTheme.titleSmall?.copyWith();
 
     if (widget.isMobile) {
-      // Mobile card view doesn't need a table header
+      // Mobile card routes doesn't need a table header
       return const SizedBox.shrink();
     } else if (widget.isTablet) {
       // Tablet table header
@@ -254,7 +254,7 @@ class _BaseStorageViewState extends State<_BaseStorageView> {
     final bodyStyle = textTheme.bodyMedium?.copyWith(color: color.secondary);
 
     if (widget.isMobile) {
-      // Mobile card view
+      // Mobile card routes
       return Card(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         elevation: 1,
@@ -360,7 +360,7 @@ class _BaseStorageViewState extends State<_BaseStorageView> {
         ),
       );
     } else if (widget.isTablet) {
-      // Tablet row view
+      // Tablet row routes
       return InkWell(
         onTap: () {
           showDialog(
@@ -414,7 +414,7 @@ class _BaseStorageViewState extends State<_BaseStorageView> {
         ),
       );
     } else {
-      // Desktop row view
+      // Desktop row routes
       return InkWell(
         onTap: () {
           showDialog(
