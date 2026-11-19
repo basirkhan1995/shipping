@@ -57,7 +57,7 @@ class _ZFormDialogState extends State<ZFormDialog> {
     final scheme = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(15, 4, 15, 0),
+      margin: const EdgeInsets.fromLTRB(5, 4, 5, 0),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: scheme.errorContainer,
@@ -177,7 +177,7 @@ class _ZFormDialogState extends State<ZFormDialog> {
 
     return Padding(
       padding: widget.padding ??
-          const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+          const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
