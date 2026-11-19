@@ -1,10 +1,11 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:shipping/l10n/app_localizations.dart';
 
 class _OverlayContent extends StatelessWidget {
   final String? title;
   final String message;
-  final Color color;
+  final ToastType type;
   final VoidCallback onDismiss;
   final int? durationInSeconds;
   final bool showProgressBar;
@@ -12,7 +13,7 @@ class _OverlayContent extends StatelessWidget {
   const _OverlayContent({
     this.title,
     required this.message,
-    required this.color,
+    required this.type,
     required this.onDismiss,
     this.durationInSeconds,
     this.showProgressBar = false,
@@ -20,6 +21,12 @@ class _OverlayContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Fall back to the type's default title when none is supplied.
+    final effectiveTitle = (title == null || title!.trim().isEmpty)
+        ? type.defaultTitle
+        : title!;
+    final color = type.color;
+
     return _ToastContainer(
       color: color,
       child: Column(
@@ -40,21 +47,26 @@ class _OverlayContent extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (title != null)
-                      Text(
-                        title!.toUpperCase(),
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.surface.withValues(alpha: .9),
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                          letterSpacing: 1.2,
-                        ),
+                    Text(
+                      effectiveTitle.toString().toUpperCase(),
+                      style: TextStyle(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surface
+                            .withValues(alpha: .9),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        letterSpacing: 1.2,
                       ),
-                    if (title != null) const SizedBox(height: 3),
+                    ),
+                    const SizedBox(height: 3),
                     Text(
                       message,
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.surface.withValues(alpha: .95),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surface
+                            .withValues(alpha: .95),
                         fontSize: 14,
                         height: 1.5,
                       ),
@@ -77,8 +89,14 @@ class _OverlayContent extends StatelessWidget {
               padding: const EdgeInsets.only(top: 16.0),
               child: _AnimatedProgressIndicator(
                 durationInSeconds: durationInSeconds!,
-                color: Theme.of(context).colorScheme.surface.withValues(alpha: .8),
-                backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: .2),
+                color: Theme.of(context)
+                    .colorScheme
+                    .surface
+                    .withValues(alpha: .8),
+                backgroundColor: Theme.of(context)
+                    .colorScheme
+                    .surface
+                    .withValues(alpha: .2),
               ),
             ),
         ],
@@ -100,7 +118,8 @@ class _AnimatedIconContainer extends StatefulWidget {
   State<_AnimatedIconContainer> createState() => _AnimatedIconContainerState();
 }
 
-class _AnimatedIconContainerState extends State<_AnimatedIconContainer> with SingleTickerProviderStateMixin {
+class _AnimatedIconContainerState extends State<_AnimatedIconContainer>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _rotateAnimation;
@@ -230,8 +249,8 @@ class _ToastContainer extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: Theme.of(context).colorScheme.surface.withValues(alpha: .1),
-                width: 1,
+                color: color,
+                width: 1.5,
               ),
               boxShadow: [
                 BoxShadow(
@@ -302,7 +321,8 @@ class _AnimatedProgressIndicator extends StatefulWidget {
   });
 
   @override
-  State<_AnimatedProgressIndicator> createState() => _AnimatedProgressIndicatorState();
+  State<_AnimatedProgressIndicator> createState() =>
+      _AnimatedProgressIndicatorState();
 }
 
 class _AnimatedProgressIndicatorState extends State<_AnimatedProgressIndicator>
@@ -386,7 +406,8 @@ class _WaveProgressPainter extends CustomPainter {
 
       // Create wave effect
       for (double x = 0; x < waveWidth; x++) {
-        final y = sin(x * 0.1 + DateTime.now().millisecondsSinceEpoch * 0.002) * 1;
+        final y =
+            sin(x * 0.1 + DateTime.now().millisecondsSinceEpoch * 0.002) * 1;
         if (x == 0) {
           path.moveTo(x, size.height / 2 + y);
         } else {
@@ -461,7 +482,19 @@ extension ToastTypeExtension on ToastType {
     }
   }
 
-
+  String defaultTitle(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (this) {
+      case ToastType.success:
+        return l10n.successTitle;
+      case ToastType.error:
+        return l10n.errorTitle;
+      case ToastType.warning:
+        return l10n.warning;
+      case ToastType.info:
+        return l10n.info;
+    }
+  }
 }
 
 class _ToastWrapper extends StatefulWidget {
@@ -483,7 +516,8 @@ class _ToastWrapper extends StatefulWidget {
   State<_ToastWrapper> createState() => _ToastWrapperState();
 }
 
-class _ToastWrapperState extends State<_ToastWrapper> with SingleTickerProviderStateMixin {
+class _ToastWrapperState extends State<_ToastWrapper>
+    with SingleTickerProviderStateMixin {
   late bool _visible;
   late AnimationController _controller;
   late Animation<double> _animation;
@@ -560,7 +594,7 @@ class _ToastWrapperState extends State<_ToastWrapper> with SingleTickerProviderS
             child: _OverlayContent(
               title: widget.title,
               message: widget.message,
-              color: widget.type.color,
+              type: widget.type,
               onDismiss: _dismiss,
               durationInSeconds: widget.durationInSeconds,
               showProgressBar: true,
@@ -571,7 +605,6 @@ class _ToastWrapperState extends State<_ToastWrapper> with SingleTickerProviderS
     );
   }
 }
-
 
 class SimpleToastManager {
   static void show({
@@ -604,10 +637,8 @@ class SimpleToastManager {
             child: _OverlayContent(
               title: title,
               message: message,
-              color: type.color,
-              onDismiss: () {
-
-              },
+              type: type,
+              onDismiss: () {},
               durationInSeconds: durationInSeconds,
               showProgressBar: true,
             ),

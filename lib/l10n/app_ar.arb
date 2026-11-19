@@ -299,7 +299,7 @@
   "addRole": "نقش جدید",
   "roleName": "نام نقش",
   "userRole": "نقش کاربر",
-  "errorTitle": "خطا",
+  "errorTitle": "ناموفق",
   "retry": "تلاش دوباره",
   "forceChangePassword": "تغییر رمز بعد ورود",
   "forceEmailVerification": "تایید ایمیل",
@@ -739,5 +739,7 @@
   "productStock": "موجودی",
   "purchasePrice": "قیمت خرید",
   "batchPurPrice": "قیمت خرید بچ",
-  "item": "تعداد جنس"
+  "item": "تعداد جنس",
+  "warning": "هشدار",
+  "info": "توجه"
 }

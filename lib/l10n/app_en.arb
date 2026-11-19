@@ -739,5 +739,7 @@
   "productStock": "Stock",
   "purchasePrice": "Purchase Price",
   "batchPurPrice": "Batch Purchased",
-  "item": "Item"
+  "item": "Item",
+  "warning": "Warning",
+  "info": "Info"
 }

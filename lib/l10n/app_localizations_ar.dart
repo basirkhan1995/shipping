@@ -883,7 +883,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get userRole => 'نقش کاربر';
 
   @override
-  String get errorTitle => 'خطا';
+  String get errorTitle => 'ناموفق';
 
   @override
   String get retry => 'تلاش دوباره';
@@ -2233,4 +2233,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get item => 'تعداد جنس';
+
+  @override
+  String get warning => 'هشدار';
+
+  @override
+  String get info => 'توجه';
 }

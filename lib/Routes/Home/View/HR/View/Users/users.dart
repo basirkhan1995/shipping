@@ -11,6 +11,7 @@ import '../../../../../../Features/Widgets/zbutton.dart';
 import '../../../../../../l10n/app_localizations.dart';
 import '../../../../../Auth/bloc/auth_bloc.dart';
 import '../../../../../Auth/model/user_model.dart';
+import '../../../Stock/Orders/features/status_method.dart';
 import 'add_user.dart';
 import 'bloc/users_bloc.dart';
 import 'model/user_model.dart';
@@ -555,7 +556,6 @@ class _UserRowState extends State<_UserRow> {
     final user = widget.user;
     final isActive = user.usrStatus == 1;
     final tr = AppLocalizations.of(context)!;
-    final statusLabel = isActive ? widget.activeLabel : widget.blockedLabel;
     final statusColor = isActive ? Colors.green : scheme.error;
     final radius = BorderRadius.circular(10);
 
@@ -680,10 +680,7 @@ class _UserRowState extends State<_UserRow> {
                 // Status pill
                 if (!widget.compact) ...[
                   const SizedBox(width: 8),
-                  _StatusPill(
-                    label: statusLabel,
-                    color: statusColor,
-                  ),
+                  StatusDotIndicator(status: user.usrStatus),
                 ],
 
                 // Actions
@@ -871,8 +868,8 @@ class _Avatar extends StatelessWidget {
             right: -1,
             bottom: -1,
             child: Container(
-              width: 10,
-              height: 10,
+              width: 15,
+              height: 15,
               decoration: BoxDecoration(
                 color: statusColor,
                 shape: BoxShape.circle,
@@ -881,32 +878,6 @@ class _Avatar extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _StatusPill extends StatelessWidget {
-  final String label;
-  final Color color;
-  const _StatusPill({required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: .12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: .3)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: color,
-        ),
       ),
     );
   }

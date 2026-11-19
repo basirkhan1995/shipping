@@ -2242,4 +2242,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get item => 'Item';
+
+  @override
+  String get warning => 'Warning';
+
+  @override
+  String get info => 'Info';
 }

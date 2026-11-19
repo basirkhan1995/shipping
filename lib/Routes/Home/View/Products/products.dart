@@ -691,6 +691,7 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
                 ),
               ),
             ),
+            if (visibility.isWholeSale)
             SizedBox(
               width: 100,
               child: Text(
@@ -702,7 +703,7 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
                 textAlign: TextAlign.center,
               ),
             ),
-            if (visibility.isWholeSale)
+
               SizedBox(
                 width: 100,
                 child: Text(
@@ -1078,6 +1079,7 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
                     textAlign: TextAlign.center,
                   ),
                 ),
+                if (visibility.isWholeSale)
                 SizedBox(
                   width: 100,
                   child: Text(
@@ -1091,7 +1093,7 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
                     textAlign: TextAlign.center,
                   ),
                 ),
-                if (visibility.isWholeSale)
+
                   SizedBox(
                     width: 100,
                     child: Text(

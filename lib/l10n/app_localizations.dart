@@ -4461,6 +4461,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Item'**
   String get item;
+
+  /// No description provided for @warning.
+  ///
+  /// In en, this message translates to:
+  /// **'Warning'**
+  String get warning;
+
+  /// No description provided for @info.
+  ///
+  /// In en, this message translates to:
+  /// **'Info'**
+  String get info;
 }
 
 class _AppLocalizationsDelegate
