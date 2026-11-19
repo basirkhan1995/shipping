@@ -64,24 +64,17 @@ class ShipmentBloc extends Bloc<ShipmentEvent, ShipmentState> {
     }
   }
 
-  Future<void> _onLoadMoreShipments(
-      LoadMoreShipments event,
-      Emitter<ShipmentState> emit,
-      ) async {
+  Future<void> _onLoadMoreShipments(LoadMoreShipments event, Emitter<ShipmentState> emit) async {
     final currentState = state;
-
     if (currentState is! ShipmentLoaded ||
         currentState.isLoadingMore ||
         !currentState.hasMore ||
         _usrName == null) {
       return;
     }
-
     emit(currentState.copyWith(isLoadingMore: true));
-
     try {
       final nextPage = _currentPage + 1;
-
       final result = await _repository.getContainers(
         status: _status,
         shpReference: _shpReference,

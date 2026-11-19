@@ -2239,4 +2239,22 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get info => 'توجه';
+
+  @override
+  String get loadingDate => 'تاریخ بارگیری';
+
+  @override
+  String get containerNo => 'کانتینر شمیره';
+
+  @override
+  String get sequence => 'مسلسل شمیره';
+
+  @override
+  String get port => 'بندر';
+
+  @override
+  String get totalRent => 'کل کرایه';
+
+  @override
+  String get items => 'اجناس';
 }

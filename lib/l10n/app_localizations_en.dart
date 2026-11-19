@@ -2248,4 +2248,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get info => 'Info';
+
+  @override
+  String get loadingDate => 'Loading Date';
+
+  @override
+  String get containerNo => 'Container No.';
+
+  @override
+  String get sequence => 'Sequence';
+
+  @override
+  String get port => 'Port';
+
+  @override
+  String get totalRent => 'Total Rent';
+
+  @override
+  String get items => 'Items';
 }

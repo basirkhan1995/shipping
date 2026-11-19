@@ -4473,6 +4473,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Info'**
   String get info;
+
+  /// No description provided for @loadingDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading Date'**
+  String get loadingDate;
+
+  /// No description provided for @containerNo.
+  ///
+  /// In en, this message translates to:
+  /// **'Container No.'**
+  String get containerNo;
+
+  /// No description provided for @sequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Sequence'**
+  String get sequence;
+
+  /// No description provided for @port.
+  ///
+  /// In en, this message translates to:
+  /// **'Port'**
+  String get port;
+
+  /// No description provided for @totalRent.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Rent'**
+  String get totalRent;
+
+  /// No description provided for @items.
+  ///
+  /// In en, this message translates to:
+  /// **'Items'**
+  String get items;
 }
 
 class _AppLocalizationsDelegate

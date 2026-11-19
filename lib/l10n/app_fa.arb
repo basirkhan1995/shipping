@@ -741,5 +741,11 @@
   "batchPurPrice": "قیمت خرید بچ",
   "item": "تعداد جنس",
   "warning": "هشدار",
-  "info": "توجه"
+  "info": "توجه",
+  "loadingDate": "تاریخ بارگیری",
+  "containerNo": "نمبر کانتینر",
+  "sequence": "نمبر مسلسل",
+  "port": "بندر",
+  "totalRent": "کل کرایه",
+  "items": "اجناس"
 }

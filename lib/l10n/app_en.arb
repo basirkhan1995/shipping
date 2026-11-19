@@ -741,5 +741,11 @@
   "batchPurPrice": "Batch Purchased",
   "item": "Item",
   "warning": "Warning",
-  "info": "Info"
+  "info": "Info",
+  "loadingDate": "Loading Date",
+  "containerNo": "Container No.",
+  "sequence": "Sequence",
+  "port": "Port",
+  "totalRent": "Total Rent",
+  "items": "Items"
 }

@@ -2240,4 +2240,22 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get info => 'توجه';
+
+  @override
+  String get loadingDate => 'تاریخ بارگیری';
+
+  @override
+  String get containerNo => 'نمبر کانتینر';
+
+  @override
+  String get sequence => 'نمبر مسلسل';
+
+  @override
+  String get port => 'بندر';
+
+  @override
+  String get totalRent => 'کل کرایه';
+
+  @override
+  String get items => 'اجناس';
 }

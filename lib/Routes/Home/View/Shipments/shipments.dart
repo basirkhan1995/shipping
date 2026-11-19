@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Other/responsive_widget.dart';
+import 'package:shipping/Features/Widgets/extensions.dart';
 import 'package:shipping/Features/Widgets/search_field.dart';
 import 'package:shipping/Features/Widgets/no_data_widget.dart';
 import 'package:shipping/Features/Widgets/shimmer.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
 import 'package:shipping/Features/Date/z_range_picker.dart';
 import 'package:shipping/Routes/Home/View/Stock/Orders/features/status_method.dart';
+import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../Features/Other/zdropdown.dart';
 import '../../../Auth/bloc/auth_bloc.dart';
 import 'bloc/shipment_bloc.dart';
@@ -328,9 +330,10 @@ class _DesktopViewState extends State<_DesktopView> {
   // ---------------------------------------------------------------------------
 
   Widget _buildTableHeader(ColorScheme color, TextTheme textTheme) {
+    final tr = AppLocalizations.of(context)!;
     final style = textTheme.titleSmall?.copyWith(
       letterSpacing: 0.8,
-      fontSize: 12,
+      fontSize: 13,
       fontWeight: FontWeight.bold,
     );
 
@@ -343,22 +346,22 @@ class _DesktopViewState extends State<_DesktopView> {
       ),
       child: Row(
         children: [
-          SizedBox(width: 115, child: Text('LOADING DATE', style: style)),
-          SizedBox(width: 155, child: Text('CONTAINER NO.', style: style)),
-          SizedBox(width: 190, child: Text('REFERENCE', style: style)),
-          SizedBox(width: 125, child: Text('SEQUENCE', style: style)),
-          Expanded(child: Text('PORT', style: style)),
+          SizedBox(width: 115, child: Text(tr.loadingDate.toUpperCase(), style: style)),
+          SizedBox(width: 155, child: Text(tr.containerNo.toUpperCase(), style: style)),
+          SizedBox(width: 190, child: Text(tr.reference.toUpperCase(), style: style)),
+          SizedBox(width: 125, child: Text(tr.sequence.toUpperCase(), style: style)),
+          Expanded(child: Text(tr.port.toUpperCase(), style: style)),
           SizedBox(
             width: 75,
-            child: Text('ITEMS', textAlign: TextAlign.end, style: style),
+            child: Text(tr.items, textAlign: TextAlign.end, style: style),
           ),
           SizedBox(
             width: 145,
-            child: Text('TOTAL RENT', textAlign: TextAlign.end, style: style),
+            child: Text(tr.totalRent.toUpperCase(), textAlign: TextAlign.end, style: style),
           ),
           SizedBox(
             width: 105,
-            child: Text('STATUS', textAlign: TextAlign.end, style: style),
+            child: Text(tr.status.toUpperCase(), textAlign: TextAlign.center, style: style),
           ),
         ],
       ),
@@ -536,17 +539,14 @@ class _ShipmentRowWidget extends StatelessWidget {
             align: TextAlign.end,
           ),
           cell(
-            shipment.totalRent.toStringAsFixed(2),
+            shipment.totalRent.toAmount(),
             width: 145,
             align: TextAlign.end,
             weight: FontWeight.w700,
           ),
           SizedBox(
             width: 105,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: StatusDotIndicator(status: shipment.status),
-            ),
+            child: StatusDotIndicator(status: shipment.status),
           ),
         ],
       ),
