@@ -412,8 +412,9 @@ class _ShipmentContainerDialogState
       },
       child: ZFormDialog(
         width: 600,
+        padding: EdgeInsets.all(10),
         icon: _isEditing ? Icons.edit : Icons.add_box_outlined,
-        title: _isEditing ? 'Edit Container' : 'Add Container',
+        title: _isEditing ? 'Edit Container - ${widget.shipment?.containerNo}' : 'Add Container',
         isActionTrue: false,
         onAction: null,
         child: ConstrainedBox(
