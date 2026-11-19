@@ -8,6 +8,7 @@ import 'package:shipping/Features/Widgets/no_data_widget.dart';
 import 'package:shipping/Features/Widgets/shimmer.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
 import 'package:shipping/Features/Date/z_range_picker.dart';
+import 'package:shipping/Routes/Home/View/Shipments/routes/ShpByID/shp_by_id.dart';
 import 'package:shipping/Routes/Home/View/Shipments/shp_form.dart';
 import 'package:shipping/Routes/Home/View/Stock/Orders/features/status_method.dart';
 import 'package:shipping/l10n/app_localizations.dart';
@@ -88,8 +89,6 @@ class _DesktopViewState extends State<_DesktopView> {
   late String _to;
   late final String _defaultDate;
 
-  // Do not apply a date range on the initial request. This prevents older
-  // pending shipments from being hidden by an automatic "today" filter.
   bool _dateFilterActive = false;
 
   @override
@@ -170,6 +169,64 @@ class _DesktopViewState extends State<_DesktopView> {
   }
 
   // ---------------------------------------------------------------------------
+  // ROW ACTIONS
+  // ---------------------------------------------------------------------------
+
+  void _openDetails(ShipmentModel shipment) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: context.read<ShipmentBloc>(),
+          child: ShpByIdView(shpId: shipment.shpId),
+        ),
+      ),
+    );
+  }
+
+  void _openEdit(ShipmentModel shipment) {
+    ShipmentContainerDialog.show(context, shipment: shipment);
+  }
+
+  Future<void> _confirmDelete(ShipmentModel shipment) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete container?'),
+        content: Text(
+          'Are you sure you want to delete container '
+              '"${shipment.containerNo ?? shipment.shpReference}"? '
+              'This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthenticatedState) return;
+
+    context.read<ShipmentBloc>().add(
+      DeleteShipment(
+        usrName: authState.loginData.usrEmail??"",
+        shpId: shipment.shpId,
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // BUILD
   // ---------------------------------------------------------------------------
 
@@ -245,11 +302,11 @@ class _DesktopViewState extends State<_DesktopView> {
           label: 'Refresh',
           onPressed: _reload,
         ),
-
+        const SizedBox(width: 8),
         _ShipmentPillButton(
           icon: Icons.add,
           label: 'Add Shipment',
-          onPressed: (){
+          onPressed: () {
             ShipmentContainerDialog.show(context);
           },
         ),
@@ -356,10 +413,18 @@ class _DesktopViewState extends State<_DesktopView> {
       ),
       child: Row(
         children: [
-          SizedBox(width: 115, child: Text(tr.loadingDate.toUpperCase(), style: style)),
-          SizedBox(width: 155, child: Text(tr.containerNo.toUpperCase(), style: style)),
-          SizedBox(width: 190, child: Text(tr.reference.toUpperCase(), style: style)),
-          SizedBox(width: 125, child: Text(tr.sequence.toUpperCase(), style: style)),
+          SizedBox(
+              width: 115,
+              child: Text(tr.loadingDate.toUpperCase(), style: style)),
+          SizedBox(
+              width: 155,
+              child: Text(tr.containerNo.toUpperCase(), style: style)),
+          SizedBox(
+              width: 190,
+              child: Text(tr.reference.toUpperCase(), style: style)),
+          SizedBox(
+              width: 125,
+              child: Text(tr.sequence.toUpperCase(), style: style)),
           Expanded(child: Text(tr.port.toUpperCase(), style: style)),
           SizedBox(
             width: 75,
@@ -367,12 +432,15 @@ class _DesktopViewState extends State<_DesktopView> {
           ),
           SizedBox(
             width: 145,
-            child: Text(tr.totalRent.toUpperCase(), textAlign: TextAlign.end, style: style),
+            child: Text(tr.totalRent.toUpperCase(),
+                textAlign: TextAlign.end, style: style),
           ),
           SizedBox(
             width: 105,
-            child: Text(tr.status.toUpperCase(), textAlign: TextAlign.center, style: style),
+            child: Text(tr.status.toUpperCase(),
+                textAlign: TextAlign.center, style: style),
           ),
+          const SizedBox(width: 40), // actions column
         ],
       ),
     );
@@ -436,16 +504,16 @@ class _DesktopViewState extends State<_DesktopView> {
           );
         }
 
+        final shipment = shipments[index];
+
         return InkWell(
-           onTap: (){
-             ShipmentContainerDialog.show(
-               context,
-               shipment: shipments[index],
-             );
-           },
+          onTap: () => _openDetails(shipment),
           child: _ShipmentRowWidget(
-            shipment: shipments[index],
+            shipment: shipment,
             isOdd: index.isOdd,
+            onView: () => _openDetails(shipment),
+            onEdit: () => _openEdit(shipment),
+            onDelete: () => _confirmDelete(shipment),
           ),
         );
       },
@@ -496,10 +564,16 @@ class _DesktopViewState extends State<_DesktopView> {
 class _ShipmentRowWidget extends StatelessWidget {
   final ShipmentModel shipment;
   final bool isOdd;
+  final VoidCallback onView;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   const _ShipmentRowWidget({
     required this.shipment,
     required this.isOdd,
+    required this.onView,
+    required this.onEdit,
+    required this.onDelete,
   });
 
   @override
@@ -540,7 +614,8 @@ class _ShipmentRowWidget extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              cell(shipment.loadingDate?.shamsiDateString ?? '—', width: 115),
+              cell(shipment.loadingDate?.shamsiDateString ?? '—',
+                  width: 115),
               cell(shipment.loadingDate ?? '—', width: 115),
             ],
           ),
@@ -572,8 +647,91 @@ class _ShipmentRowWidget extends StatelessWidget {
             width: 105,
             child: StatusDotIndicator(status: shipment.status),
           ),
+          SizedBox(
+            width: 40,
+            child: _ShipmentRowMenu(
+              onView: onView,
+              onEdit: onEdit,
+              onDelete: onDelete,
+            ),
+          ),
         ],
       ),
+    );
+  }
+}
+
+// -----------------------------------------------------------------------------
+// ROW 3-DOT MENU
+// -----------------------------------------------------------------------------
+
+enum _ShipmentRowAction { view, edit, delete }
+
+class _ShipmentRowMenu extends StatelessWidget {
+  final VoidCallback onView;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const _ShipmentRowMenu({
+    required this.onView,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme;
+
+    return PopupMenuButton<_ShipmentRowAction>(
+      icon: Icon(Icons.more_vert, size: 18, color: color.onSurfaceVariant),
+      padding: EdgeInsets.zero,
+      tooltip: 'Actions',
+      splashRadius: 18,
+      onSelected: (action) {
+        switch (action) {
+          case _ShipmentRowAction.view:
+            onView();
+            break;
+          case _ShipmentRowAction.edit:
+            onEdit();
+            break;
+          case _ShipmentRowAction.delete:
+            onDelete();
+            break;
+        }
+      },
+      itemBuilder: (context) => [
+        const PopupMenuItem(
+          value: _ShipmentRowAction.view,
+          child: Row(
+            children: [
+              Icon(Icons.visibility_outlined, size: 18),
+              SizedBox(width: 8),
+              Text('View details'),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: _ShipmentRowAction.edit,
+          child: Row(
+            children: [
+              Icon(Icons.edit_outlined, size: 18),
+              SizedBox(width: 8),
+              Text('Edit'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: _ShipmentRowAction.delete,
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline, size: 18, color: color.error),
+              const SizedBox(width: 8),
+              Text('Delete', style: TextStyle(color: color.error)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

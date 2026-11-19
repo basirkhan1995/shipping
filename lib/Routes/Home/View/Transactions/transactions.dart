@@ -482,6 +482,7 @@ class _DesktopViewState extends State<_DesktopView> {
         await _openFundTransferDialog(reference: row.reference);
         break;
       case 'BULK':
+      case 'TRPT':
         await _openBulkDialog(reference: row.reference);
         break;
       case 'SALE':
@@ -543,6 +544,7 @@ class _DesktopViewState extends State<_DesktopView> {
          _openOrdTxnDialog();
          break;
       case 'BULK':
+      case 'TRPT':
         _openBulkDialog();
         break;
 

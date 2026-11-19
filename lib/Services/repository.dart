@@ -46,6 +46,7 @@ import '../Routes/Home/View/Settings/View/General/UserProfile/model/user_profile
 import '../Routes/Home/View/Settings/View/General/UserRole/model/role_model.dart';
 import '../Routes/Home/View/Settings/View/ProductCategory/model/pro_cat_model.dart';
 import '../Routes/Home/View/Shipments/model/shp_model.dart';
+import '../Routes/Home/View/Shipments/routes/ShpByID/model/shp_details_model.dart';
 import '../Routes/Home/View/Stakeholder/model/stk_model.dart';
 import '../Routes/Home/View/Stock/GoodsShift/model/shift_model.dart';
 import '../Routes/Home/View/Stock/Orders/model/orders_model.dart';
@@ -677,64 +678,6 @@ class Repositories {
     }
     return body;
   }
-
-  // Future<TxnByReferenceModel> getTxnByReference({
-  //   required String reference,
-  //   CancelToken? cancelToken,
-  // }) async {
-  //   final response = await _api.get(
-  //     endpoint: '/journal/getSingleTransaction.php',
-  //     queryParams: {'ref': reference},
-  //     cancelToken: cancelToken,
-  //   );
-  //
-  //   final body = response.data;
-  //
-  //   // Case 1: a single object.
-  //   final map = _asMap(body);
-  //   if (map != null) {
-  //     return TxnByReferenceModel.fromMap(map);
-  //   }
-  //
-  //   // Case 2: a list — take the first element.
-  //   final list = _asList(body);
-  //   if (list != null && list.isNotEmpty && list.first is Map) {
-  //     return TxnByReferenceModel.fromMap(
-  //       Map<String, dynamic>.from(list.first as Map),
-  //     );
-  //   }
-  //
-  //   _fail(body, fallback: 'Failed to load transaction by reference');
-  // }
-  //
-  // Future<FetchAtatModel> getATATByReference({
-  //   required String reference,
-  //   CancelToken? cancelToken,
-  // }) async {
-  //   final response = await _api.get(
-  //     endpoint: '/journal/fundTransfer.php',
-  //     queryParams: {'ref': reference},
-  //     cancelToken: cancelToken,
-  //   );
-  //
-  //   final body = response.data;
-  //
-  //   // Case 1: a single object.
-  //   final map = _asMap(body);
-  //   if (map != null) {
-  //     return FetchAtatModel.fromMap(map);
-  //   }
-  //
-  //   // Case 2: a list — take the first element.
-  //   final list = _asList(body);
-  //   if (list != null && list.isNotEmpty && list.first is Map) {
-  //     return FetchAtatModel.fromMap(
-  //       Map<String, dynamic>.from(list.first as Map),
-  //     );
-  //   }
-  //
-  //   _fail(body, fallback: 'Failed to load transfer by reference');
-  // }
 
   Future<Map<String, dynamic>> cashFlowOperations({
     required TransactionDraft newTransaction,
@@ -3806,8 +3749,33 @@ class Repositories {
     return PnLChartModel.fromMap(body);
   }
 
+  // ─────────────────────────────────────────────────────────────
+// GET SHIPMENT DETAILS (container + items)
+// GET shipment.php?action=get&shpId=1
+// ─────────────────────────────────────────────────────────────
+  Future<ShipmentDetailsModel> getShipmentDetails({
+    required int shpId,
+  }) async {
+    try {
+      final response = await _api.get(
+        endpoint: "/shipment/shipment.php",
+        queryParams: {
+          'action': 'get',
+          'shpId': shpId,
+        },
+      );
 
-  ///SHIPMENTS
+      final data = _validateResponse(response.data);
+      return ShipmentDetailsModel.fromJson(data);
+    } on DioException catch (e) {
+      throw ApiException(
+        e.message ?? 'Failed to load shipment details.',
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  ///SHIPMENTS -----------------------------------------------------------------
   Future<ShipmentListResponse> getContainers({
     String status = 'pending',
     String? shpReference,
@@ -3880,7 +3848,7 @@ class Repositories {
   // ADD SHIPMENT ITEM
   // ─────────────────────────────────────────────────────────────
 
-  Future<int> addItem({
+  Future<int> addShpItem({
     required String usrName,
     required int shpId,
     required String accountNo,
@@ -3902,7 +3870,7 @@ class Repositories {
           'AccountNo': accountNo,
 
           // PHP API expects itemsDescription.
-          'itemsDescription': itemDescription,
+          'itemDescription': itemDescription,
 
           'qty': qty,
           'cbm': cbm,
@@ -3932,6 +3900,94 @@ class Repositories {
     }
   }
 
+  // ─────────────────────────────────────────────────────────────
+  // UPDATE SHIPMENT ITEM
+  // ─────────────────────────────────────────────────────────────
+
+  Future<void> updateShpItem({
+    required String usrName,
+    required int shpItmId,
+    String? accountNo,
+    String? itemDescription,
+    double? qty,
+    double? cbm,
+    double? weight,
+    double? ratePerCbm,
+    double? ratePerWeight,
+    double? extraCharges,
+  }) async {
+    try {
+      final Map<String, dynamic> payload = {
+        'action': 'updateItem',
+        'usrName': usrName,
+        'shpItmId': shpItmId,
+      };
+
+      // Only send fields that were provided.
+      if (accountNo != null) {
+        payload['AccountNo'] = accountNo;
+      }
+
+      if (itemDescription != null) {
+        payload['itemsDescription'] = itemDescription;
+      }
+
+      if (qty != null) payload['qty'] = qty;
+      if (cbm != null) payload['cbm'] = cbm;
+      if (weight != null) payload['weight'] = weight;
+
+      if (ratePerCbm != null) {
+        payload['ratePerCbm'] = ratePerCbm;
+      }
+
+      if (ratePerWeight != null) {
+        payload['ratePerWeight'] = ratePerWeight;
+      }
+
+      if (extraCharges != null) {
+        payload['extraCharges'] = extraCharges;
+      }
+
+      final response = await _api.post(
+        endpoint: "/shipment/shipment.php",
+        data: payload,
+      );
+
+      _validateResponse(response.data);
+    } on DioException catch (e) {
+      throw ApiException(
+        e.message ?? 'Failed to update shipment item.',
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // DELETE SHIPMENT ITEM
+  // ─────────────────────────────────────────────────────────────
+
+  Future<void> deleteShpItem({
+    required String usrName,
+    required int shpItmId,
+  }) async {
+    try {
+      final response = await _api.post(
+        endpoint: "/shipment/shipment.php",
+        data: {
+          'action': 'deleteItem',
+          'usrName': usrName,
+          'shpItmId': shpItmId,
+        },
+      );
+
+      _validateResponse(response.data);
+    } on DioException catch (e) {
+      throw ApiException(
+        e.message ?? 'Failed to delete shipment item.',
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
 
   // ═══════════════════════════════════════════════════════════════
   // SHIPMENT CONTAINER: CREATE
@@ -4040,95 +4096,6 @@ class Repositories {
     }
   }
 
-
-  // ─────────────────────────────────────────────────────────────
-  // UPDATE SHIPMENT ITEM
-  // ─────────────────────────────────────────────────────────────
-
-  Future<void> updateItem({
-    required String usrName,
-    required int shpItmId,
-    String? accountNo,
-    String? itemDescription,
-    double? qty,
-    double? cbm,
-    double? weight,
-    double? ratePerCbm,
-    double? ratePerWeight,
-    double? extraCharges,
-  }) async {
-    try {
-      final Map<String, dynamic> payload = {
-        'action': 'updateItem',
-        'usrName': usrName,
-        'shpItmId': shpItmId,
-      };
-
-      // Only send fields that were provided.
-      if (accountNo != null) {
-        payload['AccountNo'] = accountNo;
-      }
-
-      if (itemDescription != null) {
-        payload['itemsDescription'] = itemDescription;
-      }
-
-      if (qty != null) payload['qty'] = qty;
-      if (cbm != null) payload['cbm'] = cbm;
-      if (weight != null) payload['weight'] = weight;
-
-      if (ratePerCbm != null) {
-        payload['ratePerCbm'] = ratePerCbm;
-      }
-
-      if (ratePerWeight != null) {
-        payload['ratePerWeight'] = ratePerWeight;
-      }
-
-      if (extraCharges != null) {
-        payload['extraCharges'] = extraCharges;
-      }
-
-      final response = await _api.post(
-        endpoint: "/shipment/shipment.php",
-        data: payload,
-      );
-
-      _validateResponse(response.data);
-    } on DioException catch (e) {
-      throw ApiException(
-        e.message ?? 'Failed to update shipment item.',
-        statusCode: e.response?.statusCode,
-      );
-    }
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  // DELETE SHIPMENT ITEM
-  // ─────────────────────────────────────────────────────────────
-
-  Future<void> deleteItem({
-    required String usrName,
-    required int shpItmId,
-  }) async {
-    try {
-      final response = await _api.post(
-        endpoint: "/shipment/shipment.php",
-        data: {
-          'action': 'deleteItem',
-          'usrName': usrName,
-          'shpItmId': shpItmId,
-        },
-      );
-
-      _validateResponse(response.data);
-    } on DioException catch (e) {
-      throw ApiException(
-        e.message ?? 'Failed to delete shipment item.',
-        statusCode: e.response?.statusCode,
-      );
-    }
-  }
 
   // ─────────────────────────────────────────────────────────────
   // RESPONSE VALIDATION
