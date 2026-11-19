@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/toast.dart';
+import 'package:shipping/Features/Widgets/zbutton.dart';
 import '../../../../../../Features/Other/form_dialog.dart';
 import '../../../../Features/Widgets/ztextfield.dart';
 import '../../../Auth/bloc/auth_bloc.dart';
@@ -328,6 +329,7 @@ class _ShipmentContainerDialogState
 
           ZTextFieldEntitled(
             controller: _descriptionCtrl,
+            keyboardType: TextInputType.multiline,
             title: 'Description',
             isEnabled: !_isBusy,
           ),
@@ -341,35 +343,35 @@ class _ShipmentContainerDialogState
       children: [
         if (_isEditing) ...[
           Expanded(
-            child: OutlinedButton.icon(
+            child: ZOutlineButton(
+              backgroundHover: Theme.of(context).colorScheme.error,
               onPressed: _isBusy ? null : _delete,
-              icon: const Icon(Icons.delete_outline),
+              icon: Icons.delete_outline,
               label: const Text('Delete'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.error,
-              ),
             ),
           ),
           const SizedBox(width: 8),
         ],
 
         Expanded(
-          child: OutlinedButton(
+          child: ZOutlineButton(
             onPressed: _isBusy
                 ? null
                 : () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            label: const Text('Cancel'),
           ),
         ),
 
         const SizedBox(width: 8),
 
         Expanded(
-          child: ElevatedButton(
+          child: ZOutlineButton(
+            isActive: true,
             onPressed: _isBusy ? null : _submit,
-            child: _isBusy
+            label: _isBusy
                 ? const SizedBox(
               width: 18,
+
               height: 18,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
