@@ -3929,7 +3929,7 @@ class Repositories {
       }
 
       if (itemDescription != null) {
-        payload['itemsDescription'] = itemDescription;
+        payload['itemDescription'] = itemDescription;
       }
 
       if (qty != null) payload['qty'] = qty;
