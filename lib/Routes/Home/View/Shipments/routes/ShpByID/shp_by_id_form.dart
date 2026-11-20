@@ -1,7 +1,10 @@
+import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/ztextfield.dart';
+import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../../../Features/Other/form_dialog.dart';
 import '../../../../../../Features/Other/generic_textfield.dart';
 import '../../../../../../Features/Widgets/extensions.dart';
@@ -9,12 +12,24 @@ import '../../../Stakeholder/View/StkAccount/bloc/stk_accounts_bloc.dart';
 import '../../../Stakeholder/View/StkAccount/bloc/stk_accounts_event.dart';
 import '../../../Stakeholder/View/StkAccount/bloc/stk_accounts_state.dart';
 import '../../../Stakeholder/model/stk_model.dart';
+import 'bloc/shp_by_id_bloc.dart';
 import 'model/shp_details_model.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Account category filter — stakeholders only (matches CashTxnForm)
 // ─────────────────────────────────────────────────────────────────────────────
 const int _kStakeholderCategory = 8;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Numeric input formatters
+// ─────────────────────────────────────────────────────────────────────────────
+final List<TextInputFormatter> _intFormatters = [
+  FilteringTextInputFormatter.digitsOnly,
+];
+
+final List<TextInputFormatter> _decimalFormatters = [
+  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Result
@@ -44,17 +59,38 @@ class ShpItemFormResult {
 Future<ShpItemFormResult?> showShpItemForm(
     BuildContext context, {
       ShipmentItemModel? existing,
+      required int shpId,
+      required String usrName,
     }) {
+  // Capture the bloc from the CALLER's context (which IS under the provider),
+  // then re-expose it to the dialog route via BlocProvider.value.
+  final bloc = context.read<ShpByIdBloc>();
+
   return showDialog<ShpItemFormResult>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => ShpItemForm(existing: existing),
+    builder: (_) => BlocProvider<ShpByIdBloc>.value(
+      value: bloc,
+      child: ShpItemForm(
+        existing: existing,
+        shpId: shpId,
+        usrName: usrName,
+      ),
+    ),
   );
 }
 
 class ShpItemForm extends StatefulWidget {
   final ShipmentItemModel? existing;
-  const ShpItemForm({super.key, this.existing});
+  final int shpId;
+  final String usrName;
+
+  const ShpItemForm({
+    super.key,
+    this.existing,
+    required this.shpId,
+    required this.usrName,
+  });
 
   @override
   State<ShpItemForm> createState() => _ShpItemFormState();
@@ -85,6 +121,7 @@ class _ShpItemFormState extends State<ShpItemForm> {
 
   StkAccountModel? _acc;
   String? _error;
+  bool _submitting = false;
 
   bool get _isEdit => widget.existing != null;
 
@@ -97,14 +134,10 @@ class _ShpItemFormState extends State<ShpItemForm> {
     _description = TextEditingController(text: e?.itemDescription ?? '');
     _qty = TextEditingController(text: e == null ? '' : _fmt(e.qty));
     _cbm = TextEditingController(text: e == null ? '' : _fmt(e.cbm, decimals: 4));
-    _weight =
-        TextEditingController(text: e == null ? '' : _fmt(e.weight, decimals: 3));
-    _ratePerCbm = TextEditingController(
-        text: e == null ? '' : _fmt(e.ratePerCbm, decimals: 4));
-    _ratePerWeight = TextEditingController(
-        text: e == null ? '' : _fmt(e.ratePerWeight, decimals: 4));
-    _extraCharges = TextEditingController(
-        text: e == null ? '' : _fmt(e.extraCharges, decimals: 2));
+    _weight = TextEditingController(text: e == null ? '' : _fmt(e.weight, decimals: 3));
+    _ratePerCbm = TextEditingController(text: e == null ? '' : _fmt(e.ratePerCbm, decimals: 4));
+    _ratePerWeight = TextEditingController(text: e == null ? '' : _fmt(e.ratePerWeight, decimals: 4));
+    _extraCharges = TextEditingController(text: e == null ? '' : _fmt(e.extraCharges, decimals: 2));
 
     _accountFocus = FocusNode();
     _descFocus = FocusNode();
@@ -167,17 +200,24 @@ class _ShpItemFormState extends State<ShpItemForm> {
     final kgRate = _d(_ratePerWeight);
 
     if (cbmRate > 0 && kgRate > 0) {
-      if (_rateCbmFocus.hasFocus) {
-        _ratePerWeight.removeListener(_onRateChanged);
-        _ratePerWeight.clear();
-        _ratePerWeight.addListener(_onRateChanged);
-      } else {
+      final clearCbm = !_rateCbmFocus.hasFocus; // the one NOT focused gets cleared
+      // Defer so we don't mutate the field mid key-event / caret movement.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
         _ratePerCbm.removeListener(_onRateChanged);
-        _ratePerCbm.clear();
+        _ratePerWeight.removeListener(_onRateChanged);
+        if (clearCbm) {
+          _ratePerCbm.clear();
+        } else {
+          _ratePerWeight.clear();
+        }
         _ratePerCbm.addListener(_onRateChanged);
-      }
+        _ratePerWeight.addListener(_onRateChanged);
+        _rebuild();
+      });
+    } else {
+      _rebuild();
     }
-    _rebuild();
   }
 
   bool get _lockRateCbm => _d(_ratePerWeight) > 0;
@@ -194,7 +234,12 @@ class _ShpItemFormState extends State<ShpItemForm> {
     return (cbm * rc) + (wt * rw) + extra;
   }
 
-  void _submit() {
+  // ───────────────────────────────────────────────────────────────────────
+  // SUBMIT — dispatches to BLoC and awaits success/failure.
+  // Dialog stays open (shows spinner + error) until the BLoC confirms success.
+  // ───────────────────────────────────────────────────────────────────────
+  Future<void> _submit() async {
+    if (_submitting) return;
     setState(() => _error = null);
 
     if (_effectiveAccountNo == null) {
@@ -215,25 +260,99 @@ class _ShpItemFormState extends State<ShpItemForm> {
       return;
     }
 
-    Navigator.of(context).pop(ShpItemFormResult(
-      accountNo: _effectiveAccountNo!,
-      itemDescription: _description.text.trim(),
-      qty: _d(_qty),
-      cbm: _d(_cbm),
-      weight: _d(_weight),
-      ratePerCbm: _d(_ratePerCbm),
-      ratePerWeight: _d(_ratePerWeight),
-      extraCharges: _d(_extraCharges),
-    ));
+    setState(() => _submitting = true);
+
+    final bloc = context.read<ShpByIdBloc>();
+
+    // Subscribe to the bloc; complete when successMessage arrives (no error),
+    // or fail when actionError arrives.
+    final completer = Completer<bool>();
+    late final StreamSubscription<ShpByIdState> sub;
+    sub = bloc.stream.listen((s) {
+      if (s is! ShpByIdLoaded) return;
+      if (!completer.isCompleted) {
+        if (s.actionError != null) {
+          completer.complete(false);
+        } else if (s.successMessage != null) {
+          completer.complete(true);
+        }
+      }
+    });
+
+    try {
+      if (_isEdit) {
+        bloc.add(ShpByIdUpdateItemRequested(
+          shpId: widget.shpId,
+          shpItmId: widget.existing!.shpItmId,
+          usrName: widget.usrName,
+          accountNo: _effectiveAccountNo!,
+          itemDescription: _description.text.trim(),
+          qty: _d(_qty),
+          cbm: _d(_cbm),
+          weight: _d(_weight),
+          ratePerCbm: _d(_ratePerCbm),
+          ratePerWeight: _d(_ratePerWeight),
+          extraCharges: _d(_extraCharges),
+        ));
+      } else {
+        bloc.add(ShpByIdAddItemRequested(
+          shpId: widget.shpId,
+          usrName: widget.usrName,
+          accountNo: _effectiveAccountNo!,
+          itemDescription: _description.text.trim(),
+          qty: _d(_qty),
+          cbm: _d(_cbm),
+          weight: _d(_weight),
+          ratePerCbm: _d(_ratePerCbm),
+          ratePerWeight: _d(_ratePerWeight),
+          extraCharges: _d(_extraCharges),
+        ));
+      }
+
+      final ok = await completer.future;
+
+      if (!mounted) return;
+
+      if (ok) {
+        Navigator.of(context).pop(ShpItemFormResult(
+          accountNo: _effectiveAccountNo!,
+          itemDescription: _description.text.trim(),
+          qty: _d(_qty),
+          cbm: _d(_cbm),
+          weight: _d(_weight),
+          ratePerCbm: _d(_ratePerCbm),
+          ratePerWeight: _d(_ratePerWeight),
+          extraCharges: _d(_extraCharges),
+        ));
+      } else {
+        // Pull the current error message from the bloc state
+        final s = bloc.state;
+        final msg = (s is ShpByIdLoaded && s.actionError != null)
+            ? s.actionError!
+            : 'Failed to save item. Please try again.';
+        setState(() {
+          _error = msg;
+          _submitting = false;
+        });
+        // Clear the action error so a retry can proceed
+        bloc.add(const ShpByIdActionErrorCleared());
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Unexpected error: $e';
+        _submitting = false;
+      });
+    } finally {
+      await sub.cancel();
+    }
   }
 
   String? get _effectiveAccountNo {
     final fromPicker = _acc?.accNumber?.toString();
     if (fromPicker != null && fromPicker.isNotEmpty) return fromPicker;
-    // Fallback for edit mode: the raw account number text
     final typed = _accountNo.text.trim();
     if (typed.isEmpty) return null;
-    // Only accept an all-digits value (raw account number) — never "500005 | Admin"
     if (!RegExp(r'^\d+$').hasMatch(typed)) return null;
     return typed;
   }
@@ -244,165 +363,171 @@ class _ShpItemFormState extends State<ShpItemForm> {
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme;
-
+    final tr = AppLocalizations.of(context)!;
     return ZFormDialog(
-      title: _isEdit ? 'Edit item' : 'Add item',
+      title: _isEdit ? "${tr.editItem} | ${widget.existing?.itemDescription}" : tr.addItem,
       icon: _isEdit ? Icons.edit_outlined : Icons.add_box_outlined,
+      padding: EdgeInsets.all(8),
       width: 620,
       errorMessage: _error,
-      onAction: _submit,
-      actionLabel: Text(_isEdit ? 'Save' : 'Add item'),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // ─── Account picker (first) ────────────────────────────
-              _buildAccountPicker(),
-              const SizedBox(height: 10),
+      onAction: _submitting ? null : _submit,
+      actionLabel: _submitting
+          ? const SizedBox(
+        height: 18,
+        width: 18,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      )
+          : Text(_isEdit ? tr.update : tr.create),
+      child: AbsorbPointer(
+        absorbing: _submitting,
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildAccountPicker(),
+                const SizedBox(height: 10),
 
-              // ─── Description ───────────────────────────────────────
-              ZTextFieldEntitled(
-                title: 'Item description',
-                keyboardType: TextInputType.multiline,
-                isRequired: true,
-                controller: _description,
-                focusNode: _descFocus,
-                hint: 'e.g. Car spare parts',
-                showClearButton: true,
-                textInputAction: TextInputAction.next,
-                onFieldSubmitted: (_) => _qtyFocus.requestFocus(),
-              ),
-              const SizedBox(height: 10),
+                ZTextFieldEntitled(
+                  title: tr.description,
+                  keyboardType: TextInputType.multiline,
+                  isRequired: true,
+                  controller: _description,
+                  focusNode: _descFocus,
+                  hint: '',
+                  showClearButton: true,
+                  textInputAction: TextInputAction.next,
+                  onFieldSubmitted: (_) => _qtyFocus.requestFocus(),
+                ),
+                const SizedBox(height: 10),
 
-              // ─── Qty + Extra ───────────────────────────────────────
-              Row(
-                children: [
-                  Expanded(
-                    child: ZTextFieldEntitled(
-                      title: 'Qty',
-                      isRequired: true,
-                      controller: _qty,
-                      focusNode: _qtyFocus,
-                      keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
-                      textInputAction: TextInputAction.next,
-                      onFieldSubmitted: (_) => _cbmFocus.requestFocus(),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ZTextFieldEntitled(
+                        title: tr.qty,
+                        isRequired: true,
+                        controller: _qty,
+                        focusNode: _qtyFocus,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        inputFormat: _intFormatters,
+                        textInputAction: TextInputAction.next,
+                        onFieldSubmitted: (_) => _cbmFocus.requestFocus(),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ZTextFieldEntitled(
-                      title: 'Extra charges',
-                      controller: _extraCharges,
-                      focusNode: _extraFocus,
-                      keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
-                      textInputAction: TextInputAction.next,
-                      onFieldSubmitted: (_) => _focusFirstEnabledRate(),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ZTextFieldEntitled(
+                        title: tr.extraCharges,
+                        controller: _extraCharges,
+                        focusNode: _extraFocus,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        inputFormat: _decimalFormatters,
+                        textInputAction: TextInputAction.next,
+                        onFieldSubmitted: (_) => _focusFirstEnabledRate(),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
+                  ],
+                ),
+                const SizedBox(height: 10),
 
-              // ─── CBM + Weight ──────────────────────────────────────
-              Row(
-                children: [
-                  Expanded(
-                    child: ZTextFieldEntitled(
-                      title: 'CBM',
-                      controller: _cbm,
-                      focusNode: _cbmFocus,
-                      keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
-                      textInputAction: TextInputAction.next,
-                      onFieldSubmitted: (_) => _weightFocus.requestFocus(),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ZTextFieldEntitled(
+                        title: tr.cbm,
+                        controller: _cbm,
+                        focusNode: _cbmFocus,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        inputFormat: _decimalFormatters,
+                        textInputAction: TextInputAction.next,
+                        onFieldSubmitted: (_) => _weightFocus.requestFocus(),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ZTextFieldEntitled(
-                      title: 'Weight (kg)',
-                      controller: _weight,
-                      focusNode: _weightFocus,
-                      keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
-                      textInputAction: TextInputAction.next,
-                      onFieldSubmitted: (_) => _focusFirstEnabledRate(),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ZTextFieldEntitled(
+                        title: '${tr.weight.toUpperCase()} (kg)',
+                        controller: _weight,
+                        focusNode: _weightFocus,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        inputFormat: _decimalFormatters,
+                        textInputAction: TextInputAction.next,
+                        onFieldSubmitted: (_) => _focusFirstEnabledRate(),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
+                  ],
+                ),
+                const SizedBox(height: 10),
 
-              // ─── Rates (mutually exclusive) ────────────────────────
-              Row(
-                children: [
-                  Expanded(
-                    child: ZTextFieldEntitled(
-                      title: 'Rate / CBM',
-                      controller: _ratePerCbm,
-                      focusNode: _rateCbmFocus,
-                      isEnabled: !_lockRateCbm,
-                      keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
-                      textInputAction: TextInputAction.done,
-                      hint: _lockRateCbm
-                          ? 'Disabled (Rate/kg is set)'
-                          : null,
-                      onFieldSubmitted: (_) => _onLastRateFieldSubmitted(),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ZTextFieldEntitled(
+                        title: tr.cbmRate.toUpperCase(),
+                        controller: _ratePerCbm,
+                        focusNode: _rateCbmFocus,
+                        isEnabled: !_lockRateCbm,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        inputFormat: _decimalFormatters,
+                        textInputAction: TextInputAction.done,
+                        hint: _lockRateCbm
+                            ? 'Disabled (Rate/kg is set)'
+                            : null,
+                        onFieldSubmitted: (_) => _onLastRateFieldSubmitted(),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ZTextFieldEntitled(
-                      title: 'Rate / kg',
-                      controller: _ratePerWeight,
-                      focusNode: _rateWeightFocus,
-                      isEnabled: !_lockRateWeight,
-                      keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
-                      textInputAction: TextInputAction.done,
-                      hint: _lockRateWeight
-                          ? 'Disabled (Rate/CBM is set)'
-                          : null,
-                      onFieldSubmitted: (_) => _onLastRateFieldSubmitted(),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ZTextFieldEntitled(
+                        title: tr.weightRate.toUpperCase(),
+                        controller: _ratePerWeight,
+                        focusNode: _rateWeightFocus,
+                        isEnabled: !_lockRateWeight,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        inputFormat: _decimalFormatters,
+                        textInputAction: TextInputAction.done,
+                        hint: _lockRateWeight
+                            ? 'Disabled (Rate/CBM is set)'
+                            : null,
+                        onFieldSubmitted: (_) => _onLastRateFieldSubmitted(),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
+                  ],
+                ),
+                const SizedBox(height: 12),
 
-              // ─── Grand total preview ───────────────────────────────
-              _GrandTotalBar(
-                cbm: _d(_cbm),
-                rateCbm: _d(_ratePerCbm),
-                weight: _d(_weight),
-                rateKg: _d(_ratePerWeight),
-                extra: _d(_extraCharges),
-                total: _grandTotal,
-                color: color,
-              ),
-              const SizedBox(height: 6),
-            ],
+                _GrandTotalBar(
+                  cbm: _d(_cbm),
+                  rateCbm: _d(_ratePerCbm),
+                  weight: _d(_weight),
+                  rateKg: _d(_ratePerWeight),
+                  extra: _d(_extraCharges),
+                  total: _grandTotal,
+                  color: color,
+                ),
+                const SizedBox(height: 6),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  /// Called when the user hits Enter on a rate field.
-  /// Enter on the LAST enabled rate field submits the form.
   void _onLastRateFieldSubmitted() {
-    // If both rate fields are somehow enabled (neither locked yet),
-    // Enter on either one is a "final" submit because the other is empty.
+    if (_submitting) return;
     _submit();
   }
 
-  /// Move focus to whichever rate field is currently enabled.
   void _focusFirstEnabledRate() {
     if (!_lockRateCbm) {
       _rateCbmFocus.requestFocus();
@@ -419,8 +544,8 @@ class _ShpItemFormState extends State<ShpItemForm> {
   Widget _buildAccountPicker() {
     return GenericTextField<StkAccountModel, StkAccountsBloc, StkAccountsState>(
       controller: _accountNo,
-      title: 'Account',
-      hintText: 'Account name or number',
+      title: AppLocalizations.of(context)!.customerAndAccount,
+      hintText: AppLocalizations.of(context)!.accNameOrNumber,
       isRequired: true,
       bloc: context.read<StkAccountsBloc>(),
       focusNode: _accountFocus,
@@ -428,7 +553,7 @@ class _ShpItemFormState extends State<ShpItemForm> {
       showAllOnFocus: false,
       fetchAllFunction: null,
       readOnly: false,
-      isEnabled: true,
+      isEnabled: !_submitting,
       searchFunction: (bloc, q) {
         if (q.trim().isEmpty) return;
         bloc.add(LoadStkAccountsEvent(query: q));
@@ -467,7 +592,6 @@ class _ShpItemFormState extends State<ShpItemForm> {
           _accountNo.text = '${a.accNumber} | ${a.accName}';
           _error = null;
         });
-        // Move focus straight to the description after picking an account
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) _descFocus.requestFocus();
         });
@@ -476,7 +600,6 @@ class _ShpItemFormState extends State<ShpItemForm> {
     );
   }
 
-  /// Only stakeholder accounts (accCategory == 8) — mirrors CashTxnForm.
   List<StkAccountModel> _filterAccounts(List<StkAccountModel> all) {
     return all
         .where((a) => a.accCategory == _kStakeholderCategory)
@@ -508,6 +631,7 @@ class _GrandTotalBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -520,15 +644,11 @@ class _GrandTotalBar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _row('CBM × Rate/CBM',
-              '${_fmt(cbm, decimals: 3)} × ${_fmt(rateCbm, decimals: 4)}',
-              _money(cbm * rateCbm)),
+          _row('${tr.cbm} × ${tr.cbmRate}', '${_fmt(cbm, decimals: 3)} × ${_fmt(rateCbm, decimals: 2)}', _money(cbm * rateCbm)),
           const SizedBox(height: 4),
-          _row('Weight × Rate/kg',
-              '${_fmt(weight, decimals: 3)} × ${_fmt(rateKg, decimals: 4)}',
-              _money(weight * rateKg)),
+          _row('${tr.weight} × ${tr.weightRate}', '${_fmt(weight, decimals: 2)} × ${_fmt(rateKg, decimals: 2)}', _money(weight * rateKg)),
           const SizedBox(height: 4),
-          _row('Extra charges', '', _money(extra)),
+          _row(tr.extraCharges, '', _money(extra)),
           const SizedBox(height: 8),
           Divider(height: 1, color: color.primary.withValues(alpha: 0.2)),
           const SizedBox(height: 8),
@@ -536,9 +656,9 @@ class _GrandTotalBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Grand total',
+                tr.grandTotal.toUpperCase(),
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: color.onPrimaryContainer,
                 ),
@@ -566,7 +686,7 @@ class _GrandTotalBar extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 14,
               fontWeight: FontWeight.w500,
               color: color.onPrimaryContainer.withValues(alpha: 0.85),
             ),
@@ -576,7 +696,7 @@ class _GrandTotalBar extends StatelessWidget {
           Text(
             detail,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 14,
               color: color.onPrimaryContainer.withValues(alpha: 0.6),
             ),
           ),
@@ -584,7 +704,7 @@ class _GrandTotalBar extends StatelessWidget {
         Text(
           amount,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: FontWeight.w600,
             color: color.onPrimaryContainer,
           ),

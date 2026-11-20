@@ -379,10 +379,7 @@ class _WaveProgressPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     // Draw background
-    final backgroundPaint = Paint()
-      ..color = backgroundColor
-      ..style = PaintingStyle.fill;
-
+    final backgroundPaint = Paint()..color = backgroundColor..style = PaintingStyle.fill;
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromLTWH(0, 0, size.width, size.height),

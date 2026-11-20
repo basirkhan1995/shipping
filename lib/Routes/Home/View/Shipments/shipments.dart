@@ -265,6 +265,7 @@ class _DesktopViewState extends State<_DesktopView> {
   // ---------------------------------------------------------------------------
 
   Widget _buildHeader(TextTheme textTheme, ColorScheme color) {
+    final tr = AppLocalizations.of(context)!;
     return Row(
       children: [
         Expanded(
@@ -272,14 +273,14 @@ class _DesktopViewState extends State<_DesktopView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'SHIPMENTS',
+                tr.shipments.toUpperCase(),
                 style: textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1,
                 ),
               ),
               Text(
-                'CONTAINER AND SHIPMENT MANAGEMENT',
+                tr.shipmentHint.toUpperCase(),
                 style: textTheme.bodySmall?.copyWith(
                   color: color.outline,
                   fontSize: 11,
@@ -292,20 +293,20 @@ class _DesktopViewState extends State<_DesktopView> {
         if (_hasActiveFilters) ...[
           _ShipmentPillButton(
             icon: Icons.filter_alt_off_outlined,
-            label: 'Clear filters',
+            label: tr.clearFilters,
             onPressed: _clearFilters,
           ),
           const SizedBox(width: 8),
         ],
         _ShipmentPillButton(
           icon: Icons.refresh,
-          label: 'Refresh',
+          label: tr.refresh,
           onPressed: _reload,
         ),
         const SizedBox(width: 8),
         _ShipmentPillButton(
           icon: Icons.add,
-          label: 'Add Shipment',
+          label: tr.addShipment,
           onPressed: () {
             ShipmentContainerDialog.show(context);
           },
@@ -337,7 +338,7 @@ class _DesktopViewState extends State<_DesktopView> {
         Expanded(
           flex: 2,
           child: ZDropdown<_ShipmentStatusOption>(
-            title: 'Status',
+            title: AppLocalizations.of(context)!.filterByStatus,
             items: _statusOptions,
             selectedItem: _status,
             initialValue: _statusLabel(_status),
@@ -353,7 +354,7 @@ class _DesktopViewState extends State<_DesktopView> {
         Expanded(
           flex: 3,
           child: ZRangeDatePicker(
-            label: 'Loading date',
+            label: AppLocalizations.of(context)!.dateFilter,
             startValue: _from,
             endValue: _to,
             onStartDateChanged: (value) {
@@ -378,15 +379,16 @@ class _DesktopViewState extends State<_DesktopView> {
   }
 
   String _statusLabel(_ShipmentStatusOption status) {
+    final tr = AppLocalizations.of(context)!;
     switch (status.value) {
       case 'all':
-        return 'All statuses';
+        return tr.all;
       case 'pending':
-        return 'Pending';
+        return tr.pending;
       case 'shipped':
-        return 'Shipped';
+        return tr.shipped;
       case 'delivered':
-        return 'Delivered';
+        return tr.delivered;
       default:
         return status.value;
     }
@@ -701,23 +703,23 @@ class _ShipmentRowMenu extends StatelessWidget {
         }
       },
       itemBuilder: (context) => [
-        const PopupMenuItem(
+         PopupMenuItem(
           value: _ShipmentRowAction.view,
           child: Row(
             children: [
               Icon(Icons.visibility_outlined, size: 18),
               SizedBox(width: 8),
-              Text('View details'),
+              Text(AppLocalizations.of(context)!.view),
             ],
           ),
         ),
-        const PopupMenuItem(
+          PopupMenuItem(
           value: _ShipmentRowAction.edit,
           child: Row(
             children: [
               Icon(Icons.edit_outlined, size: 18),
               SizedBox(width: 8),
-              Text('Edit'),
+              Text(AppLocalizations.of(context)!.editContainer),
             ],
           ),
         ),
@@ -727,7 +729,7 @@ class _ShipmentRowMenu extends StatelessWidget {
             children: [
               Icon(Icons.delete_outline, size: 18, color: color.error),
               const SizedBox(width: 8),
-              Text('Delete', style: TextStyle(color: color.error)),
+              Text(AppLocalizations.of(context)!.delete, style: TextStyle(color: color.error)),
             ],
           ),
         ),

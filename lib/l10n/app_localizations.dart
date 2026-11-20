@@ -4509,6 +4509,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Items'**
   String get items;
+
+  /// No description provided for @customerAndAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer | Account'**
+  String get customerAndAccount;
+
+  /// No description provided for @cbm.
+  ///
+  /// In en, this message translates to:
+  /// **'CBM'**
+  String get cbm;
+
+  /// No description provided for @weight.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get weight;
+
+  /// No description provided for @weightAvg.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight AVG'**
+  String get weightAvg;
+
+  /// No description provided for @cbmRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate/CBM'**
+  String get cbmRate;
+
+  /// No description provided for @weightRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate/KG'**
+  String get weightRate;
+
+  /// No description provided for @extra.
+  ///
+  /// In en, this message translates to:
+  /// **'Extra'**
+  String get extra;
+
+  /// No description provided for @entryUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry/Updated'**
+  String get entryUpdated;
+
+  /// No description provided for @description.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get description;
+
+  /// No description provided for @unloadingDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Unloading Date'**
+  String get unloadingDate;
+
+  /// No description provided for @editContainer.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Container'**
+  String get editContainer;
+
+  /// No description provided for @addContainer.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Container'**
+  String get addContainer;
+
+  /// No description provided for @addItemDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Item'**
+  String get addItemDescription;
+
+  /// No description provided for @seq.
+  ///
+  /// In en, this message translates to:
+  /// **'Seq'**
+  String get seq;
+
+  /// No description provided for @rent.
+  ///
+  /// In en, this message translates to:
+  /// **'Rent'**
+  String get rent;
+
+  /// No description provided for @partial.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial'**
+  String get partial;
+
+  /// No description provided for @delivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get delivered;
+
+  /// No description provided for @totalShipmentRent.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Shipment Rent'**
+  String get totalShipmentRent;
+
+  /// No description provided for @notDeliveredYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Delivered'**
+  String get notDeliveredYet;
+
+  /// No description provided for @totalItemsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Items'**
+  String get totalItemsTitle;
+
+  /// No description provided for @editItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Item'**
+  String get editItem;
+
+  /// No description provided for @deleteItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete item'**
+  String get deleteItem;
+
+  /// No description provided for @shipmentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Containers & Shipment Management'**
+  String get shipmentHint;
+
+  /// No description provided for @addShipment.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Shipment'**
+  String get addShipment;
+
+  /// No description provided for @shipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Shipped'**
+  String get shipped;
 }
 
 class _AppLocalizationsDelegate

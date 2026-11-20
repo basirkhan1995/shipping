@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/toast.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
+import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../../../Features/Other/form_dialog.dart';
 import '../../../../Features/Widgets/ztextfield.dart';
 import '../../../Auth/bloc/auth_bloc.dart';
@@ -285,7 +286,7 @@ class _ShipmentContainerDialogState
         children: [
           ZTextFieldEntitled(
             controller: _portNameCtrl,
-            title: 'Port Name',
+            title: AppLocalizations.of(context)!.port,
             isRequired: true,
             isEnabled: !_isBusy,
             validator: _requiredValidator,
@@ -295,7 +296,7 @@ class _ShipmentContainerDialogState
 
           ZTextFieldEntitled(
             controller: _containerNoCtrl,
-            title: 'Container Number',
+            title: AppLocalizations.of(context)!.containerNo,
             isRequired: true,
             isEnabled: !_isBusy,
             validator: _requiredValidator,
@@ -305,24 +306,34 @@ class _ShipmentContainerDialogState
 
           ZTextFieldEntitled(
             controller: _sequenceNoCtrl,
-            title: 'Sequence Number',
+            title: AppLocalizations.of(context)!.sequence,
             isEnabled: !_isBusy,
             keyboardType: TextInputType.text,
           ),
 
           const SizedBox(height: 12),
 
-          _dateField(
-            title: 'Loading Date',
-            controller: _loadingDateCtrl,
-            required: true,
-          ),
 
-          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: _dateField(
+                  title: AppLocalizations.of(context)!.loadingDate,
+                  controller: _loadingDateCtrl,
+                  required: true,
+                ),
+              ),
 
-          _dateField(
-            title: 'Unloading Date',
-            controller: _unloadingDateCtrl,
+              const SizedBox(width: 10),
+
+              Expanded(
+                child: _dateField(
+                  title: AppLocalizations.of(context)!.unloadingDate,
+                  controller: _unloadingDateCtrl,
+                ),
+              ),
+            ],
           ),
 
           const SizedBox(height: 12),
@@ -330,7 +341,7 @@ class _ShipmentContainerDialogState
           ZTextFieldEntitled(
             controller: _descriptionCtrl,
             keyboardType: TextInputType.multiline,
-            title: 'Description',
+            title: AppLocalizations.of(context)!.description,
             isEnabled: !_isBusy,
           ),
         ],
@@ -339,53 +350,52 @@ class _ShipmentContainerDialogState
   }
 
   Widget _buildButtons() {
-    return Row(
-      children: [
-        if (_isEditing) ...[
-          Expanded(
-            child: ZOutlineButton(
-              backgroundHover: Theme.of(context).colorScheme.error,
-              onPressed: _isBusy ? null : _delete,
-              icon: Icons.delete_outline,
-              label: const Text('Delete'),
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
-
-        Expanded(
-          child: ZOutlineButton(
+    return Padding(
+      padding: const EdgeInsets.all(3.0),
+      child: Row(
+        children: [
+          ZOutlineButton(
             onPressed: _isBusy
                 ? null
                 : () => Navigator.of(context).pop(),
-            label: const Text('Cancel'),
+            label: Text(AppLocalizations.of(context)!.cancel),
           ),
-        ),
 
-        const SizedBox(width: 8),
+          const SizedBox(width: 8),
 
-        Expanded(
-          child: ZOutlineButton(
+          ZOutlineButton(
             isActive: true,
             onPressed: _isBusy ? null : _submit,
             label: _isBusy
                 ? const SizedBox(
               width: 18,
-
               height: 18,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
               ),
             )
-                : Text(_isEditing ? 'Update' : 'Save'),
+                : Text(_isEditing ?  AppLocalizations.of(context)!.update : AppLocalizations.of(context)!.save),
           ),
-        ),
-      ],
+
+          if (_isEditing) ...[
+            const SizedBox(width: 8),
+            ZOutlineButton(
+              backgroundHover: Theme.of(context).colorScheme.error,
+              onPressed: _isBusy ? null : _delete,
+              isActive: true,
+              icon: Icons.delete_outline,
+              label: Text(AppLocalizations.of(context)!.delete),
+            ),
+
+          ],
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context)!;
     return BlocListener<ShipmentBloc, ShipmentState>(
       listener: (context, state) {
         if (state is ShipmentOperationLoading) {
@@ -411,10 +421,10 @@ class _ShipmentContainerDialogState
         }
       },
       child: ZFormDialog(
-        width: 600,
+        width: 460,
         padding: EdgeInsets.all(10),
         icon: _isEditing ? Icons.edit : Icons.add_box_outlined,
-        title: _isEditing ? 'Edit Container - ${widget.shipment?.containerNo}' : 'Add Container',
+        title: _isEditing ? '${tr.editContainer} - ${widget.shipment?.containerNo}' : tr.addContainer,
         isActionTrue: false,
         onAction: null,
         child: ConstrainedBox(

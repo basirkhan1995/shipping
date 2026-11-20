@@ -2266,4 +2266,79 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get items => 'Items';
+
+  @override
+  String get customerAndAccount => 'Customer | Account';
+
+  @override
+  String get cbm => 'CBM';
+
+  @override
+  String get weight => 'Weight';
+
+  @override
+  String get weightAvg => 'Weight AVG';
+
+  @override
+  String get cbmRate => 'Rate/CBM';
+
+  @override
+  String get weightRate => 'Rate/KG';
+
+  @override
+  String get extra => 'Extra';
+
+  @override
+  String get entryUpdated => 'Entry/Updated';
+
+  @override
+  String get description => 'Description';
+
+  @override
+  String get unloadingDate => 'Unloading Date';
+
+  @override
+  String get editContainer => 'Edit Container';
+
+  @override
+  String get addContainer => 'Add Container';
+
+  @override
+  String get addItemDescription => 'Add Item';
+
+  @override
+  String get seq => 'Seq';
+
+  @override
+  String get rent => 'Rent';
+
+  @override
+  String get partial => 'Partial';
+
+  @override
+  String get delivered => 'Delivered';
+
+  @override
+  String get totalShipmentRent => 'Total Shipment Rent';
+
+  @override
+  String get notDeliveredYet => 'Not Delivered';
+
+  @override
+  String get totalItemsTitle => 'Total Items';
+
+  @override
+  String get editItem => 'Edit Item';
+
+  @override
+  String get deleteItem => 'Delete item';
+
+  @override
+  String get shipmentHint => 'Containers & Shipment Management';
+
+  @override
+  String get addShipment => 'Add Shipment';
+
+  @override
+  String get shipped => 'Shipped';
 }

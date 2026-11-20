@@ -1819,7 +1819,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get generalDiscount => 'تخفیف عمومی';
 
   @override
-  String get extraCharges => 'هزینه‌های اضافی';
+  String get extraCharges => 'هزینه‌ اضافی';
 
   @override
   String get accountInformation => 'جزئیات حساب';
@@ -2258,4 +2258,79 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get items => 'اجناس';
+
+  @override
+  String get customerAndAccount => 'مشتری | حساب';
+
+  @override
+  String get cbm => 'سی بی ام';
+
+  @override
+  String get weight => 'وزن';
+
+  @override
+  String get weightAvg => 'اوسط وزن';
+
+  @override
+  String get cbmRate => 'نرخ | سی بی ام';
+
+  @override
+  String get weightRate => 'نرخ | وزن';
+
+  @override
+  String get extra => 'هزینه اضافه';
+
+  @override
+  String get entryUpdated => 'تاریخ ثبت | بروزرسانی';
+
+  @override
+  String get description => 'تفصیلات';
+
+  @override
+  String get unloadingDate => 'تاریخ تخلیه';
+
+  @override
+  String get editContainer => 'ویرایش کانتینر';
+
+  @override
+  String get addContainer => 'ثبت کانتینر جدید';
+
+  @override
+  String get addItemDescription => 'ثبت جنس جدید';
+
+  @override
+  String get seq => 'مسلسل';
+
+  @override
+  String get rent => 'کرایه';
+
+  @override
+  String get partial => 'ناتکمیل';
+
+  @override
+  String get delivered => 'تحویل شده';
+
+  @override
+  String get totalShipmentRent => 'مجموعه کرایه';
+
+  @override
+  String get notDeliveredYet => 'تحویل نشده';
+
+  @override
+  String get totalItemsTitle => 'مجموعه اقلام';
+
+  @override
+  String get editItem => 'ویرایش';
+
+  @override
+  String get deleteItem => 'حذف کردن';
+
+  @override
+  String get shipmentHint => 'مدیریت کانتینرها و بارگیری ';
+
+  @override
+  String get addShipment => 'ثبت کانتینر';
+
+  @override
+  String get shipped => 'حمل شده';
 }
