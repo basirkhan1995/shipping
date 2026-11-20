@@ -130,3 +130,26 @@ final class ShpByIdDeleteItemRequested extends ShpByIdEvent {
 final class ShpByIdActionErrorCleared extends ShpByIdEvent {
   const ShpByIdActionErrorCleared();
 }
+
+
+class ShpByIdUpdateItemStatusRequested extends ShpByIdEvent {
+  final String usrName;
+  final int shpId;
+  final int shpItmId;
+  final String status;
+
+  const ShpByIdUpdateItemStatusRequested({
+    required this.usrName,
+    required this.shpId,
+    required this.shpItmId,
+    required this.status,
+  });
+
+  @override
+  List<Object?> get props => [
+    usrName,
+    shpId,
+    shpItmId,
+    status,
+  ];
+}

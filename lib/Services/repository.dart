@@ -3990,6 +3990,43 @@ class Repositories {
     }
   }
 
+
+  Future<String> updateShpItemStatus({
+    required String usrName,
+    required int shpItmId,
+    required String status,
+  }) async {
+    if (status != 'pending' && status != 'delivered') {
+      throw ApiException('Invalid shipment item status.');
+    }
+
+    try {
+      final response = await _api.post(
+        endpoint: "/shipment/shipment.php",
+        data: {
+          'action': 'updateItemStatus',
+          'usrName': usrName,
+          'shpItmId': shpItmId,
+          'status': status,
+        },
+      );
+
+      final data = _validateResponse(response.data);
+      final updatedStatus = data['status']?.toString();
+
+      if (updatedStatus != 'pending' && updatedStatus != 'delivered') {
+        throw ApiException('Invalid shipment item status returned by server.');
+      }
+
+      return updatedStatus!;
+    } on DioException catch (e) {
+      throw ApiException(
+        e.message ?? 'Failed to update shipment item status.',
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
   // ═══════════════════════════════════════════════════════════════
   // SHIPMENT CONTAINER: CREATE
   // ═══════════════════════════════════════════════════════════════

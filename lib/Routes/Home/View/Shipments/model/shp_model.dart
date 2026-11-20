@@ -1,7 +1,5 @@
-
 class ShipmentModel {
   final int shpId;
-  final String shpReference;
   final String? containerNo;
   final String? entryDate;
   final String? sequenceNo;
@@ -17,7 +15,6 @@ class ShipmentModel {
 
   const ShipmentModel({
     required this.shpId,
-    required this.shpReference,
     this.containerNo,
     this.entryDate,
     this.sequenceNo,
@@ -35,7 +32,6 @@ class ShipmentModel {
   factory ShipmentModel.fromJson(Map<String, dynamic> json) {
     return ShipmentModel(
       shpId: _toInt(json['shpId']),
-      shpReference: _toString(json['shpReference']) ?? '',
       containerNo: _toString(json['containerNo']),
       entryDate: _toString(json['entryDate']),
       sequenceNo: _toString(json['sequenceNo']),
@@ -44,14 +40,29 @@ class ShipmentModel {
       portName: _toString(json['portName']),
       description: _toString(json['description']),
       status: _toString(json['status']) ?? 'pending',
-      createdBy: json['createdBy'] == null
-          ? null
-          : _toInt(json['createdBy']),
+      createdBy:
+      json['createdBy'] == null ? null : _toInt(json['createdBy']),
       createdByName: _toString(json['createdByName']),
       totalItems: _toInt(json['totalItems']),
       totalRent: _toDouble(json['totalRent']),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'shpId': shpId,
+    'containerNo': containerNo,
+    'entryDate': entryDate,
+    'sequenceNo': sequenceNo,
+    'loadingDate': loadingDate,
+    'unloadingDate': unloadingDate,
+    'portName': portName,
+    'description': description,
+    'status': status,
+    'createdBy': createdBy,
+    'createdByName': createdByName,
+    'totalItems': totalItems,
+    'totalRent': totalRent,
+  };
 
   static String? _toString(dynamic value) {
     if (value == null) return null;

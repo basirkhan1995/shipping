@@ -772,5 +772,7 @@
   "deleteItem": "حذف کردن",
   "shipmentHint": "مدیریت کانتینرها و بارگیری ",
   "addShipment": "ثبت کانتینر",
-  "shipped": "حمل شده"
+  "shipped": "حمل شده",
+  "markAsPending": "تحویل نشده",
+  "markAsDelivered": "تحویل شده"
 }

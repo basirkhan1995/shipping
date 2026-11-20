@@ -17,7 +17,48 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
     on<ShpByIdUpdateItemRequested>(_onUpdateItem);
     on<ShpByIdDeleteItemRequested>(_onDeleteItem);
     on<ShpByIdActionErrorCleared>(_onActionErrorCleared);
+    on<ShpByIdUpdateItemStatusRequested>(_onUpdateItemStatus);
   }
+
+
+  Future<void> _onUpdateItemStatus(
+      ShpByIdUpdateItemStatusRequested event,
+      Emitter<ShpByIdState> emit,
+      ) async {
+    final current = state;
+    if (current is! ShpByIdLoaded) return;
+
+    emit(current.copyWith(
+      pendingAction: ShpByIdAction.updateItemStatus,
+      clearActionError: true,
+      clearSuccessMessage: true,
+    ));
+
+    try {
+      // Recalculate status using server-side delivery movements.
+      final status = await _repo.updateShpItemStatus(
+        usrName: event.usrName,
+        shpItmId: event.shpItmId,
+        status: event.status
+      );
+
+      // Fetch fresh shipment details.
+      final fresh = await _repo.getShipmentDetails(
+        shpId: event.shpId,
+      );
+
+      emit(ShpByIdLoaded(
+        fresh,
+        successMessage: 'Item status updated to $status',
+      ));
+    } catch (e) {
+      emit(current.copyWith(
+        clearPendingAction: true,
+        actionError: 'Failed to update item status: ${_msg(e)}',
+      ));
+    }
+  }
+
 
   // ─────────────────────────────────────────────────────────
   // LOAD

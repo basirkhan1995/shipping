@@ -2332,4 +2332,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get shipped => 'حمل شده';
+
+  @override
+  String get markAsPending => 'تحویل نشده';
+
+  @override
+  String get markAsDelivered => 'تحویل شده';
 }

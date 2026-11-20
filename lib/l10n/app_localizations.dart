@@ -4659,6 +4659,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Shipped'**
   String get shipped;
+
+  /// No description provided for @markAsPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as Pending'**
+  String get markAsPending;
+
+  /// No description provided for @markAsDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as Delivered'**
+  String get markAsDelivered;
 }
 
 class _AppLocalizationsDelegate

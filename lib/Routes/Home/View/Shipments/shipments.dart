@@ -13,6 +13,7 @@ import 'package:shipping/Routes/Home/View/Shipments/shp_form.dart';
 import 'package:shipping/Routes/Home/View/Stock/Orders/features/status_method.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../Features/Other/zdropdown.dart';
+import '../../../../Features/Widgets/znavigator.dart';
 import '../../../Auth/bloc/auth_bloc.dart';
 import 'bloc/shipment_bloc.dart';
 import 'bloc/shipment_event.dart';
@@ -173,13 +174,12 @@ class _DesktopViewState extends State<_DesktopView> {
   // ---------------------------------------------------------------------------
 
   void _openDetails(ShipmentModel shipment) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: context.read<ShipmentBloc>(),
-          child: ShpByIdView(shpId: shipment.shpId),
-        ),
+    ZNavigator.goto(
+      BlocProvider.value(
+        value: context.read<ShipmentBloc>(),
+        child: ShpByIdView(shpId: shipment.shpId),
       ),
+      context: context,
     );
   }
 
@@ -194,7 +194,7 @@ class _DesktopViewState extends State<_DesktopView> {
         title: const Text('Delete container?'),
         content: Text(
           'Are you sure you want to delete container '
-              '"${shipment.containerNo ?? shipment.shpReference}"? '
+              '"${shipment.containerNo}"? '
               'This cannot be undone.',
         ),
         actions: [
@@ -220,7 +220,7 @@ class _DesktopViewState extends State<_DesktopView> {
 
     context.read<ShipmentBloc>().add(
       DeleteShipment(
-        usrName: authState.loginData.usrEmail??"",
+        usrName: authState.loginData.usrName??"",
         shpId: shipment.shpId,
       ),
     );
@@ -625,12 +625,6 @@ class _ShipmentRowWidget extends StatelessWidget {
             shipment.containerNo ?? '—',
             width: 155,
             weight: FontWeight.w600,
-          ),
-          cell(
-            shipment.shpReference,
-            width: 190,
-            weight: FontWeight.w600,
-            textColor: color.primary,
           ),
           cell(shipment.sequenceNo ?? '—', width: 125),
           cell(shipment.portName ?? '—'),

@@ -772,5 +772,7 @@
   "deleteItem": "Delete item",
   "shipmentHint": "Containers & Shipment Management",
   "addShipment": "Add Shipment",
-  "shipped": "Shipped"
+  "shipped": "Shipped",
+  "markAsPending": "Mark as Pending",
+  "markAsDelivered": "Mark as Delivered"
 }

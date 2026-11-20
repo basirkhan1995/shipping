@@ -84,4 +84,4 @@ final class ShpByIdError extends ShpByIdState {
 }
 
 /// Which mutation is currently in-flight.
-enum ShpByIdAction { addItem, updateItem, deleteItem }
+enum ShpByIdAction { addItem, updateItem, deleteItem, updateItemStatus}

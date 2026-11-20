@@ -2341,4 +2341,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shipped => 'Shipped';
+
+  @override
+  String get markAsPending => 'Mark as Pending';
+
+  @override
+  String get markAsDelivered => 'Mark as Delivered';
 }

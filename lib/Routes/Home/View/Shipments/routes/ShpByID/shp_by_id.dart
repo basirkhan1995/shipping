@@ -1,13 +1,14 @@
-// lib/.../ShpById/shp_by_id_view.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/cover.dart';
+import 'package:shipping/Features/Widgets/shimmer.dart';
 import 'package:shipping/Features/Widgets/toast.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
 import 'package:shipping/Services/repository.dart';
 
 import '../../../../../../l10n/app_localizations.dart';
 import '../../../../../Auth/bloc/auth_bloc.dart';
+import '../../model/shp_model.dart';
 import 'bloc/shp_by_id_bloc.dart';
 import 'model/shp_details_model.dart';
 import 'shp_by_id_form.dart';
@@ -20,8 +21,8 @@ class ShpByIdView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) =>
-      ShpByIdBloc(context.read<Repositories>())
-        ..add(ShpByIdLoadRequested(shpId)),
+          ShpByIdBloc(context.read<Repositories>())
+            ..add(ShpByIdLoadRequested(shpId)),
       child: _ShpByIdBody(shpId: shpId),
     );
   }
@@ -36,7 +37,7 @@ class _ShpByIdBody extends StatelessWidget {
     final tr = AppLocalizations.of(context)!;
     return BlocConsumer<ShpByIdBloc, ShpByIdState>(
       listenWhen: (prev, curr) =>
-      curr is ShpByIdLoaded &&
+          curr is ShpByIdLoaded &&
           (curr.successMessage != null || curr.actionError != null),
       listener: (context, state) {
         if (state is! ShpByIdLoaded) return;
@@ -44,15 +45,13 @@ class _ShpByIdBody extends StatelessWidget {
           _toast(context, state.successMessage!);
         } else if (state.actionError != null) {
           _toast(context, state.actionError!, isError: true);
-          context
-              .read<ShpByIdBloc>()
-              .add(const ShpByIdActionErrorCleared());
+          context.read<ShpByIdBloc>().add(const ShpByIdActionErrorCleared());
         }
       },
       builder: (context, state) {
         if (state is ShpByIdLoading && state.previous == null) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+          return Scaffold(
+            body: Center(child: UniversalShimmer.dataList(itemCount: 15,numberOfColumns: 8)),
           );
         }
 
@@ -61,9 +60,8 @@ class _ShpByIdBody extends StatelessWidget {
             appBar: AppBar(title: Text(tr.shipment)),
             body: _ErrorView(
               message: state.message,
-              onRetry: () => context
-                  .read<ShpByIdBloc>()
-                  .add(ShpByIdLoadRequested(shpId)),
+              onRetry: () =>
+                  context.read<ShpByIdBloc>().add(ShpByIdLoadRequested(shpId)),
             ),
           );
         }
@@ -75,8 +73,8 @@ class _ShpByIdBody extends StatelessWidget {
             : null;
 
         if (details == null) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+          return Scaffold(
+            body: Center(child: UniversalShimmer.dataList(itemCount: 15,numberOfColumns: 8)),
           );
         }
 
@@ -90,35 +88,25 @@ class _ShpByIdBody extends StatelessWidget {
           appBar: AppBar(
             backgroundColor: color.surface,
             elevation: 0.5,
+            titleSpacing: 0,
             surfaceTintColor: color.surface,
             actionsPadding: EdgeInsets.all(8),
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  details.shipment.containerNo ?? 'Container',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: color.onSurface,
-                  ),
-                ),
-                Text(
-                  details.shipment.shpReference,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w400,
-                    color: color.onSurfaceVariant,
-                  ),
-                ),
-              ],
+            title: Text(
+              '${details.shipment.containerNo} (${details.shipment.sequenceNo})',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: color.onSurface,
+              ),
             ),
             actions: [
               ZOutlineButton(
                 icon: Icons.refresh,
                 label: Text(tr.refresh),
                 disable: isMutating,
-                onPressed: null,
+                onPressed: () => context.read<ShpByIdBloc>().add(
+                  ShpByIdLoadRequested(shpId),
+                ),
               ),
               SizedBox(width: 8),
               //Excel Export
@@ -138,6 +126,7 @@ class _ShpByIdBody extends StatelessWidget {
                 onPressed: null,
               ),
               SizedBox(width: 8),
+
               ///Expense Handling
               ZOutlineButton(
                 icon: Icons.trending_down_rounded,
@@ -209,8 +198,18 @@ class _Cols {
   static const double actionsW = 40;
 
   static const double totalFixed =
-      indexW + qtyW + cbmW + weightW + weightAvgW + rateCbmW + rateKgW +
-          extraW + rentW + statusW + datesW + actionsW;
+      indexW +
+      qtyW +
+      cbmW +
+      weightW +
+      weightAvgW +
+      rateCbmW +
+      rateKgW +
+      extraW +
+      rentW +
+      statusW +
+      datesW +
+      actionsW;
 
   static const double minTableWidth = totalFixed + 400;
 }
@@ -232,33 +231,57 @@ class _ShipmentHeaderStrip extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.surface,
         borderRadius: BorderRadius.circular(5),
-        border: Border.all(
-          color: color.outlineVariant.withValues(alpha: 0.4),
-        ),
+        border: Border.all(color: color.outlineVariant.withValues(alpha: 0.4)),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _statusPill(shipment.status ?? tr.pending,context),
+            _statusPill(shipment.status, context),
             _vDivider(color),
-            _stat(Icons.inventory_2_outlined, tr.containerNo,
-                shipment.containerNo ?? '—',context),
+            _stat(
+              Icons.inventory_2_outlined,
+              tr.containerNo,
+              shipment.containerNo ?? '—',
+              context,
+            ),
             _vDivider(color),
-            _stat(Icons.anchor_outlined, tr.port, shipment.portName ?? '—',context),
+            _stat(
+              Icons.anchor_outlined,
+              tr.port,
+              shipment.portName ?? '—',
+              context,
+            ),
             _vDivider(color),
-            _stat(Icons.tag_outlined, tr.seq, shipment.sequenceNo ?? '—',context),
+            _stat(
+              Icons.tag_outlined,
+              tr.seq,
+              shipment.sequenceNo ?? '—',
+              context,
+            ),
             _vDivider(color),
-            _stat(Icons.date_range_rounded, tr.loadingDate,
-                shipment.loadingDate ?? '—',context),
+            _stat(
+              Icons.date_range_rounded,
+              tr.loadingDate,
+              shipment.loadingDate ?? '—',
+              context,
+            ),
             _vDivider(color),
-            _stat(Icons.event_available_outlined, tr.unloadingDate,
-                shipment.unloadingDate ?? '—',context),
+            _stat(
+              Icons.event_available_outlined,
+              tr.unloadingDate,
+              shipment.unloadingDate ?? '—',
+              context,
+            ),
             if ((shipment.description ?? '').isNotEmpty) ...[
               _vDivider(color),
-              _stat(Icons.notes_outlined, tr.description,
-                  shipment.description!,context),
+              _stat(
+                Icons.notes_outlined,
+                tr.description,
+                shipment.description!,
+                context,
+              ),
             ],
           ],
         ),
@@ -273,15 +296,21 @@ class _ShipmentHeaderStrip extends StatelessWidget {
     color: color.outlineVariant.withValues(alpha: 0.4),
   );
 
-  Widget _stat(IconData icon, String label, String value, BuildContext context) {
+  Widget _stat(
+    IconData icon,
+    String label,
+    String value,
+    BuildContext context,
+  ) {
     final color = Theme.of(context).colorScheme;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         ZCover(
-            radius: 50,
-            padding: EdgeInsets.all(10),
-            child: Icon(icon, size: 15, color: color.onSurfaceVariant)),
+          radius: 50,
+          padding: EdgeInsets.all(10),
+          child: Icon(icon, size: 15, color: color.onSurfaceVariant),
+        ),
         const SizedBox(width: 10),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -310,7 +339,7 @@ class _ShipmentHeaderStrip extends StatelessWidget {
     );
   }
 
-  Widget _statusPill(String status,BuildContext context) {
+  Widget _statusPill(String status, BuildContext context) {
     final color = Theme.of(context).colorScheme;
     final tr = AppLocalizations.of(context)!;
     late final Color bg;
@@ -322,11 +351,6 @@ class _ShipmentHeaderStrip extends StatelessWidget {
         bg = color.primaryContainer;
         fg = color.onPrimaryContainer;
         label = tr.delivered.toUpperCase();
-        break;
-      case 'partiallyDelivered':
-        bg = color.tertiaryContainer;
-        fg = color.onTertiaryContainer;
-        label = tr.partial.toUpperCase();
         break;
       default:
         bg = color.surfaceContainerHighest;
@@ -365,7 +389,7 @@ class _ItemsTableHeader extends StatelessWidget {
     final color = Theme.of(context).colorScheme;
     final style = Theme.of(context).textTheme.titleSmall?.copyWith(
       letterSpacing: 0.8,
-      fontSize: 13,
+      fontSize: 12,
       fontWeight: FontWeight.bold,
       color: color.onSurface,
     );
@@ -385,68 +409,103 @@ class _ItemsTableHeader extends StatelessWidget {
             children: [
               SizedBox(
                 width: _Cols.indexW,
-                child: Text('#',
-                    textAlign: TextAlign.center, style: style),
+                child: Text('#', textAlign: TextAlign.center, style: style),
               ),
               Expanded(
                 flex: _Cols.itemFlex,
-                child: Text(tr.items.toUpperCase(),
-                    textAlign: TextAlign.start, style: style),
+                child: Text(
+                  tr.items.toUpperCase(),
+                  textAlign: TextAlign.start,
+                  style: style,
+                ),
               ),
               Expanded(
                 flex: _Cols.customerFlex,
-                child: Text(tr.customerAndAccount.toUpperCase(),
-                    textAlign: TextAlign.start, style: style),
+                child: Text(
+                  tr.customerAndAccount.toUpperCase(),
+                  textAlign: TextAlign.start,
+                  style: style,
+                ),
               ),
               SizedBox(
                 width: _Cols.qtyW,
-                child: Text(tr.qty.toUpperCase(),
-                    textAlign: TextAlign.end, style: style),
+                child: Text(
+                  tr.qty.toUpperCase(),
+                  textAlign: TextAlign.end,
+                  style: style,
+                ),
               ),
               SizedBox(
                 width: _Cols.cbmW,
-                child: Text(tr.cbm.toUpperCase(),
-                    textAlign: TextAlign.end, style: style),
+                child: Text(
+                  tr.cbm.toUpperCase(),
+                  textAlign: TextAlign.end,
+                  style: style,
+                ),
               ),
               SizedBox(
                 width: _Cols.weightW,
-                child: Text(tr.weight.toUpperCase(),
-                    textAlign: TextAlign.end, style: style),
+                child: Text(
+                  tr.weight.toUpperCase(),
+                  textAlign: TextAlign.end,
+                  style: style,
+                ),
               ),
               SizedBox(
                 width: _Cols.weightAvgW,
-                child: Text(tr.weightAvg.toUpperCase(),
-                    textAlign: TextAlign.end, style: style),
+                child: Text(
+                  tr.weightAvg.toUpperCase(),
+                  textAlign: TextAlign.end,
+                  style: style,
+                ),
               ),
               SizedBox(
                 width: _Cols.rateCbmW,
-                child: Text(tr.cbmRate.toUpperCase(),
-                    textAlign: TextAlign.end, style: style),
+                child: Text(
+                  tr.cbmRate.toUpperCase(),
+                  textAlign: TextAlign.end,
+                  style: style,
+                ),
               ),
               SizedBox(
                 width: _Cols.rateKgW,
-                child: Text(tr.weightRate.toUpperCase(),
-                    textAlign: TextAlign.end, style: style),
+                child: Text(
+                  tr.weightRate.toUpperCase(),
+                  textAlign: TextAlign.end,
+                  style: style,
+                ),
               ),
               SizedBox(
                 width: _Cols.extraW,
-                child: Text(tr.extra.toUpperCase(),
-                    textAlign: TextAlign.end, style: style),
+                child: Text(
+                  tr.extra.toUpperCase(),
+                  textAlign: TextAlign.end,
+                  style: style,
+                ),
               ),
               SizedBox(
                 width: _Cols.rentW,
-                child: Text(tr.rent.toUpperCase(),
-                    textAlign: TextAlign.end, style: style),
+                child: Text(
+                  tr.rent.toUpperCase(),
+                  textAlign: TextAlign.end,
+                  style: style,
+                ),
               ),
               SizedBox(
                 width: _Cols.statusW,
-                child: Text(tr.status.toUpperCase(),
-                    textAlign: TextAlign.center, style: style),
+                child: Text(
+                  tr.status.toUpperCase(),
+                  textAlign: TextAlign.center,
+                  style: style,
+                ),
               ),
               SizedBox(
                 width: _Cols.datesW,
-                child: Text(tr.entryUpdated.toUpperCase(),
-                    textAlign: TextAlign.start, style: style),
+                child: Text(
+                  tr.entryUpdated.toUpperCase(),
+                  textAlign: TextAlign.start,
+                  style: style,
+                ),
               ),
               const SizedBox(width: _Cols.actionsW),
             ],
@@ -456,10 +515,9 @@ class _ItemsTableHeader extends StatelessWidget {
         return wide
             ? headerRow
             : SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(
-              width: _Cols.minTableWidth, child: headerRow),
-        );
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(width: _Cols.minTableWidth, child: headerRow),
+              );
       },
     );
   }
@@ -531,9 +589,9 @@ class _ItemsList extends StatelessWidget {
         return wide
             ? list
             : SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(width: _Cols.minTableWidth, child: list),
-        );
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(width: _Cols.minTableWidth, child: list),
+              );
       },
     );
   }
@@ -561,16 +619,17 @@ class _ItemRow extends StatelessWidget {
     final color = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    final isBusy = isMutating &&
+    final isBusy =
+        isMutating &&
         (pendingAction == ShpByIdAction.updateItem ||
             pendingAction == ShpByIdAction.deleteItem);
 
     Widget numCell(
-        String value,
-        double width, {
-          FontWeight? weight,
-          Color? textColor,
-        }) {
+      String value,
+      double width, {
+      FontWeight? weight,
+      Color? textColor,
+    }) {
       return SizedBox(
         width: width,
         child: Text(
@@ -660,11 +719,19 @@ class _ItemRow extends StatelessWidget {
             numCell(_fmt(item.qty), _Cols.qtyW),
             numCell(_fmt(item.cbm, decimals: 3), _Cols.cbmW),
             numCell('${_fmt(item.weight, decimals: 2)} kg', _Cols.weightW),
-            numCell('${_fmt(item.weightAvg, decimals: 2)} kg', _Cols.weightAvgW),
+            numCell(
+              '${_fmt(item.weightAvg, decimals: 2)} kg',
+              _Cols.weightAvgW,
+            ),
             numCell(_fmt(item.ratePerCbm, decimals: 2), _Cols.rateCbmW),
             numCell(_fmt(item.ratePerWeight, decimals: 2), _Cols.rateKgW),
             numCell('\$${_fmt(item.extraCharges, decimals: 2)}', _Cols.extraW),
-            numCell('\$${_fmt(item.itemRent, decimals: 2)}', _Cols.rentW, weight: FontWeight.w700, textColor: color.primary),
+            numCell(
+              '\$${_fmt(item.itemRent, decimals: 2)}',
+              _Cols.rentW,
+              weight: FontWeight.w700,
+              textColor: color.primary,
+            ),
             SizedBox(
               width: _Cols.statusW,
               child: Center(
@@ -687,26 +754,22 @@ class _ItemRow extends StatelessWidget {
                       color: color.onSurfaceVariant,
                     ),
                   ),
-                  if(item.updatedAt!=null)
-                  Text(
-                    _shortDate(item.updatedAt),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: textTheme.bodySmall?.copyWith(
-                      fontSize: 12,
-                      color: color.outline,
+                  if (item.updatedAt != null)
+                    Text(
+                      _shortDate(item.updatedAt),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.bodySmall?.copyWith(
+                        fontSize: 12,
+                        color: color.outline,
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
             SizedBox(
               width: _Cols.actionsW,
-              child: _ItemMenu(
-                item: item,
-                shpId: shpId,
-                disabled: isMutating,
-              ),
+              child: _ItemMenu(item: item, shpId: shpId, disabled: isMutating),
             ),
           ],
         ),
@@ -747,11 +810,6 @@ class _StatusChip extends StatelessWidget {
         fg = color.onPrimaryContainer;
         label = tr.delivered;
         break;
-      case 'partiallyDelivered':
-        bg = color.tertiaryContainer;
-        fg = color.onTertiaryContainer;
-        label = tr.partial;
-        break;
       default:
         bg = Colors.amber.withValues(alpha: .08);
         fg = Colors.amber;
@@ -763,15 +821,11 @@ class _StatusChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(2),
-        border: Border.all(
-          color: fg.withValues(alpha: .4),
-          width: 0.1
-        )
+        border: Border.all(color: fg.withValues(alpha: .4), width: 0.1),
       ),
       child: Text(
         label,
-        style: TextStyle(
-            fontSize: 13, fontWeight: FontWeight.w600, color: fg),
+        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: fg),
       ),
     );
   }
@@ -780,7 +834,7 @@ class _StatusChip extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // 3-DOT MENU
 // ─────────────────────────────────────────────────────────────────────────────
-enum _ItemMenuAction { edit, delete }
+enum _ItemMenuAction { edit, delete, markDelivered, markPending }
 
 class _ItemMenu extends StatelessWidget {
   final ShipmentItemModel item;
@@ -808,10 +862,16 @@ class _ItemMenu extends StatelessWidget {
           case _ItemMenuAction.delete:
             _confirmDelete(context, item, shpId);
             break;
+          case _ItemMenuAction.markDelivered:
+            _updateItemStatus(context, item, shpId, 'delivered');
+            break;
+          case _ItemMenuAction.markPending:
+            _updateItemStatus(context, item, shpId, 'pending');
+            break;
         }
       },
       itemBuilder: (context) => [
-         PopupMenuItem(
+        PopupMenuItem(
           value: _ItemMenuAction.edit,
           child: Row(
             children: [
@@ -822,12 +882,39 @@ class _ItemMenu extends StatelessWidget {
           ),
         ),
         PopupMenuItem(
+          value: (item.status ?? 'pending').toLowerCase() == 'delivered'
+              ? _ItemMenuAction.markPending
+              : _ItemMenuAction.markDelivered,
+          child: Row(
+            children: [
+              Icon(
+                (item.status ?? 'pending').toLowerCase() == 'delivered'
+                    ? Icons.undo_rounded
+                    : Icons.check_circle_outline_rounded,
+                size: 18,
+                color: (item.status ?? 'pending').toLowerCase() == 'delivered'
+                    ? color.tertiary
+                    : color.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                (item.status ?? 'pending').toLowerCase() == 'delivered'
+                    ? AppLocalizations.of(context)!.markAsPending
+                    : AppLocalizations.of(context)!.markAsDelivered,
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem(
           value: _ItemMenuAction.delete,
           child: Row(
             children: [
               Icon(Icons.delete_outline, size: 18, color: color.error),
               const SizedBox(width: 8),
-              Text(AppLocalizations.of(context)!.deleteItem, style: TextStyle(color: color.error)),
+              Text(
+                AppLocalizations.of(context)!.deleteItem,
+                style: TextStyle(color: color.error),
+              ),
             ],
           ),
         ),
@@ -836,40 +923,70 @@ class _ItemMenu extends StatelessWidget {
   }
 }
 
+
 // ─────────────────────────────────────────────────────────────────────────────
 // BOTTOM TOTAL RENT BAR
 // ─────────────────────────────────────────────────────────────────────────────
 class _TotalRentBar extends StatelessWidget {
   final List<ShipmentItemModel> items;
+
   const _TotalRentBar({required this.items});
 
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme;
     final tr = AppLocalizations.of(context)!;
-    final totalQty = items.fold<double>(0, (s, i) => s + i.qty);
-    final totalCbm = items.fold<double>(0, (s, i) => s + i.cbm);
-    final totalWeight = items.fold<double>(0, (s, i) => s + i.weight);
-    final totalRent = items.fold<double>(0, (s, i) => s + i.itemRent);
 
-    final totalDelivered =
-    items.fold<double>(0, (s, i) => s + i.delivered);
-    final totalReturned = items.fold<double>(0, (s, i) => s + i.returned);
-    final pendingQty = totalQty - totalDelivered + totalReturned;
+    final totalQty = items.fold<double>(
+      0,
+          (sum, item) => sum + item.qty,
+    );
+
+    final totalCbm = items.fold<double>(
+      0,
+          (sum, item) => sum + item.cbm,
+    );
+
+    final totalWeight = items.fold<double>(
+      0,
+          (sum, item) => sum + item.weight,
+    );
+
+    final totalRent = items.fold<double>(
+      0,
+          (sum, item) => sum + item.itemRent,
+    );
+
+    // Calculate quantities using the item's current status.
+    final totalDelivered = items.fold<double>(
+      0,
+          (sum, item) =>
+      sum + (item.status?.toLowerCase() == 'delivered' ? item.qty : 0),
+    );
+
+    final pendingQty = items.fold<double>(
+      0,
+          (sum, item) =>
+      sum + (item.status?.toLowerCase() == 'pending' ? item.qty : 0),
+    );
 
     final containerWeightAvg =
     totalCbm > 0 ? totalWeight / totalCbm : 0.0;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(20, 14, 20, 14 + MediaQuery.of(context).padding.bottom),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        14,
+        20,
+        14 + MediaQuery.of(context).padding.bottom,
+      ),
       decoration: BoxDecoration(
         color: color.surface,
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        border: Border.all(color: color.outlineVariant),
         boxShadow: [
           BoxShadow(
             color: color.shadow.withValues(alpha: 0.08),
             blurRadius: 8,
-
           ),
         ],
       ),
@@ -879,12 +996,33 @@ class _TotalRentBar extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _miniStat(tr.items, items.length.toString(),context),
-              _miniStat(tr.qty, _fmt(totalQty),context),
-              _miniStat(tr.notDeliveredYet, _fmt(pendingQty < 0 ? 0 : pendingQty),context),
-              _miniStat(tr.cbm, _fmt(totalCbm, decimals: 3),context),
-              _miniStat(tr.weight, '${_fmt(totalWeight)} kg',context),
-              _miniStat(tr.weightAvg, '${_fmt(containerWeightAvg, decimals: 2)} kg',context),
+              _miniStat(tr.items, items.length.toString(), context),
+              _miniStat(tr.qty, _fmt(totalQty), context),
+              _miniStat(
+                tr.notDeliveredYet,
+                _fmt(pendingQty),
+                context,
+              ),
+              _miniStat(
+                tr.delivered,
+                _fmt(totalDelivered),
+                context,
+              ),
+              _miniStat(
+                tr.cbm,
+                _fmt(totalCbm, decimals: 3),
+                context,
+              ),
+              _miniStat(
+                tr.weight,
+                '${_fmt(totalWeight)} kg',
+                context,
+              ),
+              _miniStat(
+                tr.weightAvg,
+                '${_fmt(containerWeightAvg, decimals: 2)} kg',
+                context,
+              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -894,7 +1032,7 @@ class _TotalRentBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                 tr.totalShipmentRent,
+                tr.totalShipmentRent,
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -916,8 +1054,13 @@ class _TotalRentBar extends StatelessWidget {
     );
   }
 
-  Widget _miniStat(String label, String value,BuildContext context) {
+  Widget _miniStat(
+      String label,
+      String value,
+      BuildContext context,
+      ) {
     final color = Theme.of(context).colorScheme;
+
     return Column(
       children: [
         Text(
@@ -941,6 +1084,7 @@ class _TotalRentBar extends StatelessWidget {
     );
   }
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ERROR VIEW
@@ -979,10 +1123,10 @@ class _ErrorView extends StatelessWidget {
 // FLOWS
 // ─────────────────────────────────────────────────────────────────────────────
 Future<void> _openItemDialog(
-    BuildContext context,
-    int shpId,
-    ShipmentItemModel? existing,
-    ) async {
+  BuildContext context,
+  int shpId,
+  ShipmentItemModel? existing,
+) async {
   final usrName = _currentUsername(context);
   if (usrName == null) {
     _toast(context, 'Not signed in. Please sign in again.', isError: true);
@@ -1005,11 +1149,61 @@ Future<void> _openItemDialog(
   _toast(context, existing == null ? 'Item added' : 'Item updated');
 }
 
+Future<void> _updateItemStatus(
+  BuildContext context,
+  ShipmentItemModel item,
+  int shpId,
+  String targetStatus,
+) async {
+  final usrName = _currentUsername(context);
+  if (usrName == null) {
+    _toast(context, 'Not signed in. Please sign in again.', isError: true);
+    return;
+  }
+
+  final bloc = context.read<ShpByIdBloc>();
+  final isDelivered = targetStatus == 'delivered';
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(
+        isDelivered ? 'Mark item as delivered?' : 'Mark item as pending?',
+      ),
+      content: Text(
+        isDelivered
+            ? 'Set "${item.itemDescription ?? 'this item'}" status to Delivered?'
+            : 'Reopen "${item.itemDescription ?? 'this item'}" and set its status to Pending?',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(ctx).pop(true),
+          child: Text(isDelivered ? 'Mark Delivered' : 'Mark Pending'),
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed != true || !context.mounted) return;
+
+  bloc.add(
+    ShpByIdUpdateItemStatusRequested(
+      usrName: usrName,
+      shpId: shpId,
+      shpItmId: item.shpItmId,
+      status: targetStatus,
+    ),
+  );
+}
+
 Future<void> _confirmDelete(
-    BuildContext context,
-    ShipmentItemModel item,
-    int shpId,
-    ) async {
+  BuildContext context,
+  ShipmentItemModel item,
+  int shpId,
+) async {
   final bloc = context.read<ShpByIdBloc>();
   final usrName = _currentUsername(context);
   if (usrName == null) {
@@ -1025,7 +1219,7 @@ Future<void> _confirmDelete(
         title: const Text('Delete item?'),
         content: Text(
           'Are you sure you want to delete '
-              '"${item.itemDescription ?? 'this item'}"? This cannot be undone.',
+          '"${item.itemDescription ?? 'this item'}"? This cannot be undone.',
         ),
         actions: [
           TextButton(
@@ -1045,11 +1239,13 @@ Future<void> _confirmDelete(
   if (confirmed != true) return;
   if (!context.mounted) return;
 
-  bloc.add(ShpByIdDeleteItemRequested(
-    shpId: shpId,
-    shpItmId: item.shpItmId,
-    usrName: usrName,
-  ));
+  bloc.add(
+    ShpByIdDeleteItemRequested(
+      shpId: shpId,
+      shpItmId: item.shpItmId,
+      usrName: usrName,
+    ),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

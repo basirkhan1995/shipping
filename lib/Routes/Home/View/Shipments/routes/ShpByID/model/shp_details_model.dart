@@ -1,4 +1,6 @@
 
+import '../../../model/shp_model.dart';
+
 class ShipmentDetailsModel {
   final bool ok;
   final ShipmentModel shipment;
@@ -17,9 +19,11 @@ class ShipmentDetailsModel {
         Map<String, dynamic>.from(json['shipment'] ?? {}),
       ),
       items: (json['items'] as List? ?? [])
-          .map((e) => ShipmentItemModel.fromJson(
-        Map<String, dynamic>.from(e),
-      ))
+          .map(
+            (e) => ShipmentItemModel.fromJson(
+          Map<String, dynamic>.from(e),
+        ),
+      )
           .toList(),
     );
   }
@@ -31,71 +35,10 @@ class ShipmentDetailsModel {
   };
 }
 
-class ShipmentModel {
-  final int shpId;
-  final String shpReference;
-  final String? entryDate;
-  final String? updatedAt;
-  final int? createdBy;
-  final String? portName;
-  final String? containerNo;
-  final String? sequenceNo;
-  final String? loadingDate;
-  final String? unloadingDate;
-  final String? description;
-  final String? status;
-
-  const ShipmentModel({
-    required this.shpId,
-    required this.shpReference,
-    this.entryDate,
-    this.updatedAt,
-    this.createdBy,
-    this.portName,
-    this.containerNo,
-    this.sequenceNo,
-    this.loadingDate,
-    this.unloadingDate,
-    this.description,
-    this.status,
-  });
-
-  factory ShipmentModel.fromJson(Map<String, dynamic> json) {
-    return ShipmentModel(
-      shpId: _toInt(json['shpId']),
-      shpReference: json['shpReference']?.toString() ?? '',
-      entryDate: json['entryDate']?.toString(),
-      updatedAt: json['updatedAt']?.toString(),
-      createdBy: _toNullableInt(json['createdBy']),
-      portName: json['portName']?.toString(),
-      containerNo: json['containerNo']?.toString(),
-      sequenceNo: json['sequenceNo']?.toString(),
-      loadingDate: json['loadingDate']?.toString(),
-      unloadingDate: json['unloadingDate']?.toString(),
-      description: json['description']?.toString(),
-      status: json['status']?.toString(),
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'shpId': shpId,
-    'shpReference': shpReference,
-    'entryDate': entryDate,
-    'updatedAt': updatedAt,
-    'createdBy': createdBy,
-    'portName': portName,
-    'containerNo': containerNo,
-    'sequenceNo': sequenceNo,
-    'loadingDate': loadingDate,
-    'unloadingDate': unloadingDate,
-    'description': description,
-    'status': status,
-  };
-}
-
 class ShipmentItemModel {
   final int shpItmId;
   final int shpId;
+  final String? trnReference;
   final String accountNo;
   final String? itemDescription;
   final double qty;
@@ -116,13 +59,11 @@ class ShipmentItemModel {
 
   final double weightAvg;
   final double itemRent;
-  final double delivered;
-  final double returned;
-  final double unloaded;
 
   const ShipmentItemModel({
     required this.shpItmId,
     required this.shpId,
+    this.trnReference,
     required this.accountNo,
     this.itemDescription,
     required this.qty,
@@ -141,9 +82,6 @@ class ShipmentItemModel {
     this.fullName,
     required this.weightAvg,
     required this.itemRent,
-    required this.delivered,
-    required this.returned,
-    required this.unloaded,
   });
 
   factory ShipmentItemModel.fromJson(Map<String, dynamic> json) {
@@ -153,6 +91,7 @@ class ShipmentItemModel {
       accountNo: json['AccountNo']?.toString() ?? '',
       itemDescription: json['itemDescription']?.toString(),
       qty: _toDouble(json['qty']),
+      trnReference: json['trnReference']?.toString(),
       cbm: _toDouble(json['cbm']),
       weight: _toDouble(json['weight']),
       ratePerCbm: _toDouble(json['ratePerCbm']),
@@ -168,15 +107,13 @@ class ShipmentItemModel {
       fullName: json['fullName']?.toString(),
       weightAvg: _toDouble(json['weightAvg']),
       itemRent: _toDouble(json['itemRent']),
-      delivered: _toDouble(json['delivered']),
-      returned: _toDouble(json['returned']),
-      unloaded: _toDouble(json['unloaded']),
     );
   }
 
   Map<String, dynamic> toJson() => {
     'shpItmId': shpItmId,
     'shpId': shpId,
+    'trnReference': trnReference,
     'AccountNo': accountNo,
     'itemDescription': itemDescription,
     'qty': qty,
@@ -195,14 +132,12 @@ class ShipmentItemModel {
     'fullName': fullName,
     'weightAvg': weightAvg,
     'itemRent': itemRent,
-    'delivered': delivered,
-    'returned': returned,
-    'unloaded': unloaded,
   };
 }
 
 int _toInt(dynamic value) {
   if (value == null) return 0;
+
   return int.tryParse(value.toString()) ??
       double.tryParse(value.toString())?.toInt() ??
       0;
@@ -217,4 +152,3 @@ double _toDouble(dynamic value) {
   if (value == null) return 0.0;
   return double.tryParse(value.toString()) ?? 0.0;
 }
-

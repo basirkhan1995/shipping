@@ -144,10 +144,7 @@ class ShipmentBloc extends Bloc<ShipmentEvent, ShipmentState> {
   // CREATE CONTAINER
   // ─────────────────────────────────────────────────────────────
 
-  Future<void> _onCreateShipment(
-      CreateShipment event,
-      Emitter<ShipmentState> emit,
-      ) async {
+  Future<void> _onCreateShipment(CreateShipment event, Emitter<ShipmentState> emit) async {
     emit(const ShipmentOperationLoading('create'));
 
     try {
