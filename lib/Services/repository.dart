@@ -47,6 +47,7 @@ import '../Routes/Home/View/Settings/View/General/UserRole/model/role_model.dart
 import '../Routes/Home/View/Settings/View/ProductCategory/model/pro_cat_model.dart';
 import '../Routes/Home/View/Shipments/model/shp_model.dart';
 import '../Routes/Home/View/Shipments/routes/ShpByID/model/shp_details_model.dart';
+import '../Routes/Home/View/Shipments/routes/ShpExpenses/model/shp_exp_model.dart';
 import '../Routes/Home/View/Stakeholder/model/stk_model.dart';
 import '../Routes/Home/View/Stock/GoodsShift/model/shift_model.dart';
 import '../Routes/Home/View/Stock/Orders/model/orders_model.dart';
@@ -4118,4 +4119,175 @@ class Repositories {
 
     return data;
   }
+
+  // ═════════════════════════════════════════════════════════════════
+  // Shipment Expenses (20202028 Dr / stakeholder Cr)
+  //   All actions hit shipment_expense.php.
+  //   Reads (list/get) use GET; writes (add/update/delete) use POST
+  //   because the PHP only auth-checks usrName on POST requests.
+  // ═════════════════════════════════════════════════════════════════
+
+  static const String _expenseEndpoint = '/shipment/shipment_expense.php';
+
+  /// GET shipment_expense.php?action=listExpenses&shpId=…
+  Future<ShipmentExpenseListResult> getExpenses({
+    required int shpId,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.get(
+      endpoint: _expenseEndpoint,
+      queryParams: {
+        'action': 'listExpenses',
+        'shpId': shpId.toString(),
+      },
+      cancelToken: cancelToken,
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+    if (body['ok'] != true) {
+      _fail(body, fallback: 'Failed to load expenses');
+    }
+    return ShipmentExpenseListResult.fromMap(body);
+  }
+
+  /// Same as getExpenses but keyed by container reference.
+  Future<ShipmentExpenseListResult> getExpensesByReference({
+    required String shpReference,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.get(
+      endpoint: _expenseEndpoint,
+      queryParams: {
+        'action': 'listExpenses',
+        'shpReference': shpReference,
+      },
+      cancelToken: cancelToken,
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+    if (body['ok'] != true) {
+      _fail(body, fallback: 'Failed to load expenses');
+    }
+    return ShipmentExpenseListResult.fromMap(body);
+  }
+
+  /// GET shipment_expense.php?action=getExpense&expId=…
+  Future<ShipmentExpenseModel> getExpenseById({
+    required int expId,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.get(
+      endpoint: _expenseEndpoint,
+      queryParams: {
+        'action': 'getExpense',
+        'expId': expId.toString(),
+      },
+      cancelToken: cancelToken,
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+    if (body['ok'] != true) {
+      _fail(body, fallback: 'Expense not found');
+    }
+    return ShipmentExpenseModel.fromMap(body);
+  }
+
+  /// POST shipment_expense.php?action=addExpense
+  ///
+  /// The user must have picked a stakeholder account whose currency
+  /// equals the company base currency — the server rejects anything
+  /// else, but the picker should already filter to base-ccy accounts.
+  Future<ShipmentExpenseWriteResult> addExpense({
+    required String usrName,
+    required int shpId,
+    required String accountNo,
+    required double amount,
+    String? narration,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.post(
+      endpoint: _expenseEndpoint,
+      data: {
+        'action': 'addExpense',
+        'usrName': usrName,
+        'shpId': shpId,
+        'AccountNo': accountNo,
+        'amount': amount,
+        if (narration != null && narration.trim().isNotEmpty)
+          'narration': narration.trim(),
+      },
+      cancelToken: cancelToken,
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+    if (body['ok'] != true) {
+      _fail(body, fallback: 'Failed to add expense');
+    }
+    return ShipmentExpenseWriteResult.fromMap(body);
+  }
+
+  /// POST shipment_expense.php?action=updateExpense
+  ///
+  /// Any of [accountNo], [amount], [narration] can be omitted — the
+  /// server falls back to the current value for omitted fields.
+  Future<ShipmentExpenseWriteResult> updateExpense({
+    required String usrName,
+    required int expId,
+    String? accountNo,
+    double? amount,
+    String? narration,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.post(
+      endpoint: _expenseEndpoint,
+      data: {
+        'action': 'updateExpense',
+        'usrName': usrName,
+        'expId': expId,
+        'AccountNo': ?accountNo,
+        'amount': ?amount,
+        if (narration != null) 'narration': narration.trim(),
+      },
+      cancelToken: cancelToken,
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+    if (body['ok'] != true) {
+      _fail(body, fallback: 'Failed to update expense');
+    }
+    return ShipmentExpenseWriteResult.fromMap(body);
+  }
+
+  /// POST shipment_expense.php?action=deleteExpense
+  ///
+  /// Removes BOTH trnDetails rows (Dr on 20202028, Cr on the stakeholder)
+  /// because the server deletes them in one transaction.
+  Future<ShipmentExpenseDeleteResult> deleteExpense({
+    required String usrName,
+    required int expId,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.post(
+      endpoint: _expenseEndpoint,
+      data: {
+        'action': 'deleteExpense',
+        'usrName': usrName,
+        'expId': expId,
+      },
+      cancelToken: cancelToken,
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+    if (body['ok'] != true) {
+      _fail(body, fallback: 'Failed to delete expense');
+    }
+    return ShipmentExpenseDeleteResult.fromMap(body);
+  }
+
 }
