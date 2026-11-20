@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/toast.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
@@ -48,6 +49,14 @@ class _ShipmentContainerDialogState
   late final TextEditingController _unloadingDateCtrl;
   late final TextEditingController _descriptionCtrl;
 
+  // Focus nodes — one per field
+  late final FocusNode _portNameFocus;
+  late final FocusNode _containerNoFocus;
+  late final FocusNode _sequenceNoFocus;
+  late final FocusNode _loadingDateFocus;
+  late final FocusNode _unloadingDateFocus;
+  late final FocusNode _descriptionFocus;
+
   bool _isBusy = false;
 
   bool get _isEditing => widget.shipment != null;
@@ -81,6 +90,18 @@ class _ShipmentContainerDialogState
     _descriptionCtrl = TextEditingController(
       text: shipment?.description ?? '',
     );
+
+    _portNameFocus = FocusNode();
+    _containerNoFocus = FocusNode();
+    _sequenceNoFocus = FocusNode();
+    _loadingDateFocus = FocusNode();
+    _unloadingDateFocus = FocusNode();
+    _descriptionFocus = FocusNode();
+
+    // Autofocus the first field
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _portNameFocus.requestFocus();
+    });
   }
 
   @override
@@ -91,6 +112,14 @@ class _ShipmentContainerDialogState
     _loadingDateCtrl.dispose();
     _unloadingDateCtrl.dispose();
     _descriptionCtrl.dispose();
+
+    _portNameFocus.dispose();
+    _containerNoFocus.dispose();
+    _sequenceNoFocus.dispose();
+    _loadingDateFocus.dispose();
+    _unloadingDateFocus.dispose();
+    _descriptionFocus.dispose();
+
     super.dispose();
   }
 
@@ -112,7 +141,13 @@ class _ShipmentContainerDialogState
     return null;
   }
 
-  Future<void> _pickDate(TextEditingController controller) async {
+  Future<void> _pickDate(
+      TextEditingController controller,
+      FocusNode focusNode,
+      ) async {
+    // Move focus to this field first (keeps visual selection consistent)
+    focusNode.requestFocus();
+
     final initialDate =
         DateTime.tryParse(controller.text) ?? DateTime.now();
 
@@ -259,18 +294,33 @@ class _ShipmentContainerDialogState
   Widget _dateField({
     required String title,
     required TextEditingController controller,
+    required FocusNode focusNode,
     bool required = false,
+    FocusNode? nextFocus,
+    bool isLast = false,
   }) {
     return GestureDetector(
-      onTap: _isBusy ? null : () => _pickDate(controller),
+      onTap: _isBusy
+          ? null
+          : () => _pickDate(controller, focusNode),
       child: AbsorbPointer(
         child: ZTextFieldEntitled(
           controller: controller,
+          focusNode: focusNode,
           title: title,
           isRequired: required,
           isEnabled: !_isBusy,
           readOnly: true,
           keyboardType: TextInputType.datetime,
+          textInputAction:
+          isLast ? TextInputAction.done : TextInputAction.next,
+          onFieldSubmitted: (_) {
+            if (isLast) {
+              _submit();
+            } else {
+              nextFocus?.requestFocus();
+            }
+          },
           validator: required ? _dateValidator : null,
         ),
       ),
@@ -286,9 +336,13 @@ class _ShipmentContainerDialogState
         children: [
           ZTextFieldEntitled(
             controller: _portNameCtrl,
+            focusNode: _portNameFocus,
             title: AppLocalizations.of(context)!.port,
             isRequired: true,
             isEnabled: !_isBusy,
+            textInputAction: TextInputAction.next,
+            onFieldSubmitted: (_) =>
+                _containerNoFocus.requestFocus(),
             validator: _requiredValidator,
           ),
 
@@ -296,9 +350,13 @@ class _ShipmentContainerDialogState
 
           ZTextFieldEntitled(
             controller: _containerNoCtrl,
+            focusNode: _containerNoFocus,
             title: AppLocalizations.of(context)!.containerNo,
             isRequired: true,
             isEnabled: !_isBusy,
+            textInputAction: TextInputAction.next,
+            onFieldSubmitted: (_) =>
+                _sequenceNoFocus.requestFocus(),
             validator: _requiredValidator,
           ),
 
@@ -306,13 +364,20 @@ class _ShipmentContainerDialogState
 
           ZTextFieldEntitled(
             controller: _sequenceNoCtrl,
+            focusNode: _sequenceNoFocus,
             title: AppLocalizations.of(context)!.sequence,
             isEnabled: !_isBusy,
-            keyboardType: TextInputType.text,
+            keyboardType: TextInputType.number,
+            // ── digits only ────────────────────────────────────────
+            inputFormat: [
+              FilteringTextInputFormatter.digitsOnly,
+            ],
+            textInputAction: TextInputAction.next,
+            onFieldSubmitted: (_) =>
+                _loadingDateFocus.requestFocus(),
           ),
 
           const SizedBox(height: 12),
-
 
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -321,7 +386,9 @@ class _ShipmentContainerDialogState
                 child: _dateField(
                   title: AppLocalizations.of(context)!.loadingDate,
                   controller: _loadingDateCtrl,
+                  focusNode: _loadingDateFocus,
                   required: true,
+                  nextFocus: _unloadingDateFocus,
                 ),
               ),
 
@@ -331,6 +398,8 @@ class _ShipmentContainerDialogState
                 child: _dateField(
                   title: AppLocalizations.of(context)!.unloadingDate,
                   controller: _unloadingDateCtrl,
+                  focusNode: _unloadingDateFocus,
+                  nextFocus: _descriptionFocus,
                 ),
               ),
             ],
@@ -340,9 +409,12 @@ class _ShipmentContainerDialogState
 
           ZTextFieldEntitled(
             controller: _descriptionCtrl,
+            focusNode: _descriptionFocus,
             keyboardType: TextInputType.multiline,
             title: AppLocalizations.of(context)!.description,
             isEnabled: !_isBusy,
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => _submit(),
           ),
         ],
       ),
@@ -374,7 +446,9 @@ class _ShipmentContainerDialogState
                 strokeWidth: 2,
               ),
             )
-                : Text(_isEditing ?  AppLocalizations.of(context)!.update : AppLocalizations.of(context)!.save),
+                : Text(_isEditing
+                ? AppLocalizations.of(context)!.update
+                : AppLocalizations.of(context)!.save),
           ),
 
           if (_isEditing) ...[
@@ -386,7 +460,6 @@ class _ShipmentContainerDialogState
               icon: Icons.delete_outline,
               label: Text(AppLocalizations.of(context)!.delete),
             ),
-
           ],
         ],
       ),
@@ -409,7 +482,10 @@ class _ShipmentContainerDialogState
 
           Navigator.of(context).pop();
 
-          ToastManager.show(context: context, message: message, type: ToastType.success);
+          ToastManager.show(
+              context: context,
+              message: message,
+              type: ToastType.success);
         }
 
         if (state is ShipmentOperationError) {
@@ -417,14 +493,19 @@ class _ShipmentContainerDialogState
             setState(() => _isBusy = false);
           }
 
-          ToastManager.show(context: context, message: "Failed operation", type: ToastType.error);
+          ToastManager.show(
+              context: context,
+              message: "Failed operation",
+              type: ToastType.error);
         }
       },
       child: ZFormDialog(
         width: 460,
         padding: EdgeInsets.all(10),
         icon: _isEditing ? Icons.edit : Icons.add_box_outlined,
-        title: _isEditing ? '${tr.editContainer} - ${widget.shipment?.containerNo}' : tr.addContainer,
+        title: _isEditing
+            ? '${tr.editContainer} - ${widget.shipment?.containerNo}'
+            : tr.addContainer,
         isActionTrue: false,
         onAction: null,
         child: ConstrainedBox(
