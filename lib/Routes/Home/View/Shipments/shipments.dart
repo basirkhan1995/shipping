@@ -402,7 +402,7 @@ class _DesktopViewState extends State<_DesktopView> {
     final tr = AppLocalizations.of(context)!;
     final style = textTheme.titleSmall?.copyWith(
       letterSpacing: 0.8,
-      fontSize: 12,
+      fontSize: 13,
       fontWeight: FontWeight.bold,
     );
 
@@ -416,21 +416,18 @@ class _DesktopViewState extends State<_DesktopView> {
       child: Row(
         children: [
           SizedBox(
-              width: 115,
-              child: Text(tr.loadingDate.toUpperCase(), style: style)),
+              width: 130,
+              child: Text(tr.entryDate.toUpperCase(), style: style)),
           SizedBox(
               width: 155,
               child: Text(tr.containerNo.toUpperCase(), style: style)),
           SizedBox(
-              width: 190,
-              child: Text(tr.reference.toUpperCase(), style: style)),
-          SizedBox(
               width: 125,
-              child: Text(tr.sequence.toUpperCase(), style: style)),
+              child: Text(tr.sequence.toUpperCase(), style: style, textAlign: TextAlign.start)),
           Expanded(child: Text(tr.port.toUpperCase(), style: style)),
           SizedBox(
             width: 75,
-            child: Text(tr.items, textAlign: TextAlign.end, style: style),
+            child: Text(tr.items, textAlign: TextAlign.center, style: style),
           ),
           SizedBox(
             width: 145,
@@ -438,9 +435,9 @@ class _DesktopViewState extends State<_DesktopView> {
                 textAlign: TextAlign.end, style: style),
           ),
           SizedBox(
-            width: 105,
+            width: 123,
             child: Text(tr.status.toUpperCase(),
-                textAlign: TextAlign.center, style: style),
+                textAlign: TextAlign.end, style: style),
           ),
           const SizedBox(width: 40), // actions column
         ],
@@ -485,11 +482,8 @@ class _DesktopViewState extends State<_DesktopView> {
     );
   }
 
-  Widget _buildList(
-      List<ShipmentModel> shipments,
-      ColorScheme color, {
-        required bool isLoadingMore,
-      }) {
+  Widget _buildList(List<ShipmentModel> shipments, ColorScheme color, {required bool isLoadingMore}) {
+    final Color hoverColor = Theme.of(context).colorScheme.primary.withValues(alpha: .07);
     return ListView.separated(
       controller: _scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
@@ -509,6 +503,9 @@ class _DesktopViewState extends State<_DesktopView> {
         final shipment = shipments[index];
 
         return InkWell(
+          hoverColor: hoverColor,
+          highlightColor: hoverColor,
+          splashColor: hoverColor,
           onTap: () => _openDetails(shipment),
           child: _ShipmentRowWidget(
             shipment: shipment,
@@ -597,6 +594,7 @@ class _ShipmentRowWidget extends StatelessWidget {
         textAlign: align,
         style: textTheme.bodySmall?.copyWith(
           fontWeight: weight,
+          fontSize: 13,
           color: textColor ?? color.onSurface,
         ),
       );
@@ -607,7 +605,7 @@ class _ShipmentRowWidget extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: isOdd ? color.outline.withValues(alpha: .045) : null,
       ),
@@ -616,9 +614,8 @@ class _ShipmentRowWidget extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              cell(shipment.loadingDate?.shamsiDateString ?? '—',
-                  width: 115),
-              cell(shipment.loadingDate ?? '—', width: 115),
+              cell(shipment.entryDate?.shamsiDateString ?? '—', width: 130),
+              cell(shipment.entryDate.toFormattedDateTime(), width: 130, align: TextAlign.start),
             ],
           ),
           cell(
@@ -631,7 +628,8 @@ class _ShipmentRowWidget extends StatelessWidget {
           cell(
             shipment.totalItems.toString(),
             width: 75,
-            align: TextAlign.end,
+            weight: FontWeight.bold,
+            align: TextAlign.center,
           ),
           cell(
             shipment.totalRent.toAmount(),
@@ -639,10 +637,9 @@ class _ShipmentRowWidget extends StatelessWidget {
             align: TextAlign.end,
             weight: FontWeight.w700,
           ),
-          SizedBox(
-            width: 105,
-            child: StatusDotIndicator(status: shipment.status),
-          ),
+
+          SizedBox(width: 45),
+          StatusDotIndicator(status: shipment.status, size: 13, showText: true,spacing: 3,textPosition: 'before',),
           SizedBox(
             width: 40,
             child: _ShipmentRowMenu(

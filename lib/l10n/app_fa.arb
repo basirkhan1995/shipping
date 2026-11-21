@@ -774,5 +774,8 @@
   "addShipment": "ثبت کانتینر",
   "shipped": "حمل شده",
   "markAsPending": "تحویل نشده",
-  "markAsDelivered": "تحویل شده"
+  "markAsDelivered": "تحویل شده",
+  "itemDescription": "تفصیلات جنس",
+  "entryDate": "تاریخ ثبت",
+  "noItems": "اقلام"
 }

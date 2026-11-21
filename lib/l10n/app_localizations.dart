@@ -4671,6 +4671,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mark as Delivered'**
   String get markAsDelivered;
+
+  /// No description provided for @itemDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Item Description'**
+  String get itemDescription;
+
+  /// No description provided for @entryDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry Date'**
+  String get entryDate;
+
+  /// No description provided for @noItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Items'**
+  String get noItems;
 }
 
 class _AppLocalizationsDelegate

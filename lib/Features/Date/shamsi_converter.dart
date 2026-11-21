@@ -98,6 +98,24 @@ class AfghanShamsiConverter {
   }
 }
 
+// extension DateTimeExtensions on dynamic {
+//   DateTime? get _dateTime {
+//     if (this is DateTime) return this as DateTime;
+//     if (this is String) return DateTime.tryParse(this as String);
+//     return null;
+//   }
+//
+//   static String _twoDigits(int n) => n.toString().padLeft(2, "0");
+//
+//   /// Formats the date as YYYY-MM-DD
+//   String toFormattedDate() {
+//     final date = _dateTime;
+//     return date != null
+//         ? "${date.year}-${_twoDigits(date.month)}-${_twoDigits(date.day)}"
+//         : "";
+//   }
+// }
+
 extension DateTimeExtensions on dynamic {
   DateTime? get _dateTime {
     if (this is DateTime) return this as DateTime;
@@ -113,6 +131,19 @@ extension DateTimeExtensions on dynamic {
     return date != null
         ? "${date.year}-${_twoDigits(date.month)}-${_twoDigits(date.day)}"
         : "";
+  }
+
+  /// Formats the date as YY/MM/DD | HH:mm
+  /// Example: 26/11/21 | 22:40
+  String toFormattedDateTime() {
+    final date = _dateTime;
+    if (date == null) return "";
+    final yy = _twoDigits(date.year % 100);
+    final mm = _twoDigits(date.month);
+    final dd = _twoDigits(date.day);
+    final hh = _twoDigits(date.hour);
+    final min = _twoDigits(date.minute);
+    return "$yy/$mm/$dd | $hh:$min";
   }
 }
 

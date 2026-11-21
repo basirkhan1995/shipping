@@ -188,15 +188,13 @@ class _Cols {
   static const double qtyW = 70;
   static const double cbmW = 80;
   static const double weightW = 95;
-  static const double weightAvgW = 105;
+  static const double weightAvgW = 115;
   static const double rateCbmW = 95;
   static const double rateKgW = 95;
   static const double extraW = 90;
   static const double rentW = 110;
   static const double statusW = 100;
-  static const double datesW = 120;
   static const double actionsW = 40;
-
   static const double totalFixed =
       indexW +
       qtyW +
@@ -208,7 +206,6 @@ class _Cols {
       extraW +
       rentW +
       statusW +
-      datesW +
       actionsW;
 
   static const double minTableWidth = totalFixed + 400;
@@ -389,7 +386,7 @@ class _ItemsTableHeader extends StatelessWidget {
     final color = Theme.of(context).colorScheme;
     final style = Theme.of(context).textTheme.titleSmall?.copyWith(
       letterSpacing: 0.8,
-      fontSize: 12,
+      fontSize: 13,
       fontWeight: FontWeight.bold,
       color: color.onSurface,
     );
@@ -499,14 +496,6 @@ class _ItemsTableHeader extends StatelessWidget {
                   style: style,
                 ),
               ),
-              SizedBox(
-                width: _Cols.datesW,
-                child: Text(
-                  tr.entryUpdated.toUpperCase(),
-                  textAlign: TextAlign.start,
-                  style: style,
-                ),
-              ),
               const SizedBox(width: _Cols.actionsW),
             ],
           ),
@@ -565,7 +554,7 @@ class _ItemsList extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= _Cols.minTableWidth;
-
+        Color hoverColor = Theme.of(context).colorScheme.primary.withValues(alpha: .07);
         final list = ListView.separated(
           physics: const AlwaysScrollableScrollPhysics(),
           itemCount: items.length,
@@ -575,13 +564,21 @@ class _ItemsList extends StatelessWidget {
           ),
           itemBuilder: (context, index) {
             final item = items[index];
-            return _ItemRow(
-              item: item,
-              index: index + 1, // 1-based index
-              shpId: shpId,
-              isOdd: index.isOdd,
-              isMutating: isMutating,
-              pendingAction: pendingAction,
+            return InkWell(
+              highlightColor: hoverColor,
+              hoverColor: hoverColor,
+              splashColor: hoverColor,
+              onTap: (){
+                _openItemDialog(context, shpId, item);
+              },
+              child: _ItemRow(
+                item: item,
+                index: index + 1, // 1-based index
+                shpId: shpId,
+                isOdd: index.isOdd,
+                isMutating: isMutating,
+                pendingAction: pendingAction,
+              ),
             );
           },
         );
@@ -719,54 +716,18 @@ class _ItemRow extends StatelessWidget {
             numCell(_fmt(item.qty), _Cols.qtyW),
             numCell(_fmt(item.cbm, decimals: 3), _Cols.cbmW),
             numCell('${_fmt(item.weight, decimals: 2)} kg', _Cols.weightW),
-            numCell(
-              '${_fmt(item.weightAvg, decimals: 2)} kg',
-              _Cols.weightAvgW,
-            ),
+            numCell('${_fmt(item.weightAvg, decimals: 2)} kg', _Cols.weightAvgW),
             numCell(_fmt(item.ratePerCbm, decimals: 2), _Cols.rateCbmW),
             numCell(_fmt(item.ratePerWeight, decimals: 2), _Cols.rateKgW),
-            numCell('\$${_fmt(item.extraCharges, decimals: 2)}', _Cols.extraW),
-            numCell(
-              '\$${_fmt(item.itemRent, decimals: 2)}',
-              _Cols.rentW,
-              weight: FontWeight.w700,
-              textColor: color.primary,
-            ),
+            numCell(_fmt(item.extraCharges, decimals: 2), _Cols.extraW),
+            numCell(_fmt(item.itemRent, decimals: 2), _Cols.rentW, weight: FontWeight.w700, textColor: color.primary),
             SizedBox(
               width: _Cols.statusW,
               child: Center(
-                child: _StatusChip(status: item.status ?? 'pending'),
+                child: _StatusChip(status: item.status ?? ''),
               ),
             ),
-            SizedBox(
-              width: _Cols.datesW,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _shortDate(item.entryDate),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: textTheme.bodySmall?.copyWith(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: color.onSurfaceVariant,
-                    ),
-                  ),
-                  if (item.updatedAt != null)
-                    Text(
-                      _shortDate(item.updatedAt),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: textTheme.bodySmall?.copyWith(
-                        fontSize: 12,
-                        color: color.outline,
-                      ),
-                    ),
-                ],
-              ),
-            ),
+
             SizedBox(
               width: _Cols.actionsW,
               child: _ItemMenu(item: item, shpId: shpId, disabled: isMutating),
@@ -775,17 +736,6 @@ class _ItemRow extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _shortDate(String? iso) {
-    if (iso == null || iso.isEmpty) return '';
-    try {
-      final dt = DateTime.parse(iso.replaceFirst(' ', 'T'));
-      String two(int n) => n.toString().padLeft(2, '0');
-      return '${two(dt.month)}-${two(dt.day)} ${two(dt.hour)}:${two(dt.minute)}';
-    } catch (_) {
-      return iso;
-    }
   }
 }
 

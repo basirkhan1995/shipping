@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shipping/Features/Date/shamsi_converter.dart';
+import 'package:shipping/Features/Widgets/cover.dart';
+import 'package:shipping/Features/Widgets/extensions.dart';
 import 'package:shipping/Features/Widgets/toast.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
+import 'package:shipping/Routes/Home/View/Stock/Orders/features/status_method.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../../../Features/Other/form_dialog.dart';
 import '../../../../Features/Widgets/ztextfield.dart';
@@ -334,6 +338,14 @@ class _ShipmentContainerDialogState
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          //Container Info in edit mode
+          if(widget.shipment !=null)...[
+            _buildInfoCard(context),
+            const SizedBox(height: 12),
+
+          ],
+
+
           ZTextFieldEntitled(
             controller: _portNameCtrl,
             focusNode: _portNameFocus,
@@ -465,6 +477,67 @@ class _ShipmentContainerDialogState
       ),
     );
   }
+  Widget _buildInfoCard(BuildContext context) {
+    final shipment = widget.shipment!;
+
+    final status = shipment.status.toUpperCase();
+    final tr = AppLocalizations.of(context)!;
+    return ZCover(
+      margin: const EdgeInsets.only(bottom: 16),
+      radius: 8,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Row 1: Date + Status badge ─────────────────────────────
+          Row(
+            children: [
+              _InfoItem(
+                icon: Icons.timelapse_rounded,
+                label: AppLocalizations.of(context)!.entryDate,
+                value: shipment.entryDate?.toFormattedDateTime() ?? "—",
+                expanded: true,
+              ),
+
+              const SizedBox(width: 6),
+              StatusDotIndicator(status: status,size: 13,showText: true),
+            ],
+          ),
+
+          const SizedBox(height: 10),
+
+          // ── Row 3: Items + Total rent ──────────────────────────────
+          Row(
+            children: [
+              Expanded(
+                child: _InfoItem(
+                  icon: Icons.verified_user_outlined,
+                  label: tr.maker,
+                  value: shipment.createdByName??"",
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _InfoItem(
+                  icon: Icons.shopping_basket_outlined,
+                  label: tr.noItems,
+                  value: shipment.totalItems.toString(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _InfoItem(
+                  icon: Icons.payments_outlined,
+                  label: tr.rent,
+                  value: shipment.totalRent.toAmount(),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -524,5 +597,56 @@ class _ShipmentContainerDialogState
         ),
       ),
     );
+  }
+}
+
+class _InfoItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final bool expanded;
+
+  const _InfoItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.expanded = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final content = Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Icon(icon, size: 20, color: theme.colorScheme.primary),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              Text(
+                value.isEmpty ? "—" : value,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  height: 1.2,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+    return expanded ? Expanded(child: content) : content;
   }
 }

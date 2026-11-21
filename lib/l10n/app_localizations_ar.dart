@@ -2338,4 +2338,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get markAsDelivered => 'تحویل شده';
+
+  @override
+  String get itemDescription => 'جنس تفصیلات';
+
+  @override
+  String get entryDate => 'ثبت نیته';
+
+  @override
+  String get noItems => 'اقلام';
 }

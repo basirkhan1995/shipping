@@ -2347,4 +2347,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get markAsDelivered => 'Mark as Delivered';
+
+  @override
+  String get itemDescription => 'Item Description';
+
+  @override
+  String get entryDate => 'Entry Date';
+
+  @override
+  String get noItems => 'Items';
 }

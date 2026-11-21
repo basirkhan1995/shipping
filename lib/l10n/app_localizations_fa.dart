@@ -2339,4 +2339,13 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get markAsDelivered => 'تحویل شده';
+
+  @override
+  String get itemDescription => 'تفصیلات جنس';
+
+  @override
+  String get entryDate => 'تاریخ ثبت';
+
+  @override
+  String get noItems => 'اقلام';
 }

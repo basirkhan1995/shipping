@@ -774,5 +774,8 @@
   "addShipment": "Add Shipment",
   "shipped": "Shipped",
   "markAsPending": "Mark as Pending",
-  "markAsDelivered": "Mark as Delivered"
+  "markAsDelivered": "Mark as Delivered",
+  "itemDescription": "Item Description",
+  "entryDate": "Entry Date",
+  "noItems": "Items"
 }

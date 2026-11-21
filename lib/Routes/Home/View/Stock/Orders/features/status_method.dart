@@ -7,6 +7,10 @@ import '../../../../../../l10n/app_localizations.dart';
 enum TxStatus {
   pending,
   completed,
+  authorized,
+  delivered,
+  shipped,
+  deleted,
 }
 
 /// ===============================
@@ -14,10 +18,17 @@ enum TxStatus {
 /// ===============================
 TxStatus parseStatus(String? value) {
   switch (value?.toLowerCase()) {
-    case 'authorized':  // ✅ Check for lowercase
+    case 'authorized':
+      return TxStatus.authorized;
+    case 'completed':
       return TxStatus.completed;
-    case 'pending':     // ✅ Check for lowercase (optional)
-      return TxStatus.pending;
+    case 'delivered':
+      return TxStatus.delivered;
+    case 'shipped':
+      return TxStatus.shipped;
+    case 'deleted':
+      return TxStatus.deleted;
+    case 'pending':
     default:
       return TxStatus.pending;
   }
@@ -42,10 +53,30 @@ class StatusStyle {
           color: Color(0xFF2E7D32),
           icon: Icons.check_circle_rounded,
         );
+      case TxStatus.authorized:
+        return const StatusStyle(
+          color: Color(0xFF1565C0),
+          icon: Icons.verified_rounded,
+        );
       case TxStatus.pending:
         return const StatusStyle(
           color: Color(0xFFF9A825),
           icon: Icons.schedule_rounded,
+        );
+      case TxStatus.delivered:
+        return const StatusStyle(
+          color: Color(0xFF00897B),
+          icon: Icons.local_shipping_rounded,
+        );
+      case TxStatus.shipped:
+        return const StatusStyle(
+          color: Color(0xFF6A1B9A),
+          icon: Icons.flight_takeoff_rounded,
+        );
+      case TxStatus.deleted:
+        return const StatusStyle(
+          color: Color(0xFFC62828),
+          icon: Icons.delete_rounded,
         );
     }
   }
@@ -172,10 +203,22 @@ class StatusDotIndicator extends StatefulWidget {
   final dynamic status;
   final double size;
 
+  /// NEW — optional, defaults to false. Shows the uppercase bold label.
+  final bool showText;
+
+  /// NEW — optional, defaults to after the dot. 'before' | 'after'.
+  final String textPosition;
+
+  /// NEW — optional gap between dot and text.
+  final double spacing;
+
   const StatusDotIndicator({
     super.key,
     required this.status,
     this.size = 15,
+    this.showText = false,
+    this.textPosition = 'after',
+    this.spacing = 8,
   });
 
   @override
@@ -188,10 +231,14 @@ class _StatusDotIndicatorState extends State<StatusDotIndicator>
 
   TxStatus get _tx {
     final v = widget.status;
-    if (v is int) return v == 1 ? TxStatus.completed : TxStatus.pending;
-    if (v is bool) return v ? TxStatus.completed : TxStatus.pending;
+    if (v is TxStatus) return v;
+    if (v is int) return v == 1 ? TxStatus.authorized : TxStatus.pending;
+    if (v is bool) return v ? TxStatus.authorized : TxStatus.pending;
     return parseStatus(v?.toString() ?? '');
   }
+
+  /// Uppercase label, e.g. "AUTHORIZED".
+  String get _label => _tx.name.toUpperCase();
 
   @override
   void initState() {
@@ -220,56 +267,89 @@ class _StatusDotIndicatorState extends State<StatusDotIndicator>
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildDot() {
     final style = StatusStyle.getStyle(_tx);
 
-    return Tooltip(
-      message: _tx.name,
-      child: AnimatedBuilder(
-        animation: _c,
-        builder: (_, _) {
-          final pulse = _tx == TxStatus.pending ? _c.value : 0.0;
-          return SizedBox(
-            width: widget.size * 2,
-            height: widget.size * 2,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                if (_tx == TxStatus.pending)
-                  Transform.scale(
-                    scale: 1.0 + pulse * 0.6,
-                    child: Container(
-                      width: widget.size,
-                      height: widget.size,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: style.color.withValues(
-                          alpha: (1 - pulse) * 0.9,
-                        ),
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, _) {
+        final pulse = _tx == TxStatus.pending ? _c.value : 0.0;
+        return SizedBox(
+          width: widget.size * 2,
+          height: widget.size * 2,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              if (_tx == TxStatus.pending)
+                Transform.scale(
+                  scale: 1.0 + pulse * 0.6,
+                  child: Container(
+                    width: widget.size,
+                    height: widget.size,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: style.color.withValues(
+                        alpha: (1 - pulse) * 0.9,
                       ),
                     ),
                   ),
-                Container(
-                  width: widget.size,
-                  height: widget.size,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: style.color,
-                    boxShadow: [
-                      BoxShadow(
-                        color: style.color.withValues(alpha: 0.5),
-                        blurRadius: 6,
-                        spreadRadius: 1,
-                      ),
-                    ],
-                  ),
                 ),
-              ],
-            ),
-          );
-        },
+              Container(
+                width: widget.size,
+                height: widget.size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: style.color,
+                  boxShadow: [
+                    BoxShadow(
+                      color: style.color.withValues(alpha: 0.5),
+                      blurRadius: 6,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildText() {
+    final style = StatusStyle.getStyle(_tx);
+    return Text(
+      _label,
+      style: TextStyle(
+        color: style.color,
+        fontSize: widget.size * 0.85,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.6,
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dot = Tooltip(message: _tx.name, child: _buildDot());
+
+    if (!widget.showText) return dot;
+
+    final isBefore = widget.textPosition == 'before';
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (isBefore) ...[
+          _buildText(),
+          SizedBox(width: widget.spacing),
+        ],
+        dot,
+        if (!isBefore) ...[
+          SizedBox(width: widget.spacing),
+          _buildText(),
+        ],
+      ],
     );
   }
 }

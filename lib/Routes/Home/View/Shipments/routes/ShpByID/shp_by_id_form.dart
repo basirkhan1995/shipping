@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shipping/Features/Date/shamsi_converter.dart';
 import 'package:shipping/Features/Widgets/ztextfield.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../../../Features/Other/form_dialog.dart';
@@ -387,11 +388,22 @@ class _ShpItemFormState extends State<ShpItemForm> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if(widget.existing !=null)...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    spacing: 5,
+                    children: [
+                      Text(tr.entryUpdated,style: TextStyle(color: Theme.of(context).colorScheme.outline),),
+                      Text("${widget.existing?.entryDate?.toFormattedDateTime()??"_"} - ${widget.existing?.updatedAt?.toFormattedDateTime()??"_"}"),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                ],
                 _buildAccountPicker(),
                 const SizedBox(height: 10),
 
                 ZTextFieldEntitled(
-                  title: tr.description,
+                  title: tr.itemDescription,
                   keyboardType: TextInputType.multiline,
                   isRequired: true,
                   controller: _description,
