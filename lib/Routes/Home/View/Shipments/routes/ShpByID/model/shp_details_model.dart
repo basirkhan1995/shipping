@@ -38,7 +38,7 @@ class ShipmentDetailsModel {
 class ShipmentItemModel {
   final int shpItmId;
   final int shpId;
-  final String? trnReference;
+  final String? payReference;
   final String accountNo;
   final String? itemDescription;
   final double qty;
@@ -63,7 +63,7 @@ class ShipmentItemModel {
   const ShipmentItemModel({
     required this.shpItmId,
     required this.shpId,
-    this.trnReference,
+    this.payReference,
     required this.accountNo,
     this.itemDescription,
     required this.qty,
@@ -91,7 +91,7 @@ class ShipmentItemModel {
       accountNo: json['AccountNo']?.toString() ?? '',
       itemDescription: json['itemDescription']?.toString(),
       qty: _toDouble(json['qty']),
-      trnReference: json['trnReference']?.toString(),
+      payReference: json['payReference']?.toString(),
       cbm: _toDouble(json['cbm']),
       weight: _toDouble(json['weight']),
       ratePerCbm: _toDouble(json['ratePerCbm']),
@@ -113,7 +113,7 @@ class ShipmentItemModel {
   Map<String, dynamic> toJson() => {
     'shpItmId': shpItmId,
     'shpId': shpId,
-    'trnReference': trnReference,
+    'payReference': payReference,
     'AccountNo': accountNo,
     'itemDescription': itemDescription,
     'qty': qty,
