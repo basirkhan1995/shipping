@@ -439,6 +439,8 @@ class _ShipmentContainerDialogState
       child: Row(
         children: [
           ZOutlineButton(
+            isActive: true,
+            backgroundHover: Theme.of(context).colorScheme.error,
             onPressed: _isBusy
                 ? null
                 : () => Navigator.of(context).pop(),
@@ -463,14 +465,22 @@ class _ShipmentContainerDialogState
                 : AppLocalizations.of(context)!.save),
           ),
 
+
           if (_isEditing) ...[
-            const SizedBox(width: 8),
+            Spacer(),
+
             ZOutlineButton(
+              icon: Icons.delete_outline_rounded,
               backgroundHover: Theme.of(context).colorScheme.error,
               onPressed: _isBusy ? null : _delete,
-              isActive: true,
-              icon: Icons.delete_outline,
               label: Text(AppLocalizations.of(context)!.delete),
+            ),
+            const SizedBox(width: 8),
+            ZOutlineButton(
+              icon: Icons.check_circle_outline_rounded,
+              onPressed: _isBusy ? null : _delete,
+              isActive: true,
+              label: Text(AppLocalizations.of(context)!.delivered),
             ),
           ],
         ],
@@ -573,7 +583,7 @@ class _ShipmentContainerDialogState
         }
       },
       child: ZFormDialog(
-        width: 460,
+        width: 500,
         padding: EdgeInsets.all(10),
         icon: _isEditing ? Icons.edit : Icons.add_box_outlined,
         title: _isEditing
