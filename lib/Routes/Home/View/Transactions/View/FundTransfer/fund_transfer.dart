@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/cover.dart';
-
+import 'package:shipping/Routes/Home/View/Stock/Orders/features/status_method.dart';
 import '../../../../../../Features/Date/shamsi_converter.dart';
 import '../../../../../../Features/Other/form_dialog.dart';
 import '../../../../../../Features/Widgets/extensions.dart';
@@ -524,10 +524,7 @@ class FundTransferFormState extends State<FundTransferForm> {
       listener: (_, _) {
         if (isLoading) onLoadingChanged(false);
       },
-      child: GenericTextField<
-          StkAccountModel,
-          StkAccountsBloc,
-          StkAccountsState>(
+      child: GenericTextField<StkAccountModel, StkAccountsBloc, StkAccountsState>(
         key: key,
         controller: controller,
         title: title,
@@ -1202,7 +1199,6 @@ class _TransactionAuditStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
     final scheme = Theme.of(context).colorScheme;
-    final palette = _StatusPalette.of(context, detail.stateText);
 
     return Container(
       width: double.infinity,
@@ -1217,17 +1213,10 @@ class _TransactionAuditStrip extends StatelessWidget {
         spacing: 10,
         runSpacing: 6,
         children: [
-          _AuditChip(
-            icon: Icons.circle,
-            iconColor: palette.fg,
-            iconSize: 8,
-            bg: palette.bg,
-            fg: palette.fg,
-            label: detail.stateText.toUpperCase(),
-          ),
+          StatusDotIndicator(status: detail.stateText,showText: true,),
           if (detail.maker.isNotEmpty)
             _AuditChip(
-              icon: Icons.person_outline,
+              icon: Icons.person,
               iconColor: scheme.onSurfaceVariant,
               bg: Colors.transparent,
               fg: scheme.onSurfaceVariant,
@@ -1272,9 +1261,8 @@ class _AuditChip extends StatelessWidget {
     required this.bg,
     required this.fg,
     required this.label,
-    this.iconSize = 12,
     this.boldValue = false,
-  });
+  }) : iconSize = 12;
 
   @override
   Widget build(BuildContext context) {
@@ -1321,49 +1309,6 @@ class _AuditChip extends StatelessWidget {
   }
 }
 
-class _StatusPalette {
-  final Color bg;
-  final Color fg;
-  const _StatusPalette(this.bg, this.fg);
-
-  factory _StatusPalette.of(BuildContext context, String status) {
-    final isDark =
-        Theme.of(context).colorScheme.brightness == Brightness.dark;
-    final key = status.toLowerCase();
-
-    final (Color hue, Color lightFg, Color darkFg) = switch (key) {
-      'authorized' => (
-      const Color(0xFF22C55E),
-      const Color(0xFF166534),
-      const Color(0xFF86EFAC),
-      ),
-      'pending' => (
-      const Color(0xFFF59E0B),
-      const Color(0xFF92400E),
-      const Color(0xFFFCD34D),
-      ),
-      'reversed' => (
-      const Color(0xFF6366F1),
-      const Color(0xFF3730A3),
-      const Color(0xFFA5B4FC),
-      ),
-      'deleted' => (
-      const Color(0xFFEF4444),
-      const Color(0xFF991B1B),
-      const Color(0xFFFCA5A5),
-      ),
-      _ => (
-      const Color(0xFF9CA3AF),
-      const Color(0xFF374151),
-      const Color(0xFFE5E7EB),
-      ),
-    };
-
-    final bg = hue.withValues(alpha: isDark ? 0.20 : 0.14);
-    final fg = isDark ? darkFg : lightFg;
-    return _StatusPalette(bg, fg);
-  }
-}
 
 // ── Shared widgets ──────────────────────────────────────────────
 

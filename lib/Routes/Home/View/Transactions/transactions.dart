@@ -6,6 +6,7 @@ import 'package:shipping/Features/Widgets/extensions.dart';
 import 'package:shipping/Features/Widgets/no_data_widget.dart';
 import 'package:shipping/Features/Widgets/shimmer.dart';
 import 'package:shipping/Features/Widgets/utils.dart';
+import 'package:shipping/Routes/Home/View/Stock/Orders/features/status_method.dart';
 import 'package:shipping/Routes/Home/View/Transactions/View/OrdersTxn/orders_txn_view.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../../../Features/Other/responsive_widget.dart';
@@ -1381,65 +1382,15 @@ class _TransactionRowWidget extends StatelessWidget {
               ),
             ),
 
+            SizedBox(width: 13),
+            StatusDotIndicator(status: row.statusText,showText: true),
+
             // ── STATUS ──────────────────────────────────────────
-            SizedBox(
-              width: 110,
-              child: _StatusPill(row: row),
-            ),
+            // SizedBox(
+            //   width: 110,
+            //   child: _StatusPill(row: row),
+            // ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusPill extends StatelessWidget {
-  final TransactionListItem row;
-  const _StatusPill({required this.row});
-
-  @override
-  Widget build(BuildContext context) {
-    final status = row.statusText.toLowerCase();
-    final tr = AppLocalizations.of(context)!;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final (bg, fg, label) = switch (status) {
-      'authorized' => (
-      const Color(0xFF22C55E).withValues(alpha: isDark ? 0.18 : 0.12),
-      isDark ? const Color(0xFF86EFAC) : const Color(0xFF166534),
-      tr.authorized,
-      ),
-      'pending' => (
-      const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.18 : 0.12),
-      isDark ? const Color(0xFFFCD34D) : const Color(0xFF92400E),
-      tr.pending,
-      ),
-      'reversed' => (
-      const Color(0xFF6366F1).withValues(alpha: isDark ? 0.20 : 0.12),
-      isDark ? const Color(0xFFA5B4FC) : const Color(0xFF3730A3),
-      tr.reversed,
-      ),
-      'deleted' => (
-      const Color(0xFFEF4444).withValues(alpha: isDark ? 0.18 : 0.12),
-      isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B),
-      tr.deleted,
-      ),
-      _ => (
-      Colors.grey.withValues(alpha: isDark ? 0.22 : 0.15),
-      isDark ? Colors.grey.shade300 : Colors.grey.shade700,
-      row.statusText,
-      ),
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
-      child: Text(
-        label.toUpperCase(),
-        textAlign: TextAlign.end,
-        style: TextStyle(
-          fontSize: 11.5,
-          fontWeight: FontWeight.w600,
-          color: fg,
-          letterSpacing: 0.4,
         ),
       ),
     );
