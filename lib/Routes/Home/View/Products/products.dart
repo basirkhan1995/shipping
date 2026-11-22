@@ -638,12 +638,12 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
       );
     } else {
       return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: color.outline.withValues(alpha: .2),
+              color: color.primary.withValues(alpha: .2),
               width: 1,
             ),
           ),
@@ -727,6 +727,17 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
               ),
             ),
             SizedBox(
+              width: 80,
+              child: Text(
+                tr.sellPrice,
+                style: titleStyle?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: color.outline,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            SizedBox(
               width: 100,
               child: Text(
                 tr.status,
@@ -746,207 +757,199 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
   // ─────────────────────────────────────────────────────────────
   //  PRODUCT ITEM
   // ─────────────────────────────────────────────────────────────
-  Widget _buildProductItem(ProductsModel product, int index,
-      TextTheme textTheme, ColorScheme color, AppLocalizations tr) {
+  Widget _buildProductItem(ProductsModel product, int index, TextTheme textTheme, ColorScheme color, AppLocalizations tr) {
     final visibility = context.read<SettingsVisibleBloc>().state;
     if (widget.isMobile) {
-      return Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: InkWell(
-          onTap: () {
-            showDialog(
-              context: context,
-              builder: (context) =>
-                  AddEditProductView(proId: product.proId),
-            );
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        product.proName ?? '',
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    StatusDotIndicator(status: product.proStatus)
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.code, size: 14, color: color.outline),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${tr.productCode}:',
-                      style:
-                      textTheme.bodySmall?.copyWith(color: color.outline),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: color.primary.withValues(alpha: .1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          product.proCode ?? '',
-                          style: textTheme.bodySmall?.copyWith(
-                            color: color.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Icon(Icons.category, size: 14, color: color.outline),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${tr.category}:',
-                      style:
-                      textTheme.bodySmall?.copyWith(color: color.outline),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        product.pcName ?? '',
-                        style: textTheme.bodyMedium,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 8, horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: color.primary.withValues(alpha: .1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              tr.qty,
-                              style: textTheme.bodySmall
-                                  ?.copyWith(color: color.outline),
-                            ),
-                            Text(
-                              product.totalQty?.toAmount(decimal: 0) ?? '0',
-                              style: textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: color.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 8, horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withValues(alpha: .1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              tr.totalItems,
-                              style: textTheme.bodySmall
-                                  ?.copyWith(color: color.outline),
-                            ),
-                            Text(
-                              product.totalItems?.toAmount(decimal: 0) ?? '0',
-                              style: textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green.shade700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 8, horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: color.secondary.withValues(alpha: .1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              tr.unit,
-                              style: textTheme.bodySmall
-                                  ?.copyWith(color: color.outline),
-                            ),
-                            Text(
-                              product.proUnit ?? '',
-                              style: textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: color.secondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                if (product.proDetails != null &&
-                    product.proDetails!.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: color.surfaceContainerHighest
-                          .withValues(alpha: .3),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: color.outline.withValues(alpha: .1),
-                      ),
-                    ),
+      return InkWell(
+        onTap: () {
+          showDialog(
+            context: context,
+            builder: (context) =>
+                AddEditProductView(proId: product.proId),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
                     child: Text(
-                      product.proDetails!,
-                      style: textTheme.bodySmall,
-                      maxLines: 2,
+                      product.proName ?? '',
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  StatusDotIndicator(status: product.proStatus)
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.code, size: 14, color: color.outline),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${tr.productCode}:',
+                    style:
+                    textTheme.bodySmall?.copyWith(color: color.outline),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: color.primary.withValues(alpha: .1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        product.proCode ?? '',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: color.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Icon(Icons.category, size: 14, color: color.outline),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${tr.category}:',
+                    style:
+                    textTheme.bodySmall?.copyWith(color: color.outline),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      product.pcName ?? '',
+                      style: textTheme.bodyMedium,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 8, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: color.primary.withValues(alpha: .1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            tr.qty,
+                            style: textTheme.bodySmall
+                                ?.copyWith(color: color.outline),
+                          ),
+                          Text(
+                            product.totalQty?.toAmount(decimal: 0) ?? '0',
+                            style: textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: color.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 8, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withValues(alpha: .1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            tr.totalItems,
+                            style: textTheme.bodySmall
+                                ?.copyWith(color: color.outline),
+                          ),
+                          Text(
+                            product.totalItems?.toAmount(decimal: 0) ?? '0',
+                            style: textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 8, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: color.secondary.withValues(alpha: .1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            tr.unit,
+                            style: textTheme.bodySmall
+                                ?.copyWith(color: color.outline),
+                          ),
+                          Text(
+                            product.proUnit ?? '',
+                            style: textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: color.secondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (product.proDetails != null &&
+                  product.proDetails!.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: color.surfaceContainerHighest
+                        .withValues(alpha: .3),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: color.outline.withValues(alpha: .1),
+                    ),
+                  ),
+                  child: Text(
+                    product.proDetails!,
+                    style: textTheme.bodySmall,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
-            ),
+            ],
           ),
         ),
       );
@@ -1019,16 +1022,17 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
       return MouseRegion(
         cursor: SystemMouseCursors.click,
         child: InkWell(
+          highlightColor: color.primary.withValues(alpha: .07),
+          hoverColor: color.primary.withValues(alpha: .07),
+          splashColor: color.primary.withValues(alpha: .07),
           onTap: () {
             showDialog(
               context: context,
-              builder: (context) =>
-                  AddEditProductView(proId: product.proId),
+              builder: (context) => AddEditProductView(proId: product.proId),
             );
           },
-          borderRadius: BorderRadius.circular(8),
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
             decoration: BoxDecoration(
               color: index.isOdd
@@ -1112,6 +1116,15 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
                   child: Text(
                     product.proUnit ?? '',
                     style: textTheme.bodyMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+                SizedBox(
+                  width: 80,
+                  child: Text(
+                    product.proSpp.toAmount(),
+                    style: textTheme.titleSmall,
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -1320,12 +1333,11 @@ class _BaseProductsViewState extends State<_BaseProductsView> {
                         return ListView.builder(
                           padding: widget.isMobile
                               ? const EdgeInsets.symmetric(vertical: 8)
-                              : const EdgeInsets.symmetric(vertical: 4),
+                              : const EdgeInsets.symmetric(vertical: 4,horizontal: 10),
                           itemCount: filteredList.length,
                           itemBuilder: (context, index) {
                             final product = filteredList[index];
-                            return _buildProductItem(
-                                product, index, textTheme, color, tr);
+                            return _buildProductItem(product, index, textTheme, color, tr);
                           },
                         );
                       }

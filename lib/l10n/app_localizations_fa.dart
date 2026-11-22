@@ -138,7 +138,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get brand => 'برند یا کمپنی';
 
   @override
-  String get category => 'بخش';
+  String get category => 'دسته بندی';
 
   @override
   String get selectCategory => 'انتخاب کتگوری';
