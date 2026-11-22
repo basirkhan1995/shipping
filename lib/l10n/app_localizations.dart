@@ -4689,6 +4689,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Items'**
   String get noItems;
+
+  /// No description provided for @revenue.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue'**
+  String get revenue;
 }
 
 class _AppLocalizationsDelegate

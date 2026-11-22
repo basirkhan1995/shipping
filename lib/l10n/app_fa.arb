@@ -777,5 +777,6 @@
   "markAsDelivered": "تحویل شده",
   "itemDescription": "تفصیلات جنس",
   "entryDate": "تاریخ ثبت",
-  "noItems": "اقلام"
+  "noItems": "اقلام",
+  "revenue": "عواید"
 }

@@ -873,8 +873,8 @@ class _DesktopViewState extends State<_DesktopView> {
           SizedBox(width: 140, child: Text(tr.maker.toUpperCase(), style: titleStyle)),
           Expanded(child: Text(tr.narration.toUpperCase(), style: titleStyle)),
           SizedBox(width: 180, child: Text(tr.amount.toUpperCase(), textAlign: TextAlign.end, style: titleStyle),),
-          SizedBox(width: 110, child: Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Text(tr.status.toUpperCase(),
-                textAlign: TextAlign.end,
+          SizedBox(width: 140, child: Padding(padding: const EdgeInsets.symmetric(horizontal: 13), child: Text(tr.status.toUpperCase(),
+                textAlign: TextAlign.start,
                 style: titleStyle,
               ),
             ),
@@ -1278,7 +1278,7 @@ class _TransactionRowWidget extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
-                    row.entryDate.toFullDateTime,
+                    row.entryDate.toFormattedDateTime(),
                     style: textTheme.bodySmall?.copyWith(
                       fontSize: 13,
                       color: color.onSurfaceVariant,
@@ -1382,8 +1382,10 @@ class _TransactionRowWidget extends StatelessWidget {
               ),
             ),
 
-            SizedBox(width: 13),
-            StatusDotIndicator(status: row.statusText,showText: true),
+            SizedBox(width: 10),
+            SizedBox(
+                width: 130,
+                child: StatusDotIndicator(status: row.statusText,showText: true,size: 13)),
 
             // ── STATUS ──────────────────────────────────────────
             // SizedBox(

@@ -444,7 +444,7 @@ class _MobileState extends State<_Mobile> {
                           records.isNotEmpty) ...[
                         const SizedBox(height: 16),
 
-                        ZCover(
+                        Box(
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Column(

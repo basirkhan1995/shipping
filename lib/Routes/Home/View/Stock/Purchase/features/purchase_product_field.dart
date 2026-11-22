@@ -793,7 +793,7 @@ class _ProductsSearchFieldState extends State<ProductsSearchField> {
       color: colors.outline,
     );
     final tr = AppLocalizations.of(context)!;
-    return ZCover(
+    return Box(
       padding: const EdgeInsets.all(8),
       radius: 5,
       child: Column(
@@ -978,7 +978,7 @@ class _ProductsSearchFieldState extends State<ProductsSearchField> {
   }
 
   Widget _buildDetailCard(String title, List<Widget> children) {
-    return ZCover(
+    return Box(
       padding: const EdgeInsets.all(8),
       radius: 5,
       child: Column(

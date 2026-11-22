@@ -49,7 +49,7 @@ class _PnLChartBodyState extends State<_PnLChartBody> {
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
 
-    return ZCover(
+    return Box(
       radius: 8,
       padding: const EdgeInsets.all(10),
       child: Column(
@@ -62,7 +62,7 @@ class _PnLChartBodyState extends State<_PnLChartBody> {
             child: Row(
               children: [
                 Text(
-                  '${tr.incomeStatement} · ${tr.profitAndLoss}',
+                  tr.profitAndLoss,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const Spacer(),
@@ -161,18 +161,18 @@ class _PnLChartBodyState extends State<_PnLChartBody> {
         dateFormat: DateFormat('MM/dd'),
         majorGridLines: const MajorGridLines(width: 0.2),
       ),
-      primaryYAxis: NumericAxis(
-        numberFormat: NumberFormat.compactCurrency(
-          symbol: data.currency,
-          decimalDigits: 0,
-        ),
-      ),
+      // primaryYAxis: NumericAxis(
+      //   numberFormat: NumberFormat.compactCurrency(
+      //     symbol: data.currency,
+      //     decimalDigits: 0,
+      //   ),
+      // ),
       series: <CartesianSeries>[
         AreaSeries<PnLPoint, DateTime>(
           dataSource: data.series,
           xValueMapper: (d, _) => d.day,
           yValueMapper: (d, _) => d.revenue,
-          name: 'Revenue',
+          name: AppLocalizations.of(context)!.revenue,
           borderColor: green,
           borderWidth: 2,
           gradient: LinearGradient(
@@ -186,7 +186,7 @@ class _PnLChartBodyState extends State<_PnLChartBody> {
           dataSource: data.series,
           xValueMapper: (d, _) => d.day,
           yValueMapper: (d, _) => d.expense,
-          name: 'Expense',
+          name: AppLocalizations.of(context)!.expense,
           color: red,
           width: 2,
           markerSettings: const MarkerSettings(isVisible: false),
@@ -195,7 +195,7 @@ class _PnLChartBodyState extends State<_PnLChartBody> {
           dataSource: data.series,
           xValueMapper: (d, _) => d.day,
           yValueMapper: (d, _) => d.profit,
-          name: 'Profit',
+          name: AppLocalizations.of(context)!.profit,
           color: blue,
           width: 2.5,
           dashArray: const <double>[6, 3],

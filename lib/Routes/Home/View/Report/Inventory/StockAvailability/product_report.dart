@@ -410,7 +410,7 @@ class _MobileState extends State<_Mobile> {
                       final stk = state.stock[index];
                       final isOutOfStock = _isOutOfStock(stk.available);
 
-                      return ZCover(
+                      return Box(
                         radius: 5,
                         margin: const EdgeInsets.only(bottom: 8),
                         child: Padding(

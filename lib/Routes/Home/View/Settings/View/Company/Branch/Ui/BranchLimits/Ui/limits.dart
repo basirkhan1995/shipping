@@ -223,7 +223,7 @@ class _BaseBranchLimitsState extends State<_BaseBranchLimits> {
                 Expanded(
                   child: Row(
                     children: [
-                      ZCover(
+                      Box(
                         child: Text(
                           limit.balCurrency?.toUpperCase() ?? "N/A",
                           style: textTheme.bodyLarge?.copyWith(
@@ -290,7 +290,7 @@ class _BaseBranchLimitsState extends State<_BaseBranchLimits> {
                 Expanded(
                   child: Row(
                     children: [
-                      ZCover(
+                      Box(
                         child: Text(
                           limit.balCurrency?.toUpperCase() ?? "N/A",
                           style: textTheme.bodyLarge?.copyWith(
@@ -357,7 +357,7 @@ class _BaseBranchLimitsState extends State<_BaseBranchLimits> {
                 Expanded(
                   child: Row(
                     children: [
-                      ZCover(
+                      Box(
                         child: Text(
                           limit.balCurrency?.toUpperCase() ?? "N/A",
                           style: textTheme.bodyLarge?.copyWith(

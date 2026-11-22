@@ -108,7 +108,7 @@ class _DesktopState extends State<_Desktop> {
 
     return SizedBox(
       width: widget.width ?? double.infinity,
-      child: ZCover(
+      child: Box(
         radius: 7,
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -303,7 +303,7 @@ class _MobileState extends State<_Mobile> {
                 Text(locale.rate,
                     style: Theme.of(context).textTheme.titleSmall),
                 const Spacer(),
-                ZCover(
+                Box(
                   child: IconButton(
                     onPressed: _refresh,
                     icon: const Icon(Icons.refresh),
@@ -311,7 +311,7 @@ class _MobileState extends State<_Mobile> {
                 ),
                 if (widget.newRateButton) ...[
                   const SizedBox(width: 5),
-                  ZCover(
+                  Box(
                     child: IconButton(
                       icon: const Icon(Icons.add),
                       onPressed: _openAddDialog,
@@ -320,7 +320,7 @@ class _MobileState extends State<_Mobile> {
                 ],
                 if (widget.settingButton) ...[
                   const SizedBox(width: 5),
-                  ZCover(
+                  Box(
                     child: IconButton(
                       icon: const Icon(Icons.settings),
                       onPressed: () {
@@ -474,7 +474,7 @@ class _RateRow extends StatelessWidget {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ),
-                    ZCover(
+                    Box(
                       margin:
                       const EdgeInsets.symmetric(horizontal: 0, vertical: 3),
                       child: SizedBox(
@@ -506,7 +506,7 @@ class _RateRow extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
-              ZCover(
+              Box(
                 margin: const EdgeInsets.symmetric(horizontal: 1, vertical: 3),
                 child: SizedBox(
                   width: 35,

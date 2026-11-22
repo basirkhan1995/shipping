@@ -1101,7 +1101,7 @@ class _DesktopPurchaseOrderViewState extends State<_DesktopPurchaseOrderView> {
           final baseCurrency = current.fromCurrency ?? '';
           final bool needsConversion = current.needsExchangeRate;
 
-          return ZCover(
+          return Box(
             padding: const EdgeInsets.all(16),
             radius: 15,
             child: IntrinsicHeight(
@@ -3181,7 +3181,7 @@ class _PurchasePaymentDialogState extends State<PurchasePaymentDialog> {
               // Order Summary Section
               SectionTitle(title: tr.orderSummary.toUpperCase()),
               const SizedBox(height: 8),
-              ZCover(
+              Box(
                 padding: const EdgeInsets.all(12),
                 radius: 8,
                 child: Column(
@@ -3276,7 +3276,7 @@ class _PurchasePaymentDialogState extends State<PurchasePaymentDialog> {
 
               // Account Information Section (Combined with Cash Payment)
               if (!_isPureCashMode && _currentState.supplierAccount != null)
-                ZCover(
+                Box(
                   padding: const EdgeInsets.all(12),
                   radius: 8,
                   child: Column(

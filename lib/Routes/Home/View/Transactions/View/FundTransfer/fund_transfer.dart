@@ -1383,7 +1383,7 @@ class _AccountDetailsCard extends StatelessWidget {
         effectiveCurrencyOverride ??
         (fallbackCurrency.isEmpty ? '' : fallbackCurrency);
 
-    return ZCover(
+    return Box(
       padding: const EdgeInsets.all(12),
       radius: 8,
       child: Column(
@@ -1434,7 +1434,7 @@ class _LegDetailsCard extends StatelessWidget {
     final ccy =
     leg.currency.isNotEmpty ? leg.currency : (effectiveCurrency ?? '');
 
-    return ZCover(
+    return Box(
       padding: const EdgeInsets.all(12),
       radius: 8,
       child: Column(

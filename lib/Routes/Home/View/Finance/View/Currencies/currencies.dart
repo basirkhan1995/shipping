@@ -242,7 +242,7 @@ class _MobileState extends State<_Mobile> {
                                     ),
                                   ),
                                   const Spacer(),
-                                  ZCover(
+                                  Box(
                                     margin: const EdgeInsets.symmetric(
                                         horizontal: 5),
                                     child: Text(
@@ -415,7 +415,7 @@ class _DesktopState extends State<_Desktop> {
               ),
             ),
             const SizedBox(height: 8),
-            ZCover(
+            Box(
               padding:
               const EdgeInsets.symmetric(horizontal: 8.0, vertical: 5),
               margin: const EdgeInsets.symmetric(horizontal: 5.0),
@@ -560,7 +560,7 @@ class _DesktopState extends State<_Desktop> {
                                   ),
                                 ),
                                 const Spacer(),
-                                ZCover(
+                                Box(
                                   margin: const EdgeInsets.symmetric(
                                       horizontal: 5),
                                   child: Text(

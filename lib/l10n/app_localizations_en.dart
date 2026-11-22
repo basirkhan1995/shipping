@@ -2356,4 +2356,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noItems => 'Items';
+
+  @override
+  String get revenue => 'Revenue';
 }

@@ -52,7 +52,7 @@ class _DesktopState extends State<_Desktop> {
     final login = state.loginData;
     usrName = login.usrName ?? "";
     return Scaffold(
-      body: ZCover(
+      body: Box(
         radius: 5,
         margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 3),
         child: Column(
@@ -206,7 +206,7 @@ class _DesktopState extends State<_Desktop> {
 
     final isCompleted = r.rmdStatus == 1;
 
-    return ZCover(
+    return Box(
       margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       borderColor: borderColor.withValues(alpha: .4),
       child: InkWell(

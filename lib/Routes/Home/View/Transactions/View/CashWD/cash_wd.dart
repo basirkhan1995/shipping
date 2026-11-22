@@ -9,6 +9,7 @@ import 'package:shipping/Features/Widgets/cover.dart';
 import 'package:shipping/Features/Widgets/extensions.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
 import 'package:shipping/Routes/Home/View/Stakeholder/model/stk_model.dart';
+import 'package:shipping/Routes/Home/View/Stock/Orders/features/status_method.dart';
 import 'package:shipping/Routes/Home/View/Transactions/View/CashWD/voucher/voucher.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../../../Features/Other/form_dialog.dart';
@@ -1255,55 +1256,53 @@ class _TransactionAuditStrip extends StatelessWidget {
 
     final statusLabel =
         draft.trnStateText ?? _statusFallback(draft.trnStatus);
-    final palette = _StatusPalette.of(context, statusLabel);
+
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      child: Wrap(
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 2,
-        runSpacing: 6,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _AuditChip(
-            icon: Icons.circle,
-            iconColor: palette.fg,
-            iconSize: 8,
-            bg: palette.bg,
-            fg: palette.fg,
-            boldValue: true,
-            label: statusLabel.toUpperCase(),
+          StatusDotIndicator(status: statusLabel,showText: true),
+          SizedBox(height: 5),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 2,
+            runSpacing: 6,
+            children: [
+              if ((draft.maker ?? '').isNotEmpty)
+                _AuditChip(
+                  icon: Icons.person,
+                  iconSize: 17,
+                  iconColor: scheme.onSurfaceVariant,
+                  bg: Colors.transparent,
+                  fg: scheme.onSurfaceVariant,
+                  label: '${tr.maker.toUpperCase()}: ${draft.maker}',
+                  boldValue: true,
+                ),
+              if ((draft.checker ?? '').isNotEmpty)
+                _AuditChip(
+                  icon: Icons.verified_user_outlined,
+                  iconSize: 17,
+                  iconColor: scheme.onSurfaceVariant,
+                  bg: Colors.transparent,
+                  fg: scheme.onSurfaceVariant,
+                  label: '${tr.authorizer.toUpperCase()}: ${draft.checker}',
+                  boldValue: true,
+                ),
+              if (draft.trnEntryDate != null)
+                _AuditChip(
+                  icon: Icons.schedule_rounded,
+                  iconSize: 17,
+                  iconColor: scheme.onSurfaceVariant,
+                  bg: Colors.transparent,
+                  fg: scheme.onSurfaceVariant,
+                  label:
+                  "${draft.trnEntryDate!.toFormattedDate()} | ${draft.trnEntryDate!.shamsiDateString}",
+                ),
+            ],
           ),
-          if ((draft.maker ?? '').isNotEmpty)
-            _AuditChip(
-              icon: Icons.person,
-              iconSize: 15,
-              iconColor: scheme.onSurfaceVariant,
-              bg: Colors.transparent,
-              fg: scheme.onSurfaceVariant,
-              label: '${tr.maker.toUpperCase()}: ${draft.maker}',
-              boldValue: true,
-            ),
-          if ((draft.checker ?? '').isNotEmpty)
-            _AuditChip(
-              icon: Icons.verified_user_outlined,
-              iconSize: 15,
-              iconColor: scheme.onSurfaceVariant,
-              bg: Colors.transparent,
-              fg: scheme.onSurfaceVariant,
-              label: '${tr.authorizer.toUpperCase()}: ${draft.checker}',
-              boldValue: true,
-            ),
-          if (draft.trnEntryDate != null)
-            _AuditChip(
-              icon: Icons.schedule_rounded,
-              iconSize: 15,
-              iconColor: scheme.onSurfaceVariant,
-              bg: Colors.transparent,
-              fg: scheme.onSurfaceVariant,
-              label:
-              "${draft.trnEntryDate!.toFormattedDate()} | ${draft.trnEntryDate!.shamsiDateString}",
-            ),
         ],
       ),
     );
@@ -1340,7 +1339,7 @@ class _AuditChip extends StatelessWidget {
     required this.bg,
     required this.fg,
     required this.label,
-    this.iconSize = 12,
+    this.iconSize = 16,
     this.boldValue = false,
   });
 
@@ -1368,7 +1367,7 @@ class _AuditChip extends StatelessWidget {
             Text(
               keyPart,
               style: TextStyle(
-                fontSize: 10.5,
+                fontSize: 12.5,
                 fontWeight: FontWeight.w500,
                 color: fg.withValues(alpha: 0.75),
                 letterSpacing: 0.2,
@@ -1379,7 +1378,7 @@ class _AuditChip extends StatelessWidget {
           Text(
             valuePart,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: boldValue ? FontWeight.w700 : FontWeight.w500,
               color: fg,
             ),
@@ -1387,50 +1386,6 @@ class _AuditChip extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class _StatusPalette {
-  final Color bg;
-  final Color fg;
-  const _StatusPalette(this.bg, this.fg);
-
-  factory _StatusPalette.of(BuildContext context, String status) {
-    final isDark =
-        Theme.of(context).colorScheme.brightness == Brightness.dark;
-    final key = status.toLowerCase();
-
-    final (Color hue, Color lightFg, Color darkFg) = switch (key) {
-      'authorized' => (
-      const Color(0xFF22C55E),
-      const Color(0xFF166534),
-      const Color(0xFF86EFAC),
-      ),
-      'pending' => (
-      const Color(0xFFF59E0B),
-      const Color(0xFF92400E),
-      const Color(0xFFFCD34D),
-      ),
-      'reversed' => (
-      const Color(0xFF6366F1),
-      const Color(0xFF3730A3),
-      const Color(0xFFA5B4FC),
-      ),
-      'deleted' => (
-      const Color(0xFFEF4444),
-      const Color(0xFF991B1B),
-      const Color(0xFFFCA5A5),
-      ),
-      _ => (
-      const Color(0xFF9CA3AF),
-      const Color(0xFF374151),
-      const Color(0xFFE5E7EB),
-      ),
-    };
-
-    final bg = hue.withValues(alpha: isDark ? 0.20 : 0.14);
-    final fg = isDark ? darkFg : lightFg;
-    return _StatusPalette(bg, fg);
   }
 }
 
@@ -1510,7 +1465,7 @@ class _AccountDetailsCard extends StatelessWidget {
         effectiveCurrencyOverride ??
         (fallbackCurrency.isEmpty ? '' : fallbackCurrency);
 
-    return ZCover(
+    return Box(
       padding: const EdgeInsets.all(12),
       radius: 8,
       child: Column(

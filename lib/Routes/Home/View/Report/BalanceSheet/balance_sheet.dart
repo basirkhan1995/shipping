@@ -186,7 +186,7 @@ class _DesktopBalanceSheetState extends State<_DesktopBalanceSheet> {
       body: Center(
         child: SizedBox(
           width: 900,
-          child: ZCover(
+          child: Box(
             radius: 8,
             margin: const EdgeInsets.all(15),
             padding: const EdgeInsets.all(8),

@@ -492,7 +492,7 @@ class _ShipmentContainerDialogState
 
     final status = shipment.status.toUpperCase();
     final tr = AppLocalizations.of(context)!;
-    return ZCover(
+    return Box(
       margin: const EdgeInsets.only(bottom: 16),
       radius: 8,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

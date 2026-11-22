@@ -777,5 +777,6 @@
   "markAsDelivered": "تحویل شده",
   "itemDescription": "جنس تفصیلات",
   "entryDate": "ثبت نیته",
-  "noItems": "اقلام"
+  "noItems": "اقلام",
+  "revenue": "عواید"
 }

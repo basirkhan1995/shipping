@@ -1035,7 +1035,7 @@ class _DesktopState extends State<_Desktop> {
                   return Column(
                     children: [
                       // Transaction Summary Card
-                      ZCover(
+                      Box(
                         margin: const EdgeInsets.all(10),
                         padding: const EdgeInsets.all(10),
                         radius: 5,

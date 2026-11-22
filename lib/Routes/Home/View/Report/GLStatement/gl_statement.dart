@@ -378,7 +378,7 @@ class _MobileState extends State<_Mobile> {
                         const SizedBox(height: 16),
 
                         // Quick Summary Card
-                        ZCover(
+                        Box(
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Column(

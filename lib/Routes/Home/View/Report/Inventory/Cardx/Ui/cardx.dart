@@ -407,7 +407,7 @@ class _MobileState extends State<_Mobile> {
                     itemCount: state.cardX.length,
                     itemBuilder: (context, index) {
                       final stock = state.cardX[index];
-                      return ZCover(
+                      return Box(
                         radius: 8,
                         color: color.surface,
                         margin: const EdgeInsets.only(bottom: 8),

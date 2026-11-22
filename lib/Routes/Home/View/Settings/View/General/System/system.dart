@@ -41,7 +41,7 @@ class SystemView extends StatelessWidget {
 
                   SectionTitle(title: tr.invoiceSettings),
 
-                  ZCover(
+                  Box(
                     radius: 8,
                     padding: const EdgeInsets.all(10),
                     child: Column(
@@ -125,7 +125,7 @@ class SystemView extends StatelessWidget {
 
                   SectionTitle(title: tr.shippingAndTransfer),
 
-                  ZCover(
+                  Box(
                     radius: 8,
                     padding: const EdgeInsets.all(10),
                     child: Column(

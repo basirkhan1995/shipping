@@ -120,7 +120,7 @@ class _BackupContent extends StatelessWidget {
   // HEADER SECTION
   // ============================================================
   Widget _buildHeader(BuildContext context, AppLocalizations tr) {
-    return ZCover(
+    return Box(
       radius: 7,
       color: Theme.of(context).colorScheme.primary.withAlpha(10),
       child: Padding(
@@ -352,11 +352,11 @@ class _BackupContent extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
-      child: ZCover(
+      child: Box(
         radius: 5,
         color: Theme.of(context).colorScheme.surface,
         child: ListTile(
-          leading: ZCover(
+          leading: Box(
             color: Theme.of(context).colorScheme.primary.withAlpha(10),
             padding: const EdgeInsets.all(7),
             radius: 5,
@@ -648,7 +648,7 @@ class _BackupContent extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            ZCover(
+            Box(
               padding: const EdgeInsets.all(8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

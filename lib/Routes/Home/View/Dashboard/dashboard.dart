@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Other/image_helper.dart';
 import 'package:shipping/Features/Widgets/cover.dart';
 import 'package:shipping/Features/Widgets/digital_clock.dart';
+import 'package:shipping/Features/Widgets/utils.dart';
 import 'package:shipping/Routes/Auth/bloc/auth_bloc.dart';
 import 'package:shipping/Routes/Home/View/Finance/View/Reminder/reminder_widget.dart';
 import 'package:shipping/Routes/Home/View/Settings/View/Backup/backup.dart';
@@ -469,7 +470,7 @@ class _DesktopTopBar extends StatelessWidget {
             },
           ),
           const SizedBox(width: 8),
-          ZCover(
+          Box(
             radius: 20,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             child: PopupMenuButton<String>(
@@ -610,7 +611,7 @@ class _CountCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return ZCover(
+    return Box(
       radius: 8,
       child: Padding(
         padding: const EdgeInsets.all(10),
@@ -694,7 +695,7 @@ class _FinCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final neg = (value ?? 0) < 0;
 
-    return ZCover(
+    return Box(
       radius: 8,
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -735,9 +736,9 @@ class _FinCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(5),
                     ),
                     child: Text(
-                      currency!,
+                      Utils.ccy(type: currency??"", locale: AppLocalizations.of(context)!),
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 13,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.4,
                         color: scheme.onSurfaceVariant,
@@ -946,7 +947,7 @@ class _ErrorTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return ZCover(
+    return Box(
       radius: 8,
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -1088,7 +1089,7 @@ class _InvoiceFinCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    return ZCover(
+    return Box(
       radius: 8,
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -1130,9 +1131,9 @@ class _InvoiceFinCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(5),
                     ),
                     child: Text(
-                      currency!,
+                      Utils.ccy(type: currency??"", locale: AppLocalizations.of(context)!),
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 13,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.4,
                         color: scheme.onSurfaceVariant,

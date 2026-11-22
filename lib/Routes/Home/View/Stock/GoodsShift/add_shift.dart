@@ -525,7 +525,7 @@ class _AddGoodsShiftViewState extends State<AddGoodsShiftView> {
               // LEFT: Summary
               SizedBox(
                 width: 260,
-                child: ZCover(
+                child: Box(
                   radius: 10,
                   padding: const EdgeInsets.all(15),
                   borderColor: color.primary.withValues(alpha: .3),

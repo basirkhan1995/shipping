@@ -303,7 +303,7 @@ class _ShipmentHeaderStrip extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        ZCover(
+        Box(
           radius: 50,
           padding: EdgeInsets.all(10),
           child: Icon(icon, size: 15, color: color.onSurfaceVariant),

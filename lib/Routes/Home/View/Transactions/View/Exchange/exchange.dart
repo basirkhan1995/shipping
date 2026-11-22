@@ -1501,7 +1501,7 @@ class _AccountDetailsCard extends StatelessWidget {
         : (account.accCurrency ??
         (fallbackCurrency.isEmpty ? '' : fallbackCurrency));
 
-    return ZCover(
+    return Box(
       padding: const EdgeInsets.all(12),
       radius: 8,
       child: Column(

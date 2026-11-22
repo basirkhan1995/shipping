@@ -2413,7 +2413,7 @@ class _DesktopState extends State<_Desktop> {
 
   Widget _buildBranchCard(CashBalancesModel branch) {
     final tr = AppLocalizations.of(context)!;
-    return ZCover(
+    return Box(
       margin: const EdgeInsets.only(bottom: 10),
       radius: 8,
       child: ExpansionTile(

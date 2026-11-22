@@ -688,7 +688,7 @@ class _MobileGoodsShiftViewState extends State<_MobileGoodsShiftView>
                             final isSelected =
                             _selectedIds.contains(shift.ordId);
 
-                            return ZCover(
+                            return Box(
                               margin: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 4),
                               radius: 4,

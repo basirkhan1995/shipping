@@ -44,7 +44,7 @@ class _DigitalClockState extends State<DigitalClock> {
 
     final shamsiDay = shamsiParts.length >= 3 ? shamsiParts.last : '';
 
-    return ZCover(
+    return Box(
       radius: 6,
       padding: const EdgeInsets.all(10),
       child: Row(

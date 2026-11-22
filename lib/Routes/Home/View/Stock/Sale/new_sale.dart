@@ -2076,7 +2076,7 @@ class _DesktopNewSaleViewState extends State<_DesktopNewSaleView> {
               ? current.currentBalance - remainingAmountInAccountCurrency
               : 0.0;
 
-          return ZCover(
+          return Box(
             padding: const EdgeInsets.all(15),
             radius: 15,
             child: IntrinsicHeight(
@@ -3216,7 +3216,7 @@ class _SalePaymentDialogState extends State<SalePaymentDialog> {
               SectionTitle(title: tr.orderSummary.toUpperCase()),
               const SizedBox(height: 8),
 
-              ZCover(
+              Box(
                 padding: const EdgeInsets.all(12),
                 radius: 8,
                 child: Column(
@@ -3461,7 +3461,7 @@ class _SalePaymentDialogState extends State<SalePaymentDialog> {
 
               // Credit Account Section
               if (!_isPureCashMode && _currentState.customerAccount != null && remainingAmountInBase > 0)
-                ZCover(
+                Box(
                   padding: const EdgeInsets.all(12),
                   radius: 8,
                   child: Column(

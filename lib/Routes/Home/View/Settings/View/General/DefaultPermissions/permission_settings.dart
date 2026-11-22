@@ -422,7 +422,7 @@ class _PermissionSettingsContentState
     // Precompute the label list once per card build — not per row.
     final labels = [for (final p in permissions) _localize(p)];
 
-    return ZCover(
+    return Box(
       radius: 5,
       margin: const EdgeInsets.only(bottom: 8),
       child: Theme(

@@ -42,7 +42,7 @@ class _DashboardAlertReminderState extends State<DashboardAlertReminder> {
       builder: (context, state) {
         return Stack(
           children: [
-            ZCover(
+            Box(
               radius: 6,
               padding: const EdgeInsets.all(8),
               child: Column(
@@ -189,7 +189,7 @@ class _ReminderTile extends StatelessWidget {
         ? tr.receivableDue
         : tr.payableDue;
 
-    return ZCover(
+    return Box(
       margin: const EdgeInsets.symmetric(vertical: 3),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       color: color.surface,

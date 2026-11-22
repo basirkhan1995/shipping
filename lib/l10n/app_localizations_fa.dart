@@ -2348,4 +2348,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get noItems => 'اقلام';
+
+  @override
+  String get revenue => 'عواید';
 }

@@ -777,5 +777,6 @@
   "markAsDelivered": "Mark as Delivered",
   "itemDescription": "Item Description",
   "entryDate": "Entry Date",
-  "noItems": "Items"
+  "noItems": "Items",
+  "revenue": "Revenue"
 }
