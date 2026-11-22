@@ -186,7 +186,7 @@ class StakeholdersModel {
   Map<String, double> get balancesByCurrency {
     final map = <String, double>{};
     for (final acc in accounts) {
-      final ccy = acc.accCurrency ?? 'UNK';
+      final ccy = acc.accCurrency ?? '';
       map[ccy] = (map[ccy] ?? 0) + acc.accBalance;
     }
     return map;

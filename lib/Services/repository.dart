@@ -3863,12 +3863,11 @@ class Repositories {
   }) async {
     try {
       final response = await _api.post(
-        endpoint: "/shipment/shipment.php",
+        endpoint: "/shipment/shippingItem.php",
         data: {
-          'action': 'addItem',
-          'usrName': usrName,
-          'shpId': shpId,
-          'AccountNo': accountNo,
+          'user': usrName,
+          'shpID': shpId,
+          'accountNo': accountNo,
 
           // PHP API expects itemsDescription.
           'itemDescription': itemDescription,
