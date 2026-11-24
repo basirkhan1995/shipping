@@ -51,7 +51,7 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
       );
 
       // Fetch fresh shipment details.
-      final fresh = await _repo.getShipmentDetails(
+      final fresh = await _repo.getShippingDetails(
         shpId: event.shpId,
       );
 
@@ -115,7 +115,7 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
       // ── Interpret the server's `msg` ─────────────────────────────
       switch (_normalizeMsg(result)) {
         case 'success':
-          final fresh = await _repo.getShipmentDetails(shpId: event.shpId);
+          final fresh = await _repo.getShippingDetails(shpId: event.shpId);
           emit(ShpByIdLoaded(fresh, successMessage: 'Item added'));
           return;
 
@@ -180,7 +180,7 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
         extraCharges: event.extraCharges,
       );
 
-      final fresh = await _repo.getShipmentDetails(shpId: event.shpId);
+      final fresh = await _repo.getShippingDetails(shpId: event.shpId);
       emit(ShpByIdLoaded(
         fresh,
         successMessage: 'Item updated',
@@ -215,7 +215,7 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
         shpItmId: event.shpItmId,
       );
 
-      final fresh = await _repo.getShipmentDetails(shpId: event.shpId);
+      final fresh = await _repo.getShippingDetails(shpId: event.shpId);
       emit(ShpByIdLoaded(
         fresh,
         successMessage: 'Item deleted',
@@ -250,7 +250,7 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
         ShipmentDetailsModel? previous,
       }) async {
     try {
-      final details = await _repo.getShipmentDetails(shpId: shpId);
+      final details = await _repo.getShippingDetails(shpId: shpId);
       emit(ShpByIdLoaded(details));
     } catch (e) {
       if (previous != null) {

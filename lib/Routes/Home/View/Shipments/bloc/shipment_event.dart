@@ -1,4 +1,3 @@
-
 import 'package:equatable/equatable.dart';
 
 abstract class ShipmentEvent extends Equatable {
@@ -9,13 +8,12 @@ abstract class ShipmentEvent extends Equatable {
 }
 
 // ─────────────────────────────────────────────────────────────
-// LOAD
+// LOAD / REFRESH
 // ─────────────────────────────────────────────────────────────
 
 class LoadShipments extends ShipmentEvent {
   final String status;
   final String? search;
-  final String? shpReference;
   final String? containerNo;
   final String? sequenceNo;
   final String? from;
@@ -24,7 +22,6 @@ class LoadShipments extends ShipmentEvent {
   const LoadShipments({
     this.status = 'pending',
     this.search,
-    this.shpReference,
     this.containerNo,
     this.sequenceNo,
     this.from,
@@ -35,7 +32,6 @@ class LoadShipments extends ShipmentEvent {
   List<Object?> get props => [
     status,
     search,
-    shpReference,
     containerNo,
     sequenceNo,
     from,
@@ -43,16 +39,12 @@ class LoadShipments extends ShipmentEvent {
   ];
 }
 
-class LoadMoreShipments extends ShipmentEvent {
-  const LoadMoreShipments();
-}
-
 class RefreshShipments extends ShipmentEvent {
   const RefreshShipments();
 }
 
 // ─────────────────────────────────────────────────────────────
-// CREATE CONTAINER
+// CREATE
 // ─────────────────────────────────────────────────────────────
 
 class CreateShipment extends ShipmentEvent {
@@ -63,6 +55,7 @@ class CreateShipment extends ShipmentEvent {
   final String? sequenceNo;
   final String? unloadingDate;
   final String? description;
+  final String status;
 
   const CreateShipment({
     required this.usrName,
@@ -72,6 +65,7 @@ class CreateShipment extends ShipmentEvent {
     this.sequenceNo,
     this.unloadingDate,
     this.description,
+    this.status = 'pending',
   });
 
   @override
@@ -83,11 +77,12 @@ class CreateShipment extends ShipmentEvent {
     sequenceNo,
     unloadingDate,
     description,
+    status,
   ];
 }
 
 // ─────────────────────────────────────────────────────────────
-// UPDATE CONTAINER
+// UPDATE
 // ─────────────────────────────────────────────────────────────
 
 class UpdateShipment extends ShipmentEvent {
@@ -128,18 +123,33 @@ class UpdateShipment extends ShipmentEvent {
 }
 
 // ─────────────────────────────────────────────────────────────
-// DELETE CONTAINER
+// DELETE
 // ─────────────────────────────────────────────────────────────
 
 class DeleteShipment extends ShipmentEvent {
   final String usrName;
   final int shpId;
+  final bool force;
 
   const DeleteShipment({
     required this.usrName,
     required this.shpId,
+    this.force = false,
   });
 
   @override
-  List<Object?> get props => [usrName, shpId];
+  List<Object?> get props => [usrName, shpId, force];
+}
+
+// ─────────────────────────────────────────────────────────────
+// RESOLVE INPUT → open container
+// ─────────────────────────────────────────────────────────────
+
+class ResolveShipmentByInput extends ShipmentEvent {
+  final String input;
+
+  const ResolveShipmentByInput(this.input);
+
+  @override
+  List<Object?> get props => [input];
 }

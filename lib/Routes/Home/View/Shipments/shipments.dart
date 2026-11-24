@@ -13,6 +13,7 @@ import 'package:shipping/Routes/Home/View/Shipments/shp_form.dart';
 import 'package:shipping/Routes/Home/View/Stock/Orders/features/status_method.dart';
 import 'package:shipping/l10n/app_localizations.dart';
 import '../../../../Features/Other/zdropdown.dart';
+import '../../../../Features/Widgets/toast.dart';
 import '../../../../Features/Widgets/znavigator.dart';
 import '../../../Auth/bloc/auth_bloc.dart';
 import 'bloc/shipment_bloc.dart';
@@ -83,7 +84,6 @@ class _DesktopViewState extends State<_DesktopView> {
   ];
 
   final TextEditingController _searchCtrl = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
 
   late _ShipmentStatusOption _status;
   late String _from;
@@ -103,8 +103,6 @@ class _DesktopViewState extends State<_DesktopView> {
     _from = today;
     _to = today;
 
-    _scrollController.addListener(_onScroll);
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _reload();
     });
@@ -113,9 +111,6 @@ class _DesktopViewState extends State<_DesktopView> {
   @override
   void dispose() {
     _searchCtrl.dispose();
-    _scrollController
-      ..removeListener(_onScroll)
-      ..dispose();
     super.dispose();
   }
 
@@ -148,15 +143,6 @@ class _DesktopViewState extends State<_DesktopView> {
     );
   }
 
-  void _onScroll() {
-    if (!_scrollController.hasClients) return;
-
-    final position = _scrollController.position;
-    if (position.pixels >= position.maxScrollExtent - 250) {
-      context.read<ShipmentBloc>().add(const LoadMoreShipments());
-    }
-  }
-
   void _clearFilters() {
     setState(() {
       _status = _statusOptions.first;
@@ -170,17 +156,44 @@ class _DesktopViewState extends State<_DesktopView> {
   }
 
   // ---------------------------------------------------------------------------
+  // SEARCH → OPEN CONTAINER DETAIL
+  // ---------------------------------------------------------------------------
+
+  void _onSearchSubmitted(String raw) {
+    final query = raw.trim();
+
+    if (query.isEmpty) {
+      _reload();
+      return;
+    }
+
+    context.read<ShipmentBloc>().add(ResolveShipmentByInput(query));
+  }
+
+  void _openDetailsById(int shpId) {
+    ZNavigator.goto(
+      BlocProvider.value(
+        value: context.read<ShipmentBloc>(),
+        child: ShpByIdView(shpId: shpId),
+      ),
+      context: context,
+    );
+  }
+
+  void _showToast(String message, {bool isError = false}) {
+    ToastManager.show(
+      context: context,
+      message: message,
+      type: isError ? ToastType.error : ToastType.success,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // ROW ACTIONS
   // ---------------------------------------------------------------------------
 
   void _openDetails(ShipmentModel shipment) {
-    ZNavigator.goto(
-      BlocProvider.value(
-        value: context.read<ShipmentBloc>(),
-        child: ShpByIdView(shpId: shipment.shpId),
-      ),
-      context: context,
-    );
+    _openDetailsById(shipment.shpId);
   }
 
   void _openEdit(ShipmentModel shipment) {
@@ -220,7 +233,7 @@ class _DesktopViewState extends State<_DesktopView> {
 
     context.read<ShipmentBloc>().add(
       DeleteShipment(
-        usrName: authState.loginData.usrName??"",
+        usrName: authState.loginData.usrName ?? "",
         shpId: shipment.shpId,
       ),
     );
@@ -240,21 +253,39 @@ class _DesktopViewState extends State<_DesktopView> {
       return const SizedBox.shrink();
     }
 
-    return Scaffold(
-      backgroundColor: color.surface,
-      body: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildHeader(textTheme, color),
-            const SizedBox(height: 14),
-            _buildFilters(color, textTheme),
-            const SizedBox(height: 12),
-            _buildTableHeader(color, textTheme),
-            const SizedBox(height: 6),
-            Expanded(child: _buildBody(color)),
-          ],
+    return BlocListener<ShipmentBloc, ShipmentState>(
+      listenWhen: (prev, curr) =>
+      curr is ShipmentResolved ||
+          curr is ShipmentResolveNotFound ||
+          curr is ShipmentOperationError,
+      listener: (context, state) {
+        if (state is ShipmentResolved) {
+          _openDetailsById(state.shpId);
+        } else if (state is ShipmentResolveNotFound) {
+          _showToast(
+            'No container found for "${state.input}".',
+            isError: true,
+          );
+        } else if (state is ShipmentOperationError) {
+          _showToast(state.message, isError: true);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: color.surface,
+        body: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildHeader(textTheme, color),
+              const SizedBox(height: 14),
+              _buildFilters(color, textTheme),
+              const SizedBox(height: 12),
+              _buildTableHeader(color, textTheme),
+              const SizedBox(height: 6),
+              Expanded(child: _buildBody(color)),
+            ],
+          ),
         ),
       ),
     );
@@ -332,6 +363,7 @@ class _DesktopViewState extends State<_DesktopView> {
               setState(() {});
               _reload();
             },
+            onSubmitted: _onSearchSubmitted,
           ),
         ),
         const SizedBox(width: 8),
@@ -423,7 +455,8 @@ class _DesktopViewState extends State<_DesktopView> {
               child: Text(tr.containerNo.toUpperCase(), style: style)),
           SizedBox(
               width: 125,
-              child: Text(tr.sequence.toUpperCase(), style: style, textAlign: TextAlign.start)),
+              child: Text(tr.sequence.toUpperCase(),
+                  style: style, textAlign: TextAlign.start)),
           Expanded(child: Text(tr.port.toUpperCase(), style: style)),
           SizedBox(
             width: 75,
@@ -439,7 +472,7 @@ class _DesktopViewState extends State<_DesktopView> {
             child: Text(tr.status.toUpperCase(),
                 textAlign: TextAlign.end, style: style),
           ),
-          const SizedBox(width: 40), // actions column
+          const SizedBox(width: 40),
         ],
       ),
     );
@@ -469,12 +502,7 @@ class _DesktopViewState extends State<_DesktopView> {
           if (state.shipments.isEmpty) {
             return _buildEmpty();
           }
-
-          return _buildList(
-            state.shipments,
-            color,
-            isLoadingMore: state.isLoadingMore,
-          );
+          return _buildList(state.shipments, color);
         }
 
         return const SizedBox.shrink();
@@ -482,24 +510,18 @@ class _DesktopViewState extends State<_DesktopView> {
     );
   }
 
-  Widget _buildList(List<ShipmentModel> shipments, ColorScheme color, {required bool isLoadingMore}) {
-    final Color hoverColor = Theme.of(context).colorScheme.primary.withValues(alpha: .07);
+  Widget _buildList(List<ShipmentModel> shipments, ColorScheme color) {
+    final hoverColor =
+    Theme.of(context).colorScheme.primary.withValues(alpha: .07);
+
     return ListView.separated(
-      controller: _scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
-      itemCount: shipments.length + (isLoadingMore ? 1 : 0),
+      itemCount: shipments.length,
       separatorBuilder: (_, _) => Divider(
         height: 1,
         color: color.outlineVariant.withValues(alpha: .2),
       ),
       itemBuilder: (context, index) {
-        if (index >= shipments.length) {
-          return const Padding(
-            padding: EdgeInsets.all(16),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-
         final shipment = shipments[index];
 
         return InkWell(
@@ -614,17 +636,21 @@ class _ShipmentRowWidget extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              cell(shipment.entryDate?.shamsiDateString ?? '—', width: 130),
-              cell(shipment.entryDate.toFormattedDateTime(), width: 130, align: TextAlign.start),
+              cell(shipment.entryDate.shamsiDateString, width: 130),
+              cell(
+                shipment.entryDate.toFormattedDateTime(),
+                width: 130,
+                align: TextAlign.start,
+              ),
             ],
           ),
           cell(
-            shipment.containerNo ?? '—',
+            shipment.containerNo,
             width: 155,
             weight: FontWeight.w600,
           ),
           cell(shipment.sequenceNo ?? '—', width: 125),
-          cell(shipment.portName ?? '—'),
+          cell(shipment.portName),
           cell(
             shipment.totalItems.toString(),
             width: 75,
@@ -637,9 +663,14 @@ class _ShipmentRowWidget extends StatelessWidget {
             align: TextAlign.end,
             weight: FontWeight.w700,
           ),
-
-          SizedBox(width: 45),
-          StatusDotIndicator(status: shipment.status, size: 13, showText: true,spacing: 3,textPosition: 'before',),
+          const SizedBox(width: 45),
+          StatusDotIndicator(
+            status: shipment.status,
+            size: 13,
+            showText: true,
+            spacing: 3,
+            textPosition: 'before',
+          ),
           SizedBox(
             width: 40,
             child: _ShipmentRowMenu(
@@ -694,22 +725,22 @@ class _ShipmentRowMenu extends StatelessWidget {
         }
       },
       itemBuilder: (context) => [
-         PopupMenuItem(
+        PopupMenuItem(
           value: _ShipmentRowAction.view,
           child: Row(
             children: [
-              Icon(Icons.visibility_outlined, size: 18),
-              SizedBox(width: 8),
+              const Icon(Icons.visibility_outlined, size: 18),
+              const SizedBox(width: 8),
               Text(AppLocalizations.of(context)!.view),
             ],
           ),
         ),
-          PopupMenuItem(
+        PopupMenuItem(
           value: _ShipmentRowAction.edit,
           child: Row(
             children: [
-              Icon(Icons.edit_outlined, size: 18),
-              SizedBox(width: 8),
+              const Icon(Icons.edit_outlined, size: 18),
+              const SizedBox(width: 8),
               Text(AppLocalizations.of(context)!.editContainer),
             ],
           ),
@@ -720,7 +751,10 @@ class _ShipmentRowMenu extends StatelessWidget {
             children: [
               Icon(Icons.delete_outline, size: 18, color: color.error),
               const SizedBox(width: 8),
-              Text(AppLocalizations.of(context)!.delete, style: TextStyle(color: color.error)),
+              Text(
+                AppLocalizations.of(context)!.delete,
+                style: TextStyle(color: color.error),
+              ),
             ],
           ),
         ),

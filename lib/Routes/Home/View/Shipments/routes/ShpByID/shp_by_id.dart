@@ -5,7 +5,6 @@ import 'package:shipping/Features/Widgets/shimmer.dart';
 import 'package:shipping/Features/Widgets/toast.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
 import 'package:shipping/Services/repository.dart';
-
 import '../../../../../../l10n/app_localizations.dart';
 import '../../../../../Auth/bloc/auth_bloc.dart';
 import '../../model/shp_model.dart';
@@ -238,14 +237,14 @@ class _ShipmentHeaderStrip extends StatelessWidget {
             _stat(
               Icons.inventory_2_outlined,
               tr.containerNo,
-              shipment.containerNo ?? '—',
+              shipment.containerNo,
               context,
             ),
             _vDivider(color),
             _stat(
               Icons.anchor_outlined,
               tr.port,
-              shipment.portName ?? '—',
+              shipment.portName,
               context,
             ),
             _vDivider(color),
@@ -259,7 +258,7 @@ class _ShipmentHeaderStrip extends StatelessWidget {
             _stat(
               Icons.date_range_rounded,
               tr.loadingDate,
-              shipment.loadingDate ?? '—',
+              shipment.loadingDate,
               context,
             ),
             _vDivider(color),

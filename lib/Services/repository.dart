@@ -3193,7 +3193,7 @@ class Repositories {
 // GET SHIPMENT DETAILS (container + items)
 // GET shipment.php?action=get&shpId=1
 // ─────────────────────────────────────────────────────────────
-  Future<ShipmentDetailsModel> getShipmentDetails({
+  Future<ShipmentDetailsModel> getShippingDetails({
     required int shpId,
   }) async {
     try {
@@ -3214,73 +3214,71 @@ class Repositories {
     }
   }
 
-  ///SHIPMENTS -----------------------------------------------------------------
-  Future<ShipmentListResponse> getContainers({
+  ///SHIPINGS -----------------------------------------------------------------
+  Future<List<ShipmentModel>> getContainers({
     String status = 'pending',
-    String? shpReference,
+    String? search,
     String? containerNo,
     String? sequenceNo,
     String? from,
     String? to,
-    int page = 1,
-    int size = 50,
     CancelToken? cancelToken,
   }) async {
-    try {
-      final queryParams = <String, dynamic>{
-        'action': 'list',
+    final response = await _api.get(
+      endpoint: '/shipment/shipping.php',
+      queryParams: {
         'status': status,
-        'page': page,
-        'size': size,
-      };
+        if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+        if (containerNo != null && containerNo.trim().isNotEmpty)
+          'containerNo': containerNo.trim(),
+        if (sequenceNo != null && sequenceNo.trim().isNotEmpty)
+          'sequenceNo': sequenceNo.trim(),
+        if (from != null && from.trim().isNotEmpty) 'from': from.trim(),
+        if (to != null && to.trim().isNotEmpty) 'to': to.trim(),
+      },
+      cancelToken: cancelToken,
+    );
 
-      if (shpReference != null && shpReference.trim().isNotEmpty) {
-        queryParams['shpReference'] = shpReference.trim();
-      }
+    return _parseList(
+      response.data,
+      ShipmentModel.fromJson,
+      fallback: 'Failed to load containers',
+    );
+  }
 
-      if (containerNo != null && containerNo.trim().isNotEmpty) {
-        queryParams['containerNo'] = containerNo.trim();
-      }
+// POST — create container
+  Future<int> addContainer(AddContainerRequest req) async {
+    final response = await _api.post(
+      endpoint: '/shipment/shipping.php',
+      data: req.toJson(),
+    );
 
-      if (sequenceNo != null && sequenceNo.trim().isNotEmpty) {
-        queryParams['sequenceNo'] = sequenceNo.trim();
-      }
+    final body = _requireSuccess(
+      response.data,
+      fallback: 'Failed to add container',
+    );
 
-      if (from != null && from.trim().isNotEmpty) {
-        queryParams['from'] = from.trim();
-      }
+    final shpId = _asInt(body['shpId']);
+    if (shpId != null) return shpId;
+    throw ApiException('Container created, but shpId was not returned.');
+  }
 
-      if (to != null && to.trim().isNotEmpty) {
-        queryParams['to'] = to.trim();
-      }
+// PUT — update container
+  Future<void> updateContainer(UpdateContainerRequest req) async {
+    final response = await _api.put(
+      endpoint: '/shipment/shipping.php',
+      data: req.toJson(),
+    );
+    _requireSuccess(response.data, fallback: 'Failed to update container');
+  }
 
-      final response = await _api.get(
-        endpoint: '/shipment/shipment.php',
-        queryParams: queryParams,
-        cancelToken: cancelToken,
-      );
-
-      final responseData = response.data;
-
-      if (responseData is! Map) {
-        throw ApiException('Invalid shipment response from server.');
-      }
-
-      final json = Map<String, dynamic>.from(responseData);
-
-      if (json['ok'] != true) {
-        throw ApiException(
-          json['error']?.toString() ??
-              json['message']?.toString() ??
-              'Failed to load containers.',
-        );
-      }
-
-      return ShipmentListResponse.fromJson(json);
-    } on DioException catch (e) {
-      // Normally ApiServices already converts DioException to ApiException.
-      throw ApiException(e.message ?? 'Failed to load containers.');
-    }
+// DELETE — delete container
+  Future<void> deleteContainer(DeleteContainerRequest req) async {
+    final response = await _api.delete(
+      endpoint: '/shipment/shipping.php',
+      data: req.toJson(),
+    );
+    _requireSuccess(response.data, fallback: 'Failed to delete container');
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -3459,114 +3457,6 @@ class Repositories {
       );
     }
   }
-
-  // ═══════════════════════════════════════════════════════════════
-  // SHIPMENT CONTAINER: CREATE
-  // ═══════════════════════════════════════════════════════════════
-
-  Future<int> createContainer({
-    required String usrName,
-    required String portName,
-    required String containerNo,
-    required String loadingDate,
-    String? sequenceNo,
-    String? unloadingDate,
-    String? description,
-  }) async {
-    final response = await _api.post(
-      endpoint: '/shipment/shipment.php',
-      data: {
-        'action': 'create',
-        'usrName': usrName,
-        'portName': portName,
-        'containerNo': containerNo,
-        'sequenceNo': sequenceNo,
-        'loadingDate': loadingDate,
-        'unloadingDate': unloadingDate,
-        'description': description,
-      },
-    );
-
-    final body = _asMap(response.data);
-
-    if (body == null || body['ok'] != true) {
-      _fail(body, fallback: 'Failed to create container');
-    }
-
-    final id = _asInt(body['shpId']);
-
-    if (id == null) {
-      throw ApiException('Container created but ID was not returned.');
-    }
-
-    return id;
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  // SHIPMENT CONTAINER: UPDATE
-  // ═══════════════════════════════════════════════════════════════
-
-  Future<void> updateContainer({
-    required String usrName,
-    required int shpId,
-    String? portName,
-    String? containerNo,
-    String? sequenceNo,
-    String? loadingDate,
-    String? unloadingDate,
-    String? description,
-    String? status,
-  }) async {
-    final data = <String, dynamic>{
-      'action': 'update',
-      'usrName': usrName,
-      'shpId': shpId,
-    };
-
-    if (portName != null) data['portName'] = portName;
-    if (containerNo != null) data['containerNo'] = containerNo;
-    if (sequenceNo != null) data['sequenceNo'] = sequenceNo;
-    if (loadingDate != null) data['loadingDate'] = loadingDate;
-    if (unloadingDate != null) data['unloadingDate'] = unloadingDate;
-    if (description != null) data['description'] = description;
-    if (status != null) data['status'] = status;
-
-    final response = await _api.post(
-      endpoint: '/shipment/shipment.php',
-      data: data,
-    );
-
-    final body = _asMap(response.data);
-
-    if (body == null || body['ok'] != true) {
-      _fail(body, fallback: 'Failed to update container');
-    }
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  // SHIPMENT CONTAINER: DELETE
-  // ═══════════════════════════════════════════════════════════════
-
-  Future<void> deleteContainer({
-    required String usrName,
-    required int shpId,
-  }) async {
-    final response = await _api.post(
-      endpoint: '/shipment/shipment.php',
-      data: {
-        'action': 'delete',
-        'usrName': usrName,
-        'shpId': shpId,
-      },
-    );
-
-    final body = _asMap(response.data);
-
-    if (body == null || body['ok'] != true) {
-      _fail(body, fallback: 'Failed to delete container');
-    }
-  }
-
 
   // ─────────────────────────────────────────────────────────────
   // RESPONSE VALIDATION

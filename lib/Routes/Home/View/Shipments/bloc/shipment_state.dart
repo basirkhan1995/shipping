@@ -1,4 +1,3 @@
-
 import 'package:equatable/equatable.dart';
 import '../model/shp_model.dart';
 
@@ -19,48 +18,15 @@ class ShipmentLoading extends ShipmentState {
 
 class ShipmentLoaded extends ShipmentState {
   final List<ShipmentModel> shipments;
-  final int page;
-  final int size;
   final String statusFilter;
-  final bool hasMore;
-  final bool isLoadingMore;
 
   const ShipmentLoaded({
     required this.shipments,
-    required this.page,
-    required this.size,
     required this.statusFilter,
-    this.hasMore = true,
-    this.isLoadingMore = false,
   });
 
-  ShipmentLoaded copyWith({
-    List<ShipmentModel>? shipments,
-    int? page,
-    int? size,
-    String? statusFilter,
-    bool? hasMore,
-    bool? isLoadingMore,
-  }) {
-    return ShipmentLoaded(
-      shipments: shipments ?? this.shipments,
-      page: page ?? this.page,
-      size: size ?? this.size,
-      statusFilter: statusFilter ?? this.statusFilter,
-      hasMore: hasMore ?? this.hasMore,
-      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
-    );
-  }
-
   @override
-  List<Object?> get props => [
-    shipments,
-    page,
-    size,
-    statusFilter,
-    hasMore,
-    isLoadingMore,
-  ];
+  List<Object?> get props => [shipments, statusFilter];
 }
 
 class ShipmentError extends ShipmentState {
@@ -105,4 +71,22 @@ class ShipmentOperationError extends ShipmentState {
 
   @override
   List<Object?> get props => [message];
+}
+
+class ShipmentResolved extends ShipmentState {
+  final int shpId;
+
+  const ShipmentResolved(this.shpId);
+
+  @override
+  List<Object?> get props => [shpId];
+}
+
+class ShipmentResolveNotFound extends ShipmentState {
+  final String input;
+
+  const ShipmentResolveNotFound(this.input);
+
+  @override
+  List<Object?> get props => [input];
 }
