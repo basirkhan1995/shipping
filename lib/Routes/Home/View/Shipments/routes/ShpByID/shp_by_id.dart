@@ -48,7 +48,7 @@ class _ShpByIdBody extends StatelessWidget {
       builder: (context, state) {
         if (state is ShpByIdLoading && state.previous == null) {
           return Scaffold(
-            body: Center(child: UniversalShimmer.dataList(itemCount: 15,numberOfColumns: 8)),
+            body: Center(child: UniversalShimmer.dataList(itemCount: 8,numberOfColumns: 8)),
           );
         }
 
@@ -71,7 +71,7 @@ class _ShpByIdBody extends StatelessWidget {
 
         if (details == null) {
           return Scaffold(
-            body: Center(child: UniversalShimmer.dataList(itemCount: 15,numberOfColumns: 8)),
+            body: Center(child: UniversalShimmer.dataList(itemCount: 8,numberOfColumns: 8)),
           );
         }
 
