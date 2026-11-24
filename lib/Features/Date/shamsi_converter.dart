@@ -98,24 +98,6 @@ class AfghanShamsiConverter {
   }
 }
 
-// extension DateTimeExtensions on dynamic {
-//   DateTime? get _dateTime {
-//     if (this is DateTime) return this as DateTime;
-//     if (this is String) return DateTime.tryParse(this as String);
-//     return null;
-//   }
-//
-//   static String _twoDigits(int n) => n.toString().padLeft(2, "0");
-//
-//   /// Formats the date as YYYY-MM-DD
-//   String toFormattedDate() {
-//     final date = _dateTime;
-//     return date != null
-//         ? "${date.year}-${_twoDigits(date.month)}-${_twoDigits(date.day)}"
-//         : "";
-//   }
-// }
-
 extension DateTimeExtensions on dynamic {
   DateTime? get _dateTime {
     if (this is DateTime) return this as DateTime;

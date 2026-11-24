@@ -75,110 +75,8 @@ class Repositories {
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
   );
 
-  // ═════════════════════════════════════════════════════════════════
-// Reminders
-// ═════════════════════════════════════════════════════════════════
 
-  Future<List<ReminderModel>> getAlertReminders({
-    int? alert,
-    CancelToken? cancelToken,
-  }) async {
-    final response = await _api.get(
-      endpoint: '/finance/reminders.php',
-      queryParams: {
-        'alerts': ?alert,
-      },
-      cancelToken: cancelToken,
-    );
-
-    final body = response.data;
-
-    // Case 1: a plain array.
-    if (body is List) {
-      return body
-          .whereType<Map>()
-          .map((e) => ReminderModel.fromMap(Map<String, dynamic>.from(e)))
-          .toList();
-    }
-
-    // Case 2: a single object → wrap in a one-element list.
-    if (body is Map<String, dynamic>) {
-      return [ReminderModel.fromMap(body)];
-    }
-    if (body is Map) {
-      return [ReminderModel.fromMap(Map<String, dynamic>.from(body))];
-    }
-
-    _fail(body, fallback: 'Failed to load reminders');
-  }
-
-  Future<void> addNewReminder({required ReminderModel newData}) async {
-    final response = await _api.post(
-      endpoint: '/finance/reminders.php',
-      data: newData.toMap(),
-    );
-    _requireSuccess(response.data, fallback: 'Failed to add reminder');
-  }
-
-  Future<void> updateReminder({required ReminderModel newData}) async {
-    final response = await _api.put(
-      endpoint: '/finance/reminders.php',
-      data: newData.toMap(),
-    );
-    _requireSuccess(response.data, fallback: 'Failed to update reminder');
-  }
-
-// ═════════════════════════════════════════════════════════════════
-// Exchange rates
-// ═════════════════════════════════════════════════════════════════
-  Future<List<ExchangeRateModel>> getExchangeRate({
-    String? ccyCode,
-    CancelToken? cancelToken,
-  }) async {
-    final response = await _api.get(
-      endpoint: '/finance/exchangeRate.php',
-      queryParams: {
-        if (ccyCode != null && ccyCode.isNotEmpty) 'ccy': ccyCode,
-      },
-      cancelToken: cancelToken,
-    );
-    return _parseList(
-      response.data,
-      ExchangeRateModel.fromMap,
-      fallback: 'Failed to load exchange rates',
-    );
-  }
-
-  Future<void> addExchangeRate({
-    required ExchangeRateModel newRate,
-  }) async {
-    final response = await _api.post(
-      endpoint: '/finance/exchangeRate.php',
-      data: newRate.toMap(),
-    );
-    _requireSuccess(response.data, fallback: 'Failed to add exchange rate');
-  }
-
-  Future<String?> getSingleRate({
-    required String fromCcy,
-    required String toCcy,
-  }) async {
-    final response = await _api.post(
-      endpoint: '/journal/getSingleExRate.php',
-      data: {'ccyFrom': fromCcy, 'ccyTo': toCcy},
-    );
-    final body = _asMap(response.data);
-    if (body == null) {
-      throw ApiException('Invalid server response');
-    }
-    if (body['msg'] != null && body['msg']?.toString() != 'success') {
-      _fail(body, fallback: 'Failed to get exchange rate');
-    }
-    return body['crExchange']?.toString();
-  }
-  // ═════════════════════════════════════════════════════════════════
-  // Private helpers — the only place that decides "success vs error"
-  // ═════════════════════════════════════════════════════════════════
+  //Private helpers — methods that decides "success vs error"
 
   /// Returns a map routes of the body, or null if it isn't a map.
   Map<String, dynamic>? _asMap(dynamic body) {
@@ -238,28 +136,93 @@ class Repositories {
         .toList();
   }
 
-  // ═════════════════════════════════════════════════════════════════
-  // Authentication
-  // ═════════════════════════════════════════════════════════════════
-  // Future<Map<String, dynamic>> login({
-  //   required String username,
-  //   required String password,
-  // }) async {
-  //   final response = await _api.post(
-  //     endpoint: '/user/login.php',
-  //     data: {'usrName': username, 'usrPass': password},
-  //   );
-  //   final body = _asMap(response.data);
-  //   if (body == null) {
-  //     throw ApiException('Invalid server response');
-  //   }
-  //   return body;
-  // }
 
-  Future<Map<String, dynamic>> login({
-    required String username,
-    required String password,
-  }) async {
+
+  // Reminders..................................................................
+  Future<List<ReminderModel>> getAlertReminders({int? alert, CancelToken? cancelToken,}) async {
+    final response = await _api.get(
+      endpoint: '/finance/reminders.php',
+      queryParams: {
+        'alerts': ?alert,
+      },
+      cancelToken: cancelToken,
+    );
+
+    final body = response.data;
+
+    // Case 1: a plain array.
+    if (body is List) {
+      return body
+          .whereType<Map>()
+          .map((e) => ReminderModel.fromMap(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+
+    // Case 2: a single object → wrap in a one-element list.
+    if (body is Map<String, dynamic>) {
+      return [ReminderModel.fromMap(body)];
+    }
+    if (body is Map) {
+      return [ReminderModel.fromMap(Map<String, dynamic>.from(body))];
+    }
+
+    _fail(body, fallback: 'Failed to load reminders');
+  }
+  Future<void> addNewReminder({required ReminderModel newData}) async {
+    final response = await _api.post(
+      endpoint: '/finance/reminders.php',
+      data: newData.toMap(),
+    );
+    _requireSuccess(response.data, fallback: 'Failed to add reminder');
+  }
+  Future<void> updateReminder({required ReminderModel newData}) async {
+    final response = await _api.put(
+      endpoint: '/finance/reminders.php',
+      data: newData.toMap(),
+    );
+    _requireSuccess(response.data, fallback: 'Failed to update reminder');
+  }
+
+ // Exchange rates...............................................................
+  Future<List<ExchangeRateModel>> getExchangeRate({String? ccyCode, CancelToken? cancelToken,}) async {
+    final response = await _api.get(
+      endpoint: '/finance/exchangeRate.php',
+      queryParams: {
+        if (ccyCode != null && ccyCode.isNotEmpty) 'ccy': ccyCode,
+      },
+      cancelToken: cancelToken,
+    );
+    return _parseList(
+      response.data,
+      ExchangeRateModel.fromMap,
+      fallback: 'Failed to load exchange rates',
+    );
+  }
+
+  Future<void> addExchangeRate({required ExchangeRateModel newRate}) async {
+    final response = await _api.post(
+      endpoint: '/finance/exchangeRate.php',
+      data: newRate.toMap(),
+    );
+    _requireSuccess(response.data, fallback: 'Failed to add exchange rate');
+  }
+  Future<String?> getSingleRate({required String fromCcy, required String toCcy}) async {
+    final response = await _api.post(
+      endpoint: '/journal/getSingleExRate.php',
+      data: {'ccyFrom': fromCcy, 'ccyTo': toCcy},
+    );
+    final body = _asMap(response.data);
+    if (body == null) {
+      throw ApiException('Invalid server response');
+    }
+    if (body['msg'] != null && body['msg']?.toString() != 'success') {
+      _fail(body, fallback: 'Failed to get exchange rate');
+    }
+    return body['crExchange']?.toString();
+  }
+
+  //Authentication..............................................................
+  Future<Map<String, dynamic>> login({required String username, required String password}) async {
     final response = await _api.post(
       endpoint: '/user/login.php',
       data: {'usrName': username, 'usrPass': password},
@@ -268,10 +231,7 @@ class Repositories {
     if (body == null) throw ApiException('Invalid server response');
     return body;
   }
-  Future<Map<String, dynamic>> fetchProfile({
-    required String username,
-    CancelToken? cancelToken,
-  }) async {
+  Future<Map<String, dynamic>> fetchProfile({required String username, CancelToken? cancelToken}) async {
 
     final response = await _api.get(
       endpoint: '/user/login.php',
@@ -294,10 +254,8 @@ class Repositories {
     if (token == null || token.isEmpty) {
       return;
     }
-
     // NO TRIM — keep comLogo (a data: URL now) in the blob.
     // Secure storage write is larger, but cold start renders the logo in frame 1.
-
     int expiresAt;
     try {
       final existing = await _secureStorage.read(key: _sessionKey);
@@ -366,10 +324,7 @@ class Repositories {
   /// Wipe the remembered session. Idempotent. Safe to call any time.
   Future<void> clearSession() => _secureStorage.delete(key: _sessionKey);
 
-
-  // ═════════════════════════════════════════════════════════════════
-  // Stakeholders
-  // ═════════════════════════════════════════════════════════════════
+  // Stakeholders...............................................................
   Future<List<StakeholdersModel>> getStakeholders({String? search}) async {
     final res = await _api.get(
       endpoint: '/stakeholder/personal.php',
@@ -384,7 +339,6 @@ class Repositories {
       fallback: 'Failed to load stakeholders',
     );
   }
-
   Future<StakeholdersModel> getStakeholderById(int perId) async {
     final res = await _api.get(
       endpoint: '/stakeholder/personal.php',
@@ -409,7 +363,6 @@ class Repositories {
     }
     _fail(body, fallback: 'Stakeholder not found');
   }
-
   Future<int> addStakeholder(StakeholdersModel model) async {
     final res = await _api.post(
       endpoint: '/stakeholder/personal.php',
@@ -426,7 +379,6 @@ class Repositories {
 
     throw ApiException('Server returned success but no personal id');
   }
-
   Future<void> updateStakeholder(StakeholdersModel model) async {
     final res = await _api.put(
       endpoint: '/stakeholder/personal.php',
@@ -434,7 +386,6 @@ class Repositories {
     );
     _requireSuccess(res.data, fallback: 'Failed to update stakeholder');
   }
-
   Future<void> deleteStakeholder(int perId) async {
     final res = await _api.delete(
       endpoint: '/stakeholder/personal.php?id=$perId',
@@ -455,14 +406,8 @@ class Repositories {
     _fail(body, fallback: 'Failed to delete stakeholder');
   }
 
-  // ═════════════════════════════════════════════════════════════════
-  // Accounts
-  // ═════════════════════════════════════════════════════════════════
-  Future<List<StkAccountModel>> getAccounts({
-    int? perId,
-    String? search,
-    CancelToken? cancelToken,
-  }) async {
+  // Accounts...................................................................
+  Future<List<StkAccountModel>> getAccounts({int? perId, String? search, CancelToken? cancelToken}) async {
     final response = await _api.get(
       endpoint: '/stakeholder/account.php',
       queryParams: {
@@ -477,11 +422,7 @@ class Repositories {
       fallback: 'Failed to load accounts',
     );
   }
-
-  Future<Map<String, dynamic>> uploadStakeholderPhoto({
-    required int perID,
-    required Uint8List image,
-  }) async {
+  Future<Map<String, dynamic>> uploadStakeholderPhoto({required int perID, required Uint8List image}) async {
     final fileName = 'photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
     final formData = FormData.fromMap({
@@ -503,13 +444,7 @@ class Repositories {
     }
     return body;
   }
-
-  Future<int> addAccount({
-    required String accName,
-    required String actCurrency,
-    required dynamic actCreditLimit,
-    required int actSignatory,
-  }) async {
+  Future<int> addAccount({required String accName, required String actCurrency, required dynamic actCreditLimit, required int actSignatory,}) async {
     final res = await _api.post(
       endpoint: '/stakeholder/account.php',
       data: {
@@ -524,14 +459,7 @@ class Repositories {
     if (id != null) return id;
     throw ApiException('Server returned success but no account number');
   }
-
-  Future<void> editAccount({
-    required int accNumber,
-    String? accName,
-    String? actCurrency,
-    dynamic actCreditLimit,
-    int? actStatus,
-  }) async {
+  Future<void> editAccount({required int accNumber, String? accName, String? actCurrency, dynamic actCreditLimit, int? actStatus}) async {
     final data = <String, dynamic>{'accNumber': accNumber};
     if (accName != null) data['accName'] = accName;
     if (actCurrency != null) data['actCurrency'] = actCurrency;
@@ -559,13 +487,8 @@ class Repositories {
 
     _fail(body, fallback: 'Failed to update account');
   }
-
-  Future<void> blockAccount(int accNumber) =>
-      editAccount(accNumber: accNumber, actStatus: 0);
-
-  Future<void> unblockAccount(int accNumber) =>
-      editAccount(accNumber: accNumber, actStatus: 1);
-
+  Future<void> blockAccount(int accNumber) => editAccount(accNumber: accNumber, actStatus: 0);
+  Future<void> unblockAccount(int accNumber) => editAccount(accNumber: accNumber, actStatus: 1);
   Future<void> deleteAccount(int accNumber) async {
     final res = await _api.delete(
       endpoint: '/stakeholder/account.php?accNumber=$accNumber',
@@ -588,13 +511,8 @@ class Repositories {
     _fail(body, fallback: 'Failed to delete account');
   }
 
-  // ═════════════════════════════════════════════════════════════════
-  // Currencies
-  // ═════════════════════════════════════════════════════════════════
-  Future<List<CurrenciesModel>> getCurrencies({
-    required int? status,
-    CancelToken? cancelToken,
-  }) async {
+  // Currencies.................................................................
+  Future<List<CurrenciesModel>> getCurrencies({required int? status, CancelToken? cancelToken,}) async {
     final response = await _api.get(
       endpoint: '/finance/currency.php',
       queryParams: {
@@ -609,11 +527,7 @@ class Repositories {
       fallback: 'Failed to load currencies',
     );
   }
-
-  Future<void> updateCcyStatus({
-    required bool status,
-    required String? ccyCode,
-  }) async {
+  Future<void> updateCcyStatus({required bool status, required String? ccyCode}) async {
     final response = await _api.put(
       endpoint: '/finance/currency.php',
       data: {
@@ -627,7 +541,6 @@ class Repositories {
       fallback: 'Failed to update currency status',
     );
   }
-
   Future<void> addCurrency({required CurrenciesModel ccy}) async {
     final response = await _api.post(
       endpoint: '/finance/currency.php',
@@ -635,7 +548,6 @@ class Repositories {
     );
     _requireSuccess(response.data, fallback: 'Failed to add currency');
   }
-
   Future<void> updateCurrency({required CurrenciesModel ccy}) async {
     final response = await _api.put(
       endpoint: '/finance/currency.php',
@@ -647,15 +559,9 @@ class Repositories {
     _requireSuccess(response.data, fallback: 'Failed to update currency');
   }
 
-  /// Transactions
-  Future<Map<String, dynamic>> getTransactions({
-    String status = 'all',
-    String? from,
-    String? to,
-    String? type,
-    int? branch,
-    String? search,
-  }) async {
+  //Transactions...............................................................
+  //Get all transactions
+  Future<Map<String, dynamic>> getTransactions({String status = 'all', String? from, String? to, String? type, int? branch, String? search}) async {
     final response = await _api.get(
       endpoint: '/journal/getTransactions.php',
       queryParams: {
@@ -679,96 +585,7 @@ class Repositories {
     }
     return body;
   }
-
-  Future<Map<String, dynamic>> cashFlowOperations({
-    required TransactionDraft newTransaction,
-  }) async {
-    final response = await _api.post(
-      endpoint: '/journal/cashWD.php',
-      data: newTransaction.toMap(),
-    );
-    return _requireSuccess(
-      response.data,
-      fallback: 'Failed to process cash transaction',
-    );
-  }
-
-  Future<Map<String, dynamic>> updateTxn({
-    required TransactionDraft newTxn,
-  }) async {
-    final response = await _api.put(
-      endpoint: '/journal/cashWD.php',
-      data: newTxn.toMap(),
-    );
-    return _requireSuccess(
-      response.data,
-      fallback: 'Failed to update transaction',
-    );
-  }
-
-  Future<Map<String, dynamic>> fundTransfer({
-    required TransactionDraft newTransaction,
-  }) async {
-    final response = await _api.post(
-      endpoint: '/journal/fundTransfer.php',
-      data: newTransaction.toMap(),
-    );
-    return _requireSuccess(
-      response.data,
-      fallback: 'Failed to process fund transfer',
-    );
-  }
-
-  Future<Map<String, dynamic>> bulkTransfer({
-    required String userName,
-    required List<Map<String, dynamic>> records,
-  }) async {
-    final response = await _api.post(
-      endpoint: '/journal/fundTransferMA.php',
-      data: {'usrName': userName, 'records': records},
-    );
-
-    final body = response.data;
-
-    // Success response is typically a map.
-    final map = _asMap(body);
-    if (map != null) return map;
-
-    // Some servers respond with a bare string message.
-    if (body is String) {
-      return {'msg': body};
-    }
-
-    _fail(body, fallback: 'Failed to process bulk transfer');
-  }
-
-  Future<Map<String, dynamic>> fxTransfer({
-    required String userName,
-    required List<Map<String, dynamic>> records,
-  }) async {
-    final response = await _api.post(
-      endpoint: '/journal/crossCurrency.php',
-      data: {'usrName': userName, 'records': records},
-    );
-
-    final body = response.data;
-
-    final map = _asMap(body);
-    if (map != null) return map;
-
-    // Some servers respond with a bare string message; echo it back as
-    // both `msg` and `account` to preserve the old contract.
-    if (body is String) {
-      return {'msg': body, 'account': body};
-    }
-
-    _fail(body, fallback: 'Failed to process FX transfer');
-  }
-
-  Future<Map<String, dynamic>> authorizeTxn({
-    required String reference,
-    required String? usrName,
-  }) async {
+  Future<Map<String, dynamic>> authorizeTxn({required String reference, required String? usrName,}) async {
     final response = await _api.put(
       endpoint: '/journal/transactionActivity.php',
       data: {'reference': reference, 'username': usrName},
@@ -799,11 +616,7 @@ class Repositories {
               : msg),
     );
   }
-
-  Future<Map<String, dynamic>> unAuthorizeTxn({
-    required String reference,
-    required String? usrName,
-  }) async {
+  Future<Map<String, dynamic>> unAuthorizeTxn({required String reference, required String? usrName}) async {
     final response = await _api.put(
       endpoint: "/journal/transactionActivity.php",
       data: {'action': 'unauthorize',"reference": reference, "username": usrName},
@@ -828,11 +641,7 @@ class Repositories {
               : msg),
     );
   }
-
-  Future<Map<String, dynamic>> reverseTxn({
-    required String reference,
-    required String? usrName,
-  }) async {
+  Future<Map<String, dynamic>> reverseTxn({required String reference, required String? usrName}) async {
     final response = await _api.post(
       endpoint: '/journal/transactionActivity.php',
       data: {'reference': reference, 'username': usrName},
@@ -842,11 +651,7 @@ class Repositories {
       fallback: 'Failed to reverse transaction',
     );
   }
-
-  Future<Map<String, dynamic>> deleteTxn({
-    required String reference,
-    required String? usrName,
-  }) async {
+  Future<Map<String, dynamic>> deleteTxn({required String reference, required String? usrName}) async {
     final response = await _api.delete(
       endpoint: '/journal/transactionActivity.php',
       data: {'reference': reference, 'username': usrName},
@@ -857,15 +662,354 @@ class Repositories {
     );
   }
 
+  ///Cash Transaction Operations................................................
+  Future<Map<String, dynamic>> addCashTxn({required TransactionDraft newTransaction}) async {
+    final response = await _api.post(
+      endpoint: '/journal/cashWD.php',
+      data: newTransaction.toMap(),
+    );
+    return _requireSuccess(
+      response.data,
+      fallback: 'Failed to process cash transaction',
+    );
+  }
+  Future<CashTxnDetail> getCashTxnByRef({required String reference, CancelToken? cancelToken}) async {
+    final response = await _api.get(
+      endpoint: '/journal/cashWD.php',
+      queryParams: {'ref': reference},
+      cancelToken: cancelToken,
+    );
 
-  // ═════════════════════════════════════════════════════════════════
-// GL Accounts
-// ═════════════════════════════════════════════════════════════════
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
 
-  Future<List<GlAccountsModel>> getGl({
-    String? input,
-    CancelToken? cancelToken,
+    final detail = CashTxnDetail.fromJson(body);
+
+    if (detail.isSuccess) return detail;
+
+    throw ApiException(
+      body['error']?.toString() ??
+          ((detail.msg ?? '').toLowerCase() == 'not_found'
+              ? 'Transaction not found.'
+              : 'Failed to load transaction'),
+    );
+  }
+  Future<Map<String, dynamic>> deleteCashTxn({required String reference, required String userName}) async {
+    final response = await _api.delete(
+      endpoint: '/journal/cashWD.php',
+      data: {'reference': reference, 'username': userName},
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+
+    final msg = body['msg']?.toString().toLowerCase() ?? '';
+    if (msg == 'success') return body;
+
+    throw ApiException(
+      body['error']?.toString() ??
+          (msg == 'invalid action'
+              ? 'Only pending transactions can be deleted.'
+              : msg == 'invalid'
+              ? 'Only the maker can delete this transaction.'
+              : 'Failed to delete transaction'),
+    );
+  }
+  Future<Map<String, dynamic>> updateCashTxn({required TransactionDraft newTxn}) async {
+    final response = await _api.put(
+      endpoint: '/journal/cashWD.php',
+      data: newTxn.toMap(),
+    );
+    return _requireSuccess(
+      response.data,
+      fallback: 'Failed to update transaction',
+    );
+  }
+
+  /// Cross Currency Transaction - Exchange money...............................
+  Future<ExchangeDetail> getExchangeTxnByRef({required String reference, CancelToken? cancelToken}) async {
+    final res = await _api.get(
+      endpoint: '/journal/crossCurrency.php',
+      queryParams: {'ref': reference},
+      cancelToken: cancelToken,
+    );
+
+    final body = _asMap(res.data);
+    if (body == null) throw ApiException('Invalid server response');
+    return ExchangeDetail.fromMap(body);
+  }
+  Future<List<ExchangeListItem>> getExchangeTxn({String? state, String? search, CancelToken? cancelToken}) async {
+    final res = await _api.get(
+      endpoint: '/journal/crossCurrency.php',
+      queryParams: {
+        if (state != null && state.isNotEmpty) 'state': state,
+        if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+      },
+      cancelToken: cancelToken,
+    );
+    return _parseList(
+      res.data,
+      ExchangeListItem.fromMap,
+      fallback: 'Failed to load exchange transfers',
+    );
+  }
+  Future<Map<String, dynamic>> addExchangeTxn({required String usrName, required ExchangeLeg debit, required ExchangeLeg credit}) async {
+    final records = ExchangeDraft(
+      usrName: usrName,
+      debit: debit,
+      credit: credit,
+    ).toRecords();
+
+    final res = await _api.post(
+      endpoint: '/journal/crossCurrency.php',
+      data: {
+        'usrName': usrName,
+        'records': records,
+      },
+    );
+
+    final body = _asMap(res.data);
+    if (body == null) throw ApiException('Invalid server response');
+    return body;
+  }
+  Future<Map<String, dynamic>> editExchangeTxn({
+    required String reference,
+    required String usrName,
+    required ExchangeLeg debit,
+    required ExchangeLeg credit,
   }) async {
+    final res = await _api.put(
+      endpoint: '/journal/crossCurrency.php',
+      data: ExchangeEditDraft(
+        reference: reference,
+        usrName: usrName,
+        debit: debit,
+        credit: credit,
+      ).toMap(),
+    );
+
+    final body = _asMap(res.data);
+    if (body == null) throw ApiException('Invalid server response');
+    return body;
+  }
+  Future<Map<String, dynamic>> deleteExchangeTxn({required String reference, required String usrName}) async {
+    final response = await _api.delete(
+      endpoint: '/journal/crossCurrency.php',
+      data: {'reference': reference, 'usrName': usrName},
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+    return body;
+  }
+
+  ///Bulk Transaction - multiple transaction rows...............................
+  Future<Map<String, dynamic>> addBulkTransfer({required String userName, required List<Map<String, dynamic>> records}) async {
+    final response = await _api.post(
+      endpoint: '/journal/fundTransferMA.php',
+      data: {'usrName': userName, 'records': records},
+    );
+
+    final body = response.data;
+
+    // Success response is typically a map.
+    final map = _asMap(body);
+    if (map != null) return map;
+
+    // Some servers respond with a bare string message.
+    if (body is String) {
+      return {'msg': body};
+    }
+
+    _fail(body, fallback: 'Failed to process bulk transfer');
+  }
+  Future<Map<String, dynamic>> getBulkTransferByReference({required String reference, CancelToken? cancelToken}) async {
+    final response = await _api.get(
+      endpoint: '/journal/fundTransferMA.php',
+      queryParams: {'ref': reference},
+      cancelToken: cancelToken,
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) {
+      throw ApiException('Invalid server response');
+    }
+
+    final msg = body['msg']?.toString().toLowerCase();
+    if (msg == 'failed' || msg == 'empty') {
+      throw ApiException(
+        body['error']?.toString() ??
+            body['message']?.toString() ??
+            'Bulk transfer not found',
+      );
+    }
+    return body;
+  }
+  Future<Map<String, dynamic>> updateBulkTransfer({required String reference, required String userName, required List<Map<String, dynamic>> records}) async {
+    final response = await _api.put(
+      endpoint: '/journal/fundTransferMA.php',
+      data: {
+        'reference': reference,
+        'usrName': userName,
+        'records': records,
+      },
+    );
+
+    final data = response.data;
+
+    if (data is Map) {
+      return Map<String, dynamic>.from(data);
+    }
+
+    if (data is String && data.isNotEmpty) {
+      final decoded = jsonDecode(data);
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+    }
+
+    throw ApiException('Invalid server response');
+  }
+  Future<Map<String, dynamic>> deleteBulkTransfer({required String reference, required String userName}) async {
+    final response = await _api.delete(
+      endpoint: '/journal/fundTransferMA.php',
+      queryParams: {
+        'ref': reference,
+        'usrName': userName,
+      },
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) {
+      throw ApiException('Invalid server response');
+    }
+
+    final msg = body['msg']?.toString().toLowerCase();
+    if (msg == 'success') return body;
+
+    throw ApiException(
+      body['error']?.toString() ??
+          body['message']?.toString() ??
+          'Failed to delete transaction',
+    );
+  }
+
+  /// Fund Transfer (single account → account) transaction ..................................................................
+  Future<List<FundTransferListItem>> getFundTransfers({String? state, String? search, CancelToken? cancelToken,}) async {
+    final response = await _api.get(
+      endpoint: '/journal/fundTransfer.php',
+      queryParams: {
+        if (state != null && state.isNotEmpty) 'state': state,
+        if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+      },
+      cancelToken: cancelToken,
+    );
+    return _parseList(
+      response.data,
+      FundTransferListItem.fromMap,
+      fallback: 'Failed to load fund transfers',
+    );
+  }
+  Future<FundTransferDetail> getFundTransferByRef({required String reference, CancelToken? cancelToken}) async {
+    final response = await _api.get(
+      endpoint: '/journal/fundTransfer.php',
+      queryParams: {'ref': reference},
+      cancelToken: cancelToken,
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+
+    // Server returns {msg: 'not_found'} / {msg: 'invalid_type'} on bad refs.
+    final msg = body['msg']?.toString().toLowerCase() ?? '';
+    if (msg.isNotEmpty && msg != 'success') {
+      throw ApiException(
+        body['error']?.toString() ??
+            (msg == 'not_found'
+                ? 'Fund transfer not found.'
+                : msg == 'invalid_type'
+                ? 'This reference is not a fund transfer.'
+                : msg == 'missing_ref'
+                ? 'Missing reference.'
+                : 'Failed to load fund transfer'),
+      );
+    }
+
+    return FundTransferDetail.fromMap(body);
+  }
+  // ── ADD ──────────────────────────────────────────────────────
+  Future<Map<String, dynamic>> addFundTransfer({
+    required String usrName,
+    required int fromAccount,
+    required String fromAccCcy,
+    required int toAccount,
+    required String toAccCcy,
+    required double amount,
+    required String narration,
+  }) async {
+    final response = await _api.post(
+      endpoint: '/journal/fundTransfer.php',
+      data: {
+        'usrName': usrName,
+        'fromAccount': fromAccount,
+        'fromAccCcy': fromAccCcy,
+        'toAccount': toAccount,
+        'toAccCcy': toAccCcy,
+        'amount': amount,
+        'narration': narration,
+      },
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+    return body;
+  }
+
+// ── EDIT ─────────────────────────────────────────────────────
+  Future<Map<String, dynamic>> editFundTransfer({
+    required String reference,
+    required String usrName,
+    required String fromAccCcy,
+    required String toAccCcy,
+    required int fromAccount,
+    required int toAccount,
+    required double amount,
+    required String narration,
+  }) async {
+    final response = await _api.put(
+      endpoint: '/journal/fundTransfer.php',
+      data: {
+        'reference': reference,
+        'usrName': usrName,
+        'fromAccount': fromAccount,
+        'toAccount': toAccount,
+        'fromAccCcy': fromAccCcy,
+        'toAccCcy': toAccCcy,
+        'amount': amount,
+        'narration': narration,
+      },
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+    return body;
+  }
+
+// ── DELETE ───────────────────────────────────────────────────
+  Future<Map<String, dynamic>> deleteFundTransfer({
+    required String reference,
+    required String usrName,
+  }) async {
+    final response = await _api.delete(
+      endpoint: '/journal/fundTransfer.php',
+      data: {'reference': reference, 'usrName': usrName},
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) throw ApiException('Invalid server response');
+    return body;
+  }
+
+  /// GL Accounts...............................................................
+  Future<List<GlAccountsModel>> getGl({String? input, CancelToken? cancelToken}) async {
     final response = await _api.get(
       endpoint: '/finance/glAccount.php',
       queryParams: {
@@ -879,7 +1023,6 @@ class Repositories {
       fallback: 'Failed to load GL accounts',
     );
   }
-
   Future<void> addGl({required GlAccountsModel newAccount}) async {
     final response = await _api.post(
       endpoint: '/finance/glAccount.php',
@@ -887,7 +1030,6 @@ class Repositories {
     );
     _requireSuccess(response.data, fallback: 'Failed to add GL account');
   }
-
   Future<void> editGl({required GlAccountsModel newAccount}) async {
     final response = await _api.put(
       endpoint: '/finance/glAccount.php',
@@ -895,7 +1037,6 @@ class Repositories {
     );
     _requireSuccess(response.data, fallback: 'Failed to update GL account');
   }
-
   Future<void> deleteGl({required int accNumber}) async {
     final response = await _api.delete(
       endpoint: '/finance/glAccount.php',
@@ -903,15 +1044,7 @@ class Repositories {
     );
     _requireSuccess(response.data, fallback: 'Failed to delete GL account');
   }
-
-// ═════════════════════════════════════════════════════════════════
-// GL Sub Categories
-// ═════════════════════════════════════════════════════════════════
-
-  Future<List<GlCategoriesModel>> getGlSubCategories({
-    required int catId,
-    CancelToken? cancelToken,
-  }) async {
+  Future<List<GlCategoriesModel>> getGlSubCategories({required int catId, CancelToken? cancelToken}) async {
     final response = await _api.get(
       endpoint: '/finance/accountCategory.php',
       queryParams: {'cat': catId},
@@ -924,26 +1057,15 @@ class Repositories {
     );
   }
 
-  // ═════════════════════════════════════════════════════════════════
-// Password settings
-// ═════════════════════════════════════════════════════════════════
-
-  Future<void> forceChangePassword({
-    required String credential,
-    required String newPassword,
-  }) async {
+  ///Password settings...........................................................
+  Future<void> forceChangePassword({required String credential, required String newPassword}) async {
     final response = await _api.put(
       endpoint: '/user/changePass.php',
       data: {'usrName': credential, 'usrPass': newPassword},
     );
     _requireSuccess(response.data, fallback: 'Failed to change password');
   }
-
-  Future<void> changePassword({
-    required String credential,
-    required String oldPassword,
-    required String newPassword,
-  }) async {
+  Future<void> changePassword({required String credential, required String oldPassword, required String newPassword}) async {
     final response = await _api.post(
       endpoint: '/user/changePass.php',
       data: {
@@ -954,11 +1076,7 @@ class Repositories {
     );
     _requireSuccess(response.data, fallback: 'Failed to change password');
   }
-
-  Future<void> resetPassword({
-    required String credential,
-    required String newPassword,
-  }) async {
+  Future<void> resetPassword({required String credential, required String newPassword}) async {
     final response = await _api.put(
       endpoint: '/user/users.php',
       data: {'credential': credential, 'newPassword': newPassword},
@@ -966,10 +1084,7 @@ class Repositories {
     _requireSuccess(response.data, fallback: 'Failed to reset password');
   }
 
-// ═════════════════════════════════════════════════════════════════
-// Branches & limits
-// ═════════════════════════════════════════════════════════════════
-
+  /// Branches & limits..........................................................
   Future<List<BranchModel>> getBranches({int? brcId, CancelToken? cancelToken,}) async {
     final response = await _api.get(
       endpoint: '/setting/branch.php',
@@ -1020,9 +1135,7 @@ class Repositories {
     _requireSuccess(response.data, fallback: 'Failed to save branch limit');
   }
 
-  // ═════════════════════════════════════════════════════════════════
-  // Company profile
-  // ═════════════════════════════════════════════════════════════════
+  /// Company profile...........................................................
   Future<CompanyProfileModel> getCompanyProfile({CancelToken? cancelToken,}) async {
     final response = await _api.get(
       endpoint: '/setting/companyProfile.php',
@@ -1059,10 +1172,7 @@ class Repositories {
     );
     _requireSuccess(response.data, fallback: 'Failed to update company profile');
   }
-  Future<void> uploadCompanyProfile({
-    required Uint8List image,
-    int comID = 1,
-  }) async {
+  Future<void> uploadCompanyProfile({required Uint8List image, int comID = 1}) async {
     final fileName = 'photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
     final formData = FormData.fromMap({
       'comID': comID,
@@ -1080,10 +1190,7 @@ class Repositories {
     _requireSuccess(response.data, fallback: 'Failed to upload company profile');
   }
 
-
-  // ═════════════════════════════════════════════════════════════════
-  // Storage
-  // ═════════════════════════════════════════════════════════════════
+  /// Storage...................................................................
   Future<List<StorageModel>> getStorage({CancelToken? cancelToken}) async {
     final response = await _api.get(
       endpoint: '/setting/storage.php',
@@ -1110,15 +1217,9 @@ class Repositories {
     _requireSuccess(response.data, fallback: 'Failed to update storage');
   }
 
-  // ═════════════════════════════════════════════════════════════════
-// Finance — EOY operation / P&L
-// ═════════════════════════════════════════════════════════════════
 
-  Future<void> eoyOperationProcess({
-    required String usrName,
-    required String remark,
-    required int branchCode,
-  }) async {
+  /// Finance — EOY operation / P&L ............................................
+  Future<void> eoyOperationProcess({required String usrName, required String remark, required int branchCode}) async {
     final response = await _api.post(
       endpoint: '/finance/eoyOperation.php',
       data: {
@@ -1129,10 +1230,7 @@ class Repositories {
     );
     _requireSuccess(response.data, fallback: 'Failed to run EOY operation');
   }
-
-  Future<List<PAndLModel>> getProfitAndLoss({
-    CancelToken? cancelToken,
-  }) async {
+  Future<List<PAndLModel>> getProfitAndLoss({CancelToken? cancelToken}) async {
     final response = await _api.get(
       endpoint: '/finance/eoyOperation.php',
       cancelToken: cancelToken,
@@ -1142,496 +1240,6 @@ class Repositories {
       PAndLModel.fromMap,
       fallback: 'Failed to load profit and loss',
     );
-  }
-
-  // GET /journal/fundTransferMA.php?ref=…
-  Future<Map<String, dynamic>> getBulkTransferByReference({
-    required String reference,
-    CancelToken? cancelToken,
-  }) async {
-    final response = await _api.get(
-      endpoint: '/journal/fundTransferMA.php',
-      queryParams: {'ref': reference},
-      cancelToken: cancelToken,
-    );
-
-    final body = _asMap(response.data);
-    if (body == null) {
-      throw ApiException('Invalid server response');
-    }
-
-    final msg = body['msg']?.toString().toLowerCase();
-    if (msg == 'failed' || msg == 'empty') {
-      throw ApiException(
-        body['error']?.toString() ??
-            body['message']?.toString() ??
-            'Bulk transfer not found',
-      );
-    }
-    return body;
-  }
-
-// PUT /journal/fundTransferMA.php
-  Future<Map<String, dynamic>> updateBulkTransfer({
-    required String reference,
-    required String userName,
-    required List<Map<String, dynamic>> records,
-  }) async {
-    final response = await _api.put(
-      endpoint: '/journal/fundTransferMA.php',
-      data: {
-        'reference': reference,
-        'usrName': userName,
-        'records': records,
-      },
-    );
-
-    final body = _asMap(response.data);
-    if (body == null) {
-      throw ApiException('Invalid server response');
-    }
-
-    final msg = body['msg']?.toString().toLowerCase();
-    if (msg == 'success') return body;
-
-    throw ApiException(
-      body['error']?.toString() ??
-          body['message']?.toString() ??
-          _bulkErrorText(msg ?? ''),
-    );
-  }
-
-  String _bulkErrorText(String code) => switch (code) {
-    'no limit' => 'One or more accounts exceeded their credit limit.',
-    'blocked' => 'One or more accounts are blocked.',
-    'diff ccy' => 'All rows must use the same currency as their account.',
-    'unbalanced' => 'Total debit must equal total credit.',
-    'not_found' => 'Transaction not found.',
-    'invalid user' => 'You are not the maker of this transaction.',
-    'invalid action' => 'This transaction can no longer be edited.',
-    'failed' || 'empty' => 'The transaction could not be processed.',
-    _ => 'Transaction failed.',
-  };
-
-  Future<Map<String, dynamic>> deleteBulkTransfer({
-    required String reference,
-    required String userName,
-  }) async {
-    final response = await _api.delete(
-      endpoint: '/journal/fundTransferMA.php',
-      queryParams: {
-        'ref': reference,
-        'usrName': userName,
-      },
-    );
-
-    final body = _asMap(response.data);
-    if (body == null) {
-      throw ApiException('Invalid server response');
-    }
-
-    final msg = body['msg']?.toString().toLowerCase();
-    if (msg == 'success') return body;
-
-    throw ApiException(
-      body['error']?.toString() ??
-          body['message']?.toString() ??
-          'Failed to delete transaction',
-    );
-  }
-
-  Future<CashTxnDetail> getCashTxnByRef({
-    required String reference,
-    CancelToken? cancelToken,
-  }) async {
-    final response = await _api.get(
-      endpoint: '/journal/cashWD.php',
-      queryParams: {'ref': reference},
-      cancelToken: cancelToken,
-    );
-
-    final body = _asMap(response.data);
-    if (body == null) throw ApiException('Invalid server response');
-
-    final detail = CashTxnDetail.fromJson(body);
-
-    if (detail.isSuccess) return detail;
-
-    throw ApiException(
-      body['error']?.toString() ??
-          ((detail.msg ?? '').toLowerCase() == 'not_found'
-              ? 'Transaction not found.'
-              : 'Failed to load transaction'),
-    );
-  }
-
-  Future<Map<String, dynamic>> deleteCashTxn({
-    required String reference,
-    required String userName,
-  }) async {
-    final response = await _api.delete(
-      endpoint: '/journal/cashWD.php',
-      data: {'reference': reference, 'username': userName},
-    );
-
-    final body = _asMap(response.data);
-    if (body == null) throw ApiException('Invalid server response');
-
-    final msg = body['msg']?.toString().toLowerCase() ?? '';
-    if (msg == 'success') return body;
-
-    throw ApiException(
-      body['error']?.toString() ??
-          (msg == 'invalid action'
-              ? 'Only pending transactions can be deleted.'
-              : msg == 'invalid'
-              ? 'Only the maker can delete this transaction.'
-              : 'Failed to delete transaction'),
-    );
-  }
-
-
-  // ═════════════════════════════════════════════════════════════════
-  // Fund Transfer (account → account)
-  //   Add / Edit / Delete / Get (list + single).
-  //   Authorize / Unauthorize / Reverse are handled by the generic
-  //   transactions.php endpoint via authorizeTxn / unAuthorizeTxn /
-  //   reverseTxn above.
-  // ═════════════════════════════════════════════════════════════════
-
-  /// GET list — supports optional state filter and search.
-  Future<List<FundTransferListItem>> getFundTransfers({
-    String? state,
-    String? search,
-    CancelToken? cancelToken,
-  }) async {
-    final response = await _api.get(
-      endpoint: '/journal/fundTransfer.php',
-      queryParams: {
-        if (state != null && state.isNotEmpty) 'state': state,
-        if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
-      },
-      cancelToken: cancelToken,
-    );
-    return _parseList(
-      response.data,
-      FundTransferListItem.fromMap,
-      fallback: 'Failed to load fund transfers',
-    );
-  }
-
-  /// GET single — used by the edit form.
-  Future<FundTransferDetail> getFundTransferByReference({
-    required String reference,
-    CancelToken? cancelToken,
-  }) async {
-    final response = await _api.get(
-      endpoint: '/journal/fundTransfer.php',
-      queryParams: {'ref': reference},
-      cancelToken: cancelToken,
-    );
-
-    final body = _asMap(response.data);
-    if (body == null) throw ApiException('Invalid server response');
-
-    // Server returns {msg: 'not_found'} / {msg: 'invalid_type'} on bad refs.
-    final msg = body['msg']?.toString().toLowerCase() ?? '';
-    if (msg.isNotEmpty && msg != 'success') {
-      throw ApiException(
-        body['error']?.toString() ??
-            (msg == 'not_found'
-                ? 'Fund transfer not found.'
-                : msg == 'invalid_type'
-                ? 'This reference is not a fund transfer.'
-                : msg == 'missing_ref'
-                ? 'Missing reference.'
-                : 'Failed to load fund transfer'),
-      );
-    }
-
-    return FundTransferDetail.fromMap(body);
-  }
-
-  /// POST — create a new account → account transfer (always Pending).
-  /// Returns the new trnReference.
-  Future<String> addFundTransfer({
-    required String usrName,
-    required int fromAccount,
-    required String fromAccCcy,
-    required int toAccount,
-    required String toAccCcy,
-    required double amount,
-    required String narration,
-  }) async {
-    final response = await _api.post(
-      endpoint: '/journal/fundTransfer.php',
-      data: {
-        'usrName': usrName,
-        'fromAccount': fromAccount,
-        'fromAccCcy': fromAccCcy,
-        'toAccount': toAccount,
-        'toAccCcy': toAccCcy,
-        'amount': amount,
-        'narration': narration,
-      },
-    );
-
-    final body = _asMap(response.data);
-    if (body == null) throw ApiException('Invalid server response');
-
-    final msg = body['msg']?.toString().toLowerCase() ?? '';
-    if (msg == 'success') {
-      final ref = body['reference']?.toString();
-      if (ref == null || ref.isEmpty) {
-        throw ApiException('Server returned success but no reference');
-      }
-      return ref;
-    }
-
-    throw ApiException(
-      body['error']?.toString() ??
-          (msg == 'empty'
-              ? 'Please fill in all fields.'
-              : msg == 'same_account'
-              ? 'From and To accounts must be different.'
-              : msg == 'currency_unmatch'
-              ? 'From and To accounts must share the same currency.'
-              : msg == 'blocked'
-              ? 'One of the accounts is blocked.'
-              : msg == 'no_limit'
-              ? 'The account has exceeded its credit limit.'
-              : msg == 'invalid_user'
-              ? 'Invalid user.'
-              : msg == 'failed'
-              ? 'The fund transfer could not be created.'
-              : msg.isEmpty
-              ? 'Failed to create fund transfer'
-              : msg),
-    );
-  }
-
-  /// PUT — edit a Pending fund transfer. Maker only.
-  Future<void> editFundTransfer({
-    required String reference,
-    required String usrName,
-    required String fromAccCcy,
-    required String toAccCcy,
-    required int fromAccount,
-    required int toAccount,
-    required double amount,
-    required String narration,
-  }) async {
-    final response = await _api.put(
-      endpoint: '/journal/fundTransfer.php',
-      data: {
-        'reference': reference,
-        'usrName': usrName,
-        'fromAccount': fromAccount,
-        'toAccount': toAccount,
-        'fromAccCcy': fromAccCcy,
-        'toAccCcy': toAccCcy,
-        'amount': amount,
-        'narration': narration,
-      },
-    );
-
-    final body = _asMap(response.data);
-    if (body == null) throw ApiException('Invalid server response');
-
-    final msg = body['msg']?.toString().toLowerCase() ?? '';
-    if (msg == 'success') return;
-
-    throw ApiException(
-      body['error']?.toString() ??
-          (msg == 'empty'
-              ? 'Please fill in all fields.'
-              : msg == 'same_account'
-              ? 'From and To accounts must be different.'
-              : msg == 'blocked'
-              ? 'One of the accounts is blocked.'
-              : msg == 'no_limit'
-              ? 'The account has exceeded its credit limit.'
-              : msg == 'not_found'
-              ? 'Fund transfer not found.'
-              : msg == 'invalid_type'
-              ? 'This reference is not a fund transfer.'
-              : msg == 'invalid_action'
-              ? 'Only Pending fund transfers can be edited.'
-              : msg == 'invalid'
-              ? 'Only the maker can edit this fund transfer.'
-              : msg == 'failed'
-              ? 'The fund transfer could not be updated.'
-              : msg.isEmpty
-              ? 'Failed to update fund transfer'
-              : msg),
-    );
-  }
-
-  /// DELETE — soft delete a Pending fund transfer. Maker only.
-  /// Keeps the header row, marks it Deleted, and drops the detail legs.
-  Future<void> deleteFundTransfer({
-    required String reference,
-    required String usrName,
-  }) async {
-    final response = await _api.delete(
-      endpoint: '/journal/fundTransfer.php',
-      data: {'reference': reference, 'usrName': usrName},
-    );
-
-    final body = _asMap(response.data);
-    if (body == null) throw ApiException('Invalid server response');
-
-    final msg = body['msg']?.toString().toLowerCase() ?? '';
-    if (msg == 'success') return;
-
-    throw ApiException(
-      body['error']?.toString() ??
-          (msg == 'empty'
-              ? 'Missing reference or user.'
-              : msg == 'not_found'
-              ? 'Fund transfer not found.'
-              : msg == 'invalid_type'
-              ? 'This reference is not a fund transfer.'
-              : msg == 'invalid_action'
-              ? 'Only Pending fund transfers can be deleted.'
-              : msg == 'invalid'
-              ? 'Only the maker can delete this fund transfer.'
-              : msg == 'failed'
-              ? 'The fund transfer could not be deleted.'
-              : msg.isEmpty
-              ? 'Failed to delete fund transfer'
-              : msg),
-    );
-  }
-
-  Future<ExchangeDetail> getExchangeByReference({
-    required String reference,
-    CancelToken? cancelToken,
-  }) async {
-    final res = await _api.get(
-      endpoint: '/journal/crossCurrency.php',
-      queryParams: {'ref': reference},
-      cancelToken: cancelToken,
-    );
-    final body = _asMap(res.data);
-    if (body == null) throw ApiException('Invalid server response');
-
-    final msg = body['msg']?.toString().toLowerCase() ?? '';
-    if (msg.isNotEmpty && msg != 'success') {
-      throw ApiException(
-        body['error']?.toString() ??
-            (msg == 'not_found'
-                ? 'Exchange transfer not found.'
-                : msg == 'invalid_type'
-                ? 'This reference is not an exchange transfer.'
-                : 'Failed to load exchange transfer'),
-      );
-    }
-    return ExchangeDetail.fromMap(body);
-  }
-
-  Future<List<ExchangeListItem>> getExchangeList({
-    String? state,
-    String? search,
-    CancelToken? cancelToken,
-  }) async {
-    final res = await _api.get(
-      endpoint: '/journal/crossCurrency.php',
-      queryParams: {
-        if (state != null && state.isNotEmpty) 'state': state,
-        if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
-      },
-      cancelToken: cancelToken,
-    );
-    return _parseList(
-      res.data,
-      ExchangeListItem.fromMap,
-      fallback: 'Failed to load exchange transfers',
-    );
-  }
-
-  Future<String> addExchangeTransfer({
-    required String usrName,
-    required ExchangeLeg debit,
-    required ExchangeLeg credit,
-  }) async {
-    final records = ExchangeDraft(
-      usrName: usrName,
-      debit: debit,
-      credit: credit,
-    ).toRecords();
-
-    final res = await _api.post(
-      endpoint: '/journal/crossCurrency.php',
-      data: {
-        'usrName': usrName,
-        'records': records,
-      },
-    );
-
-    final body = _asMap(res.data);
-    if (body == null) throw ApiException('Invalid server response');
-
-    if (body['msg']?.toString().toLowerCase() == 'success') {
-      return '${body['reference'] ?? ''}';
-    }
-    throw ApiException(_fxErrorText('${body['msg'] ?? ''}', body));
-  }
-
-  Future<void> editExchangeTransfer({
-    required String reference,
-    required String usrName,
-    required ExchangeLeg debit,
-    required ExchangeLeg credit,
-  }) async {
-    final res = await _api.put(
-      endpoint: '/journal/crossCurrency.php',
-      data: ExchangeEditDraft(
-        reference: reference,
-        usrName: usrName,
-        debit: debit,
-        credit: credit,
-      ).toMap(),
-    );
-    final body = _asMap(res.data);
-    if (body == null) throw ApiException('Invalid server response');
-    if (body['msg']?.toString().toLowerCase() == 'success') return;
-    throw ApiException(_fxErrorText('${body['msg'] ?? ''}', body));
-  }
-
-  Future<void> deleteExchangeTransfer({
-    required String reference,
-    required String usrName,
-  }) async {
-    final response = await _api.delete(
-      endpoint: '/journal/crossCurrency.php',
-      data: {'reference': reference, 'usrName': usrName},
-    );
-    final body = _asMap(response.data);
-    if (body == null) throw ApiException('Invalid server response');
-    if (body['msg']?.toString().toLowerCase() == 'success') return;
-    throw ApiException(_fxErrorText('${body['msg'] ?? ''}', body));
-  }
-
-  String _fxErrorText(String code, Map<String, dynamic> body) {
-    final serverErr = body['error']?.toString();
-    if (serverErr != null && serverErr.isNotEmpty) return serverErr;
-    return switch (code.toLowerCase()) {
-      'empty' => 'Please fill in all fields.',
-      'same_account' => 'Debit and credit accounts must be different.',
-      'same_ccy' => 'Exchange requires two different currencies.',
-      'ccy_mismatch' => 'Leg currency does not match the account currency.',
-      'blocked' => 'One of the accounts is blocked.',
-      'no_limit' => 'The account has exceeded its credit limit.',
-      'not_found' => 'Exchange transfer not found.',
-      'invalid_type' => 'This reference is not an exchange transfer.',
-      'invalid_action' => 'Only Pending exchange transfers can be modified.',
-      'invalid' => 'Only the maker can perform this action.',
-      'invalid_legs' => 'An exchange needs exactly one debit and one credit leg.',
-      'invalid_user' => 'Invalid user.',
-      'failed' => 'The exchange transfer could not be processed.',
-      _ => 'Exchange transfer failed.',
-    };
   }
 
   ///Users .....................................................................
@@ -1681,12 +1289,7 @@ class Repositories {
     );
     return response.data;
   }
-  Future<List<UsersReportModel>> getUsersReport({
-    String? usrName,
-    int? status,
-    int? branch,
-    int? role,
-  }) async {
+  Future<List<UsersReportModel>> getUsersReport({String? usrName, int? status, int? branch, int? role}) async {
     final response = await _api.post(
       endpoint: "/reports/usersList.php",
       data: {
@@ -1809,14 +1412,10 @@ class Repositories {
     return response.data;
   }
 
-  ///Reports ...................................................................
-  // Account Statement
-  Future<AccountStatementModel> getAccountStatement({
-    required int account,
-    required String fromDate,
-    required String toDate,
-    bool unlock = false,
-  }) async {
+  //Reports ...................................................................
+
+  /// Account Statement
+  Future<AccountStatementModel> getAccountStatement({required int account, required String fromDate, required String toDate, bool unlock = false}) async {
     final response = await _api.post(
       endpoint: "/reports/accountStatement.php",
       data: {
@@ -1849,14 +1448,7 @@ class Repositories {
 
     return AccountStatementModel.fromApiResponse(decodedData);
   }
-
-  Future<GlStatementModel> getGlStatement({
-    required int account,
-    required String currency,
-    required int branchCode,
-    required String fromDate,
-    required String toDate,
-  }) async {
+  Future<GlStatementModel> getGlStatement({required int account, required String currency, required int branchCode, required String fromDate, required String toDate}) async {
     final response = await _api.post(
       endpoint: "/reports/glStatement.php",
       data: {
@@ -1884,11 +1476,7 @@ class Repositories {
 
     return GlStatementModel.fromApiResponse(decodedData);
   }
-
-  Future<List<TrialBalanceModel>> getTrialBalance({
-    required String date,
-    int? branchCode,
-  }) async {
+  Future<List<TrialBalanceModel>> getTrialBalance({required String date, int? branchCode}) async {
     final response = await _api.post(
       endpoint: "/reports/trialBalance.php",
       data: {"date": date, "branch": branchCode},
@@ -1912,7 +1500,6 @@ class Repositories {
 
     return [];
   }
-
   Future<BalanceSheetModel> balanceSheet({int? branchCode, CancelToken? cancelToken}) async {
     final response = await _api.get(
       endpoint: "/reports/balanceSheet.php",
@@ -1937,13 +1524,7 @@ class Repositories {
 
     throw Exception("Unexpected response format");
   }
-
-
-  Future<DashboardStatsModel> getDashboardStats({
-    String? fromDate,
-    String? toDate,
-    CancelToken? cancelToken,
-  }) async {
+  Future<DashboardStatsModel> getDashboardStats({String? fromDate, String? toDate, CancelToken? cancelToken}) async {
     final response = await _api.post(
       endpoint: '/reports/counts.php',
       data: {
@@ -1964,10 +1545,7 @@ class Repositories {
   }
 
   //Get Transaction Details By Ref
-  Future<TxnReportByRefModel> getTransactionByRefReport({
-    required String ref,
-    CancelToken? cancelToken,
-  }) async {
+  Future<TxnReportByRefModel> getTransactionByRefReport({required String ref, CancelToken? cancelToken}) async {
     final response = await _api.get(
       endpoint: "/reports/referenceHistory.php",
       queryParams: {"ref": ref},
@@ -1990,13 +1568,7 @@ class Repositories {
 
     return TxnReportByRefModel.fromMap(decodedData);
   }
-
-  Future<CashBalancesModel?> cashBalances({
-    int? branchId,
-    String? from,
-    String? to,
-    CancelToken? cancelToken,
-  }) async {
+  Future<CashBalancesModel?> cashBalances({int? branchId, String? from, String? to, CancelToken? cancelToken}) async {
     final queryParams = <String, dynamic>{
       'brcID': branchId,
     };
@@ -2022,10 +1594,7 @@ class Repositories {
     }
     return null;
   }
-
-  Future<List<CashBalancesModel>> allCashBalances({
-    CancelToken? cancelToken,
-  }) async {
+  Future<List<CashBalancesModel>> allCashBalances({CancelToken? cancelToken}) async {
     final response = await _api.get(
       endpoint: "/reports/cashBalance.php",
       cancelToken: cancelToken,
@@ -2053,7 +1622,6 @@ class Repositories {
 
     throw Exception("Unexpected response format");
   }
-
   Future<List<IncomeStatementModel>> getIncomeStatement({String? startDate, String? endDate}) async {
     final response = await _api.post(
       endpoint: "/reports/incomeStatement.php",
@@ -2086,16 +1654,9 @@ class Repositories {
     return [];
   }
 
-// ═════════════════════════════════════════════════════════════════
-// AR / AP Report
-// ═════════════════════════════════════════════════════════════════
-  Future<ArApReportModel> getArApReport({
-    String? name,
-    String? ccy,
-    String? type, // '' | 'ar' | 'ap'
-    bool includeZero = false,
-    CancelToken? cancelToken,
-  }) async {
+
+  /// AR / AP Report
+  Future<ArApReportModel> getArApReport({String? name, String? ccy, String? type, bool includeZero = false, CancelToken? cancelToken}) async {
     final response = await _api.post(
       endpoint: "/reports/stakeholderBalances.php", // adjust to your server path
       data: {
@@ -2123,11 +1684,7 @@ class Repositories {
 
     return ArApReportModel.fromApiResponse(decodedData);
   }
-
-  Future<List<AllBalancesModel>> allBalances({
-    int? catId,
-    CancelToken? cancelToken,
-  }) async {
+  Future<List<AllBalancesModel>> allBalances({int? catId, CancelToken? cancelToken}) async {
     final response = await _api.get(
       endpoint: "/reports/allBalances.php",
       queryParams: {"cat": catId},
@@ -2152,7 +1709,6 @@ class Repositories {
 
     return [];
   }
-
   Future<List<TransactionReportModel>> transactionReport({
     String? fromDate,
     String? toDate,
@@ -2195,26 +1751,20 @@ class Repositories {
   }
 
   /// Transaction Types ........................................................
-  Future<Map<String, dynamic>> addTxnType({
-    required TxnTypeModel newType,
-  }) async {
+  Future<Map<String, dynamic>> addTxnType({required TxnTypeModel newType}) async {
     final response = await _api.post(
       endpoint: "/setting/trnType.php",
       data: newType.toMap(),
     );
     return response.data;
   }
-
-  Future<Map<String, dynamic>> updateTxnType({
-    required TxnTypeModel newType,
-  }) async {
+  Future<Map<String, dynamic>> updateTxnType({required TxnTypeModel newType}) async {
     final response = await _api.put(
       endpoint: "/setting/trnType.php",
       data: newType.toMap(),
     );
     return response.data;
   }
-
   Future<Map<String, dynamic>> deleteTxnType({required String trnCode}) async {
     final response = await _api.delete(
       endpoint: "/setting/trnType.php",
@@ -2222,11 +1772,7 @@ class Repositories {
     );
     return response.data;
   }
-
-  Future<List<TxnTypeModel>> getTxnTypes({
-    String? trnCode,
-    CancelToken? cancelToken,
-  }) async {
+  Future<List<TxnTypeModel>> getTxnTypes({String? trnCode, CancelToken? cancelToken}) async {
     final queryParams = {'trntCode': trnCode};
     // Fetch data from API
     final response = await _api.get(
@@ -2256,12 +1802,7 @@ class Repositories {
 
     return [];
   }
-
-  Future<List<UserLogModel>> getUserLog({
-    String? usrName,
-    String? fromDate,
-    String? toDate,
-  }) async {
+  Future<List<UserLogModel>> getUserLog({String? usrName, String? fromDate, String? toDate}) async {
     final queryParams = {
       'usrName': usrName,
       'fromDate': fromDate,
@@ -2390,10 +1931,7 @@ class Repositories {
       await file.delete();
     }
   }
-  Future<void> restoreBackup(
-      String filePath, {
-        Function(String)? onProgress,
-      }) async {
+  Future<void> restoreBackup(String filePath, {Function(String)? onProgress}) async {
     try {
       final file = File(filePath);
       if (!await file.exists()) {
@@ -2457,104 +1995,6 @@ class Repositories {
       throw Exception('Database restore failed: $e');
     }
   }
-  // Future<void> restoreBackup(String filePath, {Function(String)? onProgress}) async {
-  //   try {
-  //     final host = 'localhost';
-  //     final port = '3306';
-  //     final username = 'root';
-  //     final database = 'zaitoondb';
-  //
-  //     // Laragon's default MySQL password is blank (same as XAMPP)
-  //     // If you set a password in Laragon, add: -p, 'your_password'
-  //
-  //     String mysqlPath;
-  //     if (Platform.isWindows) {
-  //       // Check for Laragon first, then fallback to XAMPP
-  //       final laragonPath = 'C:\\laragon\\bin\\mysql';
-  //       final xamppPath = 'C:\\xampp\\mysql\\bin\\mysql.exe';
-  //
-  //       if (await Directory(laragonPath).exists()) {
-  //         // Find the MySQL version folder dynamically
-  //         final dir = Directory(laragonPath);
-  //         final entries = await dir.list().toList();
-  //         final mysqlDirs = entries.whereType<Directory>()
-  //             .where((d) => d.path.contains('mysql-'))
-  //             .toList();
-  //
-  //         if (mysqlDirs.isNotEmpty) {
-  //           // Use the first MySQL version found
-  //           mysqlPath = '${mysqlDirs.first.path}\\bin\\mysql.exe';
-  //         } else {
-  //           throw Exception('No MySQL installation found in Laragon');
-  //         }
-  //       } else if (await File(xamppPath).exists()) {
-  //         mysqlPath = xamppPath;
-  //       } else {
-  //         throw Exception('Neither Laragon nor XAMPP MySQL found');
-  //       }
-  //     } else if (Platform.isMacOS) {
-  //       // Laragon doesn't exist on macOS, so keep XAMPP fallback
-  //       mysqlPath = '/Applications/XAMP/xampfiles/bin/mysql';
-  //     } else {
-  //       // Linux
-  //       mysqlPath = '/opt/lampp/bin/mysql';
-  //     }
-  //
-  //     final mysqlFile = File(mysqlPath);
-  //     if (!await mysqlFile.exists()) {
-  //       throw Exception('MySQL executable not found at: $mysqlPath');
-  //     }
-  //
-  //     final backupFile = File(filePath);
-  //     if (!await backupFile.exists()) {
-  //       throw Exception('Backup file not found at: $filePath');
-  //     }
-  //
-  //     onProgress?.call('Starting MySQL restore...');
-  //
-  //     // NOTE: Laragon's MySQL might have a different default password
-  //     // If Laragon asks for password, add these args:
-  //     // '-p', 'your_password',
-  //     // But by default, Laragon has no password just like XAMPP
-  //
-  //     final process = await Process.start(
-  //       mysqlPath,
-  //       [
-  //         '-h', host,
-  //         '-P', port,
-  //         '-u', username,
-  //         '--default-character-set=utf8mb4',
-  //         database,
-  //       ],
-  //       runInShell: true,
-  //     );
-  //
-  //     final fileSize = await backupFile.length();
-  //     var bytesRead = 0;
-  //
-  //     await backupFile.openRead().map((chunk) {
-  //       bytesRead += chunk.length;
-  //       final progress = (bytesRead / fileSize * 100).toStringAsFixed(1);
-  //       onProgress?.call('Restoring: $progress%');
-  //       return chunk;
-  //     }).pipe(process.stdin);
-  //
-  //     await process.stdin.close();
-  //
-  //     final exitCode = await process.exitCode;
-  //
-  //     if (exitCode != 0) {
-  //       final stderr = await process.stderr
-  //           .transform(utf8.decoder)
-  //           .join();
-  //       throw Exception('Restore failed (exit code: $exitCode): $stderr');
-  //     }
-  //
-  //     onProgress?.call('Restore completed successfully!');
-  //   } catch (e) {
-  //     throw Exception('Database restore failed: $e');
-  //   }
-  // }
   Future<void> openBackupFolder() async {
     try {
       String backupDir;
@@ -2614,7 +2054,6 @@ class Repositories {
     }
   }
 
-  ///Employees .................................................................
   ///Employees .................................................................
   Future<List<EmployeeModel>> getEmployees({
     String? cat,
@@ -3759,10 +3198,9 @@ class Repositories {
   }) async {
     try {
       final response = await _api.get(
-        endpoint: "/shipment/shipment.php",
+        endpoint: "/shipment/shippingItem.php",
         queryParams: {
-          'action': 'get',
-          'shpId': shpId,
+          'input': shpId,
         },
       );
 
@@ -3868,10 +3306,7 @@ class Repositories {
           'user': usrName,
           'shpID': shpId,
           'accountNo': accountNo,
-
-          // PHP API expects itemsDescription.
           'itemDescription': itemDescription,
-
           'qty': qty,
           'cbm': cbm,
           'weight': weight,
@@ -3880,7 +3315,6 @@ class Repositories {
           'extraCharges': extraCharges,
         },
       );
-
       final data = _validateResponse(response.data);
 
       final shpItmId = data['shpItmId'];
@@ -4143,17 +3577,7 @@ class Repositories {
       throw ApiException('Invalid server response.');
     }
 
-    final data = Map<String, dynamic>.from(response);
-
-    if (data['ok'] != true) {
-      throw ApiException(
-        data['msg']?.toString() ??
-            data['message']?.toString() ??
-            'Shipment operation failed.',
-      );
-    }
-
-    return data;
+    return Map<String, dynamic>.from(response);
   }
 
   // ═════════════════════════════════════════════════════════════════

@@ -72,7 +72,7 @@ class CashTxnBloc extends Bloc<CashTxnEvent, CashTxnState> {
       ) async {
     emit(const CashTxnSubmitting());
     try {
-      final result = await _repo.cashFlowOperations(newTransaction: e.draft);
+      final result = await _repo.addCashTxn(newTransaction: e.draft);
       final detail = await _reloadForPrint(result, e.draft.trnReference);
       emit(CashTxnSuccess(result, detail: detail));
     } on ApiException catch (x) {
@@ -88,7 +88,7 @@ class CashTxnBloc extends Bloc<CashTxnEvent, CashTxnState> {
       ) async {
     emit(const CashTxnSubmitting());
     try {
-      final result = await _repo.updateTxn(newTxn: e.draft);
+      final result = await _repo.updateCashTxn(newTxn: e.draft);
       final detail = await _reloadForPrint(result, e.draft.trnReference);
       emit(CashTxnSuccess(result, detail: detail));
     } on ApiException catch (x) {

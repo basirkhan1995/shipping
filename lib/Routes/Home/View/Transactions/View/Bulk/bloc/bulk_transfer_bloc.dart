@@ -8,8 +8,7 @@ import 'bulk_transfer_state.dart';
 class BulkTransferBloc extends Bloc<BulkTransferEvent, BulkTransferState> {
   final Repositories _repo;
 
-  BulkTransferBloc(this._repo)
-      : super(BulkTransferEditing(
+  BulkTransferBloc(this._repo) : super(BulkTransferEditing(
     rows: [BulkTransferRow(rowId: DateTime.now().microsecondsSinceEpoch)],
     totalDebit: 0,
     totalCredit: 0,
@@ -132,10 +131,7 @@ class BulkTransferBloc extends Bloc<BulkTransferEvent, BulkTransferState> {
   }
 
   // ── load for edit ──────────────────────────────────────────
-  Future<void> _onLoadForEdit(
-      BulkTransferLoadForEditRequested e,
-      Emitter<BulkTransferState> emit,
-      ) async {
+  Future<void> _onLoadForEdit(BulkTransferLoadForEditRequested e, Emitter<BulkTransferState> emit) async {
     emit(const BulkTransferLoadingForEdit());
     try {
       final body = await _repo.getBulkTransferByReference(
@@ -217,10 +213,7 @@ class BulkTransferBloc extends Bloc<BulkTransferEvent, BulkTransferState> {
   }
 
   // ── submit ─────────────────────────────────────────────────
-  Future<void> _onSubmit(
-      BulkTransferSubmitted e,
-      Emitter<BulkTransferState> emit,
-      ) async {
+  Future<void> _onSubmit(BulkTransferSubmitted e, Emitter<BulkTransferState> emit,) async {
     final cur = _editing;
 
     if (!cur.canSubmit) {
@@ -268,7 +261,7 @@ class BulkTransferBloc extends Bloc<BulkTransferEvent, BulkTransferState> {
         userName: e.userName,
         records: records,
       )
-          : await _repo.bulkTransfer(
+          : await _repo.addBulkTransfer(
         userName: e.userName,
         records: records,
       );
@@ -315,10 +308,7 @@ class BulkTransferBloc extends Bloc<BulkTransferEvent, BulkTransferState> {
   }
 
   // ── delete ─────────────────────────────────────────────────
-  Future<void> _onDelete(
-      BulkTransferDeleteRequested e,
-      Emitter<BulkTransferState> emit,
-      ) async {
+  Future<void> _onDelete(BulkTransferDeleteRequested e, Emitter<BulkTransferState> emit) async {
     final cur = _editing;
 
     try {

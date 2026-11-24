@@ -293,7 +293,7 @@ class OrdersTxnBloc extends Bloc<OrdersTxnEvent, OrdersTxnState> {
         userName: e.userName,
         records: records,
       )
-          : await _repo.bulkTransfer(
+          : await _repo.addBulkTransfer(
         userName: e.userName,
         records: records,
       );

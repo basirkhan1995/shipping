@@ -1,6 +1,6 @@
-// lib/features/fund_transfer/bloc/fund_transfer_bloc.dart
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+
 import '../../../../../../../Services/api_exception.dart';
 import '../../../../../../../Services/repository.dart';
 import '../model/ft_model.dart';
@@ -48,7 +48,7 @@ class FundTransferBloc extends Bloc<FundTransferEvent, FundTransferState> {
     on<LoadFundTransferDetailEvent>((event, emit) async {
       emit(const FundTransferLoading());
       try {
-        final detail = await _repo.getFundTransferByReference(
+        final detail = await _repo.getFundTransferByRef(
           reference: event.reference,
         );
         emit(FundTransferDetailLoaded(detail));
@@ -63,7 +63,7 @@ class FundTransferBloc extends Bloc<FundTransferEvent, FundTransferState> {
     on<AddFundTransferEvent>((event, emit) async {
       emit(const FundTransferSubmitting());
       try {
-        final ref = await _repo.addFundTransfer(
+        final body = await _repo.addFundTransfer(
           usrName: event.usrName,
           fromAccount: event.fromAccount,
           fromAccCcy: event.fromAccCcy,
@@ -72,6 +72,14 @@ class FundTransferBloc extends Bloc<FundTransferEvent, FundTransferState> {
           amount: event.amount,
           narration: event.narration,
         );
+
+        final errorText = _ftMsgError(body);
+        if (errorText != null) {
+          emit(FundTransferError(errorText));
+          return;
+        }
+
+        final ref = body['reference']?.toString() ?? '';
         emit(FundTransferSubmitSuccess(
           'Fund transfer created.',
           reference: ref,
@@ -87,7 +95,7 @@ class FundTransferBloc extends Bloc<FundTransferEvent, FundTransferState> {
     on<EditFundTransferEvent>((event, emit) async {
       emit(const FundTransferSubmitting());
       try {
-        await _repo.editFundTransfer(
+        final body = await _repo.editFundTransfer(
           reference: event.reference,
           usrName: event.usrName,
           fromAccount: event.fromAccount,
@@ -97,6 +105,13 @@ class FundTransferBloc extends Bloc<FundTransferEvent, FundTransferState> {
           amount: event.amount,
           narration: event.narration,
         );
+
+        final errorText = _ftMsgError(body);
+        if (errorText != null) {
+          emit(FundTransferError(errorText));
+          return;
+        }
+
         emit(FundTransferSubmitSuccess(
           'Fund transfer updated.',
           reference: event.reference,
@@ -122,10 +137,16 @@ class FundTransferBloc extends Bloc<FundTransferEvent, FundTransferState> {
       }
 
       try {
-        await _repo.deleteFundTransfer(
+        final body = await _repo.deleteFundTransfer(
           reference: event.reference,
           usrName: event.usrName,
         );
+
+        final errorText = _ftMsgError(body);
+        if (errorText != null) {
+          _rowError(emit, errorText);
+          return;
+        }
 
         final after = state;
         if (after is FundTransferListLoaded) {
@@ -164,6 +185,36 @@ class FundTransferBloc extends Bloc<FundTransferEvent, FundTransferState> {
   // ══════════════════════════════════════════════════════════
   // Helpers
   // ══════════════════════════════════════════════════════════
+
+  /// Returns null if `msg` is empty or 'success' (no error).
+  /// Otherwise returns a user-friendly message.
+  ///
+  /// Codes are the union of add/edit/delete responses; unknown codes fall
+  /// back to the server's `error` field, then a generic message.
+  String? _ftMsgError(Map<String, dynamic> body) {
+    final msg = body['msg']?.toString().toLowerCase() ?? '';
+    if (msg.isEmpty || msg == 'success') return null;
+
+    final serverErr = body['error']?.toString();
+    if (serverErr != null && serverErr.isNotEmpty) return serverErr;
+
+    return switch (msg) {
+      'empty' => 'Please fill in all fields.',
+      'same_account' => 'From and To accounts must be different.',
+      'currency_unmatch' =>
+      'From and To accounts must share the same currency.',
+      'blocked' => 'One of the accounts is blocked.',
+      'no_limit' => 'The account has exceeded its credit limit.',
+      'invalid_user' => 'Invalid user.',
+      'not_found' => 'Fund transfer not found.',
+      'invalid_type' => 'This reference is not a fund transfer.',
+      'invalid_action' => 'This action is not allowed for this transfer.',
+      'invalid' => 'Only the maker can perform this action.',
+      'missing_ref' => 'Missing reference.',
+      'failed' => 'The fund transfer operation could not be completed.',
+      _ => 'Fund transfer operation failed.',
+    };
+  }
 
   void _reload() {
     final last = _lastLoad;

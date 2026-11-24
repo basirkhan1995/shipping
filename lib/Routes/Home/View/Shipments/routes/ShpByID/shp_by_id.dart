@@ -20,9 +20,7 @@ class ShpByIdView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) =>
-          ShpByIdBloc(context.read<Repositories>())
-            ..add(ShpByIdLoadRequested(shpId)),
+      create: (context) => ShpByIdBloc(context.read<Repositories>())..add(ShpByIdLoadRequested(shpId)),
       child: _ShpByIdBody(shpId: shpId),
     );
   }
@@ -691,7 +689,7 @@ class _ItemRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    item.fullName ?? '—',
+                    item.fullName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: textTheme.bodySmall?.copyWith(

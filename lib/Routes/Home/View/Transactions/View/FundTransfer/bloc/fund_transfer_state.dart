@@ -1,4 +1,4 @@
-// lib/features/fund_transfer/bloc/fund_transfer_state.dart
+
 part of 'fund_transfer_bloc.dart';
 
 abstract class FundTransferState extends Equatable {

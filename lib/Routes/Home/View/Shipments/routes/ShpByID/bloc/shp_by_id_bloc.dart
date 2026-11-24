@@ -20,11 +20,19 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
     on<ShpByIdUpdateItemStatusRequested>(_onUpdateItemStatus);
   }
 
+  /// Pulls a plain, lower-cased server message out of whatever the repo returned.
+  /// Works whether the repo returned a String, a Map, or threw an ApiException.
+  String _normalizeMsg(Object? result) {
+    if (result == null) return 'failed';
+    if (result is String) return result.trim().toLowerCase();
+    if (result is Map) {
+      final m = result['msg'] ?? result['message'];
+      return m?.toString().trim().toLowerCase() ?? 'failed';
+    }
+    return result.toString().trim().toLowerCase();
+  }
 
-  Future<void> _onUpdateItemStatus(
-      ShpByIdUpdateItemStatusRequested event,
-      Emitter<ShpByIdState> emit,
-      ) async {
+  Future<void> _onUpdateItemStatus(ShpByIdUpdateItemStatusRequested event, Emitter<ShpByIdState> emit) async {
     final current = state;
     if (current is! ShpByIdLoaded) return;
 
@@ -63,20 +71,14 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
   // ─────────────────────────────────────────────────────────
   // LOAD
   // ─────────────────────────────────────────────────────────
-  Future<void> _onLoadRequested(
-      ShpByIdLoadRequested event,
-      Emitter<ShpByIdState> emit,
-      ) async {
+  Future<void> _onLoadRequested(ShpByIdLoadRequested event, Emitter<ShpByIdState> emit) async {
     final previous =
     state is ShpByIdLoaded ? (state as ShpByIdLoaded).details : null;
     emit(ShpByIdLoading(previous: previous));
     await _fetch(emit, event.shpId, previous: previous);
   }
 
-  Future<void> _onRefreshed(
-      ShpByIdRefreshed event,
-      Emitter<ShpByIdState> emit,
-      ) async {
+  Future<void> _onRefreshed(ShpByIdRefreshed event, Emitter<ShpByIdState> emit) async {
     final previous =
     state is ShpByIdLoaded ? (state as ShpByIdLoaded).details : null;
     emit(ShpByIdLoading(previous: previous));
@@ -86,10 +88,7 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
   // ─────────────────────────────────────────────────────────
   // ADD ITEM
   // ─────────────────────────────────────────────────────────
-  Future<void> _onAddItem(
-      ShpByIdAddItemRequested event,
-      Emitter<ShpByIdState> emit,
-      ) async {
+  Future<void> _onAddItem(ShpByIdAddItemRequested event, Emitter<ShpByIdState> emit,) async {
     final current = state;
     if (current is! ShpByIdLoaded) return;
 
@@ -100,7 +99,7 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
     ));
 
     try {
-      await _repo.addShpItem(
+      final result = await _repo.addShpItem(
         usrName: event.usrName,
         shpId: event.shpId,
         accountNo: event.accountNo,
@@ -113,12 +112,36 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
         extraCharges: event.extraCharges,
       );
 
-      // Re-fetch fresh details (server-computed totals etc.)
-      final fresh = await _repo.getShipmentDetails(shpId: event.shpId);
-      emit(ShpByIdLoaded(
-        fresh,
-        successMessage: 'Item added',
-      ));
+      // ── Interpret the server's `msg` ─────────────────────────────
+      switch (_normalizeMsg(result)) {
+        case 'success':
+          final fresh = await _repo.getShipmentDetails(shpId: event.shpId);
+          emit(ShpByIdLoaded(fresh, successMessage: 'Item added'));
+          return;
+
+        case 'over limit':
+          emit(current.copyWith(
+            clearPendingAction: true,
+            actionError: 'Account has reached its debit limit. '
+                'The item was not added.',
+          ));
+          return;
+
+        case 'blocked':
+          emit(current.copyWith(
+            clearPendingAction: true,
+            actionError: 'This account is blocked. '
+                'The item was not added.',
+          ));
+          return;
+
+        default:
+          emit(current.copyWith(
+            clearPendingAction: true,
+            actionError: 'Operation failed: ${_normalizeMsg(result)}',
+          ));
+          return;
+      }
     } catch (e) {
       emit(current.copyWith(
         clearPendingAction: true,

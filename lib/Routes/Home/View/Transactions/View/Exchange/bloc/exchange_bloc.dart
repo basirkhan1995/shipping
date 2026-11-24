@@ -1,4 +1,3 @@
-
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 
@@ -27,7 +26,7 @@ class ExchangeBloc extends Bloc<ExchangeEvent, ExchangeState> {
       emit(ExchangeLoading(previous: before));
 
       try {
-        final rows = await _repo.getExchangeList(
+        final rows = await _repo.getExchangeTxn(
           state: event.state,
           search: event.search,
         );
@@ -50,7 +49,7 @@ class ExchangeBloc extends Bloc<ExchangeEvent, ExchangeState> {
       emit(const ExchangeLoading());
       try {
         final detail =
-        await _repo.getExchangeByReference(reference: event.reference);
+        await _repo.getExchangeTxnByRef(reference: event.reference);
         emit(ExchangeDetailLoaded(detail));
       } on ApiException catch (e) {
         emit(ExchangeError(e.message));
@@ -63,11 +62,19 @@ class ExchangeBloc extends Bloc<ExchangeEvent, ExchangeState> {
     on<AddExchangeEvent>((event, emit) async {
       emit(const ExchangeSubmitting());
       try {
-        final ref = await _repo.addExchangeTransfer(
+        final body = await _repo.addExchangeTxn(
           usrName: event.usrName,
           debit: event.debit,
           credit: event.credit,
         );
+
+        final errorText = _exchangeMsgError(body);
+        if (errorText != null) {
+          emit(ExchangeError(errorText));
+          return;
+        }
+
+        final ref = body['reference']?.toString() ?? '';
         emit(ExchangeSubmitSuccess(
           'Exchange transfer created.',
           reference: ref,
@@ -83,12 +90,19 @@ class ExchangeBloc extends Bloc<ExchangeEvent, ExchangeState> {
     on<EditExchangeEvent>((event, emit) async {
       emit(const ExchangeSubmitting());
       try {
-        await _repo.editExchangeTransfer(
+        final body = await _repo.editExchangeTxn(
           reference: event.reference,
           usrName: event.usrName,
           debit: event.debit,
           credit: event.credit,
         );
+
+        final errorText = _exchangeMsgError(body);
+        if (errorText != null) {
+          emit(ExchangeError(errorText));
+          return;
+        }
+
         emit(ExchangeSubmitSuccess(
           'Exchange transfer updated.',
           reference: event.reference,
@@ -114,10 +128,16 @@ class ExchangeBloc extends Bloc<ExchangeEvent, ExchangeState> {
       }
 
       try {
-        await _repo.deleteExchangeTransfer(
+        final body = await _repo.deleteExchangeTxn(
           reference: event.reference,
           usrName: event.usrName,
         );
+
+        final errorText = _exchangeMsgError(body);
+        if (errorText != null) {
+          _rowError(emit, errorText);
+          return;
+        }
 
         final after = state;
         if (after is ExchangeListLoaded) {
@@ -153,6 +173,39 @@ class ExchangeBloc extends Bloc<ExchangeEvent, ExchangeState> {
     });
   }
 
+  // ─────────────────────────────────────────────────────────
+  // HELPERS
+  // ─────────────────────────────────────────────────────────
+
+  /// Returns null if `msg` is empty or 'success' (i.e. no error).
+  /// Otherwise returns a user-friendly message derived from the body.
+  String? _exchangeMsgError(Map<String, dynamic> body) {
+    final msg = body['msg']?.toString().toLowerCase() ?? '';
+    if (msg.isEmpty || msg == 'success') return null;
+
+    // Prefer an explicit server-provided error text if present.
+    final serverErr = body['error']?.toString();
+    if (serverErr != null && serverErr.isNotEmpty) return serverErr;
+
+    return switch (msg) {
+      'empty' => 'Please fill in all fields.',
+      'same_account' => 'Debit and credit accounts must be different.',
+      'same_ccy' => 'Exchange requires two different currencies.',
+      'ccy_mismatch' => 'Leg currency does not match the account currency.',
+      'blocked' => 'One of the accounts is blocked.',
+      'no_limit' => 'The account has exceeded its credit limit.',
+      'not_found' => 'Exchange transfer not found.',
+      'invalid_type' => 'This reference is not an exchange transfer.',
+      'invalid_action' => 'Only Pending exchange transfers can be modified.',
+      'invalid' => 'Only the maker can perform this action.',
+      'invalid_legs' =>
+      'An exchange needs exactly one debit and one credit leg.',
+      'invalid_user' => 'Invalid user.',
+      'failed' => 'The exchange transfer could not be processed.',
+      _ => 'Exchange transfer failed.',
+    };
+  }
+
   void _reload() {
     final last = _lastLoad;
     if (last != null) {
@@ -166,10 +219,7 @@ class ExchangeBloc extends Bloc<ExchangeEvent, ExchangeState> {
   void _rowError(Emitter<ExchangeState> emit, String message) {
     final after = state;
     if (after is ExchangeListLoaded) {
-      emit(after.copyWith(
-        clearActionInProgress: true,
-        actionError: message,
-      ));
+      emit(after.copyWith(clearActionInProgress: true, actionError: message));
     } else {
       emit(ExchangeError(message));
     }

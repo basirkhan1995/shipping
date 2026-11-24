@@ -1,4 +1,4 @@
-// lib/features/fund_transfer/bloc/fund_transfer_event.dart
+
 part of 'fund_transfer_bloc.dart';
 
 abstract class FundTransferEvent extends Equatable {
