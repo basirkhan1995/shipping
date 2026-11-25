@@ -13,7 +13,9 @@ class ShipmentModel {
   final int createdBy;
   final String status;           // "pending" | "shipped" | "delivered"
   final String? createdByName;
-  final int totalItems;
+  final String? totalItems;
+  final String? totalWeight;
+  final String? totalCbm;
   final int totalReferences;
   final String totalRent;        // DECIMAL as string
 
@@ -30,8 +32,10 @@ class ShipmentModel {
     required this.createdBy,
     required this.status,
     this.createdByName,
-    required this.totalItems,
+     this.totalItems,
     required this.totalReferences,
+    this.totalWeight,
+    this.totalCbm,
     required this.totalRent,
   });
 
@@ -49,9 +53,11 @@ class ShipmentModel {
         createdBy: json['createdBy'] as int,
         status: json['status'] as String,
         createdByName: json['createdByName'] as String?,
-        totalItems: json['totalItems'] as int? ?? 0,
+        totalItems: json['totalItems'] as String?,
         totalReferences: json['totalReferences'] as int? ?? 0,
         totalRent: json['totalRent']?.toString() ?? '0',
+        totalCbm: json['totalCbm']?.toString() ?? '0',
+        totalWeight: json['totalWeight']?.toString() ?? '0',
       );
 
   Map<String, dynamic> toJson() => {

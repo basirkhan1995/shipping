@@ -18,6 +18,39 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
     on<ShpByIdDeleteItemRequested>(_onDeleteItem);
     on<ShpByIdActionErrorCleared>(_onActionErrorCleared);
     on<ShpByIdUpdateItemStatusRequested>(_onUpdateItemStatus);
+    on<ShpByIdExportRequested>(_onExportItems);
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // EXPORT ITEMS
+  // ─────────────────────────────────────────────────────────
+  Future<void> _onExportItems(
+      ShpByIdExportRequested event,
+      Emitter<ShpByIdState> emit,
+      ) async {
+    final current = state;
+    if (current is! ShpByIdLoaded) return;
+
+    // Note: ShpByIdAction enum doesn't have an 'export' action.
+    // If you want to disable UI buttons while exporting, add `export`
+    // to the enum in shp_by_id_state.dart. Otherwise, we just trigger the action.
+
+    emit(current.copyWith(
+      clearActionError: true,
+      clearSuccessMessage: true,
+    ));
+
+    try {
+      final filePath = await _repo.exportContainerItems(shpId: event.shpId);
+
+      emit(current.copyWith(
+        successMessage: 'File saved: ${filePath.split('/').last}',
+      ));
+    } catch (e) {
+      emit(current.copyWith(
+        actionError: 'Export failed: ${_msg(e)}',
+      ));
+    }
   }
 
   /// Pulls a plain, lower-cased server message out of whatever the repo returned.
@@ -26,7 +59,7 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
     if (result == null) return 'failed';
     if (result is String) return result.trim().toLowerCase();
     if (result is Map) {
-      final m = result['msg'] ?? result['message'];
+      final m = result['msg'];
       return m?.toString().trim().toLowerCase() ?? 'failed';
     }
     return result.toString().trim().toLowerCase();
@@ -45,9 +78,9 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
     try {
       // Recalculate status using server-side delivery movements.
       final status = await _repo.updateShpItemStatus(
-        usrName: event.usrName,
-        shpItmId: event.shpItmId,
-        status: event.status
+          usrName: event.usrName,
+          shpItmId: event.shpItmId,
+          status: event.status
       );
 
       // Fetch fresh shipment details.
@@ -88,7 +121,10 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
   // ─────────────────────────────────────────────────────────
   // ADD ITEM
   // ─────────────────────────────────────────────────────────
-  Future<void> _onAddItem(ShpByIdAddItemRequested event, Emitter<ShpByIdState> emit,) async {
+  Future<void> _onAddItem(
+      ShpByIdAddItemRequested event,
+      Emitter<ShpByIdState> emit,
+      ) async {
     final current = state;
     if (current is! ShpByIdLoaded) return;
 
@@ -112,11 +148,21 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
         extraCharges: event.extraCharges,
       );
 
-      // ── Interpret the server's `msg` ─────────────────────────────
+
+
       switch (_normalizeMsg(result)) {
         case 'success':
-          final fresh = await _repo.getShippingDetails(shpId: event.shpId);
-          emit(ShpByIdLoaded(fresh, successMessage: 'Item added'));
+          try {
+            final fresh = await _repo.getShippingDetails(shpId: event.shpId);
+            emit(ShpByIdLoaded(fresh, successMessage: 'Item added'));
+          } catch (e) {
+            // Server committed; refresh failed — still report success.
+            emit(current.copyWith(
+              clearPendingAction: true,
+              successMessage: 'Item added',
+              actionError: 'Reload failed: ${_msg(e)}',
+            ));
+          }
           return;
 
         case 'over limit':

@@ -112,7 +112,13 @@ class _ShpByIdBody extends StatelessWidget {
                 label: Text(tr.excelTitle),
                 disable: isMutating,
                 backgroundHover: Colors.green,
-                onPressed: null,
+                onPressed: isMutating
+                    ? null
+                    : () {
+                  context.read<ShpByIdBloc>().add(
+                    ShpByIdExportRequested(shpId: shpId),
+                  );
+                },
               ),
               SizedBox(width: 8),
               //Invoice Print
@@ -224,7 +230,7 @@ class _ShipmentHeaderStrip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
       decoration: BoxDecoration(
         color: color.surface,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: color.outlineVariant.withValues(alpha: 0.4)),
       ),
       child: SingleChildScrollView(
@@ -713,7 +719,7 @@ class _ItemRow extends StatelessWidget {
             numCell(_fmt(item.qty), _Cols.qtyW),
             numCell(_fmt(item.cbm, decimals: 3), _Cols.cbmW),
             numCell('${_fmt(item.weight, decimals: 2)} kg', _Cols.weightW),
-            numCell('${_fmt(item.weightAvg, decimals: 2)} kg', _Cols.weightAvgW),
+            numCell('${_fmt(item.weightAvg, decimals: 2)} kg', _Cols.weightAvgW,weight: FontWeight.w600),
             numCell(_fmt(item.ratePerCbm, decimals: 2), _Cols.rateCbmW),
             numCell(_fmt(item.ratePerWeight, decimals: 2), _Cols.rateKgW),
             numCell(_fmt(item.extraCharges, decimals: 2), _Cols.extraW),
@@ -943,7 +949,7 @@ class _TotalRentBar extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _miniStat(tr.items, items.length.toString(), context),
+              _miniStat(tr.noItems, items.length.toString(), context),
               _miniStat(tr.qty, _fmt(totalQty), context),
               _miniStat(
                 tr.notDeliveredYet,

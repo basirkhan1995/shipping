@@ -182,6 +182,8 @@ class StatusBadge extends StatelessWidget {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon, size: 14, color: textColor),
           const SizedBox(width: 6),
@@ -339,12 +341,17 @@ class _StatusDotIndicatorState extends State<StatusDotIndicator>
 
     return Row(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (isBefore) ...[
           _buildText(),
           SizedBox(width: widget.spacing),
         ],
-        dot,
+        Padding(
+          padding: const EdgeInsets.only(bottom: 4,top: 0,right: 0,left: 0),
+          child: dot,
+        ),
         if (!isBefore) ...[
           SizedBox(width: widget.spacing),
           _buildText(),

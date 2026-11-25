@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Date/shamsi_converter.dart';
 import 'package:shipping/Features/Other/responsive_widget.dart';
@@ -91,6 +92,10 @@ class _DesktopViewState extends State<_DesktopView> {
   late final String _defaultDate;
 
   bool _dateFilterActive = false;
+
+  /// Tracks which container numbers were copied within the last 2 seconds,
+  /// so the icon can flip to a checkmark momentarily.
+  final Map<String, bool> _copiedRefs = {};
 
   @override
   void initState() {
@@ -186,6 +191,26 @@ class _DesktopViewState extends State<_DesktopView> {
       message: message,
       type: isError ? ToastType.error : ToastType.success,
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // COPY ACTION
+  // ---------------------------------------------------------------------------
+
+  Future<void> _copyContainerNo(String containerNo) async {
+    if (containerNo.isEmpty || containerNo == '—') return;
+
+    await Clipboard.setData(ClipboardData(text: containerNo));
+
+    if (!mounted) return;
+    setState(() => _copiedRefs[containerNo] = true);
+
+    _showToast('Copied: $containerNo');
+
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      setState(() => _copiedRefs.remove(containerNo));
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -451,7 +476,7 @@ class _DesktopViewState extends State<_DesktopView> {
               width: 130,
               child: Text(tr.entryDate.toUpperCase(), style: style)),
           SizedBox(
-              width: 155,
+              width: 180, // Increased from 155 to accommodate the copy button
               child: Text(tr.containerNo.toUpperCase(), style: style)),
           SizedBox(
               width: 125,
@@ -460,7 +485,17 @@ class _DesktopViewState extends State<_DesktopView> {
           Expanded(child: Text(tr.port.toUpperCase(), style: style)),
           SizedBox(
             width: 75,
-            child: Text(tr.items, textAlign: TextAlign.center, style: style),
+            child: Text(tr.totalQty, textAlign: TextAlign.center, style: style),
+          ),
+          SizedBox(
+            width: 100,
+            child: Text(tr.weight.toUpperCase(),
+                textAlign: TextAlign.end, style: style),
+          ),
+          SizedBox(
+            width: 100,
+            child: Text(tr.cbm.toUpperCase(),
+                textAlign: TextAlign.end, style: style),
           ),
           SizedBox(
             width: 145,
@@ -535,6 +570,8 @@ class _DesktopViewState extends State<_DesktopView> {
             onView: () => _openDetails(shipment),
             onEdit: () => _openEdit(shipment),
             onDelete: () => _confirmDelete(shipment),
+            isCopied: _copiedRefs[shipment.containerNo] ?? false,
+            onCopy: () => _copyContainerNo(shipment.containerNo),
           ),
         );
       },
@@ -588,6 +625,8 @@ class _ShipmentRowWidget extends StatelessWidget {
   final VoidCallback onView;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final bool isCopied;
+  final VoidCallback onCopy;
 
   const _ShipmentRowWidget({
     required this.shipment,
@@ -595,6 +634,8 @@ class _ShipmentRowWidget extends StatelessWidget {
     required this.onView,
     required this.onEdit,
     required this.onDelete,
+    this.isCopied = false,
+    required this.onCopy,
   });
 
   @override
@@ -644,18 +685,52 @@ class _ShipmentRowWidget extends StatelessWidget {
               ),
             ],
           ),
-          cell(
-            shipment.containerNo,
-            width: 155,
-            weight: FontWeight.w600,
+
+          // ── CONTAINER NO + COPY ──────────────────────────────────────────
+          SizedBox(
+            width: 180, // Matches header
+            child: Row(
+              children: [
+                _CopyRefButton(
+                  isCopied: isCopied,
+                  onPressed: onCopy,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    shipment.containerNo,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: color.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
+
           cell(shipment.sequenceNo ?? '—', width: 125),
           cell(shipment.portName),
           cell(
-            shipment.totalItems.toString(),
+            shipment.totalItems.toAmount(decimal: 0),
             width: 75,
             weight: FontWeight.bold,
             align: TextAlign.center,
+          ),
+          cell(
+            "${shipment.totalWeight.toAmount()} kg",
+            width: 100,
+            align: TextAlign.end,
+            weight: FontWeight.w700,
+          ),
+          cell(
+            shipment.totalCbm.toAmount(decimal: 3),
+            width: 100,
+            align: TextAlign.end,
+            weight: FontWeight.w700,
           ),
           cell(
             shipment.totalRent.toAmount(),
@@ -663,10 +738,10 @@ class _ShipmentRowWidget extends StatelessWidget {
             align: TextAlign.end,
             weight: FontWeight.w700,
           ),
-          const SizedBox(width: 45),
+          const SizedBox(width: 32),
           StatusDotIndicator(
             status: shipment.status,
-            size: 13,
+            size: 15,
             showText: true,
             spacing: 3,
             textPosition: 'before',
@@ -837,6 +912,65 @@ class _ShipmentPillButtonState extends State<_ShipmentPillButton> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// -----------------------------------------------------------------------------
+// COPY BUTTON
+// -----------------------------------------------------------------------------
+
+class _CopyRefButton extends StatelessWidget {
+  final bool isCopied;
+  final VoidCallback? onPressed;
+
+  const _CopyRefButton({required this.isCopied, this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme;
+
+    return Tooltip(
+      message: isCopied ? 'Copied' : 'Copy container no',
+      waitDuration: const Duration(milliseconds: 400),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(4),
+          hoverColor: color.primary.withValues(alpha: .05),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 100),
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: isCopied
+                  ? color.primary.withAlpha(25)
+                  : Colors.transparent,
+              border: Border.all(
+                color: isCopied
+                    ? color.primary
+                    : color.outline.withValues(alpha: .3),
+                width: 1,
+              ),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Center(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                child: Icon(
+                  isCopied ? Icons.check : Icons.content_copy,
+                  key: ValueKey<bool>(isCopied),
+                  size: 13,
+                  color: isCopied
+                      ? color.primary
+                      : color.outline.withValues(alpha: .6),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

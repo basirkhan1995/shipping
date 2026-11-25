@@ -153,3 +153,15 @@ class ShpByIdUpdateItemStatusRequested extends ShpByIdEvent {
     status,
   ];
 }
+/// ── EXPORT ITEMS ─────────────────────────────────────────────
+final class ShpByIdExportRequested extends ShpByIdEvent {
+  final int shpId;
+
+  const ShpByIdExportRequested({
+    required this.shpId,
+  });
+
+  @override
+  List<Object?> get props => [shpId];
+}
+

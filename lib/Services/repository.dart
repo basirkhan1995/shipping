@@ -3214,7 +3214,7 @@ class Repositories {
     }
   }
 
-  ///SHIPINGS -----------------------------------------------------------------
+  ///SHIPPINGS -----------------------------------------------------------------
   Future<List<ShipmentModel>> getContainers({
     String status = 'pending',
     String? search,
@@ -3285,7 +3285,7 @@ class Repositories {
   // ADD SHIPMENT ITEM
   // ─────────────────────────────────────────────────────────────
 
-  Future<int> addShpItem({
+  Future<Map<String, dynamic>> addShpItem({
     required String usrName,
     required int shpId,
     required String accountNo,
@@ -3297,40 +3297,28 @@ class Repositories {
     double ratePerWeight = 0,
     double extraCharges = 0,
   }) async {
-    try {
-      final response = await _api.post(
-        endpoint: "/shipment/shippingItem.php",
-        data: {
-          'user': usrName,
-          'shpID': shpId,
-          'accountNo': accountNo,
-          'itemDescription': itemDescription,
-          'qty': qty,
-          'cbm': cbm,
-          'weight': weight,
-          'ratePerCbm': ratePerCbm,
-          'ratePerWeight': ratePerWeight,
-          'extraCharges': extraCharges,
-        },
-      );
-      final data = _validateResponse(response.data);
+    final response = await _api.post(
+      endpoint: "/shipment/shippingItem.php",
+      data: {
+        'user': usrName,
+        'shpID': shpId,
+        'accountNo': accountNo,
+        'itemDescription': itemDescription,
+        'qty': qty,
+        'cbm': cbm,
+        'weight': weight,
+        'ratePerCbm': ratePerCbm,
+        'ratePerWeight': ratePerWeight,
+        'extraCharges': extraCharges,
+      },
+    );
 
-      final shpItmId = data['shpItmId'];
-
-      if (shpItmId == null) {
-        throw ApiException(
-          'Item added, but shipment item ID was not returned.',
-        );
-      }
-
-      return int.parse(shpItmId.toString());
-    } on DioException catch (e) {
-      throw ApiException(
-        e.message ?? 'Failed to add shipment item.',
-        statusCode: e.response?.statusCode,
-      );
-    }
+    final data = response.data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    if (data is String) return {'msg': data};
+    return {'msg': 'failed'};
   }
+
 
   // ─────────────────────────────────────────────────────────────
   // UPDATE SHIPMENT ITEM
@@ -3456,6 +3444,41 @@ class Repositories {
         statusCode: e.response?.statusCode,
       );
     }
+  }
+
+  // ── EXPORT CONTAINER ITEMS TO CSV ──────────────────────────────────────────
+  Future<String> exportContainerItems({required int shpId}) async {
+    // 1. Determine the save path
+    Directory baseDir;
+    if (Platform.isAndroid) {
+      final status = await Permission.storage.request();
+      if (!status.isGranted) {
+        throw ApiException('Storage permission denied');
+      }
+      final androidDownload = Directory('/storage/emulated/0/Download');
+      if (await androidDownload.exists()) {
+        baseDir = androidDownload;
+      } else {
+        baseDir = (await getExternalStorageDirectory())!;
+      }
+    } else if (Platform.isIOS) {
+      baseDir = await getApplicationDocumentsDirectory();
+    } else {
+      baseDir = await getApplicationDocumentsDirectory();
+    }
+
+    // 2. Build the file path
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final filePath = '${baseDir.path}/Container_${shpId}_$timestamp.csv';
+
+    // 3. Download the file using the existing ApiServices method
+    await _api.downloadFile(
+      endpoint: '/shipment/exportContItems.php',
+      savePath: filePath,
+      queryParams: {'input': shpId},
+    );
+
+    return filePath;
   }
 
   // ─────────────────────────────────────────────────────────────

@@ -327,6 +327,7 @@ class ApiServices {
   Future<Response> downloadFile({
     required String endpoint,
     required String savePath,
+    Map<String, dynamic>? queryParams, // <-- ADD THIS
     CancelToken? cancelToken,
     ProgressCallback? onReceiveProgress,
   }) async {
@@ -334,6 +335,7 @@ class ApiServices {
       return await _dio.download(
         endpoint,
         savePath,
+        queryParameters: queryParams, // <-- ADD THIS
         cancelToken: cancelToken,
         onReceiveProgress: onReceiveProgress,
       );
