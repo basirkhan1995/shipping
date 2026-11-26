@@ -2357,4 +2357,16 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get printPdf => 'چاپ | PDF';
+
+  @override
+  String get copyPath => 'کپی آدرس';
+
+  @override
+  String get ok => 'بستن';
+
+  @override
+  String get allInviocePrint => 'استخراج همه بل ها';
+
+  @override
+  String get printSingleInvioce => 'چاپ بل';
 }

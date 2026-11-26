@@ -4707,6 +4707,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'PRINT | PDF'**
   String get printPdf;
+
+  /// No description provided for @copyPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy path'**
+  String get copyPath;
+
+  /// No description provided for @ok.
+  ///
+  /// In en, this message translates to:
+  /// **'Ok'**
+  String get ok;
+
+  /// No description provided for @allInviocePrint.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate All Invoices'**
+  String get allInviocePrint;
+
+  /// No description provided for @printSingleInvioce.
+  ///
+  /// In en, this message translates to:
+  /// **'Print Invoice'**
+  String get printSingleInvioce;
 }
 
 class _AppLocalizationsDelegate

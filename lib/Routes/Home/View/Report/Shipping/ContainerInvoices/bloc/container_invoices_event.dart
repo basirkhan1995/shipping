@@ -7,12 +7,22 @@ sealed class ContainerInvoicesEvent extends Equatable {
   List<Object?> get props => const [];
 }
 
+/// Fetches all customers in a container.
+///
+/// If [previewAccountNo] is set, the bloc emits
+/// [ContainerInvoicePreviewReady] for just that customer.
+/// Otherwise it emits [ContainerInvoicesSuccess] with the full list.
 class ContainerInvoicesRequested extends ContainerInvoicesEvent {
   final ContainerInvoiceRequest request;
-  const ContainerInvoicesRequested(this.request);
+  final int? previewAccountNo;
+
+  const ContainerInvoicesRequested(
+      this.request, {
+        this.previewAccountNo,
+      });
 
   @override
-  List<Object?> get props => [request];
+  List<Object?> get props => [request, previewAccountNo];
 }
 
 class ContainerInvoicesReset extends ContainerInvoicesEvent {

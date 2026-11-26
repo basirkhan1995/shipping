@@ -1,7 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dio/dio.dart';
-
 import '../../../../../../../Services/api_exception.dart';
 import '../../../../../../../Services/repository.dart';
 import '../model/cont_invoices_model.dart';
@@ -34,6 +33,7 @@ class ContainerInvoicesBloc
     emit(const ContainerInvoicesLoading());
 
     try {
+      // Pass the request object (matches the repository signature).
       final data = await _repo.printContainerInvoices(containerNo: event.request.containerNo, sequenceNo: event.request.sequenceNo);
 
       if (data.invoices.isEmpty) {
@@ -43,7 +43,22 @@ class ContainerInvoicesBloc
         return;
       }
 
+      // Preview-one mode: emit just the matching invoice.
+      if (event.previewAccountNo != null) {
+        final match = data.invoices.firstWhere(
+              (inv) => inv.customer.accountNo == event.previewAccountNo,
+          orElse: () => throw _AccountNotInContainer(
+            event.previewAccountNo!,
+          ),
+        );
+        emit(ContainerInvoicePreviewReady(data, match));
+        return;
+      }
+
+      // Batch mode: emit the full list.
       emit(ContainerInvoicesSuccess(data));
+    } on _AccountNotInContainer catch (e) {
+      emit(ContainerInvoicesFailure(e.message));
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) return; // silent cancel
       emit(ContainerInvoicesFailure(
@@ -62,4 +77,13 @@ class ContainerInvoicesBloc
       ) {
     emit(const ContainerInvoicesInitial());
   }
+}
+
+/// Thrown internally when [ContainerInvoicesRequested.previewAccountNo]
+/// is not present in the container's invoice list.
+class _AccountNotInContainer implements Exception {
+  final int accountNo;
+  _AccountNotInContainer(this.accountNo);
+  String get message =>
+      'Account $accountNo has no items in this container.';
 }

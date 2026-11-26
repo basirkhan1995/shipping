@@ -2366,4 +2366,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get printPdf => 'PRINT | PDF';
+
+  @override
+  String get copyPath => 'Copy path';
+
+  @override
+  String get ok => 'Ok';
+
+  @override
+  String get allInviocePrint => 'Generate All Invoices';
+
+  @override
+  String get printSingleInvioce => 'Print Invoice';
 }

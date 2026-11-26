@@ -780,5 +780,9 @@
   "noItems": "Items",
   "revenue": "Revenue",
   "shippingPrintHint": "Choose a customer and container/seq, then press PDF / PRINT.",
-  "printPdf": "PRINT | PDF"
+  "printPdf": "PRINT | PDF",
+  "copyPath": "Copy path",
+  "ok": "Ok",
+  "allInviocePrint": "Generate All Invoices",
+  "printSingleInvioce": "Print Invoice"
 }

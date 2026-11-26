@@ -33,7 +33,6 @@ import '../Routes/Home/View/Report/Inventory/Cardx/model/cardx_model.dart';
 import '../Routes/Home/View/Report/Inventory/OrdersReport/model/order_report_model.dart';
 import '../Routes/Home/View/Report/Inventory/StockAvailability/model/product_report_model.dart';
 import '../Routes/Home/View/Report/Shipping/ContainerInvoices/model/cont_invoices_model.dart';
-import '../Routes/Home/View/Report/Shipping/InvoicePrint/model/inv_print_model.dart';
 import '../Routes/Home/View/Report/TrialBalance/model/trial_balance_model.dart';
 import '../Routes/Home/View/Report/TxnByReference/model/txn_report_model.dart';
 import '../Routes/Home/View/Report/AllTransactions/TxnTypes/model/txn_types_model.dart';
@@ -3646,29 +3645,6 @@ class Repositories {
   }
 
 
-  ///SHipping print
-  Future<ShippingInvoice> printShippingInvoice(PrintInvoiceRequest req, {
-        CancelToken? cancelToken,
-      }) async {
-    final response = await _api.post(
-      endpoint: '/shipment/shippingInvoicePrint.php',
-      data: req.toJson(),
-      cancelToken: cancelToken,
-    );
-
-    final body = _asMap(response.data);
-    if (body == null) {
-      throw ApiException('Invalid server response');
-    }
-
-    // Server returns { msg: '...' } on validation / not-found failures.
-    final msg = body['msg']?.toString().toLowerCase() ?? '';
-    if (msg.isNotEmpty && msg != 'success' && body['customer'] == null) {
-      _fail(body, fallback: 'Failed to load invoice');
-    }
-
-    return ShippingInvoice.fromJson(body);
-  }
 
   /// Shipping print — all customers in a container
   Future<ContainerInvoices> printContainerInvoices({

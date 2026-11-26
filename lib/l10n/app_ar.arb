@@ -780,5 +780,9 @@
   "noItems": "اقلام",
   "revenue": "عواید",
   "shippingPrintHint": "پېرودونکی او د کانټینر/تسلسل شمېره وټاکئ، بیا د PDF / PRINT تڼۍ کېکاږئ.",
-  "printPdf": "چاپ | PDF"
+  "printPdf": "چاپ | PDF",
+  "copyPath": "کپی آدرس",
+  "ok": "بستن",
+  "allInviocePrint": "استخراج همه بل ها",
+  "printSingleInvioce": "چاپ بل"
 }

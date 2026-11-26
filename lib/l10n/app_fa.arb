@@ -780,5 +780,9 @@
   "noItems": "اقلام",
   "revenue": "عواید",
   "shippingPrintHint": "مشتری و کانتینر/شماره تسلسل را انتخاب کنید، سپس روی PDF / PRINT کلیک کنید.",
-  "printPdf": "چاپ | PDF"
+  "printPdf": "چاپ | PDF",
+  "copyPath": "کپی آدرس",
+  "ok": "بستن",
+  "allInviocePrint": "استخراج همه بل ها",
+  "printSingleInvioce": "چاپ بل"
 }

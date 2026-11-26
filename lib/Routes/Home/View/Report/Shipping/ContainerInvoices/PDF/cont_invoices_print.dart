@@ -1,18 +1,16 @@
 import 'dart:io';
-
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart' as pw;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-
 import 'package:shipping/Features/Date/shamsi_converter.dart';
 import '../../../../../../../../Features/PrintSettings/PaperSize/paper_size.dart';
 import '../../../../../../../../Features/PrintSettings/print_services.dart';
 import '../../../../../../../../Features/PrintSettings/report_model.dart';
 import '../../../../../../../../Features/Widgets/extensions.dart';
-import '../../InvoicePrint/model/inv_print_model.dart';
+import '../model/cont_invoices_model.dart';
 
 class ContainerInvoicesPrintSettings extends PrintServices {
   final pdf = pw.Document();
