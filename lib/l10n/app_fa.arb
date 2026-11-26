@@ -778,5 +778,7 @@
   "itemDescription": "تفصیلات جنس",
   "entryDate": "تاریخ ثبت",
   "noItems": "اقلام",
-  "revenue": "عواید"
+  "revenue": "عواید",
+  "shippingPrintHint": "مشتری و کانتینر/شماره تسلسل را انتخاب کنید، سپس روی PDF / PRINT کلیک کنید.",
+  "printPdf": "چاپ | PDF"
 }

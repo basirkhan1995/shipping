@@ -778,5 +778,7 @@
   "itemDescription": "Item Description",
   "entryDate": "Entry Date",
   "noItems": "Items",
-  "revenue": "Revenue"
+  "revenue": "Revenue",
+  "shippingPrintHint": "Choose a customer and container/seq, then press PDF / PRINT.",
+  "printPdf": "PRINT | PDF"
 }

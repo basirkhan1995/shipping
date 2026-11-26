@@ -778,5 +778,7 @@
   "itemDescription": "جنس تفصیلات",
   "entryDate": "ثبت نیته",
   "noItems": "اقلام",
-  "revenue": "عواید"
+  "revenue": "عواید",
+  "shippingPrintHint": "پېرودونکی او د کانټینر/تسلسل شمېره وټاکئ، بیا د PDF / PRINT تڼۍ کېکاږئ.",
+  "printPdf": "چاپ | PDF"
 }

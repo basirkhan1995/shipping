@@ -2351,4 +2351,11 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get revenue => 'عواید';
+
+  @override
+  String get shippingPrintHint =>
+      'مشتری و کانتینر/شماره تسلسل را انتخاب کنید، سپس روی PDF / PRINT کلیک کنید.';
+
+  @override
+  String get printPdf => 'چاپ | PDF';
 }

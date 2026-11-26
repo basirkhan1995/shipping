@@ -2359,4 +2359,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get revenue => 'Revenue';
+
+  @override
+  String get shippingPrintHint =>
+      'Choose a customer and container/seq, then press PDF / PRINT.';
+
+  @override
+  String get printPdf => 'PRINT | PDF';
 }

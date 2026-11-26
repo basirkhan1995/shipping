@@ -2350,4 +2350,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get revenue => 'عواید';
+
+  @override
+  String get shippingPrintHint =>
+      'پېرودونکی او د کانټینر/تسلسل شمېره وټاکئ، بیا د PDF / PRINT تڼۍ کېکاږئ.';
+
+  @override
+  String get printPdf => 'چاپ | PDF';
 }

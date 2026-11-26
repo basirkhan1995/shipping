@@ -196,6 +196,7 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
     }
   }
 
+
   // ─────────────────────────────────────────────────────────
   // UPDATE ITEM
   // ─────────────────────────────────────────────────────────
@@ -213,9 +214,10 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
     ));
 
     try {
-      await _repo.updateShpItem(
-        usrName: event.usrName,
+      final result = await _repo.updateShpItem(
+        user: event.usrName,
         shpItmId: event.shpItmId,
+        shpId: event.shpId,
         accountNo: event.accountNo,
         itemDescription: event.itemDescription,
         qty: event.qty,
@@ -226,11 +228,43 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
         extraCharges: event.extraCharges,
       );
 
-      final fresh = await _repo.getShippingDetails(shpId: event.shpId);
-      emit(ShpByIdLoaded(
-        fresh,
-        successMessage: 'Item updated',
-      ));
+      switch (_normalizeMsg(result)) {
+        case 'success':
+          try {
+            final fresh = await _repo.getShippingDetails(shpId: event.shpId);
+            emit(ShpByIdLoaded(fresh, successMessage: 'Item updated'));
+          } catch (e) {
+            emit(current.copyWith(
+              clearPendingAction: true,
+              successMessage: 'Item updated',
+              actionError: 'Reload failed: ${_msg(e)}',
+            ));
+          }
+          return;
+
+        case 'over limit':
+          emit(current.copyWith(
+            clearPendingAction: true,
+            actionError: 'Account has reached its debit limit. '
+                'The item was not updated.',
+          ));
+          return;
+
+        case 'blocked':
+          emit(current.copyWith(
+            clearPendingAction: true,
+            actionError: 'This account is blocked. '
+                'The item was not updated.',
+          ));
+          return;
+
+        default:
+          emit(current.copyWith(
+            clearPendingAction: true,
+            actionError: 'Operation failed: ${_normalizeMsg(result)}',
+          ));
+          return;
+      }
     } catch (e) {
       emit(current.copyWith(
         clearPendingAction: true,

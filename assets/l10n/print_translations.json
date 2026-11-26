@@ -415,6 +415,11 @@
     "ar": "اجناس",
     "fa": "اجناس"
   },
+  "noItems": {
+    "en": "Items",
+    "ar": "اقلام جنس",
+    "fa": "اقلام جنس"
+  },
   "stock": {
     "en": "Stock",
     "ar": "گدام",
@@ -1636,5 +1641,112 @@
     "en": "Sold items cannot be returned.",
     "ar": "جنس فروخته شده واپس گرفته نمیشود.",
     "fa": "جنس فروخته شده واپس گرفته نمیشود."
+  },
+
+  "invoice": {
+    "en": "Invoice Statement",
+    "ar": "صورتحساب",
+    "fa": "صورتحساب"
+  },
+  "customerInfo": {
+    "en": "Customer Info",
+    "ar": "د مشتري معلومات",
+    "fa": "معلومات مشتری"
+  },
+  "containerInfo": {
+    "en": "Container Info",
+    "ar": "د کانټینر معلومات",
+    "fa": "معلومات کانتینر"
+  },
+  "invoiceSummary": {
+    "en": "Invoice Summary",
+    "ar": "د بل لنډیز",
+    "fa": "خلاصه صورتحساب"
+  },
+  "authorizedSignature": {
+    "en": "Authorized Signature",
+    "ar": "د مجاز لاسلیک",
+    "fa": "امضای مجاز"
+  },
+  "port": {
+    "en": "Port",
+    "ar": "بندر",
+    "fa": "بندر"
+  },
+  "unloadingDate": {
+    "en": "Unloading Date",
+    "ar": "د بار تخلیه کولو نیټه",
+    "fa": "تاریخ تخلیه بار"
+  },
+  "totalCbm": {
+    "en": "Total CBM",
+    "ar": "ټول حجم",
+    "fa": "مجموع حجم"
+  },
+  "totalWeight": {
+    "en": "Total Weight",
+    "ar": "ټول وزن",
+    "fa": "مجموع وزن"
+  },
+  "weightAverage": {
+    "en": "Weight Avg",
+    "ar": "اوسط وزن",
+    "fa": "میانگین وزن"
+  },
+  "containerNo": {
+    "en": "Container No",
+    "ar": "د کانټینر شمېره",
+    "fa": "شماره کانتینر"
+  },
+  "sequenceNo": {
+    "en": "Sequence No",
+    "ar": "د ترتیب شمېره",
+    "fa": "شماره ترتیب"
+  },
+  "cbm": {
+    "en": "CBM",
+    "ar": "حجم",
+    "fa": "حجم"
+  },
+  "weight": {
+    "en": "Weight",
+    "ar": "وزن",
+    "fa": "وزن"
+  },
+  "rateCbm": {
+    "en": "Rate/CBM",
+    "ar": "د حجم نرخ",
+    "fa": "نرخ هر حجم"
+  },
+  "rateWeight": {
+    "en": "Rate/Weight",
+    "ar": "د وزن نرخ",
+    "fa": "نرخ هر وزن"
+  },
+  "charges": {
+    "en": "Charges",
+    "ar": "هزینه اضافی",
+    "fa": "هزینه اضافی"
+  },
+  "rate": {
+    "en": "Rate",
+    "ar": "نرخ",
+    "fa": "نرخ"
+  },
+  "statusPending": {
+    "en": "Pending",
+    "ar": "په تمه",
+    "fa": "در حال بارگیری"
+  },
+  "statusShipped": {
+    "en": "Shipped",
+    "ar": "لېږل شوی",
+    "fa": "ارسال شده"
+  },
+  "statusDelivered": {
+    "en": "Delivered",
+    "ar": "تحویل شوی",
+    "fa": "تحویل شده"
   }
+
 }

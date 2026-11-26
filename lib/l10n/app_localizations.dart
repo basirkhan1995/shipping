@@ -4695,6 +4695,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Revenue'**
   String get revenue;
+
+  /// No description provided for @shippingPrintHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a customer and container/seq, then press PDF / PRINT.'**
+  String get shippingPrintHint;
+
+  /// No description provided for @printPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'PRINT | PDF'**
+  String get printPdf;
 }
 
 class _AppLocalizationsDelegate

@@ -32,6 +32,7 @@ import '../Routes/Home/View/Report/IncomeStatement/model/income_stmt_model.dart'
 import '../Routes/Home/View/Report/Inventory/Cardx/model/cardx_model.dart';
 import '../Routes/Home/View/Report/Inventory/OrdersReport/model/order_report_model.dart';
 import '../Routes/Home/View/Report/Inventory/StockAvailability/model/product_report_model.dart';
+import '../Routes/Home/View/Report/Shipping/InvoicePrint/model/inv_print_model.dart';
 import '../Routes/Home/View/Report/TrialBalance/model/trial_balance_model.dart';
 import '../Routes/Home/View/Report/TxnByReference/model/txn_report_model.dart';
 import '../Routes/Home/View/Report/AllTransactions/TxnTypes/model/txn_types_model.dart';
@@ -3324,9 +3325,10 @@ class Repositories {
   // UPDATE SHIPMENT ITEM
   // ─────────────────────────────────────────────────────────────
 
-  Future<void> updateShpItem({
-    required String usrName,
+  Future<Map<String, dynamic>> updateShpItem({
+    required String user,
     required int shpItmId,
+    int? shpId,
     String? accountNo,
     String? itemDescription,
     double? qty,
@@ -3336,50 +3338,29 @@ class Repositories {
     double? ratePerWeight,
     double? extraCharges,
   }) async {
-    try {
-      final Map<String, dynamic> payload = {
-        'action': 'updateItem',
-        'usrName': usrName,
-        'shpItmId': shpItmId,
-      };
+    final payload = <String, dynamic>{
+      'user': user,
+      'shpItmId': shpItmId,
+      'shpID': ?shpId,
+      'accountNo': ?accountNo,
+      'itemDescription': ?itemDescription,
+      'qty': ?qty,
+      'cbm': ?cbm,
+      'weight': ?weight,
+      'ratePerCbm': ?ratePerCbm,
+      'ratePerWeight': ?ratePerWeight,
+      'extraCharges': ?extraCharges,
+    };
 
-      // Only send fields that were provided.
-      if (accountNo != null) {
-        payload['AccountNo'] = accountNo;
-      }
+    final response = await _api.put(
+      endpoint: "/shipment/shippingItem.php",
+      data: payload,
+    );
 
-      if (itemDescription != null) {
-        payload['itemDescription'] = itemDescription;
-      }
-
-      if (qty != null) payload['qty'] = qty;
-      if (cbm != null) payload['cbm'] = cbm;
-      if (weight != null) payload['weight'] = weight;
-
-      if (ratePerCbm != null) {
-        payload['ratePerCbm'] = ratePerCbm;
-      }
-
-      if (ratePerWeight != null) {
-        payload['ratePerWeight'] = ratePerWeight;
-      }
-
-      if (extraCharges != null) {
-        payload['extraCharges'] = extraCharges;
-      }
-
-      final response = await _api.post(
-        endpoint: "/shipment/shipment.php",
-        data: payload,
-      );
-
-      _validateResponse(response.data);
-    } on DioException catch (e) {
-      throw ApiException(
-        e.message ?? 'Failed to update shipment item.',
-        statusCode: e.response?.statusCode,
-      );
-    }
+    final data = response.data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    if (data is String) return {'msg': data};
+    return {'msg': 'failed'};
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -3663,4 +3644,28 @@ class Repositories {
     return ShipmentExpenseDeleteResult.fromMap(body);
   }
 
+
+  ///SHipping print
+  Future<ShippingInvoice> printShippingInvoice(PrintInvoiceRequest req, {
+        CancelToken? cancelToken,
+      }) async {
+    final response = await _api.post(
+      endpoint: '/shipment/shippingInvoicePrint.php',
+      data: req.toJson(),
+      cancelToken: cancelToken,
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) {
+      throw ApiException('Invalid server response');
+    }
+
+    // Server returns { msg: '...' } on validation / not-found failures.
+    final msg = body['msg']?.toString().toLowerCase() ?? '';
+    if (msg.isNotEmpty && msg != 'success' && body['customer'] == null) {
+      _fail(body, fallback: 'Failed to load invoice');
+    }
+
+    return ShippingInvoice.fromJson(body);
+  }
 }

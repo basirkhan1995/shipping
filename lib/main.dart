@@ -26,6 +26,7 @@ import 'package:shipping/Routes/Home/View/Report/CashBalances/bloc/cash_balances
 import 'package:shipping/Routes/Home/View/Report/IncomeStatement/bloc/income_statement_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/Inventory/Cardx/bloc/stock_record_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/Inventory/StockAvailability/bloc/product_report_bloc.dart';
+import 'package:shipping/Routes/Home/View/Report/Shipping/InvoicePrint/bloc/invoice_print_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/TrialBalance/bloc/trial_balance_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/TxnByReference/bloc/txn_ref_report_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/UserLog/bloc/user_log_bloc.dart';
@@ -181,7 +182,7 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (_) => GoodsShiftBloc(Repositories(ApiServices()))),
           BlocProvider(create: (context) => PnLChartBloc(Repositories(ApiServices()))..add(const LoadPnLChartEvent(days: 30))),
           BlocProvider(create: (context) => ShipmentBloc(Repositories(ApiServices()))),
-
+          BlocProvider(create: (context) => InvoicePrintBloc(Repositories(ApiServices()))),
         ],
         child: BlocBuilder<LocalizationBloc, Locale>(
          builder: (context, locale) {
