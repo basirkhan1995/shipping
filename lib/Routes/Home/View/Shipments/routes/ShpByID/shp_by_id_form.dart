@@ -644,6 +644,7 @@ class _GrandTotalBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -659,6 +660,12 @@ class _GrandTotalBar extends StatelessWidget {
           _row('${tr.cbm} × ${tr.cbmRate}', '${_fmt(cbm, decimals: 3)} × ${_fmt(rateCbm, decimals: 2)}', _money(cbm * rateCbm)),
           const SizedBox(height: 4),
           _row('${tr.weight} × ${tr.weightRate}', '${_fmt(weight, decimals: 2)} × ${_fmt(rateKg, decimals: 2)}', _money(weight * rateKg)),
+          const SizedBox(height: 4),
+          _row(
+            tr.weightAvg,
+            '${_fmt(weight, decimals: 2)} / ${_fmt(cbm, decimals: 2)}',
+            cbm == 0 ? '0.00' : _money(weight / cbm),
+          ),
           const SizedBox(height: 4),
           _row(tr.extraCharges, '', _money(extra)),
           const SizedBox(height: 8),

@@ -120,7 +120,10 @@ class _MobileState extends State<_Mobile> {
       body: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
           if (state is AuthenticatedState) {
+
             final auth = state.loginData;
+            print("Hellooooooooooo : ${auth.company?.comSlogan ??""}");
+            print("Hiiiiiiiiii : ${auth.company?.comDetails ??""}");
             company.comName = auth.company?.comName ?? "";
             company.comAddress = auth.company?.comAddress ?? "";
             company.compPhone = auth.company?.comPhone ?? "";
@@ -130,10 +133,9 @@ class _MobileState extends State<_Mobile> {
             company.comFacebook = auth.company?.comFb ?? "";
             company.comInstagram = auth.company?.comInsta ?? "";
             company.statementDate = DateTime.now().toFullDateTime;
-
+            company.slogan = auth.company?.comSlogan ??"";
             final base64Logo = auth.company?.comLogo;
-            _companyLogo =
-                CompanyLogoUtils.safeBytes(base64Logo) ?? Uint8List(0);
+            _companyLogo = CompanyLogoUtils.safeBytes(base64Logo) ?? Uint8List(0);
             company.comLogo = _companyLogo.isEmpty ? null : _companyLogo;
           }
 
@@ -436,6 +438,7 @@ class _DesktopState extends State<_Desktop> {
       body: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
           if (state is AuthenticatedState) {
+
             final auth = state.loginData;
             company.comName = auth.company?.comName ?? "";
             company.comAddress = auth.company?.comAddress ?? "";
@@ -446,7 +449,7 @@ class _DesktopState extends State<_Desktop> {
             company.comFacebook = auth.company?.comFb ?? "";
             company.comInstagram = auth.company?.comInsta ?? "";
             company.statementDate = DateTime.now().toFullDateTime;
-
+            company.slogan = auth.company?.comDetails ??"";
             final base64Logo = auth.company?.comLogo;
             _companyLogo = CompanyLogoUtils.safeBytes(base64Logo) ?? Uint8List(0);
             company.comLogo = _companyLogo.isEmpty ? null : _companyLogo;

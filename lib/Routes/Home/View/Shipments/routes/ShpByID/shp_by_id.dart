@@ -891,29 +891,24 @@ class _TotalRentBar extends StatelessWidget {
     final tr = AppLocalizations.of(context)!;
 
     final totalQty = items.fold<double>(
-      0,
-          (sum, item) => sum + item.qty,
+      0, (sum, item) => sum + item.qty,
     );
 
     final totalCbm = items.fold<double>(
-      0,
-          (sum, item) => sum + item.cbm,
+      0, (sum, item) => sum + item.cbm,
     );
 
     final totalWeight = items.fold<double>(
-      0,
-          (sum, item) => sum + item.weight,
+      0, (sum, item) => sum + item.weight,
     );
 
     final totalRent = items.fold<double>(
-      0,
-          (sum, item) => sum + item.itemRent,
+      0, (sum, item) => sum + item.itemRent,
     );
 
     // Calculate quantities using the item's current status.
     final totalDelivered = items.fold<double>(
-      0,
-          (sum, item) =>
+      0, (sum, item) =>
       sum + (item.status?.toLowerCase() == 'delivered' ? item.qty : 0),
     );
 
@@ -968,7 +963,7 @@ class _TotalRentBar extends StatelessWidget {
               ),
               _miniStat(
                 tr.weight,
-                '${_fmt(totalWeight)} kg',
+                '${_fmt(totalWeight,decimals: 2)} kg',
                 context,
               ),
               _miniStat(

@@ -32,6 +32,7 @@ import '../Routes/Home/View/Report/IncomeStatement/model/income_stmt_model.dart'
 import '../Routes/Home/View/Report/Inventory/Cardx/model/cardx_model.dart';
 import '../Routes/Home/View/Report/Inventory/OrdersReport/model/order_report_model.dart';
 import '../Routes/Home/View/Report/Inventory/StockAvailability/model/product_report_model.dart';
+import '../Routes/Home/View/Report/Shipping/ContainerInvoices/model/cont_invoices_model.dart';
 import '../Routes/Home/View/Report/Shipping/InvoicePrint/model/inv_print_model.dart';
 import '../Routes/Home/View/Report/TrialBalance/model/trial_balance_model.dart';
 import '../Routes/Home/View/Report/TxnByReference/model/txn_report_model.dart';
@@ -3667,5 +3668,41 @@ class Repositories {
     }
 
     return ShippingInvoice.fromJson(body);
+  }
+
+  /// Shipping print — all customers in a container
+  Future<ContainerInvoices> printContainerInvoices({
+    String? containerNo,
+    String? sequenceNo,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _api.post(
+      endpoint: '/shipment/containerInvoices.php',
+      data: {
+        if (containerNo != null && containerNo.isNotEmpty)
+          'containerNo': containerNo,
+        if (sequenceNo != null && sequenceNo.isNotEmpty)
+          'sequenceNo': sequenceNo,
+      },
+      cancelToken: cancelToken,
+    );
+
+    final body = _asMap(response.data);
+    if (body == null) {
+      throw ApiException('Invalid server response');
+    }
+
+    // Server returns { msg: '...' } on validation / not-found failures.
+    final msg = body['msg']?.toString().toLowerCase() ?? '';
+    if (msg.isNotEmpty && body['invoices'] == null) {
+      _fail(body, fallback: 'Failed to load container invoices');
+    }
+
+    final list = body['invoices'];
+    if (list is! List || list.isEmpty) {
+      _fail(body, fallback: 'No invoices found for this container');
+    }
+
+    return ContainerInvoices.fromJson(body);
   }
 }

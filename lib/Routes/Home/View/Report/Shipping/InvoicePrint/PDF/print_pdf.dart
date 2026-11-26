@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart' as pw;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:shipping/Features/Date/shamsi_converter.dart';
 import '../../../../../../../../Features/PrintSettings/PaperSize/paper_size.dart';
 import '../../../../../../../../Features/PrintSettings/print_services.dart';
 import '../../../../../../../../Features/PrintSettings/report_model.dart';
@@ -106,7 +107,7 @@ class ShippingInvoicePrintSettings extends PrintServices {
         orientation: orientation,
         build: (context) => [
           _invoiceHeader(language: language, info: info),
-          pw.SizedBox(height: 8),
+          pw.SizedBox(height: 0),
           _customerAndContainerBox(language: language, info: info),
           pw.SizedBox(height: 8),
           _itemsTable(language: language, info: info),
@@ -134,11 +135,6 @@ class ShippingInvoicePrintSettings extends PrintServices {
   }) {
     return pw.Container(
       padding: const pw.EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-      decoration: pw.BoxDecoration(
-        border: pw.Border(
-          bottom: pw.BorderSide(width: 1, color: pw.PdfColors.grey400),
-        ),
-      ),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
@@ -148,8 +144,8 @@ class ShippingInvoicePrintSettings extends PrintServices {
             fontWeight: pw.FontWeight.bold,
           ),
           zText(
-            text: info.meta.generatedAt ?? "",
-            fontSize: 8,
+            text: "${info.meta.generatedAt.toFormattedDate()} | ${info.meta.generatedAt?.shamsiDateString}",
+            fontSize: 10,
             color: pw.PdfColors.grey700,
           ),
         ],
@@ -204,16 +200,16 @@ class ShippingInvoicePrintSettings extends PrintServices {
                 horizontalDivider(width: 260),
                 pw.SizedBox(height: 4),
                 _kv(
+                  label: tr(text: 'signatory', tr: language),
+                  value: c.person.fullName ?? "",
+                ),
+                _kv(
                   label: tr(text: 'accountName', tr: language),
                   value: "${c.accountNo} | ${c.accountName ?? ""}",
                 ),
                 _kv(
                   label: tr(text: 'currency', tr: language),
                   value: c.currency ?? "",
-                ),
-                _kv(
-                  label: tr(text: 'signatory', tr: language),
-                  value: c.person.fullName ?? "",
                 ),
                 _kv(
                   label: tr(text: 'mobile', tr: language),
@@ -311,9 +307,9 @@ class ShippingInvoicePrintSettings extends PrintServices {
         pw.Container(
           padding: const pw.EdgeInsets.symmetric(vertical: 5, horizontal: 4),
           decoration: pw.BoxDecoration(
-            color: pw.PdfColors.grey300,
+            color: pw.PdfColors.grey100,
             border: pw.Border(
-              bottom: pw.BorderSide(width: 1, color: pw.PdfColors.grey400),
+              bottom: pw.BorderSide(width: 1, color: pw.PdfColors.grey300),
             ),
           ),
           child: pw.Row(
@@ -338,7 +334,7 @@ class ShippingInvoicePrintSettings extends PrintServices {
               h(tr(text: 'qty', tr: language), qtyW),
               h(tr(text: 'cbm', tr: language), cbmW),
               h(tr(text: 'weight', tr: language), weightW),
-              h(tr(text: 'weightAverage', tr: language), avgW),   // ← NEW
+              h(tr(text: 'weightAverage', tr: language), avgW),
               h(tr(text: 'rate', tr: language), rateW),
               h(tr(text: 'charges', tr: language), extraW),
               h(tr(text: 'total', tr: language), rentW),

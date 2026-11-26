@@ -295,7 +295,7 @@ abstract class PrintServices {
                           ),
                         zText(
                           text: report.comName ?? "",
-                          fontSize: 17,
+                          fontSize: 18,
                           tightBounds: true,
                           fontWeight: pw.FontWeight.bold,
                           color: primaryColor,
@@ -305,7 +305,7 @@ abstract class PrintServices {
                           pw.SizedBox(height: 1),
                           zText(
                             text: report.slogan!,
-                            fontSize: 10,
+                            fontSize: 8,
                             color: PdfColors.grey700,
                           ),
                         ],
@@ -330,8 +330,8 @@ abstract class PrintServices {
                               ),
                               pw.SizedBox(width: 6),
                               zText(
-                                text: report.comAddress!,
-                                fontSize: 9.5,
+                                text: report.comAddress??"",
+                                fontSize: 8.5,
                                 color: PdfColors.grey900,
                               ),
                             ],

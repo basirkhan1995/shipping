@@ -7,6 +7,7 @@ import 'package:shipping/Routes/Home/View/Report/IncomeStatement/income_statemen
 import 'package:shipping/Routes/Home/View/Report/Inventory/Cardx/Ui/cardx.dart';
 import 'package:shipping/Routes/Home/View/Report/Inventory/OrdersReport/Ui/order_report.dart';
 import 'package:shipping/Routes/Home/View/Report/Inventory/StockAvailability/product_report.dart';
+import 'package:shipping/Routes/Home/View/Report/Shipping/ContainerInvoices/container_invoices.dart';
 import 'package:shipping/Routes/Home/View/Report/Shipping/InvoicePrint/invoice_print.dart';
 import 'package:shipping/Routes/Home/View/Report/TrialBalance/trial_balance.dart';
 import 'package:shipping/Routes/Home/View/Report/AllTransactions/txn_report.dart';
@@ -262,6 +263,13 @@ class _ReportBody extends StatelessWidget {
             description: tr.shipmentInvoiceHint,
             onTap: (ctx) =>
                 ZNavigator.goto(context: ctx, const ShpInvoiceView()),
+          ),
+          _ReportData(
+            icon: Icons.verified_user_rounded,
+            title: tr.shipmentInvoice,
+            description: tr.shipmentInvoiceHint,
+            onTap: (ctx) =>
+                ZNavigator.goto(context: ctx, const ContainerInvoicesView()),
           ),
         ],
       ),

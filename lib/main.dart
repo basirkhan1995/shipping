@@ -26,6 +26,7 @@ import 'package:shipping/Routes/Home/View/Report/CashBalances/bloc/cash_balances
 import 'package:shipping/Routes/Home/View/Report/IncomeStatement/bloc/income_statement_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/Inventory/Cardx/bloc/stock_record_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/Inventory/StockAvailability/bloc/product_report_bloc.dart';
+import 'package:shipping/Routes/Home/View/Report/Shipping/ContainerInvoices/bloc/container_invoices_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/Shipping/InvoicePrint/bloc/invoice_print_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/TrialBalance/bloc/trial_balance_bloc.dart';
 import 'package:shipping/Routes/Home/View/Report/TxnByReference/bloc/txn_ref_report_bloc.dart';
@@ -58,6 +59,7 @@ import 'package:shipping/Routes/Home/View/Transactions/bloc/transactions_bloc.da
 import 'Features/PrintSettings/bloc/PageOrientation/page_orientation_cubit.dart';
 import 'Features/PrintSettings/bloc/PageSize/paper_size_cubit.dart';
 import 'Features/PrintSettings/bloc/Printer/printer_cubit.dart';
+import 'Features/PrintSettings/print_services.dart';
 import 'Routes/Home/View/Dashboard/DailyPnL/bloc/pnl_stats_event.dart';
 import 'Routes/Home/View/Dashboard/bloc/dashboard_stats_bloc.dart';
 import 'Routes/Home/View/Products/Features/stock_overlay.dart';
@@ -82,7 +84,9 @@ import 'Themes/Ui/theme.dart';
 import 'l10n/Bloc/localizations_bloc.dart';
 import 'l10n/app_localizations.dart';
 
-void main() {
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
+  await PrintServices.initializeFonts();
   runApp(const MyApp());
 }
 
@@ -183,6 +187,7 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => PnLChartBloc(Repositories(ApiServices()))..add(const LoadPnLChartEvent(days: 30))),
           BlocProvider(create: (context) => ShipmentBloc(Repositories(ApiServices()))),
           BlocProvider(create: (context) => InvoicePrintBloc(Repositories(ApiServices()))),
+          BlocProvider(create: (context) => ContainerInvoicesBloc(Repositories(ApiServices()))),
         ],
         child: BlocBuilder<LocalizationBloc, Locale>(
          builder: (context, locale) {
@@ -200,7 +205,7 @@ class MyApp extends StatelessWidget {
                  },
                  child: MaterialApp(
                    themeMode: themeMode,
-                   navigatorKey: navigatorKey,
+                  // navigatorKey: navigatorKey,
                    locale: locale,
                    title: 'ZShipping',
                    darkTheme: theme.dark(),

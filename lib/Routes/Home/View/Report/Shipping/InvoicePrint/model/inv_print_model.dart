@@ -19,7 +19,7 @@ String? _toStr(dynamic v) => v?.toString();
 
 class ShippingInvoice {
   final Customer customer;
-  final Container container;
+  final ContainerInfo container;
   final List<InvoiceItem> items;
   final InvoiceTotals totals;
   final InvoiceMeta meta;
@@ -36,7 +36,7 @@ class ShippingInvoice {
     return ShippingInvoice(
       customer: Customer.fromJson(
           (json['customer'] as Map?)?.cast<String, dynamic>() ?? {}),
-      container: Container.fromJson(
+      container: ContainerInfo.fromJson(
           (json['container'] as Map?)?.cast<String, dynamic>() ?? {}),
       items: ((json['items'] as List?) ?? const [])
           .map((e) => InvoiceItem.fromJson(
@@ -168,7 +168,7 @@ class AddressInfo {
 // ============================================================
 // Container
 // ============================================================
-class Container {
+class ContainerInfo {
   final int shpId;
   final String? portName;
   final String? containerNo;
@@ -180,7 +180,7 @@ class Container {
   final String? entryDate;
   final String? createdBy;
 
-  Container({
+  ContainerInfo({
     required this.shpId,
     this.portName,
     this.containerNo,
@@ -193,7 +193,7 @@ class Container {
     this.createdBy,
   });
 
-  factory Container.fromJson(Map<String, dynamic> json) => Container(
+  factory ContainerInfo.fromJson(Map<String, dynamic> json) => ContainerInfo(
     shpId: _toInt(json['shpId']),
     portName: _toStr(json['portName']),
     containerNo: _toStr(json['containerNo']),
