@@ -328,7 +328,7 @@ class ContainerInvoicesPrintSettings extends PrintServices {
                 pw.SizedBox(height: 4),
                 _kv(
                   label: tr(text: 'signatory', tr: language),
-                  value: c.person.fullName ?? "",
+                  value: "${c.person.code ?? ""} | ${c.person.fullName ?? ""}",
                 ),
                 _kv(
                   label: tr(text: 'accountName', tr: language),
@@ -368,12 +368,8 @@ class ContainerInvoicesPrintSettings extends PrintServices {
                 horizontalDivider(width: 260),
                 pw.SizedBox(height: 4),
                 _kv(
-                  label: tr(text: 'containerInfo', tr: language),
-                  value: ct.containerNo ?? "—",
-                ),
-                _kv(
-                  label: tr(text: 'sequenceNo', tr: language),
-                  value: ct.sequenceNo ?? "—",
+                  label: tr(text: 'containerNo', tr: language),
+                  value: "${ct.containerNo ?? "—"} | ${ct.sequenceNo ?? "—"}",
                 ),
                 _kv(
                   label: tr(text: 'port', tr: language),
