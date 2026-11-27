@@ -579,7 +579,7 @@ abstract class PrintServices {
             fontSize: fontSize ?? 9,
             fontWeight:
             isEmphasized ? pw.FontWeight.bold : pw.FontWeight.normal,
-            textAlign: pw.TextAlign.right,
+            textAlign: pw.TextAlign.start,
           ),
         ],
       ),

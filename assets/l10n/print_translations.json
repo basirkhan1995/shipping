@@ -1568,7 +1568,7 @@
   "extraCharges": {
     "en": "Extra Charges",
     "ar": "اضافي لګښتونه",
-    "fa": "هزینه های متفرقه"
+    "fa": "هزینه اضافی"
   },
   "thankYou": {
     "en": "THANK YOU",
@@ -1708,6 +1708,11 @@
     "ar": "حجم",
     "fa": "حجم"
   },
+  "factor": {
+    "en": "Shipping Invoice",
+    "ar": "فاکتور حمل و نقل",
+    "fa": "فاکتور حمل و نقل"
+  },
   "weight": {
     "en": "Weight",
     "ar": "وزن",
@@ -1747,6 +1752,26 @@
     "en": "Delivered",
     "ar": "تحویل شوی",
     "fa": "تحویل شده"
+  },
+  "containerReport": {
+    "en": "Container Report",
+    "ar": "د کانټینر راپور",
+    "fa": "راپور کانتینر"
+  },
+  "containerSummary": {
+    "en": "Container Summary",
+    "ar": "د کانټینر لنډیز",
+    "fa": "خلاصه کانتینر"
+  },
+  "delivered": {
+    "en": "Delivered",
+    "ar": "تحویل شوی",
+    "fa": "تحویل شده"
+  },
+  "notDelivered": {
+    "en": "Not Delivered",
+    "ar": "تحویل نشوی",
+    "fa": "تحویل ناشده"
   }
 
 }

@@ -590,7 +590,7 @@
   "payment": "پرداخت",
   "selectAccount": "انتخاب حساب",
   "discount": "تخفیف",
-  "addItem": "سطر جدید",
+  "addItem": "افزودن آیتم",
   "selectCustomer": "لطفاً مشتری را انتخاب کنید",
   "invalidCashAmount": "مبلغ پرداخت نقدی معتبر نیست",
   "selectCreditAccountMsg": "لطفاً حساب اعتباری را انتخاب کنید",
@@ -808,6 +808,7 @@
   "failedSaveItem": "ذخیره آیتم ناموفق بود. لطفاً دوباره تلاش کنید.",
   "unexpectedError": "خطای غیرمنتظره: {error}",
   "disabledRateKgSet": "غیرفعال (نرخ فی کیلوگرام تنظیم شده)",
-  "disabledRateCbmSet": "غیرفعال (نرخ فی متر مکعب تنظیم شده)"
-
+  "disabledRateCbmSet": "غیرفعال (نرخ فی متر مکعب تنظیم شده)",
+  "addExpense": "افزودن مصارف",
+  "printContainer": "چاپ کانتینر"
 }

@@ -4875,6 +4875,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Disabled (Rate/CBM is set)'**
   String get disabledRateCbmSet;
+
+  /// No description provided for @addExpense.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Expense'**
+  String get addExpense;
+
+  /// No description provided for @printContainer.
+  ///
+  /// In en, this message translates to:
+  /// **'Print Container'**
+  String get printContainer;
 }
 
 class _AppLocalizationsDelegate

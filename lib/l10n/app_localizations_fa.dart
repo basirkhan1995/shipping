@@ -1771,7 +1771,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get discount => 'تخفیف';
 
   @override
-  String get addItem => 'سطر جدید';
+  String get addItem => 'افزودن آیتم';
 
   @override
   String get selectCustomer => 'لطفاً مشتری را انتخاب کنید';
@@ -2465,4 +2465,10 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get disabledRateCbmSet => 'غیرفعال (نرخ فی متر مکعب تنظیم شده)';
+
+  @override
+  String get addExpense => 'افزودن مصارف';
+
+  @override
+  String get printContainer => 'چاپ کانتینر';
 }

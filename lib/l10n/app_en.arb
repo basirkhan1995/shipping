@@ -808,5 +808,7 @@
   "failedSaveItem": "Failed to save item. Please try again.",
   "unexpectedError": "Unexpected error: {error}",
   "disabledRateKgSet": "Disabled (Rate/kg is set)",
-  "disabledRateCbmSet": "Disabled (Rate/CBM is set)"
+  "disabledRateCbmSet": "Disabled (Rate/CBM is set)",
+  "addExpense": "Add Expense",
+  "printContainer": "Print Container"
 }

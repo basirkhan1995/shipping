@@ -1770,7 +1770,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get discount => 'تخفیف';
 
   @override
-  String get addItem => 'سطر جدید';
+  String get addItem => 'آیتم اضافه کول';
 
   @override
   String get selectCustomer => 'مهرباني وکړئ پېرودونکی وټاکئ';
@@ -2463,4 +2463,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get disabledRateCbmSet => 'غیرفعال (نرخ فی متر مکعب تنظیم شده)';
+
+  @override
+  String get addExpense => 'لگشت اضافه کول';
+
+  @override
+  String get printContainer => 'چاپ کانتینر';
 }

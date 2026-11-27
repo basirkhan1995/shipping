@@ -7,10 +7,17 @@ import 'package:shipping/Features/Widgets/shimmer.dart';
 import 'package:shipping/Features/Widgets/toast.dart';
 import 'package:shipping/Features/Widgets/zbutton.dart';
 import 'package:shipping/Services/repository.dart';
+import '../../../../../../Features/Date/shamsi_converter.dart';
+import '../../../../../../Features/PrintSettings/print_preview.dart';
+import '../../../../../../Features/PrintSettings/report_model.dart';
 import '../../../../../../l10n/app_localizations.dart';
 import '../../../../../Auth/bloc/auth_bloc.dart';
+import '../../../../../Auth/features/com_logo.dart';
+import '../../../Settings/Visibility/bloc/settings_visible_bloc.dart';
 import '../../model/shp_model.dart';
+import '../ShpExpenses/shp_expenses.dart';
 import 'bloc/shp_by_id_bloc.dart';
+import 'PDF/container_pdf.dart';
 import 'model/shp_details_model.dart';
 import 'shp_by_id_form.dart';
 
@@ -34,6 +41,88 @@ class _ShpByIdBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
+    Future<void> openContainerPrintPreview(
+        BuildContext context,
+        ShipmentDetailsModel details,
+        ) async {
+      final visibilityState = context.read<SettingsVisibleBloc>().state;
+      final authState = context.read<AuthBloc>().state;
+      if (authState is! AuthenticatedState) {
+        _toast(context, 'Not signed in.', isError: true);
+        return;
+      }
+
+      final auth = authState.loginData;
+      final company = ReportModel();
+      company.comName = auth.company?.comName ?? "";
+      company.comAddress = auth.company?.comAddress ?? "";
+      company.compPhone = auth.company?.comPhone ?? "";
+      company.comEmail = auth.company?.comEmail ?? "";
+      company.comWhatsApp = auth.company?.comWhatsapp ?? "";
+      company.comWebsite = auth.company?.comWebsite ?? "";
+      company.comFacebook = auth.company?.comFb ?? "";
+      company.comInstagram = auth.company?.comInsta ?? "";
+      company.statementDate = DateTime.now().toFullDateTime;
+      company.slogan = auth.company?.comDetails ?? "";
+      final base64Logo = auth.company?.comLogo;
+      company.comLogo = CompanyLogoUtils.safeBytes(base64Logo);
+
+      showDialog(
+        context: context,
+        builder: (_) => PrintPreviewDialog<ShipmentDetailsModel>(
+          data: details,
+          company: company.copyWith(visible: visibilityState),
+          buildPreview: ({
+            required data,
+            required language,
+            required orientation,
+            required pageFormat,
+          }) {
+            return ShpByIdPrintSettings().printPreview(
+              company: company.copyWith(visible: visibilityState),
+              language: language,
+              orientation: orientation,
+              pageFormat: pageFormat,
+              info: data,
+            );
+          },
+          onPrint: ({
+            required data,
+            required language,
+            required orientation,
+            required pageFormat,
+            required selectedPrinter,
+            required copies,
+            required pages,
+          }) {
+            return ShpByIdPrintSettings().printDocument(
+              info: data,
+              company: company.copyWith(visible: visibilityState),
+              language: language,
+              orientation: orientation,
+              pageFormat: pageFormat,
+              selectedPrinter: selectedPrinter,
+              copies: copies,
+              pages: pages,
+            );
+          },
+          onSave: ({
+            required data,
+            required language,
+            required orientation,
+            required pageFormat,
+          }) {
+            return ShpByIdPrintSettings().createDocument(
+              info: data,
+              company: company.copyWith(visible: visibilityState),
+              language: language,
+              orientation: orientation,
+              pageFormat: pageFormat,
+            );
+          },
+        ),
+      );
+    }
     return BlocConsumer<ShpByIdBloc, ShpByIdState>(
       listenWhen: (prev, curr) {
         if (curr is! ShpByIdLoaded) return false;
@@ -88,6 +177,19 @@ class _ShpByIdBody extends StatelessWidget {
         final pending = loaded?.pendingAction;
         final color = Theme.of(context).colorScheme;
 
+        Future<void> openExpenseDialog(BuildContext context, int shpId) async {
+          final usrName = _currentUsername(context);
+          if (usrName == null) {
+            _toast(context, 'Not signed in. Please sign in again.', isError: true);
+            return;
+          }
+
+          await showShpExpenseDialog(
+            context,
+            shpId: shpId,
+            usrName: usrName,
+          );
+        }
         return Scaffold(
           backgroundColor: color.surfaceContainerLow,
           appBar: AppBar(
@@ -132,18 +234,20 @@ class _ShpByIdBody extends StatelessWidget {
               //Invoice Print
               ZOutlineButton(
                 icon: Icons.print_rounded,
-                label: Text(tr.print),
+                label: Text(tr.printContainer),
                 disable: isMutating,
-                onPressed: null,
+                onPressed: isMutating
+                    ? null
+                    : () => openContainerPrintPreview(context, details),
               ),
               SizedBox(width: 8),
 
               ///Expense Handling
               ZOutlineButton(
                 icon: Icons.trending_down_rounded,
-                label: Text(tr.expenseEntry),
+                label: Text(tr.addExpense),
                 disable: isMutating,
-                onPressed: null,
+                onPressed: isMutating ? null : () => openExpenseDialog(context, shpId),
               ),
               SizedBox(width: 8),
               ZOutlineButton(

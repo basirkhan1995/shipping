@@ -265,7 +265,7 @@ class ContainerInvoicesPrintSettings extends PrintServices {
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
           zText(
-            text: tr(text: 'invoice', tr: language),
+            text: tr(text: 'factor', tr: language),
             fontSize: 16,
             fontWeight: pw.FontWeight.bold,
           ),
@@ -405,7 +405,7 @@ class ContainerInvoicesPrintSettings extends PrintServices {
     const cbmW = 46.0;
     const weightW = 50.0;
     const avgW = 52.0;
-    const rateW = 60.0;
+    const rateW = 70.0;
     const extraW = 50.0;
     const rentW = 62.0;
 
@@ -504,8 +504,8 @@ class ContainerInvoicesPrintSettings extends PrintServices {
     );
 
     final rate = item.ratePerCbm > 0
-        ? "${item.ratePerCbm.toAmount()}/${tr(text: 'cbm', tr: language)}"
-        : "${item.ratePerWeight.toAmount()}/${tr(text: 'weight', tr: language)}";
+        ? "${item.ratePerCbm.toAmount()} ${tr(text: 'cbm', tr: language)}"
+        : "${item.ratePerWeight.toAmount()} ${tr(text: 'weight', tr: language)}";
 
     // Guard: weightAVG can be NaN/Infinity if server sent 0 for cbm
     // and the client computed (weight / 0). Show "—" instead.
@@ -534,9 +534,9 @@ class ContainerInvoicesPrintSettings extends PrintServices {
             ),
           ),
           cell("${item.qty}", widths['qty']!),
-          cell(_safeAmount(item.cbm), widths['cbm']!),
-          cell(_safeAmount(item.weight), widths['weight']!),
-          cell(avgDisplay, widths['avg']!), // ← guarded
+          cell(item.cbm.toAmount(decimal: 3), widths['cbm']!),
+          cell(item.weight.toAmount(decimal: 2), widths['weight']!),
+          cell(avgDisplay, widths['avg']!),
           cell(rate, widths['rate']!),
           cell(_safeAmount(item.extraCharges), widths['extra']!),
           cell(_safeAmount(item.itemRent), widths['rent']!),
@@ -581,7 +581,7 @@ class ContainerInvoicesPrintSettings extends PrintServices {
               pw.SizedBox(height: 2),
               buildSummary(
                 distance: 100,
-                label: tr(text: 'items', tr: language),
+                label: tr(text: 'noItems', tr: language),
                 value: "${t.items}",
               ),
               pw.SizedBox(height: 1),
@@ -594,19 +594,19 @@ class ContainerInvoicesPrintSettings extends PrintServices {
               buildSummary(
                 distance: 100,
                 label: tr(text: 'totalCbm', tr: language),
-                value: _safeAmount(t.cbm),
+                value: "${t.cbm.toAmount(decimal: 3)} CBM",
               ),
               pw.SizedBox(height: 1),
               buildSummary(
                 distance: 100,
                 label: tr(text: 'totalWeight', tr: language),
-                value: _safeAmount(t.weight),
+                value: "${t.weight.toAmount(decimal: 2)} kg",
               ),
               pw.SizedBox(height: 1),
               buildSummary(
                 distance: 100,
                 label: tr(text: 'weightAverage', tr: language),
-                value: _safeAmount(totalWeightAverage),
+                value: "${_safeAmount(totalWeightAverage)} kg",
               ),
               pw.SizedBox(height: 1),
               buildSummary(
@@ -681,7 +681,7 @@ class ContainerInvoicesPrintSettings extends PrintServices {
   /// otherwise formats with [double.toAmount] (2-decimal string).
   static String _safeAmount(num? v) {
     if (v == null) return "—";
-    final d = v.toDouble();
+    final d = v.toDoubleAmount(decimal: 2);
     if (!d.isFinite) return "—";
     return d.toAmount();
   }

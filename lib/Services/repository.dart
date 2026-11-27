@@ -3227,25 +3227,19 @@ class Repositories {
   Future<ShipmentDetailsModel> getShippingDetails({
     required int shpId,
   }) async {
-    try {
-      final response = await _api.get(
-        endpoint: "/shipment/shippingItem.php",
-        queryParams: {
-          'input': shpId,
-        },
-      );
+    final response = await _api.get(
+      endpoint: "/shipment/shippingItem.php",
+      queryParams: {
+        'input': shpId,
+        '_': DateTime.now().millisecondsSinceEpoch,   // cache buster
+      },
+    );
 
-      final data = _validateResponse(response.data);
-      return ShipmentDetailsModel.fromJson(data);
-    } on DioException catch (e) {
-      throw ApiException(
-        e.message ?? 'Failed to load shipment details.',
-        statusCode: e.response?.statusCode,
-      );
-    }
+    final data = _validateResponse(response.data);
+    return ShipmentDetailsModel.fromJson(data);
   }
 
-  ///SHIPPINGS -----------------------------------------------------------------
+  ///Shipping -----------------------------------------------------------------
   Future<List<ShipmentModel>> getContainers({
     String status = 'pending',
     String? search,

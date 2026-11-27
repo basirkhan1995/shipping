@@ -2474,4 +2474,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get disabledRateCbmSet => 'Disabled (Rate/CBM is set)';
+
+  @override
+  String get addExpense => 'Add Expense';
+
+  @override
+  String get printContainer => 'Print Container';
 }
