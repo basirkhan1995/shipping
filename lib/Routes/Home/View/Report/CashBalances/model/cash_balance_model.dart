@@ -212,13 +212,13 @@ class Transaction {
 
   factory Transaction.fromMap(Map<String, dynamic> json) => Transaction(
     date: json["date"] == null ? null : DateTime.parse(json["date"]),
-    narration: json["narration"],
+    narration: json["narration"].toString(),
     debit: json["debit"]?.toString(),
     credit: json["credit"]?.toString(),
     currency: json["currency"],
     reference: json["reference"],
-    creditAccountName: json["contra_account_name"],
-    creditAccountNumber: json["contra_account_number"],
+    creditAccountName: json["credit_account_name"],
+    creditAccountNumber: json["credit_account_number"],
     transactionType: json["transaction_type"],
     status: json["status"],
     runningBalance: json["running_balance"],

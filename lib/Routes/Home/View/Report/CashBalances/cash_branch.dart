@@ -916,12 +916,12 @@ class _DesktopState extends State<_Desktop> {
     final amount = isDebit ? debit : credit;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      margin: const EdgeInsets.only(bottom: 0),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.withValues(alpha: .3)),
+        borderRadius: BorderRadius.circular(4),
+       border: Border.all(color: Colors.grey.withValues(alpha: .1)),
       ),
       child: Row(
         children: [
@@ -982,7 +982,7 @@ class _DesktopState extends State<_Desktop> {
                 if (txn.narration != null && txn.narration!.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
-                    txn.narration!,
+                    txn.narration??"",
                     style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
