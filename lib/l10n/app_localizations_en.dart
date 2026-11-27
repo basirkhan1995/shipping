@@ -2378,4 +2378,100 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get printSingleInvioce => 'Print Invoice';
+
+  @override
+  String fileSaved(Object file) {
+    return 'File saved: $file';
+  }
+
+  @override
+  String exportFailed(Object error) {
+    return 'Export failed: $error';
+  }
+
+  @override
+  String itemStatusUpdated(Object status) {
+    return 'Item status updated to $status';
+  }
+
+  @override
+  String failedUpdateItemStatus(Object error) {
+    return 'Failed to update item status: $error';
+  }
+
+  @override
+  String get itemAdded => 'Item added';
+
+  @override
+  String reloadFailed(Object error) {
+    return 'Reload failed: $error';
+  }
+
+  @override
+  String get overLimitAdd =>
+      'Account has reached its debit limit. The item was not added.';
+
+  @override
+  String get blockedAdd => 'This account is blocked. The item was not added.';
+
+  @override
+  String operationFailed(Object error) {
+    return 'Operation failed: $error';
+  }
+
+  @override
+  String failedAddItem(Object error) {
+    return 'Failed to add item: $error';
+  }
+
+  @override
+  String get itemUpdated => 'Item updated';
+
+  @override
+  String get overLimitUpdate =>
+      'Account has reached its debit limit. The item was not updated.';
+
+  @override
+  String get blockedUpdate =>
+      'This account is blocked. The item was not updated.';
+
+  @override
+  String failedUpdateItem(Object error) {
+    return 'Failed to update item: $error';
+  }
+
+  @override
+  String get itemDeleted => 'Item deleted';
+
+  @override
+  String failedDeleteItem(Object error) {
+    return 'Failed to delete item: $error';
+  }
+
+  @override
+  String get accountRequired => 'Account is required';
+
+  @override
+  String get itemDescriptionRequired => 'Item description is required';
+
+  @override
+  String get qtyMustBeGreaterThanZero => 'Qty must be greater than 0';
+
+  @override
+  String get onlyOneRateAllowed =>
+      'Only one rate is allowed — pick either Rate/CBM or Rate/kg';
+
+  @override
+  String get failedSaveItem => 'Failed to save item. Please try again.';
+
+  @override
+  String unexpectedError(Object error) {
+    return 'Unexpected error: $error';
+  }
+
+  @override
+  String get disabledRateKgSet => 'Disabled (Rate/kg is set)';
+
+  @override
+  String get disabledRateCbmSet => 'Disabled (Rate/CBM is set)';
 }

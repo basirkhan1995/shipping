@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:shipping/Services/repository.dart';
 
+import '../../../../../../../Services/localization_services.dart';
 import '../model/shp_details_model.dart';
 
 part 'shp_by_id_event.dart';
@@ -31,9 +32,7 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
     final current = state;
     if (current is! ShpByIdLoaded) return;
 
-    // Note: ShpByIdAction enum doesn't have an 'export' action.
-    // If you want to disable UI buttons while exporting, add `export`
-    // to the enum in shp_by_id_state.dart. Otherwise, we just trigger the action.
+    final tr = localizationService.loc;
 
     emit(current.copyWith(
       clearActionError: true,
@@ -42,13 +41,14 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
 
     try {
       final filePath = await _repo.exportContainerItems(shpId: event.shpId);
+      final fileName = filePath.split('/').last;
 
       emit(current.copyWith(
-        successMessage: 'File saved: ${filePath.split('/').last}',
+        successMessage: tr.fileSaved(fileName),
       ));
     } catch (e) {
       emit(current.copyWith(
-        actionError: 'Export failed: ${_msg(e)}',
+        actionError: tr.exportFailed(_msg(e)),
       ));
     }
   }
@@ -65,9 +65,14 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
     return result.toString().trim().toLowerCase();
   }
 
-  Future<void> _onUpdateItemStatus(ShpByIdUpdateItemStatusRequested event, Emitter<ShpByIdState> emit) async {
+  Future<void> _onUpdateItemStatus(
+      ShpByIdUpdateItemStatusRequested event,
+      Emitter<ShpByIdState> emit,
+      ) async {
     final current = state;
     if (current is! ShpByIdLoaded) return;
+
+    final tr = localizationService.loc;
 
     emit(current.copyWith(
       pendingAction: ShpByIdAction.updateItemStatus,
@@ -78,9 +83,9 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
     try {
       // Recalculate status using server-side delivery movements.
       final status = await _repo.updateShpItemStatus(
-          usrName: event.usrName,
-          shpItmId: event.shpItmId,
-          status: event.status
+        usrName: event.usrName,
+        shpItmId: event.shpItmId,
+        status: event.status,
       );
 
       // Fetch fresh shipment details.
@@ -90,16 +95,15 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
 
       emit(ShpByIdLoaded(
         fresh,
-        successMessage: 'Item status updated to $status',
+        successMessage: tr.itemStatusUpdated(status),
       ));
     } catch (e) {
       emit(current.copyWith(
         clearPendingAction: true,
-        actionError: 'Failed to update item status: ${_msg(e)}',
+        actionError: tr.failedUpdateItemStatus(_msg(e)),
       ));
     }
   }
-
 
   // ─────────────────────────────────────────────────────────
   // LOAD
@@ -128,6 +132,8 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
     final current = state;
     if (current is! ShpByIdLoaded) return;
 
+    final tr = localizationService.loc;
+
     emit(current.copyWith(
       pendingAction: ShpByIdAction.addItem,
       clearActionError: true,
@@ -148,19 +154,17 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
         extraCharges: event.extraCharges,
       );
 
-
-
       switch (_normalizeMsg(result)) {
         case 'success':
           try {
             final fresh = await _repo.getShippingDetails(shpId: event.shpId);
-            emit(ShpByIdLoaded(fresh, successMessage: 'Item added'));
+            emit(ShpByIdLoaded(fresh, successMessage: tr.itemAdded));
           } catch (e) {
             // Server committed; refresh failed — still report success.
             emit(current.copyWith(
               clearPendingAction: true,
-              successMessage: 'Item added',
-              actionError: 'Reload failed: ${_msg(e)}',
+              successMessage: tr.itemAdded,
+              actionError: tr.reloadFailed(_msg(e)),
             ));
           }
           return;
@@ -168,34 +172,31 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
         case 'over limit':
           emit(current.copyWith(
             clearPendingAction: true,
-            actionError: 'Account has reached its debit limit. '
-                'The item was not added.',
+            actionError: tr.overLimitAdd,
           ));
           return;
 
         case 'blocked':
           emit(current.copyWith(
             clearPendingAction: true,
-            actionError: 'This account is blocked. '
-                'The item was not added.',
+            actionError: tr.blockedAdd,
           ));
           return;
 
         default:
           emit(current.copyWith(
             clearPendingAction: true,
-            actionError: 'Operation failed: ${_normalizeMsg(result)}',
+            actionError: tr.operationFailed(_normalizeMsg(result)),
           ));
           return;
       }
     } catch (e) {
       emit(current.copyWith(
         clearPendingAction: true,
-        actionError: 'Failed to add item: ${_msg(e)}',
+        actionError: tr.failedAddItem(_msg(e)),
       ));
     }
   }
-
 
   // ─────────────────────────────────────────────────────────
   // UPDATE ITEM
@@ -206,6 +207,8 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
       ) async {
     final current = state;
     if (current is! ShpByIdLoaded) return;
+
+    final tr = localizationService.loc;
 
     emit(current.copyWith(
       pendingAction: ShpByIdAction.updateItem,
@@ -232,12 +235,12 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
         case 'success':
           try {
             final fresh = await _repo.getShippingDetails(shpId: event.shpId);
-            emit(ShpByIdLoaded(fresh, successMessage: 'Item updated'));
+            emit(ShpByIdLoaded(fresh, successMessage: tr.itemUpdated));
           } catch (e) {
             emit(current.copyWith(
               clearPendingAction: true,
-              successMessage: 'Item updated',
-              actionError: 'Reload failed: ${_msg(e)}',
+              successMessage: tr.itemUpdated,
+              actionError: tr.reloadFailed(_msg(e)),
             ));
           }
           return;
@@ -245,30 +248,28 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
         case 'over limit':
           emit(current.copyWith(
             clearPendingAction: true,
-            actionError: 'Account has reached its debit limit. '
-                'The item was not updated.',
+            actionError: tr.overLimitUpdate,
           ));
           return;
 
         case 'blocked':
           emit(current.copyWith(
             clearPendingAction: true,
-            actionError: 'This account is blocked. '
-                'The item was not updated.',
+            actionError: tr.blockedUpdate,
           ));
           return;
 
         default:
           emit(current.copyWith(
             clearPendingAction: true,
-            actionError: 'Operation failed: ${_normalizeMsg(result)}',
+            actionError: tr.operationFailed(_normalizeMsg(result)),
           ));
           return;
       }
     } catch (e) {
       emit(current.copyWith(
         clearPendingAction: true,
-        actionError: 'Failed to update item: ${_msg(e)}',
+        actionError: tr.failedUpdateItem(_msg(e)),
       ));
     }
   }
@@ -282,6 +283,8 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
       ) async {
     final current = state;
     if (current is! ShpByIdLoaded) return;
+
+    final tr = localizationService.loc;
 
     emit(current.copyWith(
       pendingAction: ShpByIdAction.deleteItem,
@@ -299,12 +302,12 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
       final fresh = await _repo.getShippingDetails(shpId: event.shpId);
       emit(ShpByIdLoaded(
         fresh,
-        successMessage: 'Item deleted',
+        successMessage: tr.itemDeleted,
       ));
     } catch (e) {
       emit(current.copyWith(
         clearPendingAction: true,
-        actionError: 'Failed to delete item: ${_msg(e)}',
+        actionError: tr.failedDeleteItem(_msg(e)),
       ));
     }
   }

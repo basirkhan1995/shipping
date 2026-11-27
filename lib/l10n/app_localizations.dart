@@ -4731,6 +4731,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Print Invoice'**
   String get printSingleInvioce;
+
+  /// No description provided for @fileSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'File saved: {file}'**
+  String fileSaved(Object file);
+
+  /// No description provided for @exportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed: {error}'**
+  String exportFailed(Object error);
+
+  /// No description provided for @itemStatusUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Item status updated to {status}'**
+  String itemStatusUpdated(Object status);
+
+  /// No description provided for @failedUpdateItemStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update item status: {error}'**
+  String failedUpdateItemStatus(Object error);
+
+  /// No description provided for @itemAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Item added'**
+  String get itemAdded;
+
+  /// No description provided for @reloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload failed: {error}'**
+  String reloadFailed(Object error);
+
+  /// No description provided for @overLimitAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Account has reached its debit limit. The item was not added.'**
+  String get overLimitAdd;
+
+  /// No description provided for @blockedAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'This account is blocked. The item was not added.'**
+  String get blockedAdd;
+
+  /// No description provided for @operationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation failed: {error}'**
+  String operationFailed(Object error);
+
+  /// No description provided for @failedAddItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to add item: {error}'**
+  String failedAddItem(Object error);
+
+  /// No description provided for @itemUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Item updated'**
+  String get itemUpdated;
+
+  /// No description provided for @overLimitUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Account has reached its debit limit. The item was not updated.'**
+  String get overLimitUpdate;
+
+  /// No description provided for @blockedUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'This account is blocked. The item was not updated.'**
+  String get blockedUpdate;
+
+  /// No description provided for @failedUpdateItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update item: {error}'**
+  String failedUpdateItem(Object error);
+
+  /// No description provided for @itemDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Item deleted'**
+  String get itemDeleted;
+
+  /// No description provided for @failedDeleteItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete item: {error}'**
+  String failedDeleteItem(Object error);
+
+  /// No description provided for @accountRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Account is required'**
+  String get accountRequired;
+
+  /// No description provided for @itemDescriptionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Item description is required'**
+  String get itemDescriptionRequired;
+
+  /// No description provided for @qtyMustBeGreaterThanZero.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty must be greater than 0'**
+  String get qtyMustBeGreaterThanZero;
+
+  /// No description provided for @onlyOneRateAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Only one rate is allowed — pick either Rate/CBM or Rate/kg'**
+  String get onlyOneRateAllowed;
+
+  /// No description provided for @failedSaveItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save item. Please try again.'**
+  String get failedSaveItem;
+
+  /// No description provided for @unexpectedError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unexpected error: {error}'**
+  String unexpectedError(Object error);
+
+  /// No description provided for @disabledRateKgSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled (Rate/kg is set)'**
+  String get disabledRateKgSet;
+
+  /// No description provided for @disabledRateCbmSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled (Rate/CBM is set)'**
+  String get disabledRateCbmSet;
 }
 
 class _AppLocalizationsDelegate

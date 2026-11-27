@@ -131,15 +131,17 @@ class _ShpItemFormState extends State<ShpItemForm> {
     super.initState();
     final e = widget.existing;
 
-    _accountNo = TextEditingController(text: e?.accountNo ?? '');
-    _description = TextEditingController(text: e?.itemDescription ?? '');
-    _qty = TextEditingController(text: e == null ? '' : _fmt(e.qty));
-    _cbm = TextEditingController(text: e == null ? '' : _fmt(e.cbm, decimals: 4));
-    _weight = TextEditingController(text: e == null ? '' : _fmt(e.weight, decimals: 3));
-    _ratePerCbm = TextEditingController(text: e == null ? '' : _fmt(e.ratePerCbm, decimals: 4));
-    _ratePerWeight = TextEditingController(text: e == null ? '' : _fmt(e.ratePerWeight, decimals: 4));
-    _extraCharges = TextEditingController(text: e == null ? '' : _fmt(e.extraCharges, decimals: 2));
+    // Controllers — all 8 assigned
+    _accountNo    = TextEditingController(text: e?.accountNo ?? '');
+    _description  = TextEditingController(text: e?.itemDescription ?? '');
+    _qty           = TextEditingController(text: e?.qty.toAmountInt() ?? '');
+    _cbm           = TextEditingController(text: e?.cbm.toAmount(decimal: 4) ?? '');
+    _weight        = TextEditingController(text: e?.weight.toAmount(decimal: 3) ?? '');
+    _ratePerCbm    = TextEditingController(text: e?.ratePerCbm.toAmount(decimal: 4) ?? '');
+    _ratePerWeight = TextEditingController(text: e?.ratePerWeight.toAmount(decimal: 4) ?? '');
+    _extraCharges  = TextEditingController(text: e?.extraCharges.toAmount(decimal: 2) ?? '');
 
+    // Focus nodes — all 8 assigned
     _accountFocus = FocusNode();
     _descFocus = FocusNode();
     _qtyFocus = FocusNode();
@@ -224,7 +226,8 @@ class _ShpItemFormState extends State<ShpItemForm> {
   bool get _lockRateCbm => _d(_ratePerWeight) > 0;
   bool get _lockRateWeight => _d(_ratePerCbm) > 0;
 
-  double _d(TextEditingController c) => double.tryParse(c.text.trim()) ?? 0.0;
+  // ✅ FIX: use the extension so comma-grouped prefills parse correctly.
+  double _d(TextEditingController c) => c.text.toDoubleAmount();
 
   double get _grandTotal {
     final cbm = _d(_cbm);
@@ -235,29 +238,30 @@ class _ShpItemFormState extends State<ShpItemForm> {
     return (cbm * rc) + (wt * rw) + extra;
   }
 
-  // ───────────────────────────────────────────────────────────────────────
-  // SUBMIT — dispatches to BLoC and awaits success/failure.
-  // Dialog stays open (shows spinner + error) until the BLoC confirms success.
-  // ───────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────
+// SUBMIT — dispatches to BLoC and awaits success/failure.
+// Success → toast + close dialog. Failure → inline error in dialog.
+// ───────────────────────────────────────────────────────────────────────
   Future<void> _submit() async {
     if (_submitting) return;
     setState(() => _error = null);
 
+    final tr = AppLocalizations.of(context)!;
+
     if (_effectiveAccountNo == null) {
-      setState(() => _error = 'Account is required');
+      setState(() => _error = tr.accountRequired);
       return;
     }
     if (_description.text.trim().isEmpty) {
-      setState(() => _error = 'Item description is required');
+      setState(() => _error = tr.itemDescriptionRequired);
       return;
     }
     if (_qty.text.trim().isEmpty || _d(_qty) <= 0) {
-      setState(() => _error = 'Qty must be greater than 0');
+      setState(() => _error = tr.qtyMustBeGreaterThanZero);
       return;
     }
     if (_d(_ratePerCbm) > 0 && _d(_ratePerWeight) > 0) {
-      setState(() => _error =
-      'Only one rate is allowed — pick either Rate/CBM or Rate/kg');
+      setState(() => _error = tr.onlyOneRateAllowed);
       return;
     }
 
@@ -265,17 +269,18 @@ class _ShpItemFormState extends State<ShpItemForm> {
 
     final bloc = context.read<ShpByIdBloc>();
 
-    // Subscribe to the bloc; complete when successMessage arrives (no error),
-    // or fail when actionError arrives.
-    final completer = Completer<bool>();
+    // ✅ Capture the message string directly from the stream event.
+    //    null  → success
+    //    non-null → error message (e.g. tr.overLimitAdd)
+    final completer = Completer<String?>();
     late final StreamSubscription<ShpByIdState> sub;
     sub = bloc.stream.listen((s) {
       if (s is! ShpByIdLoaded) return;
       if (!completer.isCompleted) {
         if (s.actionError != null) {
-          completer.complete(false);
+          completer.complete(s.actionError); // capture exact error
         } else if (s.successMessage != null) {
-          completer.complete(true);
+          completer.complete(null); // success
         }
       }
     });
@@ -310,12 +315,21 @@ class _ShpItemFormState extends State<ShpItemForm> {
         ));
       }
 
-      final ok = await completer.future;
+      final errMsg = await completer.future;
 
       if (!mounted) return;
 
-      if (ok) {
-        Navigator.of(context).pop(ShpItemFormResult(
+      if (errMsg == null) {
+        // ── SUCCESS ───────────────────────────────────────────────────
+        final s = bloc.state;
+        final successMsg = (s is ShpByIdLoaded && s.successMessage != null)
+            ? s.successMessage!
+            : (_isEdit ? tr.itemUpdated : tr.itemAdded);
+
+        // Capture messenger BEFORE pop (context is defunct after pop).
+        final messenger = ScaffoldMessenger.of(context);
+
+        final result = ShpItemFormResult(
           accountNo: _effectiveAccountNo!,
           itemDescription: _description.text.trim(),
           qty: _d(_qty),
@@ -324,24 +338,32 @@ class _ShpItemFormState extends State<ShpItemForm> {
           ratePerCbm: _d(_ratePerCbm),
           ratePerWeight: _d(_ratePerWeight),
           extraCharges: _d(_extraCharges),
-        ));
-      } else {
-        // Pull the current error message from the bloc state
-        final s = bloc.state;
-        final msg = (s is ShpByIdLoaded && s.actionError != null)
-            ? s.actionError!
-            : 'Failed to save item. Please try again.';
-        setState(() {
-          _error = msg;
-          _submitting = false;
-        });
-        // Clear the action error so a retry can proceed
-        bloc.add(const ShpByIdActionErrorCleared());
+        );
+
+        Navigator.of(context).pop(result);
+
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(successMsg),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        return;
       }
+
+      // ── FAILURE — dialog stays open, shows exact error inline ─────
+      setState(() {
+        _error = errMsg;
+        _submitting = false;
+      });
+      // Clear so a retry can proceed.
+      bloc.add(const ShpByIdActionErrorCleared());
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Unexpected error: $e';
+        _error = tr.unexpectedError(e.toString());
         _submitting = false;
       });
     } finally {
@@ -645,6 +667,13 @@ class _GrandTotalBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
 
+    final cbmTotal = cbm * rateCbm;
+    final weightTotal = weight * rateKg;
+    final showCbmRow = cbmTotal > 0;
+    final showWeightRow = weightTotal > 0;
+    final showAvgRow = weight > 0 && cbm > 0;
+    final showExtraRow = extra > 0;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -657,38 +686,60 @@ class _GrandTotalBar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _row('${tr.cbm} × ${tr.cbmRate}', '${_fmt(cbm, decimals: 3)} × ${_fmt(rateCbm, decimals: 2)}', _money(cbm * rateCbm)),
+          if (showCbmRow) ...[
+            _row(
+              '${tr.cbm} × ${tr.cbmRate}',
+              '${cbm.toAmount(decimal: 3)} × ${rateCbm.toAmount(decimal: 4)}',
+              cbmTotal.toAmount(),
+            ),
+            const SizedBox(height: 4),
+          ],
+          if (showWeightRow) ...[
+            _row(
+              '${tr.weight} × ${tr.weightRate}',
+              '${weight.toAmount(decimal: 2)} × ${rateKg.toAmount(decimal: 4)}',
+              weightTotal.toAmount(),
+            ),
+            const SizedBox(height: 4),
+          ],
+          if (showAvgRow) ...[
+            _row(
+              tr.weightAvg,
+              '${weight.toAmount(decimal: 2)} / ${cbm.toAmount(decimal: 2)}',
+              (weight / cbm).toAmount(),
+            ),
+            const SizedBox(height: 4),
+          ],
+          if (showExtraRow) ...[
+            _row(tr.extraCharges, '', extra.toAmount()),
+            const SizedBox(height: 4),
+          ],
           const SizedBox(height: 4),
-          _row('${tr.weight} × ${tr.weightRate}', '${_fmt(weight, decimals: 2)} × ${_fmt(rateKg, decimals: 2)}', _money(weight * rateKg)),
-          const SizedBox(height: 4),
-          _row(
-            tr.weightAvg,
-            '${_fmt(weight, decimals: 2)} / ${_fmt(cbm, decimals: 2)}',
-            cbm == 0 ? '0.00' : _money(weight / cbm),
-          ),
-          const SizedBox(height: 4),
-          _row(tr.extraCharges, '', _money(extra)),
-          const SizedBox(height: 8),
           Divider(height: 1, color: color.primary.withValues(alpha: 0.2)),
           const SizedBox(height: 8),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                tr.grandTotal.toUpperCase(),
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: color.onPrimaryContainer,
+              Expanded(
+                child: Text(
+                  tr.grandTotal.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: color.onPrimaryContainer,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 8),
               Text(
-                _money(total),
+                total.toAmount(),
+                textAlign: TextAlign.right,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: color.primary,
                 ),
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -699,9 +750,10 @@ class _GrandTotalBar extends StatelessWidget {
 
   Widget _row(String label, String detail, String amount) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        // Label — takes the left share
         Expanded(
+          flex: 3,
           child: Text(
             label,
             style: TextStyle(
@@ -709,40 +761,38 @@ class _GrandTotalBar extends StatelessWidget {
               fontWeight: FontWeight.w500,
               color: color.onPrimaryContainer.withValues(alpha: 0.85),
             ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
+        // Detail — fixed-ish middle share, right-aligned
         if (detail.isNotEmpty)
-          Text(
-            detail,
-            style: TextStyle(
-              fontSize: 14,
-              color: color.onPrimaryContainer.withValues(alpha: 0.6),
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: Text(
+              detail,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 14,
+                color: color.onPrimaryContainer.withValues(alpha: 0.6),
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-        const SizedBox(width: 8),
-        Text(
-          amount,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: color.onPrimaryContainer,
+        // Amount — right share, right-aligned to the very end
+        Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: Text(
+            amount,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: color.onPrimaryContainer,
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
     );
   }
-
-  String _money(double v) => '\$${_fmt(v, decimals: 2)}';
-}
-
-String _fmt(double v, {int decimals = 0}) {
-  final s = v.toStringAsFixed(decimals);
-  final parts = s.split('.');
-  final intPart = parts[0];
-  final buf = StringBuffer();
-  for (int i = 0; i < intPart.length; i++) {
-    if (i > 0 && (intPart.length - i) % 3 == 0) buf.write(',');
-    buf.write(intPart[i]);
-  }
-  return parts.length > 1 ? '${buf.toString()}.${parts[1]}' : buf.toString();
 }

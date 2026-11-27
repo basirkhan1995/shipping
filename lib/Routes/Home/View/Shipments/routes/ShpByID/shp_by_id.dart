@@ -33,15 +33,12 @@ class _ShpByIdBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
     return BlocConsumer<ShpByIdBloc, ShpByIdState>(
-      listenWhen: (prev, curr) =>
-          curr is ShpByIdLoaded &&
-          (curr.successMessage != null || curr.actionError != null),
+      listenWhen: (prev, curr) => curr is ShpByIdLoaded && (curr.successMessage != null || curr.actionError != null),
       listener: (context, state) {
         if (state is! ShpByIdLoaded) return;
         if (state.successMessage != null) {
           _toast(context, state.successMessage!);
         } else if (state.actionError != null) {
-          _toast(context, state.actionError!, isError: true);
           context.read<ShpByIdBloc>().add(const ShpByIdActionErrorCleared());
         }
       },

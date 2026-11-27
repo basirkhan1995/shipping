@@ -2369,4 +2369,98 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get printSingleInvioce => 'چاپ بل';
+
+  @override
+  String fileSaved(Object file) {
+    return 'دوتنه خوندي شوه: $file';
+  }
+
+  @override
+  String exportFailed(Object error) {
+    return 'صادرات ناکام شو: $error';
+  }
+
+  @override
+  String itemStatusUpdated(Object status) {
+    return 'د توکي حالت $status ته بدل شو';
+  }
+
+  @override
+  String failedUpdateItemStatus(Object error) {
+    return 'د توکي د حالت تازه کول ناکام شول: $error';
+  }
+
+  @override
+  String get itemAdded => 'توکی اضافه شو';
+
+  @override
+  String reloadFailed(Object error) {
+    return 'بیا لوستل ناکام شول: $error';
+  }
+
+  @override
+  String get overLimitAdd => 'حساب خپل د پور حد ته رسیدلی دی. توکی اضافه نشو.';
+
+  @override
+  String get blockedAdd => 'دا حساب بند دی. توکی اضافه نشو.';
+
+  @override
+  String operationFailed(Object error) {
+    return 'عملیه ناکامه شوه: $error';
+  }
+
+  @override
+  String failedAddItem(Object error) {
+    return 'د توکي اضافه کول ناکام شول: $error';
+  }
+
+  @override
+  String get itemUpdated => 'توکی تازه شو';
+
+  @override
+  String get overLimitUpdate =>
+      'حساب خپل د پور حد ته رسیدلی دی. توکی تازه نشو.';
+
+  @override
+  String get blockedUpdate => 'دا حساب بند دی. توکی تازه نشو.';
+
+  @override
+  String failedUpdateItem(Object error) {
+    return 'د توکي تازه کول ناکام شول: $error';
+  }
+
+  @override
+  String get itemDeleted => 'توکی حذف شو';
+
+  @override
+  String failedDeleteItem(Object error) {
+    return 'د توکي حذف کول ناکام شول: $error';
+  }
+
+  @override
+  String get accountRequired => 'حساب الزامی است';
+
+  @override
+  String get itemDescriptionRequired => 'توضیحات آیتم الزامی است';
+
+  @override
+  String get qtyMustBeGreaterThanZero => 'تعداد باید بیشتر از صفر باشد';
+
+  @override
+  String get onlyOneRateAllowed =>
+      'فقط یک نرخ مجاز است — نرخ فی متر مکعب یا نرخ فی کیلوگرام را انتخاب کنید';
+
+  @override
+  String get failedSaveItem => 'ذخیره آیتم ناموفق بود. لطفاً دوباره تلاش کنید.';
+
+  @override
+  String unexpectedError(Object error) {
+    return 'خطای غیرمنتظره: $error';
+  }
+
+  @override
+  String get disabledRateKgSet => 'غیرفعال (نرخ فی کیلوگرام تنظیم شده)';
+
+  @override
+  String get disabledRateCbmSet => 'غیرفعال (نرخ فی متر مکعب تنظیم شده)';
 }
