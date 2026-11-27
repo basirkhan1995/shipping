@@ -272,6 +272,28 @@ class ApiServices {
   /*                                  DELETE                                    */
   /* -------------------------------------------------------------------------- */
 
+  // Future<Response> delete({
+  //   required String endpoint,
+  //   dynamic data,
+  //   Map<String, dynamic>? queryParams,
+  //   Map<String, dynamic>? headers,
+  //   CancelToken? cancelToken,
+  // }) async {
+  //   try {
+  //     return await _dio.delete(
+  //       endpoint,
+  //       data: data,
+  //       queryParameters: queryParams,
+  //       cancelToken: cancelToken,
+  //       options: headers == null ? null : Options(headers: headers),
+  //     );
+  //   } on DioException catch (e) {
+  //     throw _handleError(e);
+  //   } catch (e) {
+  //     throw ApiException(e.toString());
+  //   }
+  // }
+
   Future<Response> delete({
     required String endpoint,
     dynamic data,
@@ -285,7 +307,10 @@ class ApiServices {
         data: data,
         queryParameters: queryParams,
         cancelToken: cancelToken,
-        options: headers == null ? null : Options(headers: headers),
+        options: Options(
+          responseType: ResponseType.plain,
+          headers: headers ?? const {},
+        ),
       );
     } on DioException catch (e) {
       throw _handleError(e);

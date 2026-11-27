@@ -76,18 +76,42 @@ class Repositories {
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
   );
 
-
-  //Private helpers — methods that decides "success vs error"
-
   /// Returns a map routes of the body, or null if it isn't a map.
   Map<String, dynamic>? _asMap(dynamic body) {
-    if (body is Map<String, dynamic>) return body;
-    if (body is Map) return Map<String, dynamic>.from(body);
+    dynamic value = body;
+
+
+    if (value is String) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) return null;
+      try {
+        value = jsonDecode(trimmed);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) return Map<String, dynamic>.from(value);
     return null;
   }
 
   /// Returns a list routes of the body, or null if it isn't a list.
-  List<dynamic>? _asList(dynamic body) => body is List ? body : null;
+  List<dynamic>? _asList(dynamic body) {
+    dynamic value = body;
+
+    if (value is String) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) return null;
+      try {
+        value = jsonDecode(trimmed);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    return value is List ? value : null;
+  }
 
   /// Extracts the server's error message from `error`, `message`, or `msg`.
   String? _serverMessage(dynamic body) {
@@ -137,7 +161,17 @@ class Repositories {
         .toList();
   }
 
+  // ─────────────────────────────────────────────────────────────
+  // RESPONSE VALIDATION
+  // ─────────────────────────────────────────────────────────────
 
+  Map<String, dynamic> _validateResponse(dynamic response) {
+    if (response is! Map) {
+      throw ApiException('Invalid server response.');
+    }
+
+    return Map<String, dynamic>.from(response);
+  }
 
   // Reminders..................................................................
   Future<List<ReminderModel>> getAlertReminders({int? alert, CancelToken? cancelToken,}) async {
@@ -199,7 +233,6 @@ class Repositories {
       fallback: 'Failed to load exchange rates',
     );
   }
-
   Future<void> addExchangeRate({required ExchangeRateModel newRate}) async {
     final response = await _api.post(
       endpoint: '/finance/exchangeRate.php',
@@ -325,7 +358,7 @@ class Repositories {
   /// Wipe the remembered session. Idempotent. Safe to call any time.
   Future<void> clearSession() => _secureStorage.delete(key: _sessionKey);
 
-  // Stakeholders...............................................................
+  /// Stakeholders...............................................................
   Future<List<StakeholdersModel>> getStakeholders({String? search}) async {
     final res = await _api.get(
       endpoint: '/stakeholder/personal.php',
@@ -512,7 +545,7 @@ class Repositories {
     _fail(body, fallback: 'Failed to delete account');
   }
 
-  // Currencies.................................................................
+  /// Currencies.................................................................
   Future<List<CurrenciesModel>> getCurrencies({required int? status, CancelToken? cancelToken,}) async {
     final response = await _api.get(
       endpoint: '/finance/currency.php',
@@ -560,8 +593,7 @@ class Repositories {
     _requireSuccess(response.data, fallback: 'Failed to update currency');
   }
 
-  //Transactions...............................................................
-  //Get all transactions
+  ///Transactions...............................................................
   Future<Map<String, dynamic>> getTransactions({String status = 'all', String? from, String? to, String? type, int? branch, String? search}) async {
     final response = await _api.get(
       endpoint: '/journal/getTransactions.php',
@@ -936,7 +968,6 @@ class Repositories {
 
     return FundTransferDetail.fromMap(body);
   }
-  // ── ADD ──────────────────────────────────────────────────────
   Future<Map<String, dynamic>> addFundTransfer({
     required String usrName,
     required int fromAccount,
@@ -964,7 +995,6 @@ class Repositories {
     return body;
   }
 
-// ── EDIT ─────────────────────────────────────────────────────
   Future<Map<String, dynamic>> editFundTransfer({
     required String reference,
     required String usrName,
@@ -994,7 +1024,6 @@ class Repositories {
     return body;
   }
 
-// ── DELETE ───────────────────────────────────────────────────
   Future<Map<String, dynamic>> deleteFundTransfer({
     required String reference,
     required String usrName,
@@ -1024,6 +1053,7 @@ class Repositories {
       fallback: 'Failed to load GL accounts',
     );
   }
+
   Future<void> addGl({required GlAccountsModel newAccount}) async {
     final response = await _api.post(
       endpoint: '/finance/glAccount.php',
@@ -3367,28 +3397,20 @@ class Repositories {
   // DELETE SHIPMENT ITEM
   // ─────────────────────────────────────────────────────────────
 
-  Future<void> deleteShpItem({
+  Future<dynamic> deleteShpItem({
     required String usrName,
     required int shpItmId,
     required int? shpId,
   }) async {
-    try {
-      final response = await _api.delete(
-        endpoint: "/shipment/shippingItem.php",
-        data: {
-          'user': usrName,
-          'shpItmId': shpItmId,
-          'shpId': shpId
-        },
-      );
-
-      _validateResponse(response.data);
-    } on DioException catch (e) {
-      throw ApiException(
-        e.message ?? 'Failed to delete shipment item.',
-        statusCode: e.response?.statusCode,
-      );
-    }
+    final response = await _api.delete(
+      endpoint: "/shipment/shippingItem.php",
+      data: {
+        'user': usrName,
+        'shpItmId': shpItmId,
+        'shpId': ?shpId,
+      },
+    );
+    return response.data;
   }
 
 
@@ -3463,17 +3485,7 @@ class Repositories {
     return filePath;
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // RESPONSE VALIDATION
-  // ─────────────────────────────────────────────────────────────
 
-  Map<String, dynamic> _validateResponse(dynamic response) {
-    if (response is! Map) {
-      throw ApiException('Invalid server response.');
-    }
-
-    return Map<String, dynamic>.from(response);
-  }
 
   // ═════════════════════════════════════════════════════════════════
   // Shipment Expenses (20202028 Dr / stakeholder Cr)
@@ -3550,11 +3562,6 @@ class Repositories {
     return ShipmentExpenseModel.fromMap(body);
   }
 
-  /// POST shipment_expense.php?action=addExpense
-  ///
-  /// The user must have picked a stakeholder account whose currency
-  /// equals the company base currency — the server rejects anything
-  /// else, but the picker should already filter to base-ccy accounts.
   Future<ShipmentExpenseWriteResult> addExpense({
     required String usrName,
     required int shpId,
@@ -3585,10 +3592,6 @@ class Repositories {
     return ShipmentExpenseWriteResult.fromMap(body);
   }
 
-  /// POST shipment_expense.php?action=updateExpense
-  ///
-  /// Any of [accountNo], [amount], [narration] can be omitted — the
-  /// server falls back to the current value for omitted fields.
   Future<ShipmentExpenseWriteResult> updateExpense({
     required String usrName,
     required int expId,
@@ -3669,7 +3672,6 @@ class Repositories {
       throw ApiException('Invalid server response');
     }
 
-    // Server returns { msg: '...' } on validation / not-found failures.
     final msg = body['msg']?.toString().toLowerCase() ?? '';
     if (msg.isNotEmpty && body['invoices'] == null) {
       _fail(body, fallback: 'Failed to load container invoices');

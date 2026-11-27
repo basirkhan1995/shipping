@@ -1,7 +1,8 @@
+import 'dart:convert';
+
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:shipping/Services/repository.dart';
-
 import '../../../../../../../Services/localization_services.dart';
 import '../model/shp_details_model.dart';
 
@@ -20,6 +21,86 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
     on<ShpByIdActionErrorCleared>(_onActionErrorCleared);
     on<ShpByIdUpdateItemStatusRequested>(_onUpdateItemStatus);
     on<ShpByIdExportRequested>(_onExportItems);
+  }
+
+  String _displayMsg(Object? result) {
+    dynamic value = result;
+
+    // Handle raw String (ResponseType.plain, or warning-prefixed body).
+    if (value is String) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) return 'failed';
+      final start = trimmed.indexOf('{');
+      final end = trimmed.lastIndexOf('}');
+      if (start >= 0 && end > start) {
+        try {
+          final decoded = jsonDecode(trimmed.substring(start, end + 1));
+          if (decoded is Map) {
+            value = decoded;
+          } else {
+            return trimmed.length > 300 ? trimmed.substring(0, 300) : trimmed;
+          }
+        } catch (_) {
+          return trimmed.length > 300 ? trimmed.substring(0, 300) : trimmed;
+        }
+      } else {
+        // Not JSON — show the raw text (up to 300 chars).
+        return trimmed.length > 300 ? trimmed.substring(0, 300) : trimmed;
+      }
+    }
+
+    if (value is Map) {
+      final msg = (value['msg'] ?? '').toString().trim();
+      final err = (value['error'] ?? '').toString().trim();
+      if (msg.isEmpty || msg.toLowerCase() == 'failed') {
+        if (err.isNotEmpty) return err;
+      }
+      if (msg.isNotEmpty) return msg;
+      if (err.isNotEmpty) return err;
+    }
+    if (value is String && value.trim().isNotEmpty) return value.trim();
+    return 'failed';
+  }
+
+  String _normalizeMsg(Object? result) {
+    if (result == null) return 'failed';
+
+    dynamic value = result;
+
+    if (value is String) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) return 'failed';
+
+      // Extract JSON substring if warnings are prefixed.
+      final start = trimmed.indexOf('{');
+      final end = trimmed.lastIndexOf('}');
+      if (start >= 0 && end > start) {
+        try {
+          final decoded = jsonDecode(trimmed.substring(start, end + 1));
+          if (decoded is Map) {
+            value = decoded;
+          } else {
+            return trimmed.toLowerCase();
+          }
+        } catch (_) {
+          return trimmed.toLowerCase();
+        }
+      } else {
+        return trimmed.toLowerCase();
+      }
+    }
+
+    if (value is Map) {
+      final m = value['msg'];
+      return m?.toString().trim().toLowerCase() ?? 'failed';
+    }
+    return value.toString().trim().toLowerCase();
+  }
+
+  /// Shortens a thrown exception's string for the UI (cap 300 chars).
+  String _msg(Object e) {
+    final s = e.toString();
+    return s.length > 300 ? s.substring(0, 300) : s;
   }
 
   // ─────────────────────────────────────────────────────────
@@ -53,18 +134,9 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
     }
   }
 
-  /// Pulls a plain, lower-cased server message out of whatever the repo returned.
-  /// Works whether the repo returned a String, a Map, or threw an ApiException.
-  String _normalizeMsg(Object? result) {
-    if (result == null) return 'failed';
-    if (result is String) return result.trim().toLowerCase();
-    if (result is Map) {
-      final m = result['msg'];
-      return m?.toString().trim().toLowerCase() ?? 'failed';
-    }
-    return result.toString().trim().toLowerCase();
-  }
-
+  // ─────────────────────────────────────────────────────────
+  // UPDATE ITEM STATUS
+  // ─────────────────────────────────────────────────────────
   Future<void> _onUpdateItemStatus(
       ShpByIdUpdateItemStatusRequested event,
       Emitter<ShpByIdState> emit,
@@ -81,14 +153,12 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
     ));
 
     try {
-      // Recalculate status using server-side delivery movements.
       final status = await _repo.updateShpItemStatus(
         usrName: event.usrName,
         shpItmId: event.shpItmId,
         status: event.status,
       );
 
-      // Fetch fresh shipment details.
       final fresh = await _repo.getShippingDetails(
         shpId: event.shpId,
       );
@@ -106,16 +176,22 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
   }
 
   // ─────────────────────────────────────────────────────────
-  // LOAD
+  // LOAD / REFRESH
   // ─────────────────────────────────────────────────────────
-  Future<void> _onLoadRequested(ShpByIdLoadRequested event, Emitter<ShpByIdState> emit) async {
+  Future<void> _onLoadRequested(
+      ShpByIdLoadRequested event,
+      Emitter<ShpByIdState> emit,
+      ) async {
     final previous =
     state is ShpByIdLoaded ? (state as ShpByIdLoaded).details : null;
     emit(ShpByIdLoading(previous: previous));
     await _fetch(emit, event.shpId, previous: previous);
   }
 
-  Future<void> _onRefreshed(ShpByIdRefreshed event, Emitter<ShpByIdState> emit) async {
+  Future<void> _onRefreshed(
+      ShpByIdRefreshed event,
+      Emitter<ShpByIdState> emit,
+      ) async {
     final previous =
     state is ShpByIdLoaded ? (state as ShpByIdLoaded).details : null;
     emit(ShpByIdLoading(previous: previous));
@@ -160,7 +236,6 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
             final fresh = await _repo.getShippingDetails(shpId: event.shpId);
             emit(ShpByIdLoaded(fresh, successMessage: tr.itemAdded));
           } catch (e) {
-            // Server committed; refresh failed — still report success.
             emit(current.copyWith(
               clearPendingAction: true,
               successMessage: tr.itemAdded,
@@ -186,7 +261,7 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
         default:
           emit(current.copyWith(
             clearPendingAction: true,
-            actionError: tr.operationFailed(_normalizeMsg(result)),
+            actionError: tr.operationFailed(_displayMsg(result)),
           ));
           return;
       }
@@ -262,7 +337,7 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
         default:
           emit(current.copyWith(
             clearPendingAction: true,
-            actionError: tr.operationFailed(_normalizeMsg(result)),
+            actionError: tr.operationFailed(_displayMsg(result)),
           ));
           return;
       }
@@ -293,17 +368,21 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
     ));
 
     try {
-      await _repo.deleteShpItem(
+      final result = await _repo.deleteShpItem(
         usrName: event.usrName,
         shpItmId: event.shpItmId,
         shpId: event.shpId,
       );
 
-      final fresh = await _repo.getShippingDetails(shpId: event.shpId);
-      emit(ShpByIdLoaded(
-        fresh,
-        successMessage: tr.itemDeleted,
-      ));
+      if (_normalizeMsg(result) == 'success') {
+        final fresh = await _repo.getShippingDetails(shpId: event.shpId);
+        emit(ShpByIdLoaded(fresh, successMessage: tr.itemDeleted));
+      } else {
+        emit(current.copyWith(
+          clearPendingAction: true,
+          actionError: tr.failedDeleteItem(_displayMsg(result)),
+        ));
+      }
     } catch (e) {
       emit(current.copyWith(
         clearPendingAction: true,
@@ -311,9 +390,8 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
       ));
     }
   }
-
   // ─────────────────────────────────────────────────────────
-  // CLEAR ACTION ERROR
+  // CLEAR ACTION ERROR / SUCCESS
   // ─────────────────────────────────────────────────────────
   void _onActionErrorCleared(
       ShpByIdActionErrorCleared event,
@@ -321,12 +399,15 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
       ) {
     final current = state;
     if (current is ShpByIdLoaded) {
-      emit(current.copyWith(clearActionError: true));
+      emit(current.copyWith(
+        clearActionError: true,
+        clearSuccessMessage: true,
+      ));
     }
   }
 
   // ─────────────────────────────────────────────────────────
-  // HELPERS
+  // FETCH
   // ─────────────────────────────────────────────────────────
   Future<void> _fetch(
       Emitter<ShpByIdState> emit,
@@ -343,10 +424,5 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
         emit(ShpByIdError(_msg(e)));
       }
     }
-  }
-
-  String _msg(Object e) {
-    final s = e.toString();
-    return s.length > 300 ? s.substring(0, 300) : s;
   }
 }

@@ -320,15 +320,6 @@ class _ShpItemFormState extends State<ShpItemForm> {
       if (!mounted) return;
 
       if (errMsg == null) {
-        // ── SUCCESS ───────────────────────────────────────────────────
-        final s = bloc.state;
-        final successMsg = (s is ShpByIdLoaded && s.successMessage != null)
-            ? s.successMessage!
-            : (_isEdit ? tr.itemUpdated : tr.itemAdded);
-
-        // Capture messenger BEFORE pop (context is defunct after pop).
-        final messenger = ScaffoldMessenger.of(context);
-
         final result = ShpItemFormResult(
           accountNo: _effectiveAccountNo!,
           itemDescription: _description.text.trim(),
@@ -341,15 +332,6 @@ class _ShpItemFormState extends State<ShpItemForm> {
         );
 
         Navigator.of(context).pop(result);
-
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(successMsg),
-            backgroundColor: Colors.green.shade600,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
         return;
       }
 
@@ -688,15 +670,15 @@ class _GrandTotalBar extends StatelessWidget {
         children: [
           if (showCbmRow) ...[
             _row(
-              '${tr.cbm} × ${tr.cbmRate}',
-              '${cbm.toAmount(decimal: 3)} × ${rateCbm.toAmount(decimal: 4)}',
+              '${tr.cbm} × ${tr.rate}',
+              '${cbm.toAmount(decimal: 3)} × ${rateCbm.toAmount(decimal: 3)}',
               cbmTotal.toAmount(),
             ),
             const SizedBox(height: 4),
           ],
           if (showWeightRow) ...[
             _row(
-              '${tr.weight} × ${tr.weightRate}',
+              '${tr.weight} × ${tr.rate}',
               '${weight.toAmount(decimal: 2)} × ${rateKg.toAmount(decimal: 4)}',
               weightTotal.toAmount(),
             ),
@@ -714,9 +696,12 @@ class _GrandTotalBar extends StatelessWidget {
             _row(tr.extraCharges, '', extra.toAmount()),
             const SizedBox(height: 4),
           ],
-          const SizedBox(height: 4),
-          Divider(height: 1, color: color.primary.withValues(alpha: 0.2)),
-          const SizedBox(height: 8),
+
+          if(showAvgRow || showExtraRow || showWeightRow || showCbmRow)...[
+            const SizedBox(height: 4),
+            Divider(height: 1, color: color.primary.withValues(alpha: 0.2)),
+            const SizedBox(height: 8),
+          ],
           Row(
             children: [
               Expanded(
@@ -733,7 +718,7 @@ class _GrandTotalBar extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 total.toAmount(),
-                textAlign: TextAlign.right,
+                textAlign: TextAlign.end,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
@@ -751,7 +736,6 @@ class _GrandTotalBar extends StatelessWidget {
   Widget _row(String label, String detail, String amount) {
     return Row(
       children: [
-        // Label — takes the left share
         Expanded(
           flex: 3,
           child: Text(
@@ -764,13 +748,12 @@ class _GrandTotalBar extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        // Detail — fixed-ish middle share, right-aligned
         if (detail.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.only(left: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text(
               detail,
-              textAlign: TextAlign.right,
+              textAlign: TextAlign.end,
               style: TextStyle(
                 fontSize: 14,
                 color: color.onPrimaryContainer.withValues(alpha: 0.6),
@@ -778,12 +761,11 @@ class _GrandTotalBar extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-        // Amount — right share, right-aligned to the very end
         Padding(
-          padding: const EdgeInsets.only(left: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 1),
           child: Text(
             amount,
-            textAlign: TextAlign.right,
+            textAlign: TextAlign.end,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,

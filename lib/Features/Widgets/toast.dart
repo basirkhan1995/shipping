@@ -23,7 +23,7 @@ class _OverlayContent extends StatelessWidget {
   Widget build(BuildContext context) {
     // Fall back to the type's default title when none is supplied.
     final effectiveTitle = (title == null || title!.trim().isEmpty)
-        ? type.defaultTitle
+        ? type.defaultTitle(context)
         : title!;
     final color = type.color;
 

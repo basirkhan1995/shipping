@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shipping/Features/Widgets/cover.dart';
@@ -33,13 +35,22 @@ class _ShpByIdBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context)!;
     return BlocConsumer<ShpByIdBloc, ShpByIdState>(
-      listenWhen: (prev, curr) => curr is ShpByIdLoaded && (curr.successMessage != null || curr.actionError != null),
+      listenWhen: (prev, curr) {
+        if (curr is! ShpByIdLoaded) return false;
+        final prevMsg = prev is ShpByIdLoaded ? prev.successMessage : null;
+        final prevErr = prev is ShpByIdLoaded ? prev.actionError   : null;
+        return (curr.successMessage != null && curr.successMessage != prevMsg) ||
+            (curr.actionError   != null && curr.actionError   != prevErr);
+      },
       listener: (context, state) {
         if (state is! ShpByIdLoaded) return;
+
         if (state.successMessage != null) {
-          _toast(context, state.successMessage!);
+          _toast(context, state.successMessage!);                              // ✅ show
+          context.read<ShpByIdBloc>().add(const ShpByIdActionErrorCleared());  // ✅ consume
         } else if (state.actionError != null) {
-          context.read<ShpByIdBloc>().add(const ShpByIdActionErrorCleared());
+          _toast(context, state.actionError!, isError: true);                  // ✅ show
+          context.read<ShpByIdBloc>().add(const ShpByIdActionErrorCleared());  // ✅ consume
         }
       },
       builder: (context, state) {
@@ -810,7 +821,7 @@ class _ItemMenu extends StatelessWidget {
             _openItemDialog(context, shpId, item);
             break;
           case _ItemMenuAction.delete:
-            _confirmDelete(context, item, shpId);
+            _confirmDelete(context, item);
             break;
           case _ItemMenuAction.markDelivered:
             _updateItemStatus(context, item, shpId, 'delivered');
@@ -1068,17 +1079,17 @@ class _ErrorView extends StatelessWidget {
 // FLOWS
 // ─────────────────────────────────────────────────────────────────────────────
 Future<void> _openItemDialog(
-  BuildContext context,
-  int shpId,
-  ShipmentItemModel? existing,
-) async {
+    BuildContext context,
+    int shpId,
+    ShipmentItemModel? existing,
+    ) async {
+  final tr = AppLocalizations.of(context)!;
   final usrName = _currentUsername(context);
   if (usrName == null) {
-    _toast(context, 'Not signed in. Please sign in again.', isError: true);
+    _toast(context, tr.failed, isError: true);
     return;
   }
 
-  // The dialog now does the dispatch + waits for success itself.
   final result = await showShpItemForm(
     context,
     existing: existing,
@@ -1086,27 +1097,23 @@ Future<void> _openItemDialog(
     usrName: usrName,
   );
 
-  // result is non-null only when the BLoC confirmed success.
-  // (Dialog already re-fetched fresh details via the bloc.)
+  // The BLoC already emitted successMessage → the BlocConsumer.listener
+  // at the top of this screen shows the toast. Do NOT toast again here.
   if (result == null) return;
-  if (!context.mounted) return;
-
-  _toast(context, existing == null ? 'Item added' : 'Item updated');
 }
 
 Future<void> _updateItemStatus(
-  BuildContext context,
-  ShipmentItemModel item,
-  int shpId,
-  String targetStatus,
-) async {
+    BuildContext context,
+    ShipmentItemModel item,
+    int shpId,
+    String targetStatus,
+    ) async {
   final usrName = _currentUsername(context);
   if (usrName == null) {
     _toast(context, 'Not signed in. Please sign in again.', isError: true);
     return;
   }
 
-  final bloc = context.read<ShpByIdBloc>();
   final isDelivered = targetStatus == 'delivered';
   final confirmed = await showDialog<bool>(
     context: context,
@@ -1134,22 +1141,16 @@ Future<void> _updateItemStatus(
 
   if (confirmed != true || !context.mounted) return;
 
-  bloc.add(
-    ShpByIdUpdateItemStatusRequested(
-      usrName: usrName,
-      shpId: shpId,
-      shpItmId: item.shpItmId,
-      status: targetStatus,
-    ),
-  );
+  // Fire the event. BlocConsumer.listener toasts + refreshes.
+  context.read<ShpByIdBloc>().add(ShpByIdUpdateItemStatusRequested(
+    usrName: usrName,
+    shpId: shpId,
+    shpItmId: item.shpItmId,
+    status: targetStatus,
+  ));
 }
 
-Future<void> _confirmDelete(
-  BuildContext context,
-  ShipmentItemModel item,
-  int shpId,
-) async {
-  final bloc = context.read<ShpByIdBloc>();
+Future<void> _confirmDelete(BuildContext context, ShipmentItemModel item) async {
   final usrName = _currentUsername(context);
   if (usrName == null) {
     _toast(context, 'Not signed in. Please sign in again.', isError: true);
@@ -1164,7 +1165,7 @@ Future<void> _confirmDelete(
         title: const Text('Delete item?'),
         content: Text(
           'Are you sure you want to delete '
-          '"${item.itemDescription ?? 'this item'}"? This cannot be undone.',
+              '"${item.itemDescription ?? 'this item'}"? This cannot be undone.',
         ),
         actions: [
           TextButton(
@@ -1181,16 +1182,16 @@ Future<void> _confirmDelete(
     },
   );
 
-  if (confirmed != true) return;
-  if (!context.mounted) return;
+  if (confirmed != true || !context.mounted) return;
 
-  bloc.add(
-    ShpByIdDeleteItemRequested(
-      shpId: shpId,
-      shpItmId: item.shpItmId,
-      usrName: usrName,
-    ),
-  );
+  // Fire the event. The BlocConsumer.listener at the top of the screen
+  // will show the toast (success or error), refresh the list, and
+  // clear the flags. No local toast needed here.
+  context.read<ShpByIdBloc>().add(ShpByIdDeleteItemRequested(
+    shpId: item.shpId,
+    shpItmId: item.shpItmId,
+    usrName: usrName,
+  ));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
