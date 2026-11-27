@@ -3370,14 +3370,15 @@ class Repositories {
   Future<void> deleteShpItem({
     required String usrName,
     required int shpItmId,
+    required int? shpId,
   }) async {
     try {
-      final response = await _api.post(
-        endpoint: "/shipment/shipment.php",
+      final response = await _api.delete(
+        endpoint: "/shipment/shippingItem.php",
         data: {
-          'action': 'deleteItem',
-          'usrName': usrName,
+          'user': usrName,
           'shpItmId': shpItmId,
+          'shpId': shpId
         },
       );
 

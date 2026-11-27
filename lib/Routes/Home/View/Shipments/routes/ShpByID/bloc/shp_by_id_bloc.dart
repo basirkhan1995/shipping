@@ -293,6 +293,7 @@ class ShpByIdBloc extends Bloc<ShpByIdEvent, ShpByIdState> {
       await _repo.deleteShpItem(
         usrName: event.usrName,
         shpItmId: event.shpItmId,
+        shpId: event.shpId,
       );
 
       final fresh = await _repo.getShippingDetails(shpId: event.shpId);

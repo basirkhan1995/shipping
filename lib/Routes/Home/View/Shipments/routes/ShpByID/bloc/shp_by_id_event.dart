@@ -126,7 +126,6 @@ final class ShpByIdDeleteItemRequested extends ShpByIdEvent {
   List<Object?> get props => [shpId, shpItmId, usrName];
 }
 
-/// Clear the one-shot action error (e.g. after showing a snackbar).
 final class ShpByIdActionErrorCleared extends ShpByIdEvent {
   const ShpByIdActionErrorCleared();
 }
