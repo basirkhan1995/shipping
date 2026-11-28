@@ -17,9 +17,10 @@ class ContainerInvoicesPrintSettings extends PrintServices {
 
   // ── Defaults used by the UI (so UI never imports pdf types) ────────
   static const pw.PdfPageFormat _defaultFormat = pw.PdfPageFormat.a4;
-  static const pw.PageOrientation _defaultOrientation =
-      pw.PageOrientation.portrait;
+  static const pw.PageOrientation _defaultOrientation = pw.PageOrientation.portrait;
 
+   static final primaryColor = pw.PdfColor.fromHex('#1E407C');
+   static final accentColor  = pw.PdfColor.fromHex('#00A8E8');
   // ═══════════════════════════════════════════════════════════════
   // HIGH-LEVEL UI ENTRY POINTS (no pw types in signatures)
   // ═══════════════════════════════════════════════════════════════
@@ -305,9 +306,9 @@ class ContainerInvoicesPrintSettings extends PrintServices {
     final ct = info.container;
 
     return pw.Container(
-      padding: const pw.EdgeInsets.all(8),
+      padding: const pw.EdgeInsets.all(4),
       decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: pw.PdfColors.grey300),
+
         borderRadius: pw.BorderRadius.circular(4),
       ),
       child: pw.Row(
@@ -315,6 +316,7 @@ class ContainerInvoicesPrintSettings extends PrintServices {
         children: [
           // ─── CUSTOMER ───────────────────────────────
           pw.Expanded(
+            flex: 3,
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
@@ -324,7 +326,14 @@ class ContainerInvoicesPrintSettings extends PrintServices {
                   fontWeight: pw.FontWeight.bold,
                 ),
                 pw.SizedBox(height: 4),
-                horizontalDivider(width: 260),
+                pw.Container(
+                  height: 1,
+                  decoration: pw.BoxDecoration(
+                    gradient: pw.LinearGradient(
+                      colors: [primaryColor, accentColor],
+                    ),
+                  ),
+                ),
                 pw.SizedBox(height: 4),
                 _kv(
                   label: tr(text: 'signatory', tr: language),
@@ -332,11 +341,7 @@ class ContainerInvoicesPrintSettings extends PrintServices {
                 ),
                 _kv(
                   label: tr(text: 'accountName', tr: language),
-                  value: "${c.accountNo} | ${c.accountName ?? ""}",
-                ),
-                _kv(
-                  label: tr(text: 'currency', tr: language),
-                  value: c.currency ?? "",
+                  value: "${c.accountNo} ${c.currency} | ${c.accountName ?? ""}",
                 ),
                 _kv(
                   label: tr(text: 'mobile', tr: language),
@@ -345,6 +350,7 @@ class ContainerInvoicesPrintSettings extends PrintServices {
                 _kv(
                   label: tr(text: 'address', tr: language),
                   value: [
+                    c.address.name,
                     c.address.country,
                     c.address.province,
                     c.address.city,
@@ -356,6 +362,7 @@ class ContainerInvoicesPrintSettings extends PrintServices {
           pw.SizedBox(width: 16),
           // ─── CONTAINER ──────────────────────────────
           pw.Expanded(
+            flex: 2,
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
@@ -365,15 +372,18 @@ class ContainerInvoicesPrintSettings extends PrintServices {
                   fontWeight: pw.FontWeight.bold,
                 ),
                 pw.SizedBox(height: 4),
-                horizontalDivider(width: 260),
+                pw.Container(
+                  height: 1,
+                  decoration: pw.BoxDecoration(
+                    gradient: pw.LinearGradient(
+                      colors: [primaryColor, accentColor],
+                    ),
+                  ),
+                ),
                 pw.SizedBox(height: 4),
                 _kv(
                   label: tr(text: 'containerNo', tr: language),
                   value: "${ct.containerNo ?? "—"} | ${ct.sequenceNo ?? "—"}",
-                ),
-                _kv(
-                  label: tr(text: 'port', tr: language),
-                  value: ct.portName ?? "",
                 ),
                 _kv(
                   label: tr(text: 'loadingDate', tr: language),
@@ -417,6 +427,7 @@ class ContainerInvoicesPrintSettings extends PrintServices {
         child: zText(
           text: t,
           fontSize: 8,
+          color: pw.PdfColors.white,
           fontWeight: pw.FontWeight.bold,
           textAlign: alignStart ? pw.TextAlign.left : pw.TextAlign.right,
         ),
@@ -430,9 +441,8 @@ class ContainerInvoicesPrintSettings extends PrintServices {
         pw.Container(
           padding: const pw.EdgeInsets.symmetric(vertical: 5, horizontal: 4),
           decoration: pw.BoxDecoration(
-            color: pw.PdfColors.grey100,
-            border: pw.Border(
-              bottom: pw.BorderSide(width: 1, color: pw.PdfColors.grey300),
+            gradient: pw.LinearGradient(
+              colors: [primaryColor, accentColor],
             ),
           ),
           child: pw.Row(
@@ -443,6 +453,7 @@ class ContainerInvoicesPrintSettings extends PrintServices {
                   text: "#",
                   fontSize: 8,
                   fontWeight: pw.FontWeight.bold,
+                  color: pw.PdfColors.white,
                   textAlign: pw.TextAlign.center,
                 ),
               ),
@@ -451,6 +462,7 @@ class ContainerInvoicesPrintSettings extends PrintServices {
                   text: tr(text: 'description', tr: language),
                   fontSize: 8,
                   fontWeight: pw.FontWeight.bold,
+                  color: pw.PdfColors.white,
                   textAlign: isRtl ? pw.TextAlign.right : pw.TextAlign.left,
                 ),
               ),
@@ -507,14 +519,12 @@ class ContainerInvoicesPrintSettings extends PrintServices {
         ? "${item.ratePerCbm.toAmount()} ${tr(text: 'cbm', tr: language)}"
         : "${item.ratePerWeight.toAmount()} ${tr(text: 'weight', tr: language)}";
 
-    // Guard: weightAVG can be NaN/Infinity if server sent 0 for cbm
-    // and the client computed (weight / 0). Show "—" instead.
     final avgDisplay = _safeAmount(item.weightAVG);
 
     return pw.Container(
       padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 4),
       decoration: pw.BoxDecoration(
-        color: i.isOdd ? pw.PdfColors.grey100 : null,
+        color: i.isOdd ? pw.PdfColors.grey200 : null,
       ),
       child: pw.Row(
         children: [
@@ -552,12 +562,8 @@ class ContainerInvoicesPrintSettings extends PrintServices {
   }) {
     final t = info.totals;
 
-    // Summary value must match what the "Weight Average" column shows
-    // per item — so we sum the per-item values, not weight/cbm.
-    // NaN-safe: skip any item whose weightAVG is not finite.
     final totalWeightAverage = info.items.fold<double>(
-      0.0,
-          (sum, it) => sum + (it.weightAVG.isFinite ? it.weightAVG : 0.0),
+      0.0, (sum, it) => sum + (it.weightAVG.isFinite ? it.weightAVG : 0.0),
     );
 
     return pw.Container(
@@ -577,7 +583,15 @@ class ContainerInvoicesPrintSettings extends PrintServices {
                 isEmphasized: true,
               ),
               pw.SizedBox(height: 2),
-              horizontalDivider(width: 220),
+              pw.Container(
+                height: 1,
+                width: 230,
+                decoration: pw.BoxDecoration(
+                  gradient: pw.LinearGradient(
+                    colors: [primaryColor, accentColor],
+                  ),
+                ),
+              ),
               pw.SizedBox(height: 2),
               buildSummary(
                 distance: 100,
@@ -615,7 +629,15 @@ class ContainerInvoicesPrintSettings extends PrintServices {
                 value: _safeAmount(t.extraCharges),
               ),
               pw.SizedBox(height: 2),
-              horizontalDivider(width: 220),
+              pw.Container(
+                height: 1,
+                width: 230,
+                decoration: pw.BoxDecoration(
+                  gradient: pw.LinearGradient(
+                    colors: [primaryColor, accentColor],
+                  ),
+                ),
+              ),
               pw.SizedBox(height: 2),
               buildTotalSummary(
                 label: tr(text: 'grandTotal', tr: language),
@@ -645,9 +667,19 @@ class ContainerInvoicesPrintSettings extends PrintServices {
   }
 
   pw.Widget _sigBlock(String label) => pw.Column(
+
     children: [
       pw.SizedBox(height: 30),
-      pw.Container(width: 120, height: 1, color: pw.PdfColors.grey500),
+      pw.Container(
+        height: 0.6,
+        width: 120,
+        decoration: pw.BoxDecoration(
+          gradient: pw.LinearGradient(
+            colors: [primaryColor, accentColor],
+          ),
+        ),
+      ),
+
       pw.SizedBox(height: 4),
       zText(text: label, fontSize: 8),
     ],

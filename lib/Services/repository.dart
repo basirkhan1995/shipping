@@ -3401,7 +3401,7 @@ class Repositories {
       data: {
         'user': usrName,
         'shpItmId': shpItmId,
-        'shpId': ?shpId,
+        'shpID': ?shpId,
       },
     );
     return response.data;

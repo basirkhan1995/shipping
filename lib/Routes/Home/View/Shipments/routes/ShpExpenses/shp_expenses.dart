@@ -152,14 +152,14 @@ class _ShpExpenseFormState extends State<ShpExpenseForm> {
     return ZFormDialog(
       title: _isEditing ? tr.edit : tr.addExpense,
       icon: _isEditing ? Icons.edit_outlined : Icons.trending_down_rounded,
-      width: MediaQuery.of(context).size.width *.7,
+      width: MediaQuery.of(context).size.width *.8,
       padding: const EdgeInsets.all(8),
       isLoading: _submitting,
       errorMessage: _error,
       isActionTrue: false,
       onAction: null,
       child: SizedBox(
-        height: 520,
+
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

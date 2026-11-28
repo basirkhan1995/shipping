@@ -169,9 +169,7 @@ abstract class PrintServices {
   }
 
   // ── Header ───────────────────────────────────────────────
-  // ── Header ───────────────────────────────────────────────
   Future<pw.Widget> header({required ReportModel report}) async {
-    // ── Load icons (defensive: a missing asset must not break the header) ──
     Future<pw.MemoryImage?> loadIcon(String path) async {
       try {
         final data = await rootBundle.load(path);
