@@ -48,25 +48,26 @@ class ContainerInvoicesView extends StatelessWidget {
 // Shared mixin: company hydration + preview + batch dialog
 // ═══════════════════════════════════════════════════════════════════
 mixin _CompanyHydrator<T extends StatefulWidget> on State<T> {
-  final company = ReportModel();
+  final settings = ReportModel();
   Uint8List _companyLogo = Uint8List(0);
 
   void hydrateCompany(AuthState authState) {
     if (authState is! AuthenticatedState) return;
     final auth = authState.loginData;
-    company.comName = auth.company?.comName ?? "";
-    company.comAddress = auth.company?.comAddress ?? "";
-    company.compPhone = auth.company?.comPhone ?? "";
-    company.comEmail = auth.company?.comEmail ?? "";
-    company.comWhatsApp = auth.company?.comWhatsapp ?? "";
-    company.comWebsite = auth.company?.comWebsite ?? "";
-    company.comFacebook = auth.company?.comFb ?? "";
-    company.comInstagram = auth.company?.comInsta ?? "";
-    company.statementDate = DateTime.now().toFullDateTime;
-    company.slogan = auth.company?.comDetails ?? "";
+    settings.comName = auth.company?.comName ?? "";
+    settings.comAddress = auth.company?.comAddress ?? "";
+    settings.usrPrintedBy = auth.usrName??'';
+    settings.compPhone = auth.company?.comPhone ?? "";
+    settings.comEmail = auth.company?.comEmail ?? "";
+    settings.comWhatsApp = auth.company?.comWhatsapp ?? "";
+    settings.comWebsite = auth.company?.comWebsite ?? "";
+    settings.comFacebook = auth.company?.comFb ?? "";
+    settings.comInstagram = auth.company?.comInsta ?? "";
+    settings.statementDate = DateTime.now().toFullDateTime;
+    settings.slogan = auth.company?.comDetails ?? "";
     final base64Logo = auth.company?.comLogo;
     _companyLogo = CompanyLogoUtils.safeBytes(base64Logo) ?? Uint8List(0);
-    company.comLogo = _companyLogo.isEmpty ? null : _companyLogo;
+    settings.comLogo = _companyLogo.isEmpty ? null : _companyLogo;
   }
 
   void showPreview(BuildContext context, ShippingInvoice invoice) {
@@ -76,7 +77,7 @@ mixin _CompanyHydrator<T extends StatefulWidget> on State<T> {
       context: context,
       builder: (_) => PrintPreviewDialog<ShippingInvoice>(
         data: invoice,
-        company: company.copyWith(visible: visibilityState),
+        company: settings.copyWith(visible: visibilityState),
         buildPreview: ({
           required data,
           required language,
@@ -84,7 +85,7 @@ mixin _CompanyHydrator<T extends StatefulWidget> on State<T> {
           required pageFormat,
         }) {
           return ContainerInvoicesPrintSettings().printPreview(
-            company: company.copyWith(visible: visibilityState),
+            company: settings.copyWith(visible: visibilityState,customTermsAndConditions: visibilityState.customTermsAndConditions),
             language: language,
             orientation: orientation,
             pageFormat: pageFormat,
@@ -102,7 +103,7 @@ mixin _CompanyHydrator<T extends StatefulWidget> on State<T> {
         }) {
           return ContainerInvoicesPrintSettings().printDocument(
             info: invoice,
-            company: company.copyWith(visible: visibilityState),
+            company: settings.copyWith(visible: visibilityState,customTermsAndConditions: visibilityState.customTermsAndConditions),
             language: language,
             orientation: orientation,
             pageFormat: pageFormat,
@@ -119,7 +120,7 @@ mixin _CompanyHydrator<T extends StatefulWidget> on State<T> {
         }) {
           return ContainerInvoicesPrintSettings().createDocument(
             info: invoice,
-            company: company.copyWith(visible: visibilityState),
+            company: settings.copyWith(visible: visibilityState,customTermsAndConditions: visibilityState.customTermsAndConditions),
             language: language,
             orientation: orientation,
             pageFormat: pageFormat,
@@ -229,7 +230,7 @@ mixin _CompanyHydrator<T extends StatefulWidget> on State<T> {
                                         .shareBatch(
                                       infoList: data.invoices,
                                       language: lang,
-                                      company: company.copyWith(
+                                      company: settings.copyWith(
                                           visible: visibilityState),
                                     );
                                     if (dialogCtx.mounted) {
@@ -274,7 +275,7 @@ mixin _CompanyHydrator<T extends StatefulWidget> on State<T> {
                                         .saveBatch(
                                       infoList: data.invoices,
                                       language: lang,
-                                      company: company.copyWith(
+                                      company: settings.copyWith(
                                           visible: visibilityState),
                                       containerFolder: folder,
                                     );

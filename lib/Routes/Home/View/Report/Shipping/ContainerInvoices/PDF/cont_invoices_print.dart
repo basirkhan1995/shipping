@@ -12,6 +12,12 @@ import '../../../../../../../../Features/PrintSettings/report_model.dart';
 import '../../../../../../../../Features/Widgets/extensions.dart';
 import '../model/cont_invoices_model.dart';
 
+class _InvoiceColors {
+  static const pw.PdfColor primary      = pw.PdfColor.fromInt(0xFF005994); // lightScheme.primary
+  static const pw.PdfColor primaryDark  = pw.PdfColor.fromInt(0xFF001E3A); // lightScheme.onPrimaryContainer
+
+}
+
 class ContainerInvoicesPrintSettings extends PrintServices {
   final pdf = pw.Document();
 
@@ -209,6 +215,49 @@ class ContainerInvoicesPrintSettings extends PrintServices {
     }
   }
 
+  /// ============================================================
+  ///  SALE INVOICE — TERMS & CONDITIONS MESSAGE (Persian only)
+  /// ============================================================
+  pw.Widget _termsMessage({required String language, ReportModel? company}) {
+    final custom = company?.customTermsAndConditions?.trim();
+    final hasCustom = custom != null && custom.isNotEmpty;
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Expanded(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                zText(
+                  text: tr(text: "termsAndConditionTitle", tr: language),
+                  fontSize: 9,
+                  fontWeight: pw.FontWeight.bold,
+                  color: _InvoiceColors.primaryDark,
+                ),
+                if (hasCustom)
+                  zText(text: custom, fontSize: 8)
+                else ...[
+                  zText(text: tr(text: "termsAndCondition1", tr: language), fontSize: 8),
+                  pw.SizedBox(height: 2),
+                  zText(text: tr(text: "termsAndCondition2", tr: language), fontSize: 8),
+                  pw.SizedBox(height: 2),
+                  zText(text: tr(text: "termsAndCondition3", tr: language), fontSize: 8),
+                ],
+              ],
+            ),
+          ),
+          pw.SizedBox(width: 6),
+          pw.Container(
+            width: 2,
+            color: _InvoiceColors.primary,
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── CORE BUILDER ───────────────────────────────────────────────
   Future<pw.Document> _generate({
     required String language,
@@ -239,7 +288,18 @@ class ContainerInvoicesPrintSettings extends PrintServices {
           pw.SizedBox(height: 8),
           _itemsTable(language: language, info: info),
           pw.SizedBox(height: 8),
-          _totalsBox(language: language, info: info),
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              if (report.visible?.termsAndConditions == true) ...[
+                pw.Expanded(
+                  flex: 1,
+                  child: _termsMessage(language: language,company: report),
+                ),
+              ],
+              _totalsBox(language: language, info: info),
+            ]
+          ),
           pw.SizedBox(height: 24),
           _signatureRow(language: language, report: report),
         ],
@@ -261,7 +321,7 @@ class ContainerInvoicesPrintSettings extends PrintServices {
     required ShippingInvoice info,
   }) {
     return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+      padding: const pw.EdgeInsets.symmetric(vertical: 6, horizontal: 2),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
@@ -584,7 +644,7 @@ class ContainerInvoicesPrintSettings extends PrintServices {
               ),
               pw.SizedBox(height: 2),
               pw.Container(
-                height: 1,
+                height: 0.7,
                 width: 230,
                 decoration: pw.BoxDecoration(
                   gradient: pw.LinearGradient(

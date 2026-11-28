@@ -1027,7 +1027,6 @@ class InvoicePrintService extends PrintServices {
       pw.MultiPage(
         pageTheme: pageTheme,
         maxPages: 1000,
-
         build: (pw.Context context) => [
           firstPageHeader,
           _itemsTableHeader(
